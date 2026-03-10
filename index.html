@@ -1,0 +1,4259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FilmForge — Production Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06060a;
+    --surface: #0d0d12;
+    --surface2: #131319;
+    --surface3: #1a1a22;
+    --surface4: #22222c;
+    --border: #22222e;
+    --border2: #181820;
+    --accent: #d4aa2c;
+    --accent-dim: rgba(212,170,44,0.1);
+    --accent2: #38a8d4;
+    --accent2-dim: rgba(56,168,212,0.08);
+    --accent3: #c4566e;
+    --text: #e8e8f0;
+    --text2: #9898b0;
+    --text3: #6a6a85;
+    --green: #2ea864;
+    --orange: #d4883a;
+    --red: #c44444;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 5px;
+    --radius-lg: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.6), 0 3px 10px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.7), 0 12px 48px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.008) 39px,
+      rgba(255,255,255,0.008) 40px
+    );
+  }
+
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border2);
+    background: linear-gradient(180deg, rgba(212,170,44,0.04) 0%, transparent 100%);
+  }
+  .sidebar-logo h1 {
+    font-family: var(--font-display);
+    font-size: 27px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+    text-shadow: 0 0 40px rgba(212,170,44,0.3);
+  }
+  .sidebar-logo span {
+    font-size: 8.5px;
+    color: var(--text3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  .sidebar-section { padding: 16px 8px 4px; }
+  .sidebar-section-label {
+    font-size: 8.5px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    padding: 0 10px;
+    margin-bottom: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 12.5px;
+    font-weight: 400;
+    transition: all 0.12s;
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(212,170,44,0.12), rgba(212,170,44,0.04));
+    color: var(--accent);
+    border-color: rgba(212,170,44,0.15);
+    border-left-color: var(--accent);
+    border-left-width: 2px;
+  }
+  .nav-item .icon { font-size: 13px; width: 15px; text-align: center; opacity: 0.7; }
+
+  .project-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 12px;
+    transition: all 0.12s;
+    border: 1px solid transparent;
+  }
+  .project-item:hover { background: var(--surface2); color: var(--text); }
+  .project-item.active {
+    background: rgba(56,168,212,0.07);
+    color: var(--accent2);
+    border-color: rgba(56,168,212,0.12);
+  }
+  .project-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text3);
+    flex-shrink: 0;
+  }
+  .project-item.active .project-dot { background: var(--accent2); }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 8px;
+    border-top: 1px solid var(--border2);
+  }
+
+  /* ── MAIN ── */
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    background: rgba(13,13,18,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border2);
+    padding: 0 24px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title { font-size: 12.5px; font-weight: 600; color: var(--text); letter-spacing: 0.3px; }
+  .topbar-breadcrumb { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; letter-spacing: 0.5px; }
+  .topbar-right { display: flex; gap: 7px; align-items: center; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn:hover { background: var(--surface3); border-color: var(--surface4); color: var(--text); }
+  .btn-primary {
+    background: var(--accent);
+    color: #04040a;
+    border-color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .btn-primary:hover { background: #dbb830; border-color: #dbb830; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text3); }
+  .btn-ghost:hover { background: var(--surface2); border-color: var(--border); color: var(--text2); }
+  .btn-danger { border-color: transparent; color: var(--red); background: transparent; }
+  .btn-danger:hover { background: rgba(196,68,68,0.08); border-color: rgba(196,68,68,0.2); }
+
+  /* ── CONTENT ── */
+  #content { flex: 1; padding: 24px; overflow-y: auto; }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── DASHBOARD ── */
+  .page-header { margin-bottom: 22px; }
+  .page-header h2 {
+    font-family: var(--font-display);
+    font-size: 42px;
+    letter-spacing: 4px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .page-header p { color: var(--text3); font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  }
+  .stat-card .label {
+    font-size: 8.5px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-family: var(--font-mono);
+    margin-bottom: 8px;
+  }
+  .stat-card .value {
+    font-family: var(--font-display);
+    font-size: 48px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-card .sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+    gap: 12px;
+  }
+
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0.9;
+  }
+  .project-card::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 0; right: 0;
+    height: 60px;
+    opacity: 0.03;
+    pointer-events: none;
+  }
+  .project-card.status-pre::before { background: var(--accent2); }
+  .project-card.status-pre::after { background: linear-gradient(180deg, var(--accent2), transparent); }
+  .project-card.status-prod::before { background: var(--accent); }
+  .project-card.status-prod::after { background: linear-gradient(180deg, var(--accent), transparent); }
+  .project-card.status-post::before { background: var(--accent3); }
+  .project-card.status-done::before { background: var(--green); }
+  .project-card:hover {
+    border-color: var(--border);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .project-card-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1.05;
+  }
+  .project-card-num { font-family: var(--font-mono); font-size: 9.5px; color: var(--text3); margin-bottom: 2px; letter-spacing: 1px; }
+  .status-badge {
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .badge-pre { background: rgba(56,168,212,0.1); color: var(--accent2); }
+  .badge-prod { background: rgba(212,170,44,0.1); color: var(--accent); }
+  .badge-post { background: rgba(196,86,110,0.1); color: var(--accent3); }
+  .badge-done { background: rgba(46,168,100,0.1); color: var(--green); }
+
+  .project-card-meta { color: var(--text3); font-size: 11.5px; margin-bottom: 14px; line-height: 1.7; }
+  .project-card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .project-card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface2);
+    color: var(--text3);
+    font-family: var(--font-mono);
+    border: 1px solid var(--border2);
+    letter-spacing: 0.5px;
+  }
+
+  .new-project-card {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 130px;
+    gap: 7px;
+    color: var(--text3);
+  }
+  .new-project-card:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .new-project-card .plus { font-size: 22px; }
+  .new-project-card span { font-size: 11.5px; font-weight: 500; letter-spacing: 0.5px; }
+
+  /* ── PROJECT VIEW ── */
+  .project-header {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .project-header::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.8;
+  }
+  .project-header-left { padding-left: 8px; }
+  .project-header-left h2 {
+    font-family: var(--font-display);
+    font-size: 40px;
+    letter-spacing: 3px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .project-header-meta { display: flex; gap: 16px; color: var(--text3); font-size: 11px; flex-wrap: wrap; font-family: var(--font-mono); letter-spacing: 0.5px; }
+  .project-header-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .section-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 0;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+  .section-tab {
+    padding: 9px 14px;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 11.5px;
+    font-weight: 500;
+    transition: all 0.1s;
+    border-right: 1px solid var(--border2);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+  }
+  .section-tab:last-child { border-right: none; }
+  .section-tab:hover { color: var(--text2); background: var(--surface2); }
+  .section-tab.active {
+    color: var(--accent);
+    background: var(--surface2);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── DOC CARDS (overview) ── */
+  .documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .doc-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.14s;
+  }
+  .doc-card:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+  .doc-card-icon { font-size: 20px; margin-bottom: 8px; opacity: 0.85; }
+  .doc-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .doc-card-sub { font-size: 11px; color: var(--text3); }
+  .doc-card-status {
+    margin-top: 10px;
+    font-size: 9.5px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    display: flex; align-items: center; gap: 5px;
+    letter-spacing: 0.5px;
+  }
+  .doc-card-status.filled { color: var(--green); }
+  .doc-card-status.empty { color: var(--text3); }
+
+  .new-doc-card {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.14s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 110px;
+    gap: 7px;
+    color: var(--text3);
+  }
+  .new-doc-card:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex !important; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: none;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-lg { max-width: 780px; }
+  .modal-xl { max-width: 1020px; width: 95%; }
+  @keyframes modalIn {
+    from { opacity: 1; transform: scale(0.97) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .modal-header h3 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .modal-close {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text3);
+    width: 26px; height: 26px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .modal-close:hover { background: var(--surface3); color: var(--text2); }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+    display: block;
+    font-family: var(--font-mono);
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 11px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    transition: border-color 0.12s, box-shadow 0.12s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 2px rgba(56,168,212,0.08);
+  }
+  .form-input::placeholder { color: var(--text3); }
+  .form-textarea { resize: vertical; min-height: 78px; line-height: 1.55; }
+  .form-select option { background: var(--surface2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .form-actions {
+    display: flex;
+    gap: 7px;
+    justify-content: flex-end;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border2);
+  }
+
+  /* ── TABLES ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface2);
+    position: sticky;
+    top: 0;
+    font-weight: 500;
+  }
+  .data-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border2);
+    vertical-align: middle;
+    color: var(--text2);
+  }
+  .data-table td strong { color: var(--text); font-weight: 500; }
+  .data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.012); }
+  .data-table tbody tr:hover td { background: var(--surface3); color: var(--text); cursor: pointer; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .table-toolbar {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border2);
+    gap: 10px;
+    background: var(--surface2);
+  }
+  .table-toolbar-left { display: flex; gap: 8px; align-items: center; }
+  .table-toolbar-right { display: flex; gap: 8px; }
+
+  .search-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px 5px 28px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font-body);
+    outline: none;
+    width: 190px;
+    transition: border-color 0.12s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233a3a52' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 9px center;
+  }
+  .search-input:focus { border-color: var(--accent2); }
+
+  /* ── CONFIRMED DOTS ── */
+  .conf-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .conf-green { background: var(--green); box-shadow: 0 0 5px rgba(46,168,100,0.6); }
+  .conf-orange { background: var(--orange); box-shadow: 0 0 5px rgba(212,136,58,0.6); }
+  .conf-red { background: var(--red); box-shadow: 0 0 5px rgba(196,68,68,0.6); }
+
+  /* ── DOCUMENT EDITOR (breakdown/scouting cards) ── */
+  .doc-editor {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .doc-editor-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface2);
+  }
+  .doc-editor-header h3 { font-family: var(--font-display); font-size: 20px; letter-spacing: 1.5px; }
+  .doc-editor-body { padding: 20px; }
+
+  .breakdown-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .breakdown-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .breakdown-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .breakdown-field-label {
+    font-size: 9.5px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 3px;
+  }
+  .breakdown-field-val { font-size: 13px; color: var(--text); }
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border2);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .breakdown-cell {
+    background: var(--surface);
+    padding: 10px 12px;
+    min-height: 76px;
+  }
+  .breakdown-cell-label {
+    font-size: 9px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
+  }
+  .breakdown-cell textarea {
+    background: transparent;
+    border: none;
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--font-body);
+    resize: none;
+    width: 100%;
+    outline: none;
+    min-height: 54px;
+    line-height: 1.55;
+  }
+  .breakdown-cell textarea:focus { color: var(--text); }
+
+  /* ── CALLSHEET ── */
+  .cs-page {
+    background: white;
+    color: #000;
+    margin: 24px auto;
+    max-width: 900px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    page-break-after: always;
+  }
+  .cs-top-bar {
+    padding: 20px;
+    border-bottom: 2px solid #333;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    background: #f9f9f9;
+  }
+  .cs-logo-drop {
+    width: 80px;
+    height: 80px;
+    border: 2px dashed #ccc;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cs-logo-drop:hover { background: #f5f5f5; border-color: #999; }
+  .cs-header-info { flex: 1; }
+  .cs-toggle-bar {
+    padding: 12px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cs-toggle {
+    padding: 6px 12px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .cs-toggle:hover { background: #e0e0e0; }
+  .cs-toggle.active { background: #333; color: white; border-color: #333; }
+  .cs-content {
+    padding: 20px;
+    font-size: 13px;
+  }
+  .cs-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #eee;
+  }
+  .cs-heading {
+    margin: 0 0 16px 0;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #000;
+  }
+  .cs-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .cs-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .cs-field { margin-bottom: 12px; }
+  .cs-field label { 
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+  }
+  .cs-field input,
+  .cs-field textarea {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .cs-inline {
+    width: 150px;
+    padding: 4px !important;
+    font-size: 11px !important;
+    border: 1px solid #ddd !important;
+  }
+  .cs-note {
+    font-size: 11px;
+    margin-bottom: 8px;
+    color: #666;
+  }
+  .cs-spacer { height: 12px; }
+  .cs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+  }
+  .cs-table th, .cs-table td {
+    padding: 6px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-size: 11px;
+  }
+  .cs-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+  }
+  .cs-table input {
+    width: 100%;
+    padding: 3px;
+    border: none;
+    font-size: 11px;
+  }
+  .cs-add-btn {
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px dashed #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #666;
+  }
+  .cs-add-btn:hover { background: #f9f9f9; }
+  .btn-tiny {
+    padding: 2px 6px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 10px;
+    color: #999;
+  }
+  .btn-tiny:hover { background: #eee; }
+  .cs-notes {
+    width: 100%;
+    height: 120px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-family: var(--font-body);
+    font-size: 12px;
+  }
+  
+  @media print {
+    .pdf-hide { display: none !important; }
+    .cs-wrap {
+      page-break-after: always;
+      box-shadow: none;
+      margin: 0;
+      border: none;
+    }
+    .cs-header-bar { 
+      page-break-inside: avoid;
+    }
+    .btn, .cs-ctrl-btn, .cs-add-btn, .btn-tiny, .cs-toggle, .cs-add-row, .pdf-hide, .btn-primary, .btn-sm, .cs-section button {
+      display: none !important;
+    }
+    .cs-logo-drop {
+      border: none !important;
+      background: transparent !important;
+    }
+    .cs-logo-drop img {
+      border: none !important;
+    }
+    input, textarea, select {
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+    .cs-table { 
+      width: 100%;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+    }
+    .cs-table th, .cs-table td {
+      border: 1px solid #000;
+      padding: 4px;
+      page-break-inside: avoid;
+    }
+    .cs-section {
+      page-break-inside: avoid;
+    }
+  }
+  .cs-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .cs-header-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border2);
+    padding: 13px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cs-header-bar h3 { font-family: var(--font-display); font-size: 20px; letter-spacing: 1.5px; }
+  .cs-body { padding: 0; }
+
+  .cs-field {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 2px 2px;
+    outline: none;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .cs-field:hover { border-bottom-color: var(--border); }
+  .cs-field:focus { border-bottom-color: var(--accent2); background: rgba(79,195,247,0.03); }
+  .cs-field::placeholder { color: var(--text3); font-style: italic; }
+  .cs-field-lg {
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--accent2);
+  }
+
+  .cs-top {
+    display: grid;
+    grid-template-columns: 1fr 180px 1fr;
+    border-bottom: 1px solid var(--border2);
+  }
+  .cs-top-left { padding: 14px 16px; border-right: 1px solid var(--border2); }
+  .cs-top-center {
+    padding: 14px 12px;
+    text-align: center;
+    border-right: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: var(--surface2);
+  }
+  .cs-top-right { padding: 14px 16px; }
+  .cs-field-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 7px;
+  }
+  .cs-field-row:last-child { margin-bottom: 0; }
+  .cs-lbl {
+    font-size: 9.5px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 105px;
+  }
+  .cs-lbl-sm { min-width: 60px; }
+
+  .cs-section {
+    border-bottom: 1px solid var(--border2);
+    padding: 13px 16px;
+  }
+  .cs-section:last-child { border-bottom: none; }
+  .cs-section-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0.85;
+  }
+  .cs-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 14px; }
+  .cs-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+
+  .cs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .cs-table th {
+    text-align: left;
+    padding: 5px 8px;
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface2);
+  }
+  .cs-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(30,30,40,0.8);
+    vertical-align: middle;
+  }
+  .cs-table tr:last-child td { border-bottom: none; }
+  .cs-table input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: #000;
+    font-family: var(--font-body);
+    font-size: 12px;
+    padding: 2px 2px;
+    outline: none;
+    width: 100%;
+  }
+  .cs-table input:hover { border-bottom-color: var(--border); }
+  .cs-table input:focus { border-bottom-color: var(--accent2); }
+  .cs-add-row {
+    font-size: 10.5px;
+    color: var(--text3);
+    padding: 5px 6px;
+    cursor: pointer;
+    display: inline-block;
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    transition: color 0.12s;
+  }
+  .cs-add-row:hover { color: var(--accent2); }
+  .cs-notes-area {
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    line-height: 1.75;
+    width: 100%;
+    resize: vertical;
+    min-height: 110px;
+    outline: none;
+  }
+  .cs-notes-area:focus { color: var(--text2); }
+
+  /* ── BUDGET ── */
+  .budget-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .budget-total {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .budget-total .label {
+    font-size: 9.5px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .budget-total .amount { font-family: var(--font-display); font-size: 30px; letter-spacing: 1px; }
+  .budget-total.estimate .amount { color: var(--accent2); }
+  .budget-total.actual .amount { color: var(--accent); }
+  .budget-total.variance .amount { color: var(--green); }
+
+  /* ── LOCATION LIST ── */
+  .loc-suitability {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9.5px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .loc-suitable { background: rgba(61,186,120,0.12); color: var(--green); }
+  .loc-possible { background: rgba(240,160,64,0.12); color: var(--orange); }
+  .loc-unsuitable { background: rgba(224,85,85,0.12); color: var(--red); }
+
+  /* ── EQUIPMENT ── */
+  .equip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .equip-section {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .equip-section h4 {
+    font-size: 9.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .equip-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border2);
+    font-size: 12.5px;
+    color: var(--text2);
+  }
+  .equip-item:last-child { border-bottom: none; }
+  .equip-check {
+    width: 15px; height: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.12s;
+  }
+  .equip-check.checked { background: var(--green); border-color: var(--green); }
+  .equip-check.checked::after { content: '✓'; color: white; font-size: 9px; font-weight: bold; }
+  .equip-item-name { color: var(--text2); }
+  .equip-item-name.checked { text-decoration: line-through; color: var(--text3); }
+
+  /* ── TEAM VIEW ── */
+  .team-section { margin-bottom: 22px; }
+  .team-section-header {
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text3);
+  }
+  .empty-state .icon { font-size: 26px; margin-bottom: 14px; opacity: 0.3; display: block; }
+  .empty-state h4 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+  .empty-state p { font-size: 11.5px; line-height: 1.7; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 9px 14px;
+    font-size: 11.5px;
+    color: var(--text2);
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: toastIn 0.18s ease;
+    max-width: 260px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.3px;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .toast.success { border-left: 2px solid var(--green); }
+  .toast.info { border-left: 2px solid var(--accent2); }
+
+  /* ── MISC ── */
+  .divider { height: 1px; background: var(--border2); margin: 16px 0; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px; border-radius: 3px;
+    font-size: 9.5px; font-family: var(--font-mono);
+    background: var(--surface2); color: var(--text3);
+    border: 1px solid var(--border2);
+  }
+  .section-heading {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 2.5px;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: var(--radius);
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text3); font-family: var(--font-mono); font-size: 10px;
+    cursor: pointer; transition: all .12s; margin-bottom: 14px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .btn-back:hover { background: var(--surface2); color: var(--text2); border-color: var(--border); }
+
+  .inline-edit {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 2px 4px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.12s;
+  }
+  .inline-edit:focus { border-bottom-color: var(--accent2); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface4); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  @media (max-width: 900px) {
+    #sidebar { width: 200px; min-width: 200px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .equip-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 680px) {
+    #sidebar { display: none; }
+    .stats-row { grid-template-columns: 1fr; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <h1>FILMFORGE</h1>
+      <span>Production Suite</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Navigation</div>
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <span class="icon">⬛</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showView('team')">
+        <span class="icon">👥</span> Team
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Projects</div>
+      <div id="sidebar-projects"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-primary" style="width:100%" onclick="openNewProjectModal()">
+        + New Project
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+    <header id="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-breadcrumb" id="topbar-breadcrumb">FilmForge</div>
+      </div>
+      <div class="topbar-right">
+        <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
+        <button class="btn btn-sm" onclick="manualSave()">💾 Save</button>
+        <button class="btn btn-sm" onclick="exportData()">⬇ Export</button>
+        <button class="btn btn-sm btn-primary" onclick="openNewProjectModal()">+ New Project</button>
+      </div>
+    </header>
+
+    <div id="content">
+
+      <!-- DASHBOARD VIEW -->
+      <div class="view active" id="view-dashboard">
+        <div class="page-header">
+          <h2>PROJECTS</h2>
+          <p>Your production pipeline at a glance</p>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
+          <div class="stat-card"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
+          <div class="stat-card"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:var(--accent2)">●</div></div>
+          <div class="stat-card"><div class="label">Post / Done</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
+        </div>
+        <div class="projects-grid" id="projects-grid">
+          <div class="new-project-card" onclick="openNewProjectModal()">
+            <div class="plus">＋</div>
+            <span>New Project</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJECT VIEW -->
+      <div class="view" id="view-project">
+        <button class="btn-back" onclick="showView('dashboard')" style="margin-bottom:16px">← All Projects</button>
+        <div class="project-header" id="project-header">
+          <div class="project-header-left">
+            <h2 id="proj-title">PROJECT TITLE</h2>
+            <div class="project-header-meta" id="proj-meta"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="status-badge" id="proj-status-badge"></span>
+            <button class="btn btn-sm" onclick="openEditProjectModal()">✎ Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()">✕</button>
+          </div>
+        </div>
+
+        <div class="section-tabs" id="section-tabs">
+          <div class="section-tab active" onclick="showSection('overview')">Overview</div>
+          <div class="section-tab" onclick="showSection('breakdown')">Script Breakdown</div>
+          <div class="section-tab" onclick="showSection('callsheet')">Callsheet</div>
+          <div class="section-tab" onclick="showSection('schedule')">Schedule</div>
+          <div class="section-tab" onclick="showSection('cast')">Cast & Extras</div>
+          <div class="section-tab" onclick="showSection('unit')">Unit List</div>
+          <div class="section-tab" onclick="showSection('budget')">Budget</div>
+          <div class="section-tab" onclick="showSection('equipment')">Equipment</div>
+          <div class="section-tab" onclick="showSection('locations')">Locations</div>
+          <div class="section-tab" onclick="showSection('shotlist')">Shot List</div>
+          <div class="section-tab" onclick="showSection('props')">Props</div>
+          <div class="section-tab" onclick="showSection('wardrobe')">Wardrobe</div>
+          <div class="section-tab" onclick="showSection('soundlog')">Sound Log</div>
+          <div class="section-tab" onclick="showSection('riskassess')">Risk Assessment</div>
+          <div class="section-tab" onclick="showSection('releases')">Release Forms</div>
+        </div>
+
+        <!-- SECTION: OVERVIEW -->
+        <div id="section-overview">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+            <div class="stat-card">
+              <div class="label">Shoot Days</div>
+              <div class="value" id="ov-shoot-days">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Cast Members</div>
+              <div class="value" id="ov-cast">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Crew Members</div>
+              <div class="value" id="ov-crew">0</div>
+            </div>
+          </div>
+          <div class="documents-grid" id="overview-docs"></div>
+        </div>
+
+        <!-- SECTION: BREAKDOWN -->
+        <div id="section-breakdown" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">SCRIPT BREAKDOWN</h3>
+            <button class="btn btn-primary btn-sm" onclick="addBreakdownScene()">+ Add Scene</button>
+          </div>
+          <div id="breakdown-scenes"></div>
+        </div>
+
+        <!-- SECTION: CALLSHEET -->
+        <div id="section-callsheet" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">CALLSHEET</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="addCallsheet()">+ New Day</button>
+              <button class="btn btn-sm btn-primary" onclick="openExportModal()">⬇ Export PDF</button>
+            </div>
+          </div>
+          <div id="callsheet-list"></div>
+        </div>
+
+        <!-- SECTION: SCHEDULE -->
+        <div id="section-schedule" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">ESTIMATED SCHEDULE</h3>
+            <button class="btn btn-primary btn-sm" onclick="addScheduleRow()">+ Add Entry</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="schedule-table">
+              <thead><tr>
+                <th>Time</th><th>Scene</th><th>Shot</th><th>Shot Type</th>
+                <th>Description</th><th>Cast</th><th>Page/s</th><th>Est. (mins)</th><th></th>
+              </tr></thead>
+              <tbody id="schedule-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION: CAST -->
+        <div id="section-cast" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="margin-bottom:24px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h3 class="section-heading">CAST</h3>
+              <button class="btn btn-primary btn-sm" onclick="addPersonnel('cast')">+ Add Cast</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="cast-table">
+                <thead><tr><th>Name</th><th>Role/Character</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <tbody id="cast-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h3 class="section-heading">SUPPORTING ARTISTS (EXTRAS)</h3>
+              <button class="btn btn-primary btn-sm" onclick="addPersonnel('extras')">+ Add Extra</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="extras-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <tbody id="extras-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: UNIT LIST -->
+        <div id="section-unit" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">UNIT LIST</h3>
+            <button class="btn btn-primary btn-sm" onclick="addUnitMember()">+ Add Member</button>
+          </div>
+          <div id="unit-sections"></div>
+        </div>
+
+        <!-- SECTION: BUDGET -->
+        <div id="section-budget" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div class="budget-summary" id="budget-summary"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 class="section-heading">ESTIMATED BUDGET</h3>
+            <button class="btn btn-primary btn-sm" onclick="addBudgetLine()">+ Add Line</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="budget-estimate-table">
+              <thead><tr>
+                <th>Category</th><th>Description</th>
+                <th>Cost Per</th><th>Qty</th><th>Total Estimate</th><th></th>
+              </tr></thead>
+              <tbody id="budget-estimate-body"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:24px">
+            <h3 class="section-heading">ACTUAL EXPENSES</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span></span>
+              <button class="btn btn-primary btn-sm" onclick="addActualExpense()">+ Add Expense</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="budget-actual-table">
+                <thead><tr>
+                  <th>Category</th><th>Description</th>
+                  <th>Actual Cost</th><th></th>
+                </tr></thead>
+                <tbody id="budget-actual-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: EQUIPMENT -->
+        <div id="section-equipment" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="addEquipItem()">+ Add Item</button>
+              <button class="btn btn-sm" onclick="resetEquipChecks()">↺ Reset Checks</button>
+            </div>
+          </div>
+          <div class="equip-grid" id="equip-grid"></div>
+        </div>
+
+        <!-- SECTION: LOCATIONS -->
+        <div id="section-locations" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">LOCATIONS</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
+              <button class="btn btn-sm" onclick="addScoutingSheet()">+ Scouting Sheet</button>
+              <button class="btn btn-sm" onclick="addTechScout()">+ Tech Scout</button>
+            </div>
+          </div>
+          <div class="table-container" style="margin-bottom:20px">
+            <table class="data-table" id="locations-table">
+              <thead><tr>
+                <th>Location</th><th>Suitability</th><th>Contacted</th>
+                <th>Availability</th><th>Cost/Fee</th><th>Accessibility</th>
+                <th>Recce Done</th><th>Decision</th><th></th>
+              </tr></thead>
+              <tbody id="locations-body"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <h3 class="section-heading">SCOUTING SHEETS</h3>
+          </div>
+          <div id="scouting-list"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 14px">
+            <h3 class="section-heading">TECH SCOUT CHECKLISTS</h3>
+          </div>
+          <div id="techscout-list"></div>
+        </div>
+
+        <!-- SECTION: SHOT LIST -->
+        <div id="section-shotlist" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">SHOT LIST</h3>
+            <button class="btn btn-primary btn-sm" onclick="addShot()">+ Add Shot</button>
+          </div>
+          <div class="table-container">
+            <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+              TOTAL TIME: <span id="shotlist-total" style="color:var(--accent)">0 mins</span>
+            </div>
+            <div style="overflow-x:auto">
+            <table class="data-table" id="shotlist-table">
+              <thead><tr>
+                <th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th>
+                <th>Location</th><th>Ext/Int</th><th>Sound</th><th>Description</th>
+                <th>Cast</th><th>Pages</th><th>Length</th><th>Setup(m)</th><th>Shoot(m)</th><th>Total(m)</th><th></th>
+              </tr></thead>
+              <tbody id="shotlist-body"></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: PROPS -->
+        <div id="section-props" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">PROPS LIST</h3>
+            <button class="btn btn-primary btn-sm" onclick="addPropItem('props')">+ Add Prop</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Prop</th><th>Quantity</th><th>Character/s</th><th>Scene/s</th><th>Location/s</th><th>Page/s</th><th>Notes</th><th></th></tr></thead>
+              <tbody id="props-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION: WARDROBE -->
+        <div id="section-wardrobe" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">WARDROBE / COSTUME / MAKE-UP</h3>
+            <button class="btn btn-primary btn-sm" onclick="addPropItem('wardrobe')">+ Add Item</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Item</th><th>Quantity</th><th>Character/s</th><th>Scene/s</th><th>Location/s</th><th>Page/s</th><th>Notes</th><th></th></tr></thead>
+              <tbody id="wardrobe-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION: SOUND LOG -->
+        <div id="section-soundlog" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">SOUND LOG</h3>
+            <button class="btn btn-primary btn-sm" onclick="addSoundEntry()">+ Add Entry</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Scene</th><th>Shot</th><th>Take</th><th>Comments</th><th>Track 1</th><th>Lav</th><th>Additional Audio</th><th></th></tr></thead>
+              <tbody id="soundlog-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION: RISK ASSESSMENT -->
+        <div id="section-riskassess" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading">PRODUCTION RISK ASSESSMENT</h3>
+            <button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button>
+          </div>
+          <div class="breakdown-card" style="margin-bottom:16px">
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">Production Manager</label><input class="form-input" id="risk-pm" oninput="saveRiskMeta()" placeholder="Name"></div>
+              <div class="form-group"><label class="form-label">Date of Assessment</label><input class="form-input" id="risk-date" type="date" oninput="saveRiskMeta()"></div>
+              <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="risk-location" oninput="saveRiskMeta()" placeholder="Shoot location"></div>
+            </div>
+          </div>
+          <div class="table-container" style="margin-bottom:20px">
+            <table class="data-table">
+              <thead><tr>
+                <th>Hazard</th><th>Who might be harmed & how?</th>
+                <th>Risk Factor</th><th>Control Measures</th>
+                <th>Further Controls?</th><th>New Risk Factor</th><th></th>
+              </tr></thead>
+              <tbody id="risk-body"></tbody>
+            </table>
+          </div>
+          <div class="breakdown-card">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Name of person completing assessment (printed)</label><input class="form-input" id="risk-signatory" oninput="saveRiskMeta()" placeholder="Printed name"></div>
+              <div class="form-group"><label class="form-label">Signature / Date</label><input class="form-input" id="risk-sigdate" oninput="saveRiskMeta()" placeholder="Date signed"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: RELEASE FORMS -->
+        <div id="section-releases" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 class="section-heading">RELEASE FORMS</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="addRelease('talent')">+ Talent Release</button>
+              <button class="btn btn-sm" onclick="addRelease('location')">+ Location Release</button>
+            </div>
+          </div>
+          <div id="releases-list"></div>
+        </div>
+
+      </div><!-- /view-project -->
+
+      <!-- TEAM VIEW -->
+      <div class="view" id="view-team">
+        <div class="page-header">
+          <h2>TEAM</h2>
+          <p>Manage access and collaborators across all projects</p>
+        </div>
+        <div class="table-container">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <span style="font-size:13px;color:var(--text2)">Team Members</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="inviteTeamMember()">+ Invite Member</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Projects</th><th>Access</th><th></th></tr></thead>
+            <tbody id="team-body">
+              <tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">👥</div><h4>No team members yet</h4><p>Invite collaborators to your projects</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODALS ══ -->
+
+<!-- NEW / EDIT PROJECT -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-project-title">NEW PROJECT</h3>
+      <button class="modal-close" onclick="closeModal('modal-project')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Production Title</label>
+      <input class="form-input" id="proj-input-title" placeholder="e.g. The Long Road">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Production #</label>
+        <input class="form-input" id="proj-input-num" placeholder="e.g. 001">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="proj-input-status">
+          <option value="pre">Pre-Production</option>
+          <option value="prod">Production</option>
+          <option value="post">Post-Production</option>
+          <option value="done">Complete</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Director</label>
+        <input class="form-input" id="proj-input-director" placeholder="Director name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Producer</label>
+        <input class="form-input" id="proj-input-producer" placeholder="Producer name">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Production Company</label>
+        <input class="form-input" id="proj-input-company" placeholder="e.g. Grim Tidings">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Genre</label>
+        <input class="form-input" id="proj-input-genre" placeholder="e.g. Drama, Thriller">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Logline / Notes</label>
+      <textarea class="form-textarea" id="proj-input-notes" placeholder="Brief description..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-project')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONNEL (CAST/EXTRAS/UNIT) -->
+<div class="modal-overlay" id="modal-personnel">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-personnel-title">ADD MEMBER</h3>
+      <button class="modal-close" onclick="closeModal('modal-personnel')">✕</button>
+    </div>
+    <input type="hidden" id="personnel-type">
+    <input type="hidden" id="personnel-edit-idx">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="pers-name" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role / Character</label>
+        <input class="form-input" id="pers-role" placeholder="Role or character name">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" id="pers-number" placeholder="+44...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="pers-email" placeholder="email@example.com" type="email">
+      </div>
+    </div>
+    <div class="form-group" id="pers-social-group">
+      <label class="form-label">Social (crew only)</label>
+      <input class="form-input" id="pers-social" placeholder="@handle">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="pers-notes" placeholder="Any notes...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmed</label>
+        <select class="form-select" id="pers-confirmed">
+          <option value="green">✅ Confirmed</option>
+          <option value="orange">⏳ Pending</option>
+          <option value="red">❌ Not Confirmed</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="pers-dept-group" style="display:none">
+      <label class="form-label">Department</label>
+      <select class="form-select" id="pers-dept">
+        <option>Production</option>
+        <option>Direction</option>
+        <option>Script</option>
+        <option>Camera</option>
+        <option>Sound</option>
+        <option>Lights</option>
+        <option>Makeup</option>
+        <option>Behind-the-Scenes</option>
+        <option>Post-Production</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-personnel')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePersonnel()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET LINE -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>BUDGET LINE</h3>
+      <button class="modal-close" onclick="closeModal('modal-budget')">✕</button>
+    </div>
+    <input type="hidden" id="budget-edit-idx">
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="bud-cat">
+        <option>Travel Expenses</option>
+        <option>Props & Misc</option>
+        <option>Food & Refreshments</option>
+        <option>Equipment</option>
+        <option>Locations</option>
+        <option>Cast Fees</option>
+        <option>Crew Fees</option>
+        <option>Post-Production</option>
+        <option>Marketing</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select class="form-select" id="bud-type" onchange="toggleBudgetFields()">
+        <option value="estimate">Estimated</option>
+        <option value="actual">Actual</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="form-input" id="bud-desc" placeholder="What is this for?">
+    </div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Cost Per (£)</label>
+        <input class="form-input" id="bud-cost" type="number" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quantity</label>
+        <input class="form-input" id="bud-qty" type="number" placeholder="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Actual (£)</label>
+        <input class="form-input" id="bud-actual" type="number" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-budget')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBudgetLine()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION -->
+<div class="modal-overlay" id="modal-location">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>ADD LOCATION</h3>
+      <button class="modal-close" onclick="closeModal('modal-location')">✕</button>
+    </div>
+    <input type="hidden" id="loc-edit-idx">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Location Name</label>
+        <input class="form-input" id="loc-name" placeholder="e.g. The Old Mill">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Suitability</label>
+        <select class="form-select" id="loc-suit">
+          <option value="suitable">Suitable</option>
+          <option value="possible">Possibly Suitable</option>
+          <option value="unsuitable">Unsuitable</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Contacted?</label>
+        <select class="form-select" id="loc-contacted">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+          <option value="na">N/A</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Availability</label>
+        <input class="form-input" id="loc-avail" placeholder="e.g. Weekends only">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Rules / Restrictions</label>
+        <input class="form-input" id="loc-rules" placeholder="e.g. No filming after 10pm">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cost / Fee</label>
+        <input class="form-input" id="loc-cost" placeholder="e.g. Free / £200/day">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Accessibility</label>
+        <input class="form-input" id="loc-access" placeholder="e.g. Easy parking, stairs">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Recce Done?</label>
+        <select class="form-select" id="loc-recce">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+          <option value="scheduled">Scheduled</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Natural Light</label>
+        <input class="form-input" id="loc-light" placeholder="Good / Poor / Mixed">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Power Availability</label>
+        <input class="form-input" id="loc-power" placeholder="e.g. Multiple sockets">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Potential Problems</label>
+        <input class="form-input" id="loc-problems" placeholder="Any known issues...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Decision</label>
+        <select class="form-select" id="loc-decision">
+          <option value="">TBD</option>
+          <option value="confirmed">Confirmed ✓</option>
+          <option value="backup">Backup</option>
+          <option value="rejected">Rejected ✗</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-location')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLocation()">Save Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE ROW -->
+<div class="modal-overlay" id="modal-schedule">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>ADD SHOT</h3>
+      <button class="modal-close" onclick="closeModal('modal-schedule')">✕</button>
+    </div>
+    <input type="hidden" id="sched-edit-idx">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input class="form-input" id="sched-time" placeholder="e.g. 09:00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scene #</label>
+        <input class="form-input" id="sched-scene" placeholder="e.g. 1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Shot #</label>
+        <input class="form-input" id="sched-shot" placeholder="e.g. 1A">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Shot Type</label>
+        <select class="form-select" id="sched-type">
+          <option>WS</option><option>MS</option><option>CU</option><option>ECU</option>
+          <option>OTS</option><option>POV</option><option>Insert</option><option>Aerial</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="form-input" id="sched-desc" placeholder="Brief description of shot">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Cast</label>
+        <input class="form-input" id="sched-cast" placeholder="e.g. Lead, Supporting">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Page/s</label>
+        <input class="form-input" id="sched-pages" placeholder="e.g. 12-14">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Estimated Time (mins)</label>
+      <input class="form-input" id="sched-est" type="number" placeholder="30">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-schedule')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveScheduleRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EQUIP ITEM -->
+<div class="modal-overlay" id="modal-equip">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>ADD EQUIPMENT</h3>
+      <button class="modal-close" onclick="closeModal('modal-equip')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="equip-cat">
+        <option>Camera</option><option>Glass (Lenses)</option><option>Batteries</option>
+        <option>Grip Equipment</option><option>Accessories</option><option>Lighting</option>
+        <option>Camera Support</option><option>Audio</option><option>Adapters</option>
+        <option>Computer & Tech</option><option>Light Modifiers</option><option>Miscellaneous</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Item Name</label>
+      <input class="form-input" id="equip-name" placeholder="e.g. Canon EOS R5">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-equip')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEquipItem()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE TEAM -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>INVITE TEAM MEMBER</h3>
+      <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="inv-name" placeholder="Full name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="inv-email" placeholder="email@example.com" type="email">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Access Level</label>
+        <select class="form-select" id="inv-access">
+          <option value="owner">Owner (full access)</option>
+          <option value="editor">Editor (can edit)</option>
+          <option value="viewer">Viewer (read only)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project</label>
+        <select class="form-select" id="inv-project">
+          <option value="all">All Projects</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-invite')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvite()">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHOT MODAL -->
+<div class="modal-overlay" id="modal-shot">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>ADD SHOT</h3><button class="modal-close" onclick="closeModal('modal-shot')">✕</button></div>
+    <input type="hidden" id="shot-edit-idx">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Scene #</label><input class="form-input" id="shot-scene" placeholder="1"></div>
+      <div class="form-group"><label class="form-label">Setup #</label><input class="form-input" id="shot-setup" placeholder="1"></div>
+      <div class="form-group"><label class="form-label">Shot #</label><input class="form-input" id="shot-num" placeholder="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Shot Type</label>
+        <select class="form-select" id="shot-type"><option>CU</option><option>ECU</option><option>MS</option><option>WS</option><option>OTS</option><option>POV</option><option>Insert</option><option>Aerial</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Movement</label>
+        <select class="form-select" id="shot-movement"><option>Stationary</option><option>Handheld</option><option>Dolly</option><option>Pan</option><option>Tilt</option><option>Crane</option><option>Gimbal</option><option>Tracking</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Ext / Int</label>
+        <select class="form-select" id="shot-extint"><option>INT DAY</option><option>INT NIGHT</option><option>EXT DAY</option><option>EXT NIGHT</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="shot-location" placeholder="e.g. The Kitchen"></div>
+      <div class="form-group"><label class="form-label">Sound</label>
+        <select class="form-select" id="shot-sound"><option value="Yes">Yes</option><option value="No">No</option><option value="MOS">MOS</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Shot Description</label><textarea class="form-textarea" id="shot-desc" style="min-height:60px" placeholder="Describe the shot..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cast</label><input class="form-input" id="shot-cast" placeholder="e.g. Lead, Supporting"></div>
+      <div class="form-group"><label class="form-label">Page #/s</label><input class="form-input" id="shot-pages" placeholder="e.g. 12-14"></div>
+      <div class="form-group"><label class="form-label">Pages (Length)</label><input class="form-input" id="shot-length" placeholder="e.g. 1 & 5/8"></div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Setup Time (mins)</label><input class="form-input" id="shot-setuptime" type="number" placeholder="20" oninput="calcShotTotal()"></div>
+      <div class="form-group"><label class="form-label">Shoot Time (mins)</label><input class="form-input" id="shot-shoottime" type="number" placeholder="40" oninput="calcShotTotal()"></div>
+      <div class="form-group"><label class="form-label">Total Time (mins)</label><input class="form-input" id="shot-total" placeholder="Auto" readonly style="opacity:0.6"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-shot')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveShot()">Save Shot</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROP / WARDROBE ITEM MODAL -->
+<div class="modal-overlay" id="modal-prop">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-prop-title">ADD PROP</h3><button class="modal-close" onclick="closeModal('modal-prop')">✕</button></div>
+    <input type="hidden" id="prop-type">
+    <input type="hidden" id="prop-edit-idx">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prop / Item Name</label><input class="form-input" id="prop-name" placeholder="e.g. Briefcase"></div>
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="prop-qty" type="number" placeholder="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Character/s</label><input class="form-input" id="prop-chars" placeholder="e.g. Detective"></div>
+      <div class="form-group"><label class="form-label">Scene/s</label><input class="form-input" id="prop-scenes" placeholder="e.g. 1, 3, 5"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Location/s</label><input class="form-input" id="prop-locs" placeholder="e.g. Office"></div>
+      <div class="form-group"><label class="form-label">Page/s</label><input class="form-input" id="prop-pgs" placeholder="e.g. 4-6"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="prop-notes" style="min-height:60px"></textarea></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-prop')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePropItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SOUND LOG MODAL -->
+<div class="modal-overlay" id="modal-sound">
+  <div class="modal">
+    <div class="modal-header"><h3>SOUND LOG ENTRY</h3><button class="modal-close" onclick="closeModal('modal-sound')">✕</button></div>
+    <input type="hidden" id="sound-edit-idx">
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Scene</label><input class="form-input" id="sound-scene" placeholder="1"></div>
+      <div class="form-group"><label class="form-label">Shot</label><input class="form-input" id="sound-shot" placeholder="1A"></div>
+      <div class="form-group"><label class="form-label">Take</label><input class="form-input" id="sound-take" type="number" placeholder="1"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Comments</label><textarea class="form-textarea" id="sound-comments" style="min-height:60px" placeholder="Notes on this take..."></textarea></div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Track 1</label><input class="form-input" id="sound-track1" placeholder="e.g. Boom"></div>
+      <div class="form-group"><label class="form-label">Lav</label><input class="form-input" id="sound-lav" placeholder="e.g. Lav 1"></div>
+      <div class="form-group"><label class="form-label">Additional Audio</label><input class="form-input" id="sound-additional" placeholder="e.g. Atmos"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-sound')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSoundEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- RISK ROW MODAL -->
+<div class="modal-overlay" id="modal-risk">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>ADD HAZARD</h3><button class="modal-close" onclick="closeModal('modal-risk')">✕</button></div>
+    <input type="hidden" id="risk-edit-idx">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Hazard</label><input class="form-input" id="risk-hazard" placeholder="e.g. Trip hazard from cables"></div>
+      <div class="form-group"><label class="form-label">Who might be harmed & how?</label><input class="form-input" id="risk-who" placeholder="e.g. Crew — could fall and injure themselves"></div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Risk Factor (1–5)</label><input class="form-input" id="risk-factor" type="number" min="1" max="5" placeholder="3"></div>
+      <div class="form-group"><label class="form-label">New Risk Factor</label><input class="form-input" id="risk-newfactor" type="number" min="1" max="5" placeholder="1"></div>
+      <div></div>
+    </div>
+    <div class="form-group"><label class="form-label">Control Measures in Place</label><textarea class="form-textarea" id="risk-controls" style="min-height:60px" placeholder="What's already being done?"></textarea></div>
+    <div class="form-group"><label class="form-label">Further Control Measures?</label><textarea class="form-textarea" id="risk-further" style="min-height:60px" placeholder="What else could be done?"></textarea></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-risk')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRiskRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT CALLSHEET MODAL -->
+<div class="modal-overlay" id="modal-export">
+  <div class="modal">
+    <div class="modal-header"><h3>EXPORT CALLSHEETS</h3><button class="modal-close" onclick="closeModal('modal-export')">✕</button></div>
+    <div id="export-callsheet-list" style="max-height:400px;overflow-y:auto;margin:16px 0"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-export')">Cancel</button>
+      <button class="btn btn-primary" onclick="doExportPDF()">Export Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOM FIELD MODAL -->
+<div class="modal-overlay" id="modal-customfield">
+  <div class="modal">
+    <div class="modal-header"><h3>ADD CUSTOM ROLE</h3><button class="modal-close" onclick="closeModal('modal-customfield')">✕</button></div>
+    <div class="form-group">
+      <label class="form-label">Select Role</label>
+      <select class="form-select" id="custom-field-select" onchange="onCustomFieldSelectChange()">
+        <option value="">-- Choose a role --</option>
+        <option value="Director">Director</option>
+        <option value="Producer">Producer</option>
+        <option value="Executive Producer">Executive Producer</option>
+        <option value="Line Producer">Line Producer</option>
+        <option value="Unit Production Manager">Unit Production Manager</option>
+        <option value="Production Manager">Production Manager</option>
+        <option value="1st Assistant Director">1st Assistant Director</option>
+        <option value="2nd Assistant Director">2nd Assistant Director</option>
+        <option value="Director of Photography">Director of Photography</option>
+        <option value="Camera Operator">Camera Operator</option>
+        <option value="1st Assistant Camera">1st Assistant Camera</option>
+        <option value="2nd Assistant Camera">2nd Assistant Camera</option>
+        <option value="Gaffer">Gaffer</option>
+        <option value="Best Boy">Best Boy</option>
+        <option value="Sound Mixer">Sound Mixer</option>
+        <option value="Sound Recordist">Sound Recordist</option>
+        <option value="Production Designer">Production Designer</option>
+        <option value="Art Director">Art Director</option>
+        <option value="Set Decorator">Set Decorator</option>
+        <option value="Costume Designer">Costume Designer</option>
+        <option value="Hair & Makeup Supervisor">Hair & Makeup Supervisor</option>
+        <option value="Prop Master">Prop Master</option>
+        <option value="Set Props">Set Props</option>
+        <option value="Special Effects Supervisor">Special Effects Supervisor</option>
+        <option value="Visual Effects Supervisor">Visual Effects Supervisor</option>
+        <option value="Editor">Editor</option>
+        <option value="Composer">Composer</option>
+        <option value="Catering">Catering</option>
+        <option value="Location Manager">Location Manager</option>
+        <option value="Transport Captain">Transport Captain</option>
+        <option value="Other">Other (specify below)</option>
+      </select>
+    </div>
+    <div class="form-group" id="custom-field-other-group" style="display:none">
+      <label class="form-label">Other Role Name</label>
+      <input class="form-input" id="custom-field-label" placeholder="Enter role name">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-customfield')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCSCustomField()">Add Role</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="display:none"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA STORE
+// ══════════════════════════════════════════
+let store = {
+  projects: [],
+  teamMembers: [],
+  currentProjectId: null
+};
+
+const EQUIP_CATEGORIES = [
+  'Camera','Glass (Lenses)','Batteries','Grip Equipment','Accessories',
+  'Lighting','Camera Support','Audio','Adapters',
+  'Computer & Tech','Light Modifiers','Miscellaneous'
+];
+
+const UNIT_DEPTS = [
+  'Production','Direction','Script','Camera','Sound',
+  'Lights','Makeup','Behind-the-Scenes','Post-Production','Other'
+];
+
+function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function getProject(id) { return store.projects.find(p => p.id === id); }
+function currentProject() { return getProject(store.currentProjectId); }
+
+function defaultProject(data) {
+  return {
+    id: makeId(),
+    title: data.title || 'Untitled',
+    num: data.num || '001',
+    status: data.status || 'pre',
+    director: data.director || '',
+    producer: data.producer || '',
+    company: data.company || '',
+    genre: data.genre || '',
+    notes: data.notes || '',
+    cast: [],
+    extras: [],
+    unit: [],
+    budget: [],
+    equipment: {},
+    locations: [],
+    scoutingSheets: [],
+    breakdown: [],
+    callsheets: [],
+    schedule: [],
+    createdAt: Date.now()
+  };
+}
+
+function saveStore() {
+  try { localStorage.setItem('filmforge_v1', JSON.stringify(store)); } catch(e) {}
+  // flash save indicator
+  const ind = document.getElementById('save-indicator');
+  if (ind) {
+    ind.style.opacity = '1';
+    clearTimeout(window._saveFlashT);
+    window._saveFlashT = setTimeout(() => ind.style.opacity = '0', 2000);
+  }
+}
+
+function manualSave() {
+  saveStore();
+  showToast('Project saved ✓', 'success');
+}
+
+function loadStore() {
+  try {
+    const raw = localStorage.getItem('filmforge_v1');
+    if (raw) store = JSON.parse(raw);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// VIEWS
+// ══════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[onclick*="${name}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  if (name === 'dashboard') {
+    document.getElementById('topbar-title').textContent = 'Dashboard';
+    document.getElementById('topbar-breadcrumb').textContent = 'FilmForge';
+    renderDashboard();
+  } else if (name === 'team') {
+    document.getElementById('topbar-title').textContent = 'Team';
+    document.getElementById('topbar-breadcrumb').textContent = 'FilmForge / Team';
+    renderTeam();
+  }
+}
+
+function showProjectView(id) {
+  store.currentProjectId = id;
+  const p = currentProject();
+  if (!p) return;
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-project').classList.add('active');
+
+  document.getElementById('topbar-title').textContent = p.title.toUpperCase();
+  document.getElementById('topbar-breadcrumb').textContent = `FilmForge / ${p.title}`;
+  document.getElementById('proj-title').textContent = p.title.toUpperCase();
+
+  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE'};
+  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done'};
+  const badge = document.getElementById('proj-status-badge');
+  badge.textContent = statusMap[p.status];
+  badge.className = 'status-badge ' + badgeClass[p.status];
+
+  document.getElementById('proj-meta').innerHTML = `
+    <span>🎬 ${p.director || '—'}</span>
+    <span>🎥 ${p.producer || '—'}</span>
+    <span>🏢 ${p.company || '—'}</span>
+    ${p.genre ? `<span>🎭 ${p.genre}</span>` : ''}
+  `;
+
+  document.querySelectorAll('.sidebar-projects .project-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  showSection('overview');
+}
+
+function showSection(name) {
+  document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+  const target = document.getElementById('section-' + name);
+  if (!target) { console.warn('No section div for:', name); return; }
+  target.style.display = 'block';
+  document.querySelectorAll('.section-tab').forEach(t => {
+    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${name}'`));
+  });
+  renderSection(name);
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard() {
+  const { projects } = store;
+  document.getElementById('stat-total').textContent = projects.length;
+  document.getElementById('stat-prod').textContent = projects.filter(p => p.status === 'prod').length;
+  document.getElementById('stat-pre').textContent = projects.filter(p => p.status === 'pre').length;
+  document.getElementById('stat-done').textContent = projects.filter(p => p.status === 'post' || p.status === 'done').length;
+
+  const grid = document.getElementById('projects-grid');
+  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE'};
+  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done'};
+
+  grid.innerHTML = projects.map(p => `
+    <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
+      <div class="project-card-header">
+        <div>
+          <div class="project-card-num">#${p.num}</div>
+          <div class="project-card-title">${p.title}</div>
+        </div>
+        <span class="status-badge ${badgeClass[p.status]}">${statusMap[p.status]}</span>
+      </div>
+      <div class="project-card-meta">
+        ${p.director ? `<div>Dir: ${p.director}</div>` : ''}
+        ${p.company ? `<div>${p.company}</div>` : ''}
+        ${p.notes ? `<div style="margin-top:6px;color:var(--text3)">${p.notes.substring(0,80)}${p.notes.length>80?'…':''}</div>` : ''}
+      </div>
+      <div class="project-card-footer">
+        <div class="project-card-tags">
+          <span class="tag">${p.cast.length} cast</span>
+          <span class="tag">${p.unit.length} crew</span>
+          ${p.genre ? `<span class="tag">${p.genre}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('') + `
+    <div class="new-project-card" onclick="openNewProjectModal()">
+      <div class="plus">＋</div>
+      <span>New Project</span>
+    </div>
+  `;
+
+  renderSidebarProjects();
+}
+
+function renderSidebarProjects() {
+  const el = document.getElementById('sidebar-projects');
+  el.innerHTML = store.projects.map(p => `
+    <div class="project-item${p.id === store.currentProjectId ? ' active' : ''}" data-id="${p.id}" onclick="showProjectView('${p.id}')">
+      <div class="project-dot"></div>
+      <span>${p.title}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// PROJECT CRUD
+// ══════════════════════════════════════════
+let editingProjectId = null;
+
+function openNewProjectModal() {
+  editingProjectId = null;
+  document.getElementById('modal-project-title').textContent = 'NEW PROJECT';
+  ['title','num','director','producer','company','genre','notes'].forEach(f => {
+    document.getElementById('proj-input-' + f).value = '';
+  });
+  document.getElementById('proj-input-status').value = 'pre';
+  openModal('modal-project');
+}
+
+function openEditProjectModal() {
+  const p = currentProject();
+  if (!p) return;
+  editingProjectId = p.id;
+  document.getElementById('modal-project-title').textContent = 'EDIT PROJECT';
+  document.getElementById('proj-input-title').value = p.title;
+  document.getElementById('proj-input-num').value = p.num;
+  document.getElementById('proj-input-status').value = p.status;
+  document.getElementById('proj-input-director').value = p.director;
+  document.getElementById('proj-input-producer').value = p.producer;
+  document.getElementById('proj-input-company').value = p.company;
+  document.getElementById('proj-input-genre').value = p.genre;
+  document.getElementById('proj-input-notes').value = p.notes;
+  openModal('modal-project');
+}
+
+function saveProject() {
+  const title = document.getElementById('proj-input-title').value.trim();
+  if (!title) { showToast('Please enter a project title', 'info'); return; }
+  if (editingProjectId) {
+    const p = getProject(editingProjectId);
+    p.title = title;
+    p.num = document.getElementById('proj-input-num').value.trim() || '001';
+    p.status = document.getElementById('proj-input-status').value;
+    p.director = document.getElementById('proj-input-director').value.trim();
+    p.producer = document.getElementById('proj-input-producer').value.trim();
+    p.company = document.getElementById('proj-input-company').value.trim();
+    p.genre = document.getElementById('proj-input-genre').value.trim();
+    p.notes = document.getElementById('proj-input-notes').value.trim();
+    closeModal('modal-project');
+    saveStore();
+    showProjectView(editingProjectId);
+    showToast('Project updated', 'success');
+  } else {
+    const p = defaultProject({
+      title,
+      num: document.getElementById('proj-input-num').value.trim() || String(store.projects.length + 1).padStart(3,'0'),
+      status: document.getElementById('proj-input-status').value,
+      director: document.getElementById('proj-input-director').value.trim(),
+      producer: document.getElementById('proj-input-producer').value.trim(),
+      company: document.getElementById('proj-input-company').value.trim(),
+      genre: document.getElementById('proj-input-genre').value.trim(),
+      notes: document.getElementById('proj-input-notes').value.trim(),
+    });
+    store.projects.push(p);
+    closeModal('modal-project');
+    saveStore();
+    showProjectView(p.id);
+    showToast('Project created 🎬', 'success');
+  }
+  renderSidebarProjects();
+}
+
+function deleteCurrentProject() {
+  if (!confirm('Delete this project? This cannot be undone.')) return;
+  store.projects = store.projects.filter(p => p.id !== store.currentProjectId);
+  store.currentProjectId = null;
+  saveStore();
+  showView('dashboard');
+  showToast('Project deleted', 'info');
+}
+
+// ══════════════════════════════════════════
+// SECTION RENDERING
+// ══════════════════════════════════════════
+function renderSection(name) {
+  const p = currentProject();
+  if (!p) return;
+
+  if (name === 'overview') renderOverview(p);
+  else if (name === 'shotlist') { if(!p.shots) p.shots=[]; renderShotList(p); }
+  else if (name === 'props') { if(!p.props) p.props=[]; renderPropTable('props','props-body',p); }
+  else if (name === 'wardrobe') { if(!p.wardrobe) p.wardrobe=[]; renderPropTable('wardrobe','wardrobe-body',p); }
+  else if (name === 'soundlog') { if(!p.soundlog) p.soundlog=[]; renderSoundLog(p); }
+  else if (name === 'riskassess') { if(!p.risks) p.risks=[]; renderRiskAssessment(p); }
+  else if (name === 'releases') { if(!p.releases) p.releases=[]; renderReleases(p); }
+  else if (name === 'breakdown') renderBreakdown(p);
+  else if (name === 'callsheet') renderCallsheet(p);
+  else if (name === 'schedule') renderSchedule(p);
+  else if (name === 'cast') renderCast(p);
+  else if (name === 'unit') renderUnit(p);
+  else if (name === 'budget') renderBudget(p);
+  else if (name === 'equipment') renderEquipment(p);
+  else if (name === 'locations') renderLocations(p);
+}
+
+// OVERVIEW
+function renderOverview(p) {
+  document.getElementById('ov-shoot-days').textContent = p.callsheets.length || '—';
+  document.getElementById('ov-cast').textContent = p.cast.length + p.extras.length;
+  document.getElementById('ov-crew').textContent = p.unit.length;
+
+  const sections = [
+    {name:'Budget', icon:'💷', count: p.budget.length + ' lines', tab:'budget'},
+    {name:'Callsheet', icon:'📋', count: p.callsheets.length + ' days', tab:'callsheet'},
+    {name:'Cast & Extras', icon:'🎭', count: (p.cast.length + p.extras.length) + ' people', tab:'cast'},
+    {name:'Equipment', icon:'🎥', count: Object.values(p.equipment).flat().length + ' items', tab:'equipment'},
+    {name:'Locations', icon:'📍', count: p.locations.length + ' locations', tab:'locations'},
+    {name:'Props', icon:'🧳', count: (p.props||[]).length + ' items', tab:'props'},
+    {name:'Release Forms', icon:'📝', count: (p.releases||[]).length + ' forms', tab:'releases'},
+    {name:'Risk Assessment', icon:'⚠️', count: (p.risks||[]).length + ' hazards', tab:'riskassess'},
+    {name:'Schedule', icon:'🕐', count: p.schedule.length + ' entries', tab:'schedule'},
+    {name:'Script Breakdown', icon:'📄', count: p.breakdown.length + ' scenes', tab:'breakdown'},
+    {name:'Shot List', icon:'🎬', count: (p.shots||[]).length + ' shots', tab:'shotlist'},
+    {name:'Sound Log', icon:'🎙️', count: (p.soundlog||[]).length + ' entries', tab:'soundlog'},
+    {name:'Unit List', icon:'👥', count: p.unit.length + ' crew', tab:'unit'},
+    {name:'Wardrobe', icon:'👗', count: (p.wardrobe||[]).length + ' items', tab:'wardrobe'},
+  ];
+
+  document.getElementById('overview-docs').innerHTML = sections.map(s => `
+    <div class="doc-card" onclick="showSection('${s.tab}')">
+      <div class="doc-card-icon">${s.icon}</div>
+      <div class="doc-card-title">${s.name}</div>
+      <div class="doc-card-status ${s.count.startsWith('0') ? 'empty' : 'filled'}">
+        ${s.count.startsWith('0') ? '○ Empty' : '● ' + s.count}
+      </div>
+    </div>
+  `).join('');
+}
+
+// BREAKDOWN
+function renderBreakdown(p) {
+  const el = document.getElementById('breakdown-scenes');
+  if (!p.breakdown.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No scenes yet</h4><p>Add your first scene breakdown</p></div>`;
+    return;
+  }
+  el.innerHTML = p.breakdown.map((s, i) => `
+    <div class="breakdown-card">
+      <div class="breakdown-card-header">
+        <div class="breakdown-info">
+          <div class="breakdown-field"><div class="breakdown-field-label">Scene #</div><div class="breakdown-field-val">${s.sceneNum || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Breakdown Page</div><div class="breakdown-field-val">${s.bpNum || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Script Pages</div><div class="breakdown-field-val">${s.scriptPages || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Page Count</div><div class="breakdown-field-val">${s.pageCount || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Int / Ext</div><div class="breakdown-field-val">${s.intExt || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Day / Night</div><div class="breakdown-field-val">${s.dayNight || '—'}</div></div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removeBreakdownScene(${i})">✕</button>
+      </div>
+      <div style="margin-bottom:10px">
+        <div class="breakdown-field-label">Scene Description</div>
+        <div class="breakdown-field-val">${s.description || '—'}</div>
+      </div>
+      <div style="margin-bottom:6px"><div class="breakdown-field-label">Location</div><div class="breakdown-field-val">${s.location || '—'}</div></div>
+      <div class="breakdown-grid">
+        ${['cast','extras','props','stunts','vehicles','sfx','wardrobe','makeup','setDressing','greenery','sound','specialEquip','productionNotes'].map((f,fi) => `
+          <div class="breakdown-cell">
+            <div class="breakdown-cell-label">${['Cast','Extras','Props/Weapons','Stunts','Vehicles/Animals','Special Effects','Wardrobe','Make-Up/Hair','Set Dressing','Greenery','Sound Effects/Music','Special Equipment','Production Notes'][fi]}</div>
+            <textarea onchange="updateBreakdownField(${i},'${f}',this.value)" placeholder="—">${s[f]||''}</textarea>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateBreakdownField(idx, field, val) {
+  const p = currentProject();
+  p.breakdown[idx][field] = val;
+  saveStore();
+}
+
+function removeBreakdownScene(i) {
+  const p = currentProject();
+  p.breakdown.splice(i, 1);
+  saveStore();
+  renderBreakdown(p);
+}
+
+function addBreakdownScene() {
+  const p = currentProject();
+  // quick modal-free inline add
+  const scene = {
+    sceneNum: String(p.breakdown.length + 1),
+    bpNum: '', scriptPages: '', pageCount: '',
+    intExt: 'INT', dayNight: 'DAY',
+    description: '', location: '',
+    cast:'', extras:'', props:'', stunts:'', vehicles:'',
+    sfx:'', wardrobe:'', makeup:'', setDressing:'',
+    greenery:'', sound:'', specialEquip:'', productionNotes:''
+  };
+  p.breakdown.push(scene);
+  saveStore();
+  renderBreakdown(p);
+  showToast('Scene added', 'success');
+}
+
+// CALLSHEET
+function renderCallsheet(p) {
+  const el = document.getElementById('callsheet-list');
+  if (!p.callsheets.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><h4>No callsheets yet</h4><p>Create a callsheet for each shoot day</p></div>`;
+    return;
+  }
+  
+  el.innerHTML = p.callsheets.map((c, i) => {
+    const dateStr = c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) : 'TBD';
+    
+    // Helper to show/hide sections
+    const show = (sectionKey) => !c[sectionKey] ? 'block' : 'none';
+    
+    return `
+    <div class="cs-page">
+      <!-- HEADER -->
+      <div class="cs-top-bar">
+        <div style="display:flex;gap:20px;align-items:flex-start;flex:1;">
+          <div class="cs-logo-drop" id="cs-logo-${i}" onclick="uploadCallsheetLogo(${i})" title="Click to upload logo">
+            ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#aaa;font-size:10px;">LOGO</span>'}
+          </div>
+          <div class="cs-header-info">
+            <h1 style="margin:0;font-size:18px;font-weight:bold;">${c.prodTitle||p.title}</h1>
+            <div style="font-size:12px;color:#666;">Production ${c.prodNum||p.num} | ${dateStr}</div>
+            <div style="font-size:11px;color:#999;margin-top:4px;">${c.company||p.company||'—'}</div>
+          </div>
+          <label class="pdf-hide" style="display:flex;align-items:center;gap:4px;font-size:11px;"><input type="checkbox" ${c.exportSelected ? 'checked' : ''} onchange="updateCSF(${i},'exportSelected',this.checked)"> Export</label>
+        </div>
+        <button class="btn btn-sm pdf-hide" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());">${c.minimized ? '▼' : '▲'} ${c.minimized ? 'Expand' : 'Minimize'}</button>
+        <button class="btn btn-sm btn-danger pdf-hide" onclick="removeCallsheet(${i})" style="margin-top:0;">✕</button>
+      </div>
+      
+      <div style="display: ${c.minimized ? 'none' : 'block'};">
+      <!-- SECTION TOGGLES -->
+      <div class="cs-toggle-bar">
+        <button class="cs-toggle ${!c.hideCrewCall ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideCrewCall');renderCallsheet(currentProject());">Crew</button>
+        <button class="cs-toggle ${!c.hideLocations ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideLocations');renderCallsheet(currentProject());">Locations</button>
+        <button class="cs-toggle ${!c.hideCast ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideCast');renderCallsheet(currentProject());">Cast</button>
+        <button class="cs-toggle ${!c.hideSchedule ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideSchedule');renderCallsheet(currentProject());">Schedule</button>
+        <button class="cs-toggle ${!c.hideNotes ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideNotes');renderCallsheet(currentProject());">Notes</button>
+      </div>
+      
+      <div class="cs-content">
+        <!-- CREW & CALL TIMES -->
+        <div class="cs-section" style="display:${show('hideCrewCall')};">
+          <h3 class="cs-heading">CREW & CALL TIMES <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'crew');renderCallsheet(currentProject());">${c.minimizedCrew ? '+' : '-'}</button></h3>
+          <div style="display: ${c.minimizedCrew ? 'none' : 'block'};">
+          <div class="cs-2col">
+            <div>
+              ${(c.customFields||[]).map((cf, fi) => `
+                <div class="cs-field" style="display:flex;align-items:center;gap:4px"><label style="flex:1">${cf.label}</label><input value="${cf.value||''}" onchange="updateCSCustomField(${i},${fi},this.value)" style="flex:1"><button class="btn-tiny pdf-hide" onclick="removeCSCustomField(${i},${fi})" style="color:var(--red)" title="Remove">✕</button></div>
+              `).join('')}
+              <button class="btn-tiny pdf-hide" onclick="addCSCustomField(${i})" style="margin-top:8px;color:var(--accent2)">+ Add Role</button>
+            </div>
+          </div>
+          <div class="cs-spacer"></div>
+          <h4 style="margin:0;font-size:12px;font-weight:bold;text-transform:uppercase;">Call Times <button class="btn-tiny pdf-hide" onclick="toggleCSFields(${i})" style="font-size:9px">⚙</button></h4>
+          <div class="cs-3col">
+            <div class="cs-field"><label>Crew Call</label><input value="${c.crewCall||''}" onchange="updateCSF(${i},'crewCall',this.value)"></div>
+            <div class="cs-field"><label>First Shot Time</label><input value="${c.shootCall||''}" onchange="updateCSF(${i},'shootCall',this.value)"></div>
+            <div class="cs-field"><label>Est. Wrap</label><input value="${c.estWrap||''}" onchange="updateCSF(${i},'estWrap',this.value)"></div>
+          </div>
+          <div class="cs-spacer"></div>
+          <div class="cs-3col">
+            <div class="cs-field"><label>Daylight</label><input value="${c.daylight||''}" onchange="updateCSF(${i},'daylight',this.value)" placeholder="06:30-20:00"></div>
+            <div class="cs-field"><label>Weather</label><input value="${c.weather||''}" onchange="updateCSF(${i},'weather',this.value)" placeholder="Cloudy / 14°C"></div>
+            <div class="cs-field"><label>Rain/Wind</label><input value="${c.weatherDetail||''}" onchange="updateCSF(${i},'weatherDetail',this.value)" placeholder="20% / Light"></div>
+          </div>
+          </div>
+        </div>
+        
+        <!-- LOCATIONS -->
+        <div class="cs-section" style="display:${show('hideLocations')};">
+          <h3 class="cs-heading">LOCATIONS <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'locations');renderCallsheet(currentProject());">${c.minimizedLocations ? '+' : '-'}</button></h3>
+          <div style="display: ${c.minimizedLocations ? 'none' : 'block'};">
+          <table class="cs-table">
+            <thead><tr><th>Location</th><th>Parking & Notes</th><th>Nearest Hospital</th><th></th></tr></thead>
+            <tbody>
+              ${(c.locRows||[]).map((r,ri) => `
+                <tr>
+                  <td><input value="${r.loc||''}" onchange="updateCSRow(${i},'locRows',${ri},'loc',this.value)" placeholder="Address"></td>
+                  <td><input value="${r.parking||''}" onchange="updateCSRow(${i},'locRows',${ri},'parking',this.value)" placeholder="Details"></td>
+                  <td><input value="${r.hospital||''}" onchange="updateCSRow(${i},'locRows',${ri},'hospital',this.value)" placeholder="A&E"></td>
+                  <td><button class="btn-tiny" onclick="removeCSRow(${i},'locRows',${ri})">✕</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'locRows',{loc:'',parking:'',hospital:''})">+ Add Location</button>
+          </div>
+        </div>
+        
+        <!-- CAST -->
+        <div class="cs-section" style="display:${show('hideCast')};">
+          <h3 class="cs-heading">CAST <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'cast');renderCallsheet(currentProject());">${c.minimizedCast ? '+' : '-'}</button></h3>
+          <div style="display: ${c.minimizedCast ? 'none' : 'block'};">
+          <div class="cs-note">Actors contact: <input class="cs-inline" value="${c.actorsContact||''}" onchange="updateCSF(${i},'actorsContact',this.value)" placeholder="Name/Number"></div>
+          <div class="cs-note">SAs contact: <input class="cs-inline" value="${c.sasContact||''}" onchange="updateCSF(${i},'sasContact',this.value)" placeholder="Name/Number"></div>
+          <table class="cs-table">
+            <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point Of Contact</th><th></th></tr></thead>
+            <tbody>
+              ${(c.castRows||[]).map((r,ri) => `
+                <tr>
+                  <td><input value="${r.actor||''}" onchange="updateCSRow(${i},'castRows',${ri},'actor',this.value)" placeholder="Name"></td>
+                  <td><input value="${r.character||''}" onchange="updateCSRow(${i},'castRows',${ri},'character',this.value)" placeholder="Character"></td>
+                  <td><input value="${r.callTime||''}" onchange="updateCSRow(${i},'castRows',${ri},'callTime',this.value)" placeholder="00:00" style="max-width:50px;"></td>
+                  <td><input value="${r.wrapTime||''}" onchange="updateCSRow(${i},'castRows',${ri},'wrapTime',this.value)" placeholder="00:00" style="max-width:50px;"></td>
+                  <td><input value="${r.poc||''}" onchange="updateCSRow(${i},'castRows',${ri},'poc',this.value)" placeholder="Name/Num"></td>
+                  <td><button class="btn-tiny" onclick="removeCSRow(${i},'castRows',${ri})">✕</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'castRows',{actor:'',character:'',callTime:'',wrapTime:'',poc:''})">+ Add Cast</button>
+          </div>
+        </div>
+        
+        <!-- SCHEDULE -->
+        <div class="cs-section" style="display:${show('hideSchedule')};">
+          <h3 class="cs-heading">ESTIMATED SCHEDULE <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'schedule');renderCallsheet(currentProject());">${c.minimizedSchedule ? '+' : '-'}</button></h3>
+          <div style="display: ${c.minimizedSchedule ? 'none' : 'block'};">
+          <table class="cs-table">
+            <thead><tr><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est.</th><th></th></tr></thead>
+            <tbody>
+              ${(c.schedRows||[]).map((r,ri) => `
+                <tr>
+                  <td><input value="${r.time||''}" onchange="updateCSRow(${i},'schedRows',${ri},'time',this.value)" placeholder="00:00" style="max-width:45px;"></td>
+                  <td><input value="${r.scene||''}" onchange="updateCSRow(${i},'schedRows',${ri},'scene',this.value)" placeholder="1A" style="max-width:35px;"></td>
+                  <td><input value="${r.shot||''}" onchange="updateCSRow(${i},'schedRows',${ri},'shot',this.value)" placeholder="1" style="max-width:30px;"></td>
+                  <td><input value="${r.shotType||''}" onchange="updateCSRow(${i},'schedRows',${ri},'shotType',this.value)" placeholder="CU" style="max-width:40px;"></td>
+                  <td><input value="${r.desc||''}" onchange="updateCSRow(${i},'schedRows',${ri},'desc',this.value)" placeholder="Description"></td>
+                  <td><input value="${r.cast||''}" onchange="updateCSRow(${i},'schedRows',${ri},'cast',this.value)" placeholder="Cast"></td>
+                  <td><input value="${r.pages||''}" onchange="updateCSRow(${i},'schedRows',${ri},'pages',this.value)" placeholder="5" style="max-width:35px;"></td>
+                  <td><input value="${r.est||''}" onchange="updateCSRow(${i},'schedRows',${ri},'est',this.value)" placeholder="45m" style="max-width:45px;"></td>
+                  <td><button class="btn-tiny" onclick="removeCSRow(${i},'schedRows',${ri})">✕</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'schedRows',{time:'',scene:'',shot:'',shotType:'',desc:'',cast:'',pages:'',est:''})">+ Add Row</button>
+          </div>
+        </div>
+        
+        <!-- NOTES -->
+        <div class="cs-section" style="display:${show('hideNotes')};">
+          <h3 class="cs-heading">NOTES & INFORMATION <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'notes');renderCallsheet(currentProject());">${c.minimizedNotes ? '+' : '-'}</button></h3>
+          <div style="display: ${c.minimizedNotes ? 'none' : 'block'};">
+          <textarea class="cs-notes" onchange="updateCSF(${i},'generalNotes',this.value)">${c.generalNotes||''}</textarea>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateCSF(idx, field, val) {
+  const p = currentProject();
+  p.callsheets[idx][field] = val;
+  saveStore();
+}
+
+function updateCSRow(csIdx, arrayKey, rowIdx, field, val) {
+  const p = currentProject();
+  if (!p.callsheets[csIdx][arrayKey]) p.callsheets[csIdx][arrayKey] = [];
+  if (!p.callsheets[csIdx][arrayKey][rowIdx]) p.callsheets[csIdx][arrayKey][rowIdx] = {};
+  p.callsheets[csIdx][arrayKey][rowIdx][field] = val;
+  saveStore();
+}
+
+function addCSRow(csIdx, arrayKey, template) {
+  const p = currentProject();
+  if (!p.callsheets[csIdx][arrayKey]) p.callsheets[csIdx][arrayKey] = [];
+  p.callsheets[csIdx][arrayKey].push({...template});
+  saveStore();
+  renderCallsheet(p);
+}
+
+function addCSCustomField(csIdx) {
+  document.getElementById('custom-field-select').value = '';
+  document.getElementById('custom-field-label').value = '';
+  document.getElementById('custom-field-other-group').style.display = 'none';
+  document.getElementById('modal-customfield').classList.add('open');
+  document.getElementById('modal-customfield').dataset.csIdx = csIdx;
+}
+
+function onCustomFieldSelectChange() {
+  const select = document.getElementById('custom-field-select');
+  const otherGroup = document.getElementById('custom-field-other-group');
+  if (select.value === 'Other') {
+    otherGroup.style.display = 'block';
+    document.getElementById('custom-field-label').value = '';
+    document.getElementById('custom-field-label').focus();
+  } else if (select.value) {
+    otherGroup.style.display = 'none';
+    document.getElementById('custom-field-label').value = select.value;
+  } else {
+    otherGroup.style.display = 'none';
+    document.getElementById('custom-field-label').value = '';
+  }
+}
+
+function saveCSCustomField() {
+  const select = document.getElementById('custom-field-select');
+  let label = '';
+  
+  if (select.value && select.value !== 'Other') {
+    label = select.value;
+  } else {
+    label = document.getElementById('custom-field-label').value.trim();
+  }
+  
+  if (!label) {
+    alert('Please select or enter a role');
+    return;
+  }
+  
+  const csIdx = parseInt(document.getElementById('modal-customfield').dataset.csIdx);
+  const p = currentProject();
+  if (!p.callsheets[csIdx].customFields) p.callsheets[csIdx].customFields = [];
+  p.callsheets[csIdx].customFields.push({label: label, value: ''});
+  saveStore();
+  closeModal('modal-customfield');
+  renderCallsheet(p);
+}
+
+function removeCSCustomField(csIdx, fieldIdx) {
+  const p = currentProject();
+  if (p.callsheets[csIdx].customFields) {
+    p.callsheets[csIdx].customFields.splice(fieldIdx, 1);
+    saveStore();
+    renderCallsheet(p);
+  }
+}
+
+function updateCSCustomField(csIdx, fieldIdx, val) {
+  const p = currentProject();
+  if (p.callsheets[csIdx].customFields && p.callsheets[csIdx].customFields[fieldIdx]) {
+    p.callsheets[csIdx].customFields[fieldIdx].value = val;
+    saveStore();
+  }
+}
+
+function isCSFieldHidden(c, field) {
+  return c.hiddenFields && c.hiddenFields.includes(field);
+}
+
+function clearCSField(csIdx, field) {
+  const p = currentProject();
+  p.callsheets[csIdx][field] = '';
+  // Add to hidden fields so it doesn't show anymore
+  if (!p.callsheets[csIdx].hiddenFields) p.callsheets[csIdx].hiddenFields = [];
+  if (!p.callsheets[csIdx].hiddenFields.includes(field)) {
+    p.callsheets[csIdx].hiddenFields.push(field);
+  }
+  saveStore();
+  renderCallsheet(p);
+}
+
+function showCSField(csIdx, field) {
+  const p = currentProject();
+  if (p.callsheets[csIdx].hiddenFields) {
+    p.callsheets[csIdx].hiddenFields = p.callsheets[csIdx].hiddenFields.filter(f => f !== field);
+  }
+  saveStore();
+  renderCallsheet(p);
+}
+
+function showAllCSFields(csIdx) {
+  const p = currentProject();
+  p.callsheets[csIdx].hiddenFields = [];
+  saveStore();
+  renderCallsheet(p);
+}
+
+function toggleCSFields(csIdx) {
+  // Show a simple prompt to manage which fields are visible
+  const p = currentProject();
+  const c = p.callsheets[csIdx];
+  if (!c.hiddenFields) c.hiddenFields = [];
+  
+  const fieldLabels = {
+    dirProd: 'Director', producer: 'Producer', dop: 'DoP', pm: 'PM', ad1: '1st AD', sound: 'Sound',
+    crewCall: 'Crew Call', shootCall: 'First Shot', estWrap: 'Est. Wrap',
+    daylight: 'Daylight', weather: 'Weather', weatherDetail: 'Rain/Wind'
+  };
+  
+  let msg = 'Current visible fields:\n';
+  Object.keys(fieldLabels).forEach(f => {
+    msg += (c.hiddenFields.includes(f) ? '✗ ' : '✓ ') + fieldLabels[f] + '\n';
+  });
+  msg += '\nEnter field names to toggle (comma separated) or leave empty to close:';
+  
+  const input = prompt(msg);
+  if (input !== null) {
+    const toToggle = input.split(',').map(s => s.trim()).filter(s => s);
+    toToggle.forEach(name => {
+      const field = Object.keys(fieldLabels).find(f => fieldLabels[f].toLowerCase().includes(name.toLowerCase()));
+      if (field) {
+        if (c.hiddenFields.includes(field)) {
+          c.hiddenFields = c.hiddenFields.filter(f => f !== field);
+        } else {
+          c.hiddenFields.push(field);
+        }
+      }
+    });
+    saveStore();
+    renderCallsheet(p);
+  }
+}
+
+function removeCSRow(csIdx, arrayKey, rowIdx) {
+  const p = currentProject();
+  p.callsheets[csIdx][arrayKey].splice(rowIdx, 1);
+  saveStore();
+  renderCallsheet(p);
+}
+
+function removeCallsheet(i) {
+  const p = currentProject();
+  p.callsheets.splice(i, 1);
+  saveStore();
+  renderCallsheet(p);
+}
+
+function addCallsheet() {
+  const p = currentProject();
+  p.callsheets.push({
+    date: '', prodNum: p.num, prodTitle: p.title,
+    company: p.company || '',
+    dirProd: p.director || '', producer: p.producer || '',
+    dop: '', pm: '', ad1: '', sound: '',
+    crewCall: '', shootCall: '', estWrap: '',
+    daylight: '', weather: '', weatherDetail: '',
+    actorsContact: '', sasContact: '',
+    locRows: [{loc:'', parking:'', hospital:''}],
+    castRows: [],
+    schedRows: [],
+    generalNotes: '',
+    logoDataUrl: null,
+    customFields: [],
+    hiddenFields: [], // Array of field names to hide
+    hideCrewCall: false,
+    hideLocations: false,
+    hideCast: false,
+    hideSchedule: false,
+    hideNotes: false,
+    minimized: false,
+    minimizedCrew: false,
+    minimizedLocations: false,
+    minimizedCast: false,
+    minimizedSchedule: false,
+    minimizedNotes: false,
+    exportSelected: true
+  });
+  saveStore();
+  renderCallsheet(p);
+}
+
+function toggleCSectionVisibility(csIdx, sectionKey) {
+  const p = currentProject();
+  p.callsheets[csIdx][sectionKey] = !p.callsheets[csIdx][sectionKey];
+  saveStore();
+}
+
+function toggleCallsheetMinimize(csIdx) {
+  const p = currentProject();
+  p.callsheets[csIdx].minimized = !p.callsheets[csIdx].minimized;
+  saveStore();
+}
+
+function toggleSectionMinimize(csIdx, section) {
+  const p = currentProject();
+  const key = 'minimized' + section.charAt(0).toUpperCase() + section.slice(1);
+  p.callsheets[csIdx][key] = !p.callsheets[csIdx][key];
+  saveStore();
+  renderCallsheet(p);
+}
+
+function uploadCallsheetLogo(csIdx) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const p = currentProject();
+        p.callsheets[csIdx].logoDataUrl = event.target.result;
+        saveStore();
+        renderCallsheet(p);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+
+// keep old name as alias in case anything still calls it
+function updateCallsheetField(idx, field, val) { updateCSF(idx, field, val); }
+
+function openExportModal() {
+  const p = currentProject();
+  if (!p.callsheets || !p.callsheets.length) {
+    alert('No callsheets to export. Create a callsheet first.');
+    return;
+  }
+  
+  const list = document.getElementById('export-callsheet-list');
+  list.innerHTML = p.callsheets.map((c, i) => {
+    const dateStr = c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) : 'TBD';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:4px;margin-bottom:8px">
+      <input type="checkbox" id="export-check-${i}" ${c.exportSelected ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
+      <label for="export-check-${i}" style="flex:1;cursor:pointer;font-size:13px">
+        <strong>${dateStr}</strong>
+        ${c.company ? '- ' + c.company : ''}
+      </label>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('modal-export').classList.add('open');
+}
+
+function doExportPDF() {
+  const p = currentProject();
+  const selectedCallsheets = [];
+  
+  p.callsheets.forEach((c, i) => {
+    const checkbox = document.getElementById(`export-check-${i}`);
+    if (checkbox && checkbox.checked) {
+      selectedCallsheets.push(c);
+    }
+  });
+  
+  closeModal('modal-export');
+  
+  if (!selectedCallsheets.length) {
+    alert('Please select at least one callsheet to export.');
+    return;
+  }
+  
+  // Create a temporary container with only selected callsheets
+  const tempContainer = document.createElement('div');
+  
+  // Add print styles to temp container
+  const style = document.createElement('style');
+  style.textContent = `
+    .cs-table { page-break-inside: avoid !important; break-inside: avoid !important; }
+    .cs-table th, .cs-table td { page-break-inside: avoid !important; break-inside: avoid !important; }
+    .cs-section { page-break-inside: avoid !important; break-inside: avoid !important; }
+    .cs-page { page-break-after: auto; margin-top: 10px !important; }
+    .cs-page:last-child { page-break-after: auto; }
+    .cs-page .cs-heading button, .cs-page .cs-section button, 
+    .cs-page button, .cs-page .btn-tiny, .cs-page .pdf-hide, 
+    .cs-page .cs-add-btn, .cs-page .cs-add-row { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+  `;
+  tempContainer.appendChild(style);
+  
+  tempContainer.innerHTML = selectedCallsheets.map((c, originalIndex) => {
+    // Temporarily set index for rendering
+    const tempC = { ...c, tempIndex: originalIndex };
+    return renderSingleCallsheet(tempC, originalIndex);
+  }).join('');
+  
+  // AFTER setting innerHTML, remove ALL buttons from the tempContainer
+  tempContainer.querySelectorAll('button').forEach(btn => {
+    btn.remove();
+  });
+  
+  // Also remove any elements with the pdf-hide class (in case they're not buttons)
+  tempContainer.querySelectorAll('.pdf-hide').forEach(el => {
+    el.remove();
+  });
+  
+  // Hide any remaining interactive elements
+  
+  // Hide elements with pdf-hide class in the temp container
+  const hideSelectors = [
+    '.pdf-hide', '.btn-tiny', '.cs-add-btn', '.cs-add-row', 
+    '.cs-section button', '.cs-heading button',
+    'button[onclick*="toggleSectionMinimize"]',
+    'button[onclick*="toggleCallsheetMinimize"]',
+    '.cs-section > h3 > button',
+    'h3.cs-heading > button'
+  ];
+  hideSelectors.forEach(selector => {
+    try {
+      tempContainer.querySelectorAll(selector).forEach(el => {
+        el.style.display = 'none';
+        el.remove();
+      });
+    } catch(e) {}
+  });
+  
+  // Also find and remove any buttons inside cs-heading or cs-section
+  tempContainer.querySelectorAll('.cs-heading, .cs-section').forEach(container => {
+    container.querySelectorAll('button').forEach(btn => {
+      btn.style.display = 'none';
+      btn.remove();
+    });
+  });
+  
+  // Make text black for the callsheet
+  tempContainer.querySelectorAll('.cs-page, .cs-page input, .cs-page td, .cs-page th, .cs-page div, .cs-page span, .cs-page p').forEach(el => {
+    if (el.tagName !== 'BUTTON') {
+      el.style.color = '#000';
+    }
+  });
+  
+  // Make inputs look like lines (underline only, no box) in PDF
+  tempContainer.querySelectorAll('.cs-page input, .cs-page textarea').forEach(el => {
+    el.style.border = 'none';
+    el.style.borderBottom = '1px solid #ccc';
+    el.style.background = 'transparent';
+    el.style.borderRadius = '0';
+    el.style.padding = '2px 0';
+  });
+  
+  // Make cs-field inputs also look like lines
+  tempContainer.querySelectorAll('.cs-field input, .cs-field textarea').forEach(el => {
+    el.style.border = 'none';
+    el.style.borderBottom = '1px solid #ccc';
+    el.style.background = 'transparent';
+  });
+  
+  // Remove page-break-after from the last callsheet to avoid blank page
+  const csPages = tempContainer.querySelectorAll('.cs-page');
+  if (csPages.length > 0) {
+    csPages[csPages.length - 1].style.pageBreakAfter = 'auto';
+    // Reduce top margin for PDF
+    csPages.forEach(page => {
+      page.style.marginTop = '10px';
+    });
+  }
+  
+  // Add print styles to temp container for tables - be more aggressive
+  tempContainer.querySelectorAll('.cs-table').forEach(el => {
+    el.style.pageBreakInside = 'avoid';
+    el.style.breakInside = 'avoid';
+    el.style.pageBreakAfter = 'auto';
+  });
+  tempContainer.querySelectorAll('.cs-table th, .cs-table td').forEach(el => {
+    el.style.pageBreakInside = 'avoid';
+    el.style.breakInside = 'avoid';
+  });
+  tempContainer.querySelectorAll('.cs-section').forEach(el => {
+    el.style.pageBreakInside = 'avoid';
+    el.style.breakInside = 'avoid';
+  });
+  
+  // Also wrap each table row in a way that prevents breaking
+  tempContainer.querySelectorAll('.cs-table tbody tr').forEach(el => {
+    el.style.pageBreakInside = 'avoid';
+    el.style.breakInside = 'avoid';
+  });
+  
+  // Remove border from logo
+  tempContainer.querySelectorAll('.cs-logo-drop').forEach(el => {
+    el.style.border = 'none';
+    el.style.background = 'transparent';
+  });
+  
+  // Use html2pdf library
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  script.onload = () => {
+    const opt = {
+      margin: 10,
+      filename: `Callsheet-${p.title}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    html2pdf().set(opt).from(tempContainer).save();
+  };
+  document.head.appendChild(script);
+}
+
+function renderSingleCallsheet(c, i) {
+  const p = currentProject();
+  const dateStr = c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) : 'TBD';
+  
+  const show = (sectionKey) => !c[sectionKey] ? 'block' : 'none';
+  
+  return `
+  <div class="cs-page">
+    <!-- HEADER -->
+    <div class="cs-top-bar">
+      <div style="display:flex;gap:20px;align-items:flex-start;flex:1;">
+        <div class="cs-logo-drop">
+          ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#aaa;font-size:10px;">LOGO</span>'}
+        </div>
+        <div class="cs-header-info">
+          <h1 style="margin:0;font-size:18px;font-weight:bold;">${c.prodTitle||p.title}</h1>
+          <div style="font-size:12px;color:#666;">Production ${c.prodNum||p.num} | ${dateStr}</div>
+          <div style="font-size:11px;color:#999;margin-top:4px;">${c.company||p.company||'—'}</div>
+        </div>
+      </div>
+    </div>
+    
+    ${!c.minimized ? `
+    <!-- SECTION TOGGLES -->
+    <div class="cs-toggle-bar">
+      <button class="cs-toggle ${!c.hideCrewCall ? 'active' : ''}">Crew</button>
+      <button class="cs-toggle ${!c.hideLocations ? 'active' : ''}">Locations</button>
+      <button class="cs-toggle ${!c.hideCast ? 'active' : ''}">Cast</button>
+      <button class="cs-toggle ${!c.hideSchedule ? 'active' : ''}">Schedule</button>
+      <button class="cs-toggle ${!c.hideNotes ? 'active' : ''}">Notes</button>
+    </div>
+    
+    <div class="cs-content">
+      <!-- CREW & CALL TIMES -->
+      <div class="cs-section" style="display:${show('hideCrewCall')};">
+        <h3 class="cs-heading">CREW & CALL TIMES</h3>
+        <div style="display: ${c.minimizedCrew ? 'none' : 'block'};">
+        <div class="cs-2col">
+          <div>
+            ${(c.customFields||[]).map((cf) => `
+              <div class="cs-field"><label>${cf.label}</label><input value="${cf.value||''}"></div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="cs-spacer"></div>
+        <h4 style="margin:0;font-size:12px;font-weight:bold;text-transform:uppercase;">Call Times</h4>
+        <div class="cs-3col">
+          <div class="cs-field"><label>Crew Call</label><input value="${c.crewCall||''}"></div>
+          <div class="cs-field"><label>First Shot Time</label><input value="${c.shootCall||''}"></div>
+          <div class="cs-field"><label>Est. Wrap</label><input value="${c.estWrap||''}"></div>
+        </div>
+        <div class="cs-spacer"></div>
+        <div class="cs-3col">
+          <div class="cs-field"><label>Daylight</label><input value="${c.daylight||''}" placeholder="06:30-20:00"></div>
+          <div class="cs-field"><label>Weather</label><input value="${c.weather||''}" placeholder="Cloudy / 14°C"></div>
+          <div class="cs-field"><label>Rain/Wind</label><input value="${c.weatherDetail||''}" placeholder="20% / Light"></div>
+        </div>
+        </div>
+      </div>
+      
+      <!-- LOCATIONS -->
+      <div class="cs-section" style="display:${show('hideLocations')};">
+        <h3 class="cs-heading">LOCATIONS</h3>
+        <div style="display: ${c.minimizedLocations ? 'none' : 'block'};">
+        <table class="cs-table">
+          <thead><tr><th>Location</th><th>Parking & Notes</th><th>Nearest Hospital</th></tr></thead>
+          <tbody>
+            ${(c.locRows||[]).map((r) => `
+              <tr>
+                <td><input value="${r.loc||''}"></td>
+                <td><input value="${r.parking||''}"></td>
+                <td><input value="${r.hospital||''}"></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>
+      
+      <!-- CAST -->
+      <div class="cs-section" style="display:${show('hideCast')};">
+        <h3 class="cs-heading">CAST</h3>
+        <div style="display: ${c.minimizedCast ? 'none' : 'block'};">
+        <div class="cs-note">Actors contact: <input class="cs-inline" value="${c.actorsContact||''}"></div>
+        <div class="cs-note">SAs contact: <input class="cs-inline" value="${c.sasContact||''}"></div>
+        <table class="cs-table">
+          <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point of Contact</th></tr></thead>
+          <tbody>
+            ${(c.castRows||[]).map((r) => `
+              <tr>
+                <td><input value="${r.actor||''}"></td>
+                <td><input value="${r.character||''}"></td>
+                <td><input value="${r.callTime||''}" style="max-width:50px;"></td>
+                <td><input value="${r.wrapTime||''}" style="max-width:50px;"></td>
+                <td><input value="${r.poc||''}"></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>
+      
+      <!-- SCHEDULE -->
+      <div class="cs-section" style="display:${show('hideSchedule')};">
+        <h3 class="cs-heading">ESTIMATED SCHEDULE</h3>
+        <div style="display: ${c.minimizedSchedule ? 'none' : 'block'};">
+        <table class="cs-table">
+          <thead><tr><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est.</th></tr></thead>
+          <tbody>
+            ${(c.schedRows||[]).map((r) => `
+              <tr>
+                <td><input value="${r.time||''}" style="max-width:45px;"></td>
+                <td><input value="${r.scene||''}" style="max-width:35px;"></td>
+                <td><input value="${r.shot||''}" style="max-width:30px;"></td>
+                <td><input value="${r.shotType||''}" style="max-width:40px;"></td>
+                <td><input value="${r.desc||''}"></td>
+                <td><input value="${r.cast||''}"></td>
+                <td><input value="${r.pages||''}" style="max-width:35px;"></td>
+                <td><input value="${r.est||''}" style="max-width:45px;"></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>
+      
+      <!-- NOTES -->
+      <div class="cs-section" style="display:${show('hideNotes')};">
+        <h3 class="cs-heading">NOTES & INFORMATION</h3>
+        <div style="display: ${c.minimizedNotes ? 'none' : 'block'};">
+        <textarea class="cs-notes">${c.generalNotes||''}</textarea>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+  </div>`;
+}
+
+// SCHEDULE
+function renderSchedule(p) {
+  const tbody = document.getElementById('schedule-body');
+  if (!p.schedule.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:30px"><div class="icon">🕐</div><h4>No shots scheduled</h4></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = p.schedule.map((s,i) => `
+    <tr>
+      <td>${s.time||'—'}</td><td>${s.scene||'—'}</td><td>${s.shot||'—'}</td>
+      <td><span class="tag">${s.type||'—'}</span></td>
+      <td>${s.desc||'—'}</td><td>${s.cast||'—'}</td>
+      <td>${s.pages||'—'}</td><td>${s.est||'—'}</td>
+      <td><button class="btn btn-sm btn-ghost btn-danger" onclick="removeScheduleRow(${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+function addScheduleRow() { document.getElementById('sched-edit-idx').value=''; ['time','scene','shot','desc','cast','pages','est'].forEach(f => document.getElementById('sched-'+f).value=''); openModal('modal-schedule'); }
+function removeScheduleRow(i) { const p=currentProject(); p.schedule.splice(i,1); saveStore(); renderSchedule(p); }
+function saveScheduleRow() {
+  const p=currentProject();
+  const row = {
+    time: document.getElementById('sched-time').value,
+    scene: document.getElementById('sched-scene').value,
+    shot: document.getElementById('sched-shot').value,
+    type: document.getElementById('sched-type').value,
+    desc: document.getElementById('sched-desc').value,
+    cast: document.getElementById('sched-cast').value,
+    pages: document.getElementById('sched-pages').value,
+    est: document.getElementById('sched-est').value,
+  };
+  const idx = document.getElementById('sched-edit-idx').value;
+  if (idx !== '') p.schedule[parseInt(idx)] = row;
+  else p.schedule.push(row);
+  saveStore(); closeModal('modal-schedule'); renderSchedule(p);
+}
+
+// CAST
+function renderCast(p) {
+  renderPersonnelTable(p.cast, 'cast-body', 'cast');
+  renderPersonnelTable(p.extras, 'extras-body', 'extras');
+}
+function renderPersonnelTable(list, tbodyId, type) {
+  const tbody = document.getElementById(tbodyId);
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:20px"><h4>No entries</h4></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((m,i) => `
+    <tr>
+      <td><strong>${m.name}</strong></td>
+      <td>${m.role||'—'}</td>
+      <td>${m.number||'—'}</td>
+      <td>${m.email||'—'}</td>
+      <td>${m.notes||'—'}</td>
+      <td><span class="conf-dot conf-${m.confirmed||'green'}" title="${m.confirmed}"></span></td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="editPersonnel('${type}',${i})">✎</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removePersonnel('${type}',${i})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function addPersonnel(type) {
+  document.getElementById('personnel-type').value = type;
+  document.getElementById('personnel-edit-idx').value = '';
+  document.getElementById('modal-personnel-title').textContent = 'ADD ' + type.toUpperCase();
+  ['name','role','number','email','notes','social'].forEach(f => document.getElementById('pers-'+f).value='');
+  document.getElementById('pers-confirmed').value = 'green';
+  document.getElementById('pers-dept-group').style.display = (type === 'unit') ? 'block' : 'none';
+  document.getElementById('pers-social-group').style.display = (type === 'unit') ? 'block' : 'none';
+  openModal('modal-personnel');
+}
+function editPersonnel(type, i) {
+  const p = currentProject();
+  const m = p[type][i];
+  document.getElementById('personnel-type').value = type;
+  document.getElementById('personnel-edit-idx').value = i;
+  document.getElementById('modal-personnel-title').textContent = 'EDIT ' + type.toUpperCase();
+  document.getElementById('pers-name').value = m.name||'';
+  document.getElementById('pers-role').value = m.role||'';
+  document.getElementById('pers-number').value = m.number||'';
+  document.getElementById('pers-email').value = m.email||'';
+  document.getElementById('pers-notes').value = m.notes||'';
+  document.getElementById('pers-social').value = m.social||'';
+  document.getElementById('pers-confirmed').value = m.confirmed||'green';
+  if (m.dept) document.getElementById('pers-dept').value = m.dept;
+  document.getElementById('pers-dept-group').style.display = (type === 'unit') ? 'block' : 'none';
+  document.getElementById('pers-social-group').style.display = (type === 'unit') ? 'block' : 'none';
+  openModal('modal-personnel');
+}
+function savePersonnel() {
+  const p = currentProject();
+  const type = document.getElementById('personnel-type').value;
+  const idx = document.getElementById('personnel-edit-idx').value;
+  const name = document.getElementById('pers-name').value.trim();
+  if (!name) { showToast('Name required', 'info'); return; }
+  const m = {
+    name, role: document.getElementById('pers-role').value.trim(),
+    number: document.getElementById('pers-number').value.trim(),
+    email: document.getElementById('pers-email').value.trim(),
+    notes: document.getElementById('pers-notes').value.trim(),
+    social: document.getElementById('pers-social').value.trim(),
+    confirmed: document.getElementById('pers-confirmed').value,
+    dept: document.getElementById('pers-dept').value
+  };
+  if (idx !== '') p[type][parseInt(idx)] = m;
+  else p[type].push(m);
+  saveStore(); closeModal('modal-personnel');
+  if (type === 'cast' || type === 'extras') renderCast(p);
+  else if (type === 'unit') renderUnit(p);
+  showToast('Saved', 'success');
+}
+function removePersonnel(type, i) {
+  const p = currentProject();
+  p[type].splice(i,1);
+  saveStore();
+  if (type==='cast'||type==='extras') renderCast(p);
+  else renderUnit(p);
+}
+
+// UNIT LIST
+function renderUnit(p) {
+  const el = document.getElementById('unit-sections');
+  const grouped = {};
+  UNIT_DEPTS.forEach(d => grouped[d] = []);
+  p.unit.forEach((m,i) => { const d = m.dept||'Other'; if (!grouped[d]) grouped[d]=[]; grouped[d].push({...m,_i:i}); });
+  el.innerHTML = UNIT_DEPTS.filter(d => grouped[d].length).map(dept => `
+    <div class="team-section">
+      <div class="team-section-header">
+        ${dept}
+        <button class="btn btn-sm" onclick="addUnitMember('${dept}')">+ Add</button>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Social</th><th>Confirmed</th><th></th></tr></thead>
+          <tbody>
+            ${grouped[dept].map(m => `
+              <tr>
+                <td><strong>${m.name}</strong></td>
+                <td>${m.role||'—'}</td><td>${m.number||'—'}</td>
+                <td>${m.email||'—'}</td><td>${m.social||'—'}</td>
+                <td><span class="conf-dot conf-${m.confirmed||'green'}"></span></td>
+                <td>
+                  <button class="btn btn-sm btn-ghost" onclick="editPersonnel('unit',${m._i})">✎</button>
+                  <button class="btn btn-sm btn-ghost btn-danger" onclick="removePersonnel('unit',${m._i})">✕</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `).join('') || `<div class="empty-state"><div class="icon">👥</div><h4>No crew added yet</h4></div>`;
+}
+function addUnitMember(dept) {
+  addPersonnel('unit');
+  if (dept) setTimeout(() => { document.getElementById('pers-dept').value = dept; }, 50);
+}
+
+// BUDGET
+function renderBudget(p) {
+  const estimates = p.budget.filter(b => b.type !== 'actual');
+  const actuals = p.budget.filter(b => b.type === 'actual');
+  
+  let estTotal = 0;
+  const estBody = document.getElementById('budget-estimate-body');
+  if (!estimates.length) {
+    estBody.innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">💷</div><h4>No estimated budget lines</h4></div></td></tr>`;
+  } else {
+    estBody.innerHTML = estimates.map((b,i) => {
+      const est = (parseFloat(b.cost)||0) * (parseFloat(b.qty)||1);
+      estTotal += est;
+      return `<tr>
+        <td>${b.cat}</td>
+        <td>${b.desc||'—'}</td>
+        <td>£${parseFloat(b.cost||0).toFixed(2)}</td>
+        <td>${b.qty||1}</td>
+        <td>£${est.toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick="editBudgetLine(${p.budget.indexOf(b)})">✎</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeBudgetLine(${p.budget.indexOf(b)})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  
+  let actTotal = 0;
+  const actBody = document.getElementById('budget-actual-body');
+  if (!actuals.length) {
+    actBody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:30px"><div class="icon">💷</div><h4>No actual expenses</h4></div></td></tr>`;
+  } else {
+    actBody.innerHTML = actuals.map((b,i) => {
+      const act = parseFloat(b.actual)||0;
+      actTotal += act;
+      return `<tr>
+        <td>${b.cat}</td>
+        <td>${b.desc||'—'}</td>
+        <td>£${act.toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick="editBudgetLine(${p.budget.indexOf(b)})">✎</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeBudgetLine(${p.budget.indexOf(b)})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  
+  const varTotal = actTotal - estTotal;
+  document.getElementById('budget-summary').innerHTML = `
+    <div class="budget-total estimate"><div class="label">Total Estimate</div><div class="amount">£${estTotal.toFixed(2)}</div></div>
+    <div class="budget-total actual"><div class="label">Total Actual</div><div class="amount">£${actTotal.toFixed(2)}</div></div>
+    <div class="budget-total variance"><div class="label">Variance</div><div class="amount" style="color:${varTotal>0?'var(--red)':varTotal<0?'var(--green)':'var(--text2)'}">${varTotal>=0?'+':''}£${varTotal.toFixed(2)}</div></div>
+  `;
+}
+function toggleBudgetFields() {
+  const type = document.getElementById('bud-type').value;
+  const costGroup = document.getElementById('bud-cost').closest('.form-group');
+  const qtyGroup = document.getElementById('bud-qty').closest('.form-group');
+  const actualGroup = document.getElementById('bud-actual').closest('.form-group');
+  if (type === 'estimate') {
+    costGroup.style.display = 'block';
+    qtyGroup.style.display = 'block';
+    actualGroup.style.display = 'none';
+  } else {
+    costGroup.style.display = 'none';
+    qtyGroup.style.display = 'none';
+    actualGroup.style.display = 'block';
+  }
+}
+function addBudgetLine() { 
+  document.getElementById('budget-edit-idx').value=''; 
+  ['desc','cost','qty','actual'].forEach(f=>document.getElementById('bud-'+f).value=''); 
+  document.getElementById('bud-cat').value='Travel Expenses'; 
+  document.getElementById('bud-type').value='estimate'; 
+  toggleBudgetFields();
+  openModal('modal-budget'); 
+}
+function addActualExpense() { 
+  document.getElementById('budget-edit-idx').value=''; 
+  ['desc','cost','qty','actual'].forEach(f=>document.getElementById('bud-'+f).value=''); 
+  document.getElementById('bud-cat').value='Travel Expenses'; 
+  document.getElementById('bud-type').value='actual'; 
+  toggleBudgetFields();
+  openModal('modal-budget'); 
+}
+function editBudgetLine(i) {
+  const b = currentProject().budget[i];
+  document.getElementById('budget-edit-idx').value=i;
+  document.getElementById('bud-cat').value=b.cat||'Travel Expenses';
+  document.getElementById('bud-desc').value=b.desc||'';
+  document.getElementById('bud-cost').value=b.cost||'';
+  document.getElementById('bud-qty').value=b.qty||'';
+  document.getElementById('bud-actual').value=b.actual||'';
+  document.getElementById('bud-type').value=b.type||'estimate';
+  toggleBudgetFields();
+  openModal('modal-budget');
+}
+function removeBudgetLine(i) { const p=currentProject(); p.budget.splice(i,1); saveStore(); renderBudget(p); }
+function saveBudgetLine() {
+  const p=currentProject();
+  const b = {
+    type: document.getElementById('bud-type').value,
+    cat: document.getElementById('bud-cat').value,
+    desc: document.getElementById('bud-desc').value,
+    cost: document.getElementById('bud-cost').value,
+    qty: document.getElementById('bud-qty').value||1,
+    actual: document.getElementById('bud-actual').value||0,
+  };
+  const idx = document.getElementById('budget-edit-idx').value;
+  if (idx!=='') p.budget[parseInt(idx)]=b; else p.budget.push(b);
+  saveStore(); closeModal('modal-budget'); renderBudget(p); showToast('Saved','success');
+}
+
+// EQUIPMENT
+function renderEquipment(p) {
+  if (!p.equipment || typeof p.equipment !== 'object') p.equipment = {};
+  const el = document.getElementById('equip-grid');
+  el.innerHTML = EQUIP_CATEGORIES.map(cat => {
+    const items = p.equipment[cat] || [];
+    return `
+      <div class="equip-section">
+        <h4>${cat}</h4>
+        ${items.map((item,i) => `
+          <div class="equip-item">
+            <div class="equip-check${item.checked?' checked':''}" onclick="toggleEquip('${cat}',${i})"></div>
+            <span class="equip-item-name${item.checked?' checked':''}">${item.name}</span>
+            <button style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px" onclick="removeEquipItem('${cat}',${i})">✕</button>
+          </div>
+        `).join('')}
+        <div style="margin-top:8px">
+          <button class="btn btn-sm btn-ghost" style="width:100%;font-size:11px" onclick="quickAddEquip('${cat}')">+ Add item</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function toggleEquip(cat,i) {
+  const p=currentProject();
+  if (!p.equipment[cat]) p.equipment[cat]=[];
+  p.equipment[cat][i].checked = !p.equipment[cat][i].checked;
+  saveStore(); renderEquipment(p);
+}
+function removeEquipItem(cat,i) {
+  const p=currentProject();
+  p.equipment[cat].splice(i,1);
+  saveStore(); renderEquipment(p);
+}
+function quickAddEquip(cat) {
+  document.getElementById('equip-cat').value=cat;
+  document.getElementById('equip-name').value='';
+  openModal('modal-equip');
+}
+function addEquipItem() { document.getElementById('equip-name').value=''; openModal('modal-equip'); }
+function saveEquipItem() {
+  const p=currentProject();
+  const cat=document.getElementById('equip-cat').value;
+  const name=document.getElementById('equip-name').value.trim();
+  if(!name){showToast('Item name required','info');return;}
+  if(!p.equipment[cat]) p.equipment[cat]=[];
+  p.equipment[cat].push({name,checked:false});
+  saveStore(); closeModal('modal-equip'); renderEquipment(p); showToast('Item added','success');
+}
+function resetEquipChecks() {
+  const p=currentProject();
+  Object.keys(p.equipment).forEach(cat => p.equipment[cat].forEach(i=>i.checked=false));
+  saveStore(); renderEquipment(p); showToast('Checks reset','info');
+}
+
+// LOCATIONS
+function renderLocations(p) {
+  const tbody = document.getElementById('locations-body');
+  const suitMap = {suitable:'loc-suitable',possible:'loc-possible',unsuitable:'loc-unsuitable'};
+  const suitLabel = {suitable:'Suitable',possible:'Possibly Suitable',unsuitable:'Unsuitable'};
+  if (!p.locations.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
+  } else {
+    tbody.innerHTML = p.locations.map((l,i) => `
+      <tr>
+        <td><strong>${l.name}</strong></td>
+        <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
+        <td>${l.contacted||'—'}</td>
+        <td>${l.avail||'—'}</td>
+        <td>${l.cost||'—'}</td>
+        <td>${l.access||'—'}</td>
+        <td>${l.recce||'—'}</td>
+        <td>${l.decision||'TBD'}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick="editLocation(${i})">✎</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeLocation(${i})">✕</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  renderScoutingList(p);
+}
+function addLocation() { document.getElementById('loc-edit-idx').value=''; ['name','avail','rules','cost','access','light','power','problems'].forEach(f=>document.getElementById('loc-'+f).value=''); document.getElementById('loc-suit').value='suitable'; document.getElementById('loc-contacted').value='no'; document.getElementById('loc-recce').value='no'; document.getElementById('loc-decision').value=''; openModal('modal-location'); }
+function editLocation(i) {
+  const l=currentProject().locations[i];
+  document.getElementById('loc-edit-idx').value=i;
+  document.getElementById('loc-name').value=l.name||'';
+  document.getElementById('loc-suit').value=l.suit||'suitable';
+  document.getElementById('loc-contacted').value=l.contacted||'no';
+  document.getElementById('loc-avail').value=l.avail||'';
+  document.getElementById('loc-rules').value=l.rules||'';
+  document.getElementById('loc-cost').value=l.cost||'';
+  document.getElementById('loc-access').value=l.access||'';
+  document.getElementById('loc-recce').value=l.recce||'no';
+  document.getElementById('loc-light').value=l.light||'';
+  document.getElementById('loc-power').value=l.power||'';
+  document.getElementById('loc-problems').value=l.problems||'';
+  document.getElementById('loc-decision').value=l.decision||'';
+  openModal('modal-location');
+}
+function removeLocation(i) { const p=currentProject(); p.locations.splice(i,1); saveStore(); renderLocations(p); }
+function saveLocation() {
+  const p=currentProject();
+  const name=document.getElementById('loc-name').value.trim();
+  if(!name){showToast('Location name required','info');return;}
+  const l={name,suit:document.getElementById('loc-suit').value,contacted:document.getElementById('loc-contacted').value,avail:document.getElementById('loc-avail').value,rules:document.getElementById('loc-rules').value,cost:document.getElementById('loc-cost').value,access:document.getElementById('loc-access').value,recce:document.getElementById('loc-recce').value,light:document.getElementById('loc-light').value,power:document.getElementById('loc-power').value,problems:document.getElementById('loc-problems').value,decision:document.getElementById('loc-decision').value};
+  const idx=document.getElementById('loc-edit-idx').value;
+  if(idx!=='') p.locations[parseInt(idx)]=l; else p.locations.push(l);
+  saveStore(); closeModal('modal-location'); renderLocations(p); showToast('Location saved','success');
+}
+
+// SCOUTING SHEETS
+function renderScoutingList(p) {
+  const el=document.getElementById('scouting-list');
+  if(!p.scoutingSheets||!p.scoutingSheets.length){el.innerHTML='<p style="color:var(--text3);font-size:13px">No scouting sheets yet.</p>';return;}
+  el.innerHTML=p.scoutingSheets.map((s,i)=>`
+    <div class="breakdown-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <strong>${s.name||'Untitled Location'}</strong>
+        <button class="btn btn-sm btn-danger" onclick="removeScoutingSheet(${i})">✕</button>
+      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${s.name||''}" onchange="updateScouting(${i},'name',this.value)"></div><div class="form-group"><label class="form-label">Date of Visit</label><input class="form-input" type="date" value="${s.date||''}" onchange="updateScouting(${i},'date',this.value)"></div></div>
+      <div class="form-group"><label class="form-label">Scouted By</label><input class="form-input" value="${s.scoutedBy||''}" onchange="updateScouting(${i},'scoutedBy',this.value)"></div>
+      <div class="form-group"><label class="form-label">General Information</label><textarea class="form-textarea" onchange="updateScouting(${i},'info',this.value)">${s.info||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'address',this.value)">${s.address||''}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" value="${s.contact||''}" onchange="updateScouting(${i},'contact',this.value)"></div>
+        <div class="form-group"><label class="form-label">Overall Suitability</label><input class="form-input" value="${s.suitability||''}" onchange="updateScouting(${i},'suitability',this.value)"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Accessibility</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'accessibility',this.value)">${s.accessibility||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Lighting Conditions</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'lighting',this.value)">${s.lighting||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Sound Considerations</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'sound',this.value)">${s.sound||''}</textarea></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Power & Electrical</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'power',this.value)">${s.power||''}</textarea></div><div class="form-group"><label class="form-label">Set Dressing Notes</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'setDressing',this.value)">${s.setDressing||''}</textarea></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Permissions / Legal</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'permissions',this.value)">${s.permissions||''}</textarea></div><div class="form-group"><label class="form-label">Production Logistics</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'logistics',this.value)">${s.logistics||''}</textarea></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Pros</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'pros',this.value)">${s.pros||''}</textarea></div><div class="form-group"><label class="form-label">Cons</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'cons',this.value)">${s.cons||''}</textarea></div></div>
+      <div class="form-group"><label class="form-label">Networking Notes (credits etc.)</label><textarea class="form-textarea" onchange="updateScouting(${i},'networking',this.value)">${s.networking||''}</textarea></div>
+    </div>
+  `).join('');
+}
+function addScoutingSheet() { const p=currentProject(); p.scoutingSheets.push({name:'',date:'',scoutedBy:''}); saveStore(); renderScoutingList(p); }
+function removeScoutingSheet(i) { const p=currentProject(); p.scoutingSheets.splice(i,1); saveStore(); renderScoutingList(p); }
+function updateScouting(i,field,val) { const p=currentProject(); p.scoutingSheets[i][field]=val; saveStore(); }
+
+// TEAM
+function renderTeam() {
+  const tbody=document.getElementById('team-body');
+  if(!store.teamMembers.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">👥</div><h4>No team members yet</h4><p>Invite collaborators to your projects</p></div></td></tr>`;return;}
+  tbody.innerHTML=store.teamMembers.map((m,i)=>`
+    <tr><td>${m.name}</td><td>${m.email}</td><td>${m.role||'—'}</td><td>${m.project==='all'?'All':store.projects.find(p=>p.id===m.project)?.title||'—'}</td>
+    <td><span class="tag">${m.access}</span></td>
+    <td><button class="btn btn-sm btn-danger" onclick="removeTeamMember(${i})">✕</button></td></tr>
+  `).join('');
+}
+function inviteTeamMember() {
+  const sel=document.getElementById('inv-project');
+  sel.innerHTML='<option value="all">All Projects</option>'+store.projects.map(p=>`<option value="${p.id}">${p.title}</option>`).join('');
+  ['name','email'].forEach(f=>document.getElementById('inv-'+f).value='');
+  openModal('modal-invite');
+}
+function saveInvite() {
+  const name=document.getElementById('inv-name').value.trim();
+  const email=document.getElementById('inv-email').value.trim();
+  if(!name||!email){showToast('Name and email required','info');return;}
+  store.teamMembers.push({name,email,access:document.getElementById('inv-access').value,project:document.getElementById('inv-project').value});
+  saveStore();closeModal('modal-invite');renderTeam();showToast('Member invited','success');
+}
+function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTeam();}
+
+// ══════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════
+function exportData() {
+  const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`filmforge_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  showToast('Data exported','success');
+}
+
+// ══════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════
+function openModal(id) {
+  console.log('openModal called with id:', id);
+  const overlay = document.getElementById(id);
+  console.log('overlay element:', overlay);
+  if (!overlay) { console.log('overlay NOT FOUND'); return; }
+  console.log('overlay classList before:', overlay.classList.value);
+  overlay.classList.add('open');
+  console.log('overlay classList after:', overlay.classList.value);
+  console.log('overlay display computed:', window.getComputedStyle(overlay).display);
+  overlay.dataset.justOpened = Date.now();
+  // focus first input inside the modal after a short delay
+  setTimeout(() => {
+    const first = overlay.querySelector('input:not([type=hidden]), textarea, select');
+    if (first) first.focus();
+  }, 60);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── KEYBOARD SHORTCUTS ──
+// Map modal id → save function
+const MODAL_SAVE = {
+  'modal-project':   () => saveProject(),
+  'modal-personnel': () => savePersonnel(),
+  'modal-budget':    () => saveBudgetLine(),
+  'modal-location':  () => saveLocation(),
+  'modal-schedule':  () => saveScheduleRow(),
+  'modal-equip':     () => saveNewEquipItem(),
+  'modal-invite':    () => saveInvite(),
+  'modal-shot':      () => saveShot(),
+  'modal-prop':      () => savePropItem(),
+  'modal-sound':     () => saveSoundEntry(),
+  'modal-risk':      () => saveRiskRow(),
+};
+
+document.addEventListener('keydown', e => {
+  // Escape → close any open modal
+  if (e.key === 'Escape') {
+    const open = document.querySelector('.modal-overlay.open');
+    if (open) { open.classList.remove('open'); return; }
+  }
+
+  // Enter → save the open modal (unless focus is in a textarea)
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const open = document.querySelector('.modal-overlay.open');
+    if (!open) return;
+    // Don't intercept Enter in textareas (allow newlines there)
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    const saveFn = MODAL_SAVE[open.id];
+    if (saveFn) { e.preventDefault(); saveFn(); }
+  }
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { 
+    // Removed overlay click close to prevent accidental closes
+    // if(e.target === overlay) overlay.classList.remove('open'); 
+  });
+});
+
+function showToast(msg, type='info') {
+  const el=document.getElementById('toast');
+  el.className='toast '+type;
+  el.innerHTML=(type==='success'?'✓ ':'ℹ ')+msg;
+  el.style.display='flex';
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>el.style.display='none',2800);
+}
+
+// ══════════════════════════════════════════
+// SHOT LIST
+// ══════════════════════════════════════════
+function renderShotList(p) {
+  const tbody = document.getElementById('shotlist-body');
+  let totalMins = 0;
+  if (!p.shots || !p.shots.length) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state" style="padding:30px"><div class="icon">🎬</div><h4>No shots yet</h4></div></td></tr>`;
+  } else {
+    tbody.innerHTML = p.shots.map((s,i) => {
+      const t = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
+      totalMins += t;
+      return `<tr>
+        <td>${s.scene||'—'}</td><td>${s.setup||'—'}</td><td>${s.num||'—'}</td>
+        <td><span class="tag">${s.type||'—'}</span></td>
+        <td>${s.movement||'—'}</td><td>${s.location||'—'}</td>
+        <td><span class="chip" style="font-size:10px">${s.extint||'—'}</span></td>
+        <td>${s.sound||'—'}</td>
+        <td style="max-width:200px">${s.desc||'—'}</td>
+        <td>${s.cast||'—'}</td><td>${s.pages||'—'}</td><td>${s.length||'—'}</td>
+        <td>${s.setuptime||'—'}</td><td>${s.shoottime||'—'}</td>
+        <td><strong style="color:var(--accent)">${t||'—'}</strong></td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick="editShot(${i})">✎</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeShot(${i})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  const h = Math.floor(totalMins/60), m = totalMins%60;
+  document.getElementById('shotlist-total').textContent = h ? `${h} hr ${m} mins` : `${totalMins} mins`;
+}
+function addShot() { document.getElementById('shot-edit-idx').value=''; ['scene','setup','num','location','cast','pages','length','setuptime','shoottime'].forEach(f=>document.getElementById('shot-'+f).value=''); document.getElementById('shot-total').value=''; document.getElementById('shot-desc').value=''; openModal('modal-shot'); }
+function editShot(i) {
+  const s=currentProject().shots[i];
+  document.getElementById('shot-edit-idx').value=i;
+  document.getElementById('shot-scene').value=s.scene||'';
+  document.getElementById('shot-setup').value=s.setup||'';
+  document.getElementById('shot-num').value=s.num||'';
+  document.getElementById('shot-type').value=s.type||'CU';
+  document.getElementById('shot-movement').value=s.movement||'Stationary';
+  document.getElementById('shot-extint').value=s.extint||'INT DAY';
+  document.getElementById('shot-location').value=s.location||'';
+  document.getElementById('shot-sound').value=s.sound||'Yes';
+  document.getElementById('shot-desc').value=s.desc||'';
+  document.getElementById('shot-cast').value=s.cast||'';
+  document.getElementById('shot-pages').value=s.pages||'';
+  document.getElementById('shot-length').value=s.length||'';
+  document.getElementById('shot-setuptime').value=s.setuptime||'';
+  document.getElementById('shot-shoottime').value=s.shoottime||'';
+  calcShotTotal();
+  openModal('modal-shot');
+}
+function calcShotTotal() {
+  const a=parseInt(document.getElementById('shot-setuptime').value)||0;
+  const b=parseInt(document.getElementById('shot-shoottime').value)||0;
+  document.getElementById('shot-total').value = a+b ? (a+b)+' mins' : '';
+}
+function saveShot() {
+  const p=currentProject();
+  if (!p.shots) p.shots=[];
+  const s={
+    scene:document.getElementById('shot-scene').value,
+    setup:document.getElementById('shot-setup').value,
+    num:document.getElementById('shot-num').value,
+    type:document.getElementById('shot-type').value,
+    movement:document.getElementById('shot-movement').value,
+    extint:document.getElementById('shot-extint').value,
+    location:document.getElementById('shot-location').value,
+    sound:document.getElementById('shot-sound').value,
+    desc:document.getElementById('shot-desc').value,
+    cast:document.getElementById('shot-cast').value,
+    pages:document.getElementById('shot-pages').value,
+    length:document.getElementById('shot-length').value,
+    setuptime:document.getElementById('shot-setuptime').value,
+    shoottime:document.getElementById('shot-shoottime').value,
+  };
+  const idx=document.getElementById('shot-edit-idx').value;
+  if(idx!=='') p.shots[parseInt(idx)]=s; else p.shots.push(s);
+  saveStore(); closeModal('modal-shot'); renderShotList(p); showToast('Shot saved','success');
+}
+function removeShot(i) { const p=currentProject(); p.shots.splice(i,1); saveStore(); renderShotList(p); }
+
+// ══════════════════════════════════════════
+// PROPS / WARDROBE
+// ══════════════════════════════════════════
+function renderPropTable(type, tbodyId, p) {
+  const list = p[type] || [];
+  const tbody = document.getElementById(tbodyId);
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state" style="padding:20px"><h4>No items yet</h4></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((item,i) => `
+    <tr>
+      <td><strong>${item.name}</strong></td>
+      <td>${item.qty||1}</td>
+      <td>${item.chars||'—'}</td>
+      <td>${item.scenes||'—'}</td>
+      <td>${item.locs||'—'}</td>
+      <td>${item.pgs||'—'}</td>
+      <td>${item.notes||'—'}</td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="editPropItem('${type}',${i})">✎</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removePropItem('${type}',${i})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function addPropItem(type) { document.getElementById('prop-type').value=type; document.getElementById('prop-edit-idx').value=''; document.getElementById('modal-prop-title').textContent='ADD '+(type==='props'?'PROP':'WARDROBE ITEM'); ['name','chars','scenes','locs','pgs','notes'].forEach(f=>document.getElementById('prop-'+f).value=''); document.getElementById('prop-qty').value='1'; openModal('modal-prop'); }
+function editPropItem(type,i) {
+  const item=currentProject()[type][i];
+  document.getElementById('prop-type').value=type;
+  document.getElementById('prop-edit-idx').value=i;
+  document.getElementById('modal-prop-title').textContent='EDIT '+(type==='props'?'PROP':'WARDROBE ITEM');
+  document.getElementById('prop-name').value=item.name||'';
+  document.getElementById('prop-qty').value=item.qty||1;
+  document.getElementById('prop-chars').value=item.chars||'';
+  document.getElementById('prop-scenes').value=item.scenes||'';
+  document.getElementById('prop-locs').value=item.locs||'';
+  document.getElementById('prop-pgs').value=item.pgs||'';
+  document.getElementById('prop-notes').value=item.notes||'';
+  openModal('modal-prop');
+}
+function savePropItem() {
+  const p=currentProject();
+  const type=document.getElementById('prop-type').value;
+  const name=document.getElementById('prop-name').value.trim();
+  if(!name){showToast('Name required','info');return;}
+  if(!p[type]) p[type]=[];
+  const item={name,qty:document.getElementById('prop-qty').value||1,chars:document.getElementById('prop-chars').value,scenes:document.getElementById('prop-scenes').value,locs:document.getElementById('prop-locs').value,pgs:document.getElementById('prop-pgs').value,notes:document.getElementById('prop-notes').value};
+  const idx=document.getElementById('prop-edit-idx').value;
+  if(idx!=='') p[type][parseInt(idx)]=item; else p[type].push(item);
+  saveStore(); closeModal('modal-prop');
+  if(type==='props') renderPropTable('props','props-body',p);
+  else renderPropTable('wardrobe','wardrobe-body',p);
+  showToast('Saved','success');
+}
+function removePropItem(type,i) {
+  const p=currentProject(); p[type].splice(i,1); saveStore();
+  if(type==='props') renderPropTable('props','props-body',p);
+  else renderPropTable('wardrobe','wardrobe-body',p);
+}
+
+// ══════════════════════════════════════════
+// SOUND LOG
+// ══════════════════════════════════════════
+function renderSoundLog(p) {
+  const tbody=document.getElementById('soundlog-body');
+  if(!p.soundlog||!p.soundlog.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state" style="padding:20px"><div class="icon">🎙️</div><h4>No entries yet</h4></div></td></tr>`;return;}
+  tbody.innerHTML=p.soundlog.map((s,i)=>`
+    <tr>
+      <td>${s.scene||'—'}</td><td>${s.shot||'—'}</td><td>${s.take||'—'}</td>
+      <td>${s.comments||'—'}</td><td>${s.track1||'—'}</td>
+      <td>${s.lav||'—'}</td><td>${s.additional||'—'}</td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="editSoundEntry(${i})">✎</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removeSoundEntry(${i})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function addSoundEntry(){document.getElementById('sound-edit-idx').value='';['scene','shot','take','comments','track1','lav','additional'].forEach(f=>document.getElementById('sound-'+f).value='');openModal('modal-sound');}
+function editSoundEntry(i){const s=currentProject().soundlog[i];document.getElementById('sound-edit-idx').value=i;document.getElementById('sound-scene').value=s.scene||'';document.getElementById('sound-shot').value=s.shot||'';document.getElementById('sound-take').value=s.take||'';document.getElementById('sound-comments').value=s.comments||'';document.getElementById('sound-track1').value=s.track1||'';document.getElementById('sound-lav').value=s.lav||'';document.getElementById('sound-additional').value=s.additional||'';openModal('modal-sound');}
+function saveSoundEntry(){
+  const p=currentProject();if(!p.soundlog)p.soundlog=[];
+  const s={scene:document.getElementById('sound-scene').value,shot:document.getElementById('sound-shot').value,take:document.getElementById('sound-take').value,comments:document.getElementById('sound-comments').value,track1:document.getElementById('sound-track1').value,lav:document.getElementById('sound-lav').value,additional:document.getElementById('sound-additional').value};
+  const idx=document.getElementById('sound-edit-idx').value;
+  if(idx!=='')p.soundlog[parseInt(idx)]=s;else p.soundlog.push(s);
+  saveStore();closeModal('modal-sound');renderSoundLog(p);showToast('Saved','success');
+}
+function removeSoundEntry(i){const p=currentProject();p.soundlog.splice(i,1);saveStore();renderSoundLog(p);}
+
+// ══════════════════════════════════════════
+// RISK ASSESSMENT
+// ══════════════════════════════════════════
+function renderRiskAssessment(p) {
+  if(!p.riskMeta) p.riskMeta={pm:'',date:'',location:'',signatory:'',sigdate:''};
+  document.getElementById('risk-pm').value=p.riskMeta.pm||'';
+  document.getElementById('risk-date').value=p.riskMeta.date||'';
+  document.getElementById('risk-location').value=p.riskMeta.location||'';
+  document.getElementById('risk-signatory').value=p.riskMeta.signatory||'';
+  document.getElementById('risk-sigdate').value=p.riskMeta.sigdate||'';
+  const tbody=document.getElementById('risk-body');
+  if(!p.risks||!p.risks.length){tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state" style="padding:20px"><div class="icon">⚠️</div><h4>No hazards identified yet</h4></div></td></tr>`;return;}
+  const rfColor=(n)=>{if(n<=2)return 'var(--green)';if(n<=3)return 'var(--orange)';return 'var(--red)';};
+  tbody.innerHTML=p.risks.map((r,i)=>`
+    <tr>
+      <td><strong>${r.hazard||'—'}</strong></td>
+      <td>${r.who||'—'}</td>
+      <td><span style="color:${rfColor(r.factor)};font-weight:700;font-family:var(--font-mono)">${r.factor||'—'}</span></td>
+      <td>${r.controls||'—'}</td>
+      <td>${r.further||'—'}</td>
+      <td><span style="color:${rfColor(r.newfactor)};font-weight:700;font-family:var(--font-mono)">${r.newfactor||'—'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="editRiskRow(${i})">✎</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removeRiskRow(${i})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function saveRiskMeta(){
+  const p=currentProject();if(!p.riskMeta)p.riskMeta={};
+  p.riskMeta.pm=document.getElementById('risk-pm').value;
+  p.riskMeta.date=document.getElementById('risk-date').value;
+  p.riskMeta.location=document.getElementById('risk-location').value;
+  p.riskMeta.signatory=document.getElementById('risk-signatory').value;
+  p.riskMeta.sigdate=document.getElementById('risk-sigdate').value;
+  saveStore();
+}
+function addRiskRow(){document.getElementById('risk-edit-idx').value='';['hazard','who','factor','newfactor','controls','further'].forEach(f=>document.getElementById('risk-'+f).value='');openModal('modal-risk');}
+function editRiskRow(i){const r=currentProject().risks[i];document.getElementById('risk-edit-idx').value=i;document.getElementById('risk-hazard').value=r.hazard||'';document.getElementById('risk-who').value=r.who||'';document.getElementById('risk-factor').value=r.factor||'';document.getElementById('risk-newfactor').value=r.newfactor||'';document.getElementById('risk-controls').value=r.controls||'';document.getElementById('risk-further').value=r.further||'';openModal('modal-risk');}
+function saveRiskRow(){
+  const p=currentProject();if(!p.risks)p.risks=[];
+  const r={hazard:document.getElementById('risk-hazard').value,who:document.getElementById('risk-who').value,factor:document.getElementById('risk-factor').value,newfactor:document.getElementById('risk-newfactor').value,controls:document.getElementById('risk-controls').value,further:document.getElementById('risk-further').value};
+  const idx=document.getElementById('risk-edit-idx').value;
+  if(idx!=='')p.risks[parseInt(idx)]=r;else p.risks.push(r);
+  saveStore();closeModal('modal-risk');renderRiskAssessment(p);showToast('Saved','success');
+}
+function removeRiskRow(i){const p=currentProject();p.risks.splice(i,1);saveStore();renderRiskAssessment(p);}
+
+// ══════════════════════════════════════════
+// RELEASE FORMS
+// ══════════════════════════════════════════
+function renderReleases(p) {
+  if(!p.releases) p.releases=[];
+  const el=document.getElementById('releases-list');
+  if(!p.releases.length){el.innerHTML=`<div class="empty-state"><div class="icon">📝</div><h4>No release forms yet</h4><p>Add talent or location release forms</p></div>`;
+  } else {
+    el.innerHTML=p.releases.map((r,i)=>`
+      <div class="breakdown-card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div><span class="tag">${r.type==='talent'?'TALENT RELEASE':'LOCATION RELEASE'}</span> &nbsp; <strong>${r.name||'Unnamed'}</strong></div>
+          <div style="display:flex;gap:8px">
+            <span class="chip" style="color:${r.signed?'var(--green)':'var(--orange)'}">${r.signed?'● Signed':'○ Unsigned'}</span>
+            <button class="btn btn-sm btn-ghost" onclick="toggleSigned(${i})">${r.signed?'Mark Unsigned':'Mark Signed'}</button>
+            <button class="btn btn-sm btn-danger" onclick="removeRelease(${i})">✕</button>
+          </div>
+        </div>
+        ${r.type==='talent'?`
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Talent Name</label><input class="form-input" value="${r.talentName||''}" onchange="updateRelease(${i},'talentName',this.value)" placeholder="Full name"></div>
+            <div class="form-group"><label class="form-label">Character Name</label><input class="form-input" value="${r.charName||''}" onchange="updateRelease(${i},'charName',this.value)" placeholder="Character"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Address</label><input class="form-input" value="${r.address||''}" onchange="updateRelease(${i},'address',this.value)"></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" value="${r.phone||''}" onchange="updateRelease(${i},'phone',this.value)"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${r.email||''}" onchange="updateRelease(${i},'email',this.value)" type="email"></div>
+        `:`
+          <div class="form-group"><label class="form-label">Property / Location Name</label><input class="form-input" value="${r.property||''}" onchange="updateRelease(${i},'property',this.value)" placeholder="e.g. The Old Mill, Manchester"></div>
+          <div class="form-group"><label class="form-label">Property Address</label><input class="form-input" value="${r.address||''}" onchange="updateRelease(${i},'address',this.value)"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Owner / Contact Name</label><input class="form-input" value="${r.owner||''}" onchange="updateRelease(${i},'owner',this.value)"></div>
+            <div class="form-group"><label class="form-label">Date Signed</label><input class="form-input" type="date" value="${r.dateSigned||''}" onchange="updateRelease(${i},'dateSigned',this.value)"></div>
+          </div>
+        `}
+        <div class="form-group" style="margin-top:8px"><label class="form-label">Notes</label><input class="form-input" value="${r.notes||''}" onchange="updateRelease(${i},'notes',this.value)" placeholder="Any notes..."></div>
+      </div>
+    `).join('');
+  }
+  renderTechScouts(p);
+}
+function addRelease(type){const p=currentProject();if(!p.releases)p.releases=[];p.releases.push({type,name:type==='talent'?'New Talent':'New Location',signed:false});saveStore();renderReleases(p);}
+function toggleSigned(i){const p=currentProject();p.releases[i].signed=!p.releases[i].signed;saveStore();renderReleases(p);}
+function removeRelease(i){const p=currentProject();p.releases.splice(i,1);saveStore();renderReleases(p);}
+function updateRelease(i,field,val){const p=currentProject();p.releases[i][field]=val;if(field==='talentName'||field==='property')p.releases[i].name=val;saveStore();}
+
+// ══════════════════════════════════════════
+// TECH SCOUT CHECKLIST
+// ══════════════════════════════════════════
+const TECH_SCOUT_ITEMS = {
+  'Story': ['Storytelling: Does the location meet the scene requirements, and fit the director\'s tone?','Anachronisms: Does the setting fit the time period and story setting?'],
+  'Sight': ['Wide Shot Test: Is a wide frame acceptable? Any problematic visual elements?','360 Test: Are there any problematic directions that should be avoided?','Commercial Clearance: Any properties that require commercial clearance?','Indoor Staging: Does your cast, crew and gear fit inside?','Sunlight: Any sunlight considerations? Morning? Noon? Afternoon? Evening?','VFX Needs: Would anything need to be removed or added in post?'],
+  'Sound': ['HVAC: Can you turn off heating, ventilation and air conditioning?','Refrigerators: Can you turn off any noisy appliances?','Reverberation: Can you record clean dialogue? Do you need to dampen echoes?'],
+  'Surroundings': ['Roads & Traffic: Any traffic concerns? Noise or continuity issues?','Schools: Schoolyard noise? Continuity issues?','Playgrounds: Will playground noise affect sound?','Factories/Warehouses: Any noise from machinery?','Airports: Will airplane noise affect sound?','Air Traffic: Any significant air traffic overhead?','Sufficient Parking: Is there sufficient parking for talent, crew, and vehicles?','Staging Talent: Is there a dedicated quiet space for talent and extras?'],
+  'Weather': ['Temperature: Will the location be too hot or cold?','Rain/Snow: Will precipitation have a potential impact?','Indoor Impacts: Will sound from precipitation affect the shoot?'],
+  'Power': ['Accessible Outlets: Are there enough outlets? How many? Where?','Access to Breakers: Does the electrical crew have access to the circuit breaker?','Breaker Isolation: How many breaker circuits? What\'s the rating?','Isolation of Hair & Makeup: Is there a dedicated space and breaker for H&M?'],
+  'Facilities': ['Bathrooms-to-Person Ratio: How many people on set per bathroom?','Access to Water Shut Off: Do you have access in case of emergency?','Access to Gas Shut Off: Do you have access in case of emergency?'],
+  'Contracts': ['Contract Signed: Has the location owner signed a location release?','Insurance/Liability: Does your production insurance cover this location?','Contingency Plans: Are there clauses for date changes in the contract?'],
+};
+
+function renderTechScouts(p) {
+  const el=document.getElementById('techscout-list');
+  if(!p.techScouts||!p.techScouts.length){el.innerHTML=`<p style="color:var(--text3);font-size:13px">No tech scout checklists yet.</p>`;return;}
+  el.innerHTML=p.techScouts.map((scout,si)=>`
+    <div class="breakdown-card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <strong>${scout.name||'Tech Scout'}</strong>
+        <button class="btn btn-sm btn-danger" onclick="removeTechScout(${si})">✕</button>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${scout.name||''}" onchange="updateTechScout(${si},'name',this.value)"></div>
+        <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
+      </div>
+      ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
+        <div style="margin-bottom:16px">
+          <div style="font-family:var(--font-display);font-size:16px;letter-spacing:1px;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${cat}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${items.map((item,ii)=>{
+              const key=cat+'_'+ii;
+              const checked=(scout.checks||{})[key];
+              return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border-radius:6px;cursor:pointer" onclick="toggleTechCheck(${si},'${key}')">
+                <div class="equip-check${checked?' checked':''}" style="margin-top:1px;flex-shrink:0"></div>
+                <span style="font-size:12px;color:var(--text2);line-height:1.4">${item}</span>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="form-group" style="margin-top:8px"><label class="form-label">Notes — ${cat}</label><textarea class="form-textarea" style="min-height:50px" onchange="updateTechScout(${si},'notes_${cat}',this.value)">${(scout['notes_'+cat])||''}</textarea></div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+function addTechScout(){const p=currentProject();if(!p.techScouts)p.techScouts=[];p.techScouts.push({name:'',date:'',checks:{}});saveStore();renderTechScouts(p);}
+function removeTechScout(i){const p=currentProject();p.techScouts.splice(i,1);saveStore();renderTechScouts(p);}
+function updateTechScout(i,field,val){const p=currentProject();p.techScouts[i][field]=val;saveStore();}
+function toggleTechCheck(si,key){const p=currentProject();if(!p.techScouts[si].checks)p.techScouts[si].checks={};p.techScouts[si].checks[key]=!p.techScouts[si].checks[key];saveStore();renderTechScouts(p);}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadStore();
+renderDashboard();
+</script>
+</body>
+</html>
