@@ -1,0 +1,387 @@
+// CALLSHEET
+// ══════════════════════════════════════════
+
+function renderCallsheet(p) {
+  const el = document.getElementById('callsheet-list');
+  if (!p || !p.callsheets) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><h4>No project selected</h4><p>Select a project to view callsheets</p></div>';
+    return;
+  }
+  if (!p.callsheets.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><h4>No callsheets yet</h4><p>Create a callsheet for each shoot day</p></div>';
+    return;
+  }
+  el.innerHTML = p.callsheets.map((c, i) => buildCallsheetCard(p, c, i)).join('');
+  initCallsheetDragDrop(p);
+}
+
+function buildCallsheetCard(p, c, i) {
+  const d = c.date ? new Date(c.date + 'T12:00:00') : null;
+  const dayNum = d ? d.getDate() : '—';
+  const monthStr = d ? d.toLocaleDateString('en-GB', {month:'short'}).toUpperCase() : 'DATE';
+  const yearStr = d ? d.getFullYear() : '2025';
+
+  // Default section order
+  if (!c.sectionOrder) c.sectionOrder = ['crew', 'locations', 'cast', 'schedule', 'notes'];
+
+  const sectionDefs = {
+    crew:      { label: 'Crew & Call Times', hideKey: 'hideCrewCall',   renderFn: () => buildCrewSection(c, i) },
+    locations: { label: 'Locations',         hideKey: 'hideLocations',  renderFn: () => buildLocationsSection(c, i) },
+    cast:      { label: 'Cast',              hideKey: 'hideCast',       renderFn: () => buildCastSection(c, i) },
+    schedule:  { label: 'Schedule',          hideKey: 'hideSchedule',   renderFn: () => buildScheduleSection(c, i) },
+    notes:     { label: 'Notes',             hideKey: 'hideNotes',      renderFn: () => buildNotesSection(c, i) },
+  };
+
+  const toggleBtns = c.sectionOrder.map(key => {
+    const def = sectionDefs[key];
+    const isActive = !c[def.hideKey];
+    return `<button class="cs-ctrl-btn${isActive ? ' active' : ''}" onclick="toggleCSectionVisibility(${i},'${def.hideKey}');renderCallsheet(currentProject());">${def.label}</button>`;
+  }).join('');
+
+  const sections = c.minimized ? '' : `
+    <div class="cs-toggle-bar">
+      ${toggleBtns}
+      <button class="cs-ctrl-btn right danger pdf-hide" onclick="confirmDeleteCallsheet(${i})">🗑 Delete</button>
+    </div>
+    <div class="cs-content" id="cs-sections-${i}">
+      ${c.sectionOrder.map(key => {
+        const def = sectionDefs[key];
+        if (c[def.hideKey]) return '';
+        return `<div class="cs-draggable-section" data-section="${key}" data-csidx="${i}" draggable="true">
+          ${def.renderFn()}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  return `
+  <div class="cs-page" id="cs-page-${i}">
+    <div class="cs-top-bar">
+      <div class="cs-logo-section">
+        <div class="cs-logo-drop" onclick="uploadCallsheetLogo(${i})" title="Click to upload logo">
+          ${c.logoDataUrl
+            ? `<img src="${c.logoDataUrl}" alt="logo">`
+            : '<span style="color:#888;font-size:9px;text-align:center;line-height:1.3;">CLICK<br>TO ADD<br>LOGO</span>'}
+        </div>
+      </div>
+      <div class="cs-header-main">
+        <div class="cs-header-row">
+          <div class="cs-header-info">
+            <h1>${c.prodTitle || p.title || 'PRODUCTION TITLE'}</h1>
+            <div class="cs-prod-info">Production ${c.prodNum || p.num || '001'} &nbsp;•&nbsp; ${c.company || p.company || '—'}</div>
+            <div class="cs-header-meta">
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Shoot Day</span>
+                <input class="cs-meta-input" type="number" min="1" style="width:48px" value="${c.shootDay || i + 1}" onchange="updateCSF(${i},'shootDay',this.value)">
+              </div>
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Date</span>
+                <input class="cs-meta-input" type="date" style="width:130px" value="${c.date || ''}" onchange="updateCSF(${i},'date',this.value);renderCallsheet(currentProject());">
+              </div>
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Director</span>
+                <input class="cs-meta-input" style="width:110px" value="${c.dirProd || p.director || ''}" placeholder="Director" onchange="updateCSF(${i},'dirProd',this.value)">
+              </div>
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Producer</span>
+                <input class="cs-meta-input" style="width:110px" value="${c.producer || p.producer || ''}" placeholder="Producer" onchange="updateCSF(${i},'producer',this.value)">
+              </div>
+            </div>
+          </div>
+          <div class="cs-header-controls pdf-hide">
+            <button class="cs-ctrl-btn" style="border-radius:4px;border:1px solid #ddd;" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());">${c.minimized ? '▼ Expand' : '▲ Collapse'}</button>
+            <label style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;cursor:pointer;">
+              <input type="checkbox" ${c.exportSelected !== false ? 'checked' : ''} onchange="updateCSF(${i},'exportSelected',this.checked)" style="width:14px;height:14px;"> Export
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="cs-date-box">
+        <input type="date" value="${c.date || ''}" onchange="updateCSF(${i},'date',this.value);renderCallsheet(currentProject());" title="Click to set date">
+        <div class="cs-date-day">${dayNum}</div>
+        <div class="cs-date-month">${monthStr}</div>
+        <div class="cs-date-year">${yearStr}</div>
+      </div>
+    </div>
+    ${sections}
+  </div>`;
+}
+
+function buildCrewSection(c, i) {
+  return `
+    <div class="cs-heading" draggable="false">
+      <span class="cs-drag-handle pdf-hide" title="Drag to reorder">⠿</span>
+      CREW &amp; CALL TIMES
+      <div class="cs-section-actions pdf-hide">
+        <button class="cs-section-btn" onclick="toggleSectionMinimize(${i},'crew');renderCallsheet(currentProject());">${c.minimizedCrew ? '+ Expand' : '− Hide'}</button>
+      </div>
+    </div>
+    <div style="display:${c.minimizedCrew ? 'none' : 'block'};">
+      <div class="cs-call-times">
+        <div class="cs-call-card highlight">
+          <div class="cs-call-label">Crew Call</div>
+          <input class="cs-call-input" value="${c.crewCall || ''}" placeholder="00:00" onchange="updateCSF(${i},'crewCall',this.value)">
+        </div>
+        <div class="cs-call-card">
+          <div class="cs-call-label">First Shot</div>
+          <input class="cs-call-input" value="${c.shootCall || ''}" placeholder="00:00" onchange="updateCSF(${i},'shootCall',this.value)">
+        </div>
+        <div class="cs-call-card">
+          <div class="cs-call-label">Est. Wrap</div>
+          <input class="cs-call-input" value="${c.estWrap || ''}" placeholder="00:00" onchange="updateCSF(${i},'estWrap',this.value)">
+        </div>
+        <div class="cs-call-card">
+          <div class="cs-call-label">Daylight</div>
+          <input class="cs-call-input" value="${c.daylight || ''}" placeholder="Sunrise/set" onchange="updateCSF(${i},'daylight',this.value)">
+        </div>
+      </div>
+      <div class="cs-weather-row">
+        <div class="cs-weather-item">
+          <div class="cs-weather-icon">☁</div>
+          <input class="cs-weather-input" value="${c.weather || ''}" placeholder="Weather forecast" onchange="updateCSF(${i},'weather',this.value)">
+        </div>
+        <div class="cs-weather-item">
+          <div class="cs-weather-icon">💧</div>
+          <input class="cs-weather-input" value="${c.weatherDetail || ''}" placeholder="Rain / Wind / Temp" onchange="updateCSF(${i},'weatherDetail',this.value)">
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#888;margin-bottom:10px;">Key Crew Contacts</div>
+      <div class="cs-crew-grid">
+        ${(c.customFields || []).map((cf, fi) => `
+          <div class="cs-crew-item">
+            <div class="cs-crew-role" title="${cf.label}">${cf.label}</div>
+            <div class="cs-crew-inputs">
+              <input class="cs-crew-field" value="${cf.value || ''}" placeholder="Name" onchange="updateCSCustomField(${i},${fi},this.value)">
+              <input class="cs-crew-field" value="${cf.phone || ''}" placeholder="Phone" onchange="updateCSCustomField(${i},${fi},this.value,'phone')">
+            </div>
+            <button class="cs-section-btn pdf-hide" style="flex-shrink:0;color:#c44444" onclick="removeCSCustomField(${i},${fi})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="cs-add-row-btn pdf-hide" onclick="addCSCustomField(${i})" style="margin-top:10px;">+ Add Crew Contact</button>
+    </div>`;
+}
+
+function buildLocationsSection(c, i) {
+  return `
+    <div class="cs-heading" draggable="false">
+      <span class="cs-drag-handle pdf-hide" title="Drag to reorder">⠿</span>
+      LOCATIONS
+      <div class="cs-section-actions pdf-hide">
+        <button class="cs-section-btn" onclick="toggleSectionMinimize(${i},'locations');renderCallsheet(currentProject());">${c.minimizedLocations ? '+ Expand' : '− Hide'}</button>
+      </div>
+    </div>
+    <div style="display:${c.minimizedLocations ? 'none' : 'block'};">
+      <table class="cs-table">
+        <thead><tr><th>Location / Address</th><th>Parking &amp; Notes</th><th>Nearest A&amp;E</th><th class="pdf-hide"></th></tr></thead>
+        <tbody>
+          ${(c.locRows || []).map((r, ri) => `
+            <tr>
+              <td><input class="cs-table-input" value="${r.loc || ''}" placeholder="Full address" onchange="updateCSRow(${i},'locRows',${ri},'loc',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.parking || ''}" placeholder="Parking info, restrictions…" onchange="updateCSRow(${i},'locRows',${ri},'parking',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.hospital || ''}" placeholder="Hospital name &amp; postcode" onchange="updateCSRow(${i},'locRows',${ri},'hospital',this.value)"></td>
+              <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'locRows',${ri})">✕</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <button class="cs-add-row-btn pdf-hide" onclick="addCSRow(${i},'locRows',{loc:'',parking:'',hospital:''})">+ Add Location</button>
+    </div>`;
+}
+
+function buildCastSection(c, i) {
+  const showContact = c.hideContactDetails !== true;
+  return `
+    <div class="cs-heading" draggable="false">
+      <span class="cs-drag-handle pdf-hide" title="Drag to reorder">⠿</span>
+      CAST
+      <div class="cs-section-actions pdf-hide">
+        <button class="cs-section-btn" onclick="toggleSectionMinimize(${i},'cast');renderCallsheet(currentProject());">${c.minimizedCast ? '+ Expand' : '− Hide'}</button>
+        <button class="cs-section-btn" onclick="updateCSF(${i},'hideContactDetails',${showContact});renderCallsheet(currentProject());" title="${showContact ? 'Hide' : 'Show'} contact details">${showContact ? '🔒 Hide Contacts' : '👁 Show Contacts'}</button>
+      </div>
+    </div>
+    <div style="display:${c.minimizedCast ? 'none' : 'block'};">
+      <div class="cs-note">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;white-space:nowrap;">Actors POC:</span>
+        <input class="cs-note-input" value="${c.actorsContact || ''}" placeholder="Name / Number" onchange="updateCSF(${i},'actorsContact',this.value)">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;white-space:nowrap;margin-left:16px;">SA POC:</span>
+        <input class="cs-note-input" value="${c.sasContact || ''}" placeholder="Name / Number" onchange="updateCSF(${i},'sasContact',this.value)">
+      </div>
+      <table class="cs-table">
+        <thead><tr>
+          <th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>POC</th>
+          ${showContact ? '<th>Contact</th><th>Socials</th>' : ''}
+          <th class="pdf-hide"></th>
+        </tr></thead>
+        <tbody>
+          ${(c.castRows || []).map((r, ri) => `
+            <tr>
+              <td><input class="cs-table-input" value="${r.actor || ''}" placeholder="Name" onchange="updateCSRow(${i},'castRows',${ri},'actor',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.character || ''}" placeholder="Character" onchange="updateCSRow(${i},'castRows',${ri},'character',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.callTime || ''}" placeholder="00:00" style="width:52px" onchange="updateCSRow(${i},'castRows',${ri},'callTime',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.wrapTime || ''}" placeholder="00:00" style="width:52px" onchange="updateCSRow(${i},'castRows',${ri},'wrapTime',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.poc || ''}" placeholder="Name / Num" onchange="updateCSRow(${i},'castRows',${ri},'poc',this.value)"></td>
+              ${showContact ? `
+              <td><input class="cs-table-input" value="${r.contact || ''}" placeholder="Phone / Email" onchange="updateCSRow(${i},'castRows',${ri},'contact',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.socials || ''}" placeholder="@handle" onchange="updateCSRow(${i},'castRows',${ri},'socials',this.value)"></td>` : ''}
+              <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'castRows',${ri})">✕</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <button class="cs-add-row-btn pdf-hide" onclick="openAddCastModal(${i})">+ Add Cast</button>
+    </div>`;
+}
+
+function buildScheduleSection(c, i) {
+  return `
+    <div class="cs-heading" draggable="false">
+      <span class="cs-drag-handle pdf-hide" title="Drag to reorder">⠿</span>
+      ESTIMATED SCHEDULE
+      <div class="cs-section-actions pdf-hide">
+        <button class="cs-section-btn" onclick="toggleSectionMinimize(${i},'schedule');renderCallsheet(currentProject());">${c.minimizedSchedule ? '+ Expand' : '− Hide'}</button>
+      </div>
+    </div>
+    <div style="display:${c.minimizedSchedule ? 'none' : 'block'};">
+      <table class="cs-table">
+        <thead><tr>
+          <th>Time</th><th>Scene</th><th>Shot</th><th>Type</th>
+          <th>Description</th><th>Cast</th><th>Pages</th><th>Est.</th>
+          <th class="pdf-hide"></th>
+        </tr></thead>
+        <tbody>
+          ${(c.schedRows || []).map((r, ri) => `
+            <tr>
+              <td><input class="cs-table-input" value="${r.time || ''}" placeholder="09:00" style="width:45px" onchange="updateCSRow(${i},'schedRows',${ri},'time',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.scene || ''}" placeholder="1A" style="width:32px" onchange="updateCSRow(${i},'schedRows',${ri},'scene',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.shot || ''}" placeholder="1" style="width:28px" onchange="updateCSRow(${i},'schedRows',${ri},'shot',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.shotType || ''}" placeholder="CU" style="width:38px" onchange="updateCSRow(${i},'schedRows',${ri},'shotType',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.desc || ''}" placeholder="Description" onchange="updateCSRow(${i},'schedRows',${ri},'desc',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.cast || ''}" placeholder="Cast" onchange="updateCSRow(${i},'schedRows',${ri},'cast',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.pages || ''}" placeholder="p." style="width:32px" onchange="updateCSRow(${i},'schedRows',${ri},'pages',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.est || ''}" placeholder="45m" style="width:38px" onchange="updateCSRow(${i},'schedRows',${ri},'est',this.value)"></td>
+              <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'schedRows',${ri})">✕</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <button class="cs-add-row-btn pdf-hide" onclick="addCSRow(${i},'schedRows',{time:'',scene:'',shot:'',shotType:'',desc:'',cast:'',pages:'',est:''})">+ Add Row</button>
+    </div>`;
+}
+
+function buildNotesSection(c, i) {
+  return `
+    <div class="cs-heading" draggable="false">
+      <span class="cs-drag-handle pdf-hide" title="Drag to reorder">⠿</span>
+      NOTES &amp; INFORMATION
+      <div class="cs-section-actions pdf-hide">
+        <button class="cs-section-btn" onclick="toggleSectionMinimize(${i},'notes');renderCallsheet(currentProject());">${c.minimizedNotes ? '+ Expand' : '− Hide'}</button>
+      </div>
+    </div>
+    <div style="display:${c.minimizedNotes ? 'none' : 'block'};">
+      <textarea class="cs-notes-area" placeholder="Enter any important notes, safety info, production updates…" onchange="updateCSF(${i},'generalNotes',this.value)">${c.generalNotes || ''}</textarea>
+    </div>`;
+}
+
+// Drag-and-drop section reordering
+function initCallsheetDragDrop(p) {
+  document.querySelectorAll('.cs-draggable-section').forEach(section => {
+    section.addEventListener('dragstart', handleSectionDragStart);
+    section.addEventListener('dragover', handleSectionDragOver);
+    section.addEventListener('dragleave', handleSectionDragLeave);
+    section.addEventListener('drop', handleSectionDrop);
+    section.addEventListener('dragend', handleSectionDragEnd);
+  });
+}
+
+let _dragSrcSection = null;
+let _dragSrcCsIdx = null;
+let _dragSrcKey = null;
+
+function handleSectionDragStart(e) {
+  _dragSrcSection = this;
+  _dragSrcCsIdx = parseInt(this.dataset.csidx);
+  _dragSrcKey = this.dataset.section;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', _dragSrcKey);
+}
+function handleSectionDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (this !== _dragSrcSection) this.classList.add('drag-over');
+}
+function handleSectionDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+function handleSectionDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  if (this === _dragSrcSection) return;
+  const targetKey = this.dataset.section;
+  const targetCsIdx = parseInt(this.dataset.csidx);
+  if (targetCsIdx !== _dragSrcCsIdx) return;
+  const p = currentProject();
+  const order = p.callsheets[_dragSrcCsIdx].sectionOrder;
+  if (!order) return;
+  const srcIdx = order.indexOf(_dragSrcKey);
+  const tgtIdx = order.indexOf(targetKey);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  order.splice(srcIdx, 1);
+  order.splice(tgtIdx, 0, _dragSrcKey);
+  saveStore();
+  renderCallsheet(p);
+}
+function handleSectionDragEnd(e) {
+  document.querySelectorAll('.cs-draggable-section').forEach(s => {
+    s.classList.remove('dragging', 'drag-over');
+  });
+  _dragSrcSection = null;
+}
+
+// For PDF export — render a static (non-interactive) version of a callsheet
+function renderSingleCallsheet(c, i) {
+  const p = currentProject();
+  const d = c.date ? new Date(c.date + 'T12:00:00') : null;
+  const dayNum = d ? d.getDate() : '—';
+  const monthStr = d ? d.toLocaleDateString('en-GB', {month:'short'}).toUpperCase() : 'DATE';
+  const yearStr = d ? d.getFullYear() : '2025';
+  const showContact = c.hideContactDetails !== true;
+
+  const sectionOrder = c.sectionOrder || ['crew', 'locations', 'cast', 'schedule', 'notes'];
+
+  const sectionHTML = {
+    crew: !c.hideCrewCall ? buildCrewSection(c, i) : '',
+    locations: !c.hideLocations ? buildLocationsSection(c, i) : '',
+    cast: !c.hideCast ? buildCastSection(c, i) : '',
+    schedule: !c.hideSchedule ? buildScheduleSection(c, i) : '',
+    notes: !c.hideNotes ? buildNotesSection(c, i) : '',
+  };
+
+  const sections = sectionOrder.map(key => sectionHTML[key] || '').join('');
+
+  return `
+  <div class="cs-page">
+    <div class="cs-top-bar">
+      <div class="cs-logo-section">
+        <div class="cs-logo-drop" style="border:none;background:transparent;">
+          ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" alt="logo">` : '<span style="color:#888;font-size:9px;text-align:center;line-height:1.3;">LOGO</span>'}
+        </div>
+      </div>
+      <div class="cs-header-main">
+        <div class="cs-header-info">
+          <h1>${c.prodTitle || p.title || 'PRODUCTION TITLE'}</h1>
+          <div class="cs-prod-info">Production ${c.prodNum || p.num || '001'} &nbsp;•&nbsp; ${c.company || p.company || '—'}</div>
+          <div class="cs-header-meta">
+            <div class="cs-meta-item"><span class="cs-meta-label">Shoot Day</span><span class="cs-meta-value">Day ${c.shootDay || i + 1}</span></div>
+            <div class="cs-meta-item"><span class="cs-meta-label">Date</span><span class="cs-meta-value">${d ? d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}) : 'TBD'}</span></div>
+            <div class="cs-meta-item"><span class="cs-meta-label">Director</span><span class="cs-meta-value">${c.dirProd || p.director || '—'}</span></div>
+            <div class="cs-meta-item"><span class="cs-meta-label">Producer</span><span class="cs-meta-value">${c.producer || p.producer || '—'}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-date-box">
+        <div class="cs-date-day">${dayNum}</div>
+        <div class="cs-date-month">${monthStr}</div>
+        <div class="cs-date-year">${yearStr}</div>
+      </div>
+    </div>
+    <div class="cs-content">${sections}</div>
+  </div>`;
+}

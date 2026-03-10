@@ -1,0 +1,505 @@
+  /* ── CALLSHEET ── */
+  /* Wrapper card in the dark app */
+  .cs-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .cs-header-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border2);
+    padding: 13px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cs-header-bar h3 { font-family: var(--font-display); font-size: 20px; letter-spacing: 1.5px; }
+
+  /* The white paper page */
+  .cs-page {
+    background: #fff;
+    color: #1a1a1a;
+    margin: 0 auto 32px;
+    max-width: 1000px;
+    width: 100%;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    box-sizing: border-box;
+    font-family: 'Arial', 'Helvetica Neue', sans-serif;
+  }
+
+  /* TOP BAR: logo | header info | date box */
+  .cs-top-bar {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 3px solid #1a1a1a;
+    background: #fff;
+  }
+  .cs-logo-section {
+    width: 130px;
+    min-width: 130px;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .cs-logo-drop {
+    width: 90px;
+    height: 90px;
+    border: 2px dashed #555;
+    background: #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    overflow: hidden;
+  }
+  .cs-logo-drop:hover { border-color: #888; background: #333; }
+  .cs-logo-drop img { width: 100%; height: 100%; object-fit: contain; border-radius: 2px; }
+  .cs-header-main {
+    flex: 1;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cs-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cs-header-info { flex: 1; }
+  .cs-header-info h1 {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+  .cs-prod-info { font-size: 12px; color: #666; font-weight: 500; margin-bottom: 2px; }
+  .cs-header-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    flex-wrap: wrap;
+  }
+  .cs-meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .cs-meta-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #999;
+    font-weight: 700;
+  }
+  .cs-meta-value { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+  .cs-meta-input {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: transparent;
+    outline: none;
+    padding: 1px 2px;
+    width: auto;
+  }
+  .cs-meta-input:focus { border-bottom-color: #1a1a1a; }
+  .cs-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .cs-date-box {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 16px 20px;
+    text-align: center;
+    min-width: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .cs-date-box input[type="date"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .cs-date-day { font-size: 30px; font-weight: 900; line-height: 1; }
+  .cs-date-month { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-top: 3px; opacity: 0.8; }
+  .cs-date-year { font-size: 11px; opacity: 0.6; margin-top: 1px; }
+
+  /* SECTION TOGGLE BAR */
+  .cs-toggle-bar {
+    display: flex;
+    flex-wrap: wrap;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .cs-ctrl-btn {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #e0e0e0;
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .cs-ctrl-btn:last-child { border-right: none; }
+  .cs-ctrl-btn:hover { background: #eee; color: #333; }
+  .cs-ctrl-btn.active { background: #1a1a1a; color: #fff; }
+  .cs-ctrl-btn.right { margin-left: auto; }
+  .cs-ctrl-btn.danger { color: #c44444; }
+  .cs-ctrl-btn.danger:hover { background: #fee; }
+
+  /* CONTENT AREA */
+  .cs-content {
+    padding: 24px 28px;
+    background: #fff;
+  }
+
+  /* DRAGGABLE SECTION */
+  .cs-draggable-section {
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .cs-draggable-section.dragging {
+    opacity: 0.4;
+  }
+  .cs-draggable-section.drag-over {
+    border-top: 2px solid #d4aa2c;
+  }
+
+  /* SECTION HEADINGS */
+  .cs-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #1a1a1a;
+    cursor: grab;
+    user-select: none;
+  }
+  .cs-heading:active { cursor: grabbing; }
+  .cs-heading::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 16px;
+    background: #d4aa2c;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .cs-drag-handle {
+    color: #ccc;
+    font-size: 14px;
+    cursor: grab;
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+  .cs-drag-handle:hover { color: #999; }
+  .cs-section-actions { margin-left: auto; display: flex; gap: 4px; }
+  .cs-section-btn {
+    padding: 3px 8px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #666;
+    transition: all 0.12s;
+  }
+  .cs-section-btn:hover { background: #eee; color: #333; }
+
+  /* CALL TIME CARDS */
+  .cs-call-times {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .cs-call-card {
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .cs-call-card.highlight {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+  }
+  .cs-call-card.highlight .cs-call-label { color: rgba(255,255,255,0.65); }
+  .cs-call-card.highlight .cs-call-value { color: #fff; }
+  .cs-call-card.editable { cursor: pointer; }
+  .cs-call-card.editable:hover { border-color: #999; }
+  .cs-call-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+    margin-bottom: 5px;
+    font-weight: 700;
+  }
+  .cs-call-value {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
+  }
+  .cs-call-input {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1a1a1a;
+    border: none;
+    background: transparent;
+    text-align: center;
+    width: 100%;
+    outline: none;
+  }
+  .cs-call-card.highlight .cs-call-input { color: #fff; background: transparent; }
+
+  /* WEATHER ROW */
+  .cs-weather-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .cs-weather-item { display: flex; align-items: center; gap: 8px; }
+  .cs-weather-icon {
+    width: 22px;
+    height: 22px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .cs-weather-input {
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    color: #555;
+    outline: none;
+    width: 130px;
+  }
+
+  /* CREW GRID */
+  .cs-crew-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  .cs-crew-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-left: 3px solid #5bc0eb;
+    border-radius: 0 4px 4px 0;
+    min-width: 0;
+  }
+  .cs-crew-role {
+    font-size: 9.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #5bc0eb;
+    letter-spacing: 0.8px;
+    min-width: 80px;
+    max-width: 100px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cs-crew-inputs { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cs-crew-field {
+    border: none;
+    border-bottom: 1px solid #e8e8e8;
+    background: transparent;
+    font-size: 12px;
+    color: #1a1a1a;
+    font-weight: 500;
+    outline: none;
+    width: 100%;
+    padding: 2px 0;
+  }
+  .cs-crew-field:focus { border-bottom-color: #1a1a1a; }
+  .cs-crew-field::placeholder { color: #bbb; font-style: italic; font-weight: 400; }
+
+  /* TABLES */
+  .cs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    border: 1px solid #e8e8e8;
+    table-layout: auto;
+  }
+  .cs-table th {
+    text-align: left;
+    padding: 9px 11px;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #666;
+    background: #f5f5f5;
+    border-bottom: 2px solid #e0e0e0;
+    white-space: nowrap;
+  }
+  .cs-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  .cs-table tr:last-child td { border-bottom: none; }
+  .cs-table tbody tr:hover td { background: #fafafa; }
+  .cs-table tbody tr:nth-child(even) td { background: #fdfdfd; }
+  .cs-table-input {
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: transparent;
+    font-size: 12.5px;
+    color: #1a1a1a;
+    font-weight: 500;
+    outline: none;
+    width: 100%;
+    padding: 3px 0;
+    font-family: 'Arial', sans-serif;
+  }
+  .cs-table-input:focus { border-bottom-color: #1a1a1a; background: rgba(0,0,0,0.01); }
+  .cs-table-input::placeholder { color: #aaa; font-style: italic; font-weight: 400; }
+  .cs-table td:last-child { width: 32px; text-align: center; }
+
+  /* ADD ROW BUTTON */
+  .cs-add-row-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .cs-add-row-btn:hover { border-color: #999; color: #333; background: #fafafa; }
+
+  /* NOTES */
+  .cs-notes-area {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px 14px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #fafafa;
+    font-family: 'Arial', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #333;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .cs-notes-area:focus { border-color: #1a1a1a; background: #fff; }
+
+  /* HIGHLIGHTED NOTE */
+  .cs-note {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-left: 3px solid #d4aa2c;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cs-note-input {
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: transparent;
+    font-size: 12px;
+    color: #1a1a1a;
+    font-weight: 600;
+    outline: none;
+    flex: 1;
+    min-width: 120px;
+    padding: 1px 2px;
+  }
+  .cs-note-input:focus { border-bottom-color: #1a1a1a; }
+  .cs-note-input::placeholder { color: #aaa; font-style: italic; font-weight: 400; }
+
+  /* SPACER */
+  .cs-spacer { height: 16px; }
+
+  /* PRINT */
+  @media print {
+    .cs-ctrl-btn, .cs-add-row-btn, .cs-section-btn, .cs-drag-handle,
+    .cs-header-controls, .pdf-hide { display: none !important; }
+    .cs-page { box-shadow: none; border: 1px solid #ddd; margin: 0; }
+    .cs-table th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-call-card.highlight { background: #1a1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-crew-item { border-left: 3px solid #5bc0eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-note { border-left: 3px solid #d4aa2c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-logo-drop { border: none !important; background: transparent !important; }
+    input, textarea { border: none !important; background: transparent !important; }
+  }
+
+  /* Callsheet responsive */
+  @media (max-width: 768px) {
+    .cs-top-bar { flex-direction: column; }
+    .cs-logo-section, .cs-date-box { width: 100% !important; min-width: 0 !important; }
+    .cs-call-times { grid-template-columns: 1fr 1fr; }
+    .cs-crew-grid { grid-template-columns: 1fr; }
+    .cs-content { padding: 16px; }
+  }
