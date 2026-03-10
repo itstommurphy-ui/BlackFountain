@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FilmForge — Production Management</title>
+<title>Black Fountain — Production Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #06060a;
-    --surface: #0d0d12;
-    --surface2: #131319;
-    --surface3: #1a1a22;
-    --surface4: #22222c;
-    --border: #22222e;
-    --border2: #181820;
-    --accent: #d4aa2c;
-    --accent-dim: rgba(212,170,44,0.1);
-    --accent2: #38a8d4;
-    --accent2-dim: rgba(56,168,212,0.08);
+    --bg: #0a0a10;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #222230;
+    --surface4: #32324a;
+    --border: #3a3a52;
+    --border2: #282838;
+    --accent: #e6bc3c;
+    --accent-dim: rgba(230,188,60,0.15);
+    --accent2: #5bc0eb;
+    --accent2-dim: rgba(91,192,235,0.12);
     --accent3: #c4566e;
-    --text: #e8e8f0;
-    --text2: #9898b0;
-    --text3: #6a6a85;
+    --text: #f0f0f5;
+    --text2: #c8c8d8;
+    --text3: #9090a8;
     --green: #2ea864;
     --orange: #d4883a;
     --red: #c44444;
@@ -34,7 +34,13 @@
     --shadow-lg: 0 4px 20px rgba(0,0,0,0.7), 0 12px 48px rgba(0,0,0,0.4);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100vw; }
+  
+  html, body {
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
   
   body {
     background: var(--bg);
@@ -48,7 +54,7 @@
   }
 
   /* ── LAYOUT ── */
-  #app { display: flex; min-height: 100vh; }
+  #app { display: flex; min-height: 100vh; max-width: 100vw; overflow: hidden; }
 
   /* ── SIDEBAR ── */
   #sidebar {
@@ -76,6 +82,7 @@
     padding: 20px 16px 16px;
     border-bottom: 1px solid var(--border2);
     background: linear-gradient(180deg, rgba(212,170,44,0.04) 0%, transparent 100%);
+    overflow: hidden;
   }
   .sidebar-logo h1 {
     font-family: var(--font-display);
@@ -94,7 +101,7 @@
     font-family: var(--font-mono);
   }
 
-  .sidebar-section { padding: 16px 8px 4px; }
+  .sidebar-section { padding: 16px 8px 4px; overflow: hidden; }
   .sidebar-section-label {
     font-size: 8.5px;
     letter-spacing: 3px;
@@ -103,6 +110,9 @@
     font-family: var(--font-mono);
     padding: 0 10px;
     margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nav-item {
@@ -118,6 +128,9 @@
     transition: all 0.12s;
     border: 1px solid transparent;
     user-select: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .nav-item:hover { background: var(--surface2); color: var(--text); }
   .nav-item.active {
@@ -140,6 +153,9 @@
     font-size: 12px;
     transition: all 0.12s;
     border: 1px solid transparent;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .project-item:hover { background: var(--surface2); color: var(--text); }
   .project-item.active {
@@ -159,10 +175,11 @@
     margin-top: auto;
     padding: 12px 8px;
     border-top: 1px solid var(--border2);
+    overflow: hidden;
   }
 
   /* ── MAIN ── */
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
   /* ── TOPBAR ── */
   #topbar {
@@ -201,12 +218,12 @@
   .btn:hover { background: var(--surface3); border-color: var(--surface4); color: var(--text); }
   .btn-primary {
     background: var(--accent);
-    color: #04040a;
+    color: #0a0a10;
     border-color: var(--accent);
     font-weight: 600;
     letter-spacing: 0.2px;
   }
-  .btn-primary:hover { background: #dbb830; border-color: #dbb830; }
+  .btn-primary:hover { background: #f5cc50; border-color: #f5cc50; }
   .btn-sm { padding: 5px 10px; font-size: 11px; }
   .btn-ghost { background: transparent; border-color: transparent; color: var(--text3); }
   .btn-ghost:hover { background: var(--surface2); border-color: var(--border); color: var(--text2); }
@@ -214,14 +231,14 @@
   .btn-danger:hover { background: rgba(196,68,68,0.08); border-color: rgba(196,68,68,0.2); }
 
   /* ── CONTENT ── */
-  #content { flex: 1; padding: 24px; overflow-y: auto; }
+  #content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; }
 
   /* ── VIEWS ── */
   .view { display: none; }
   .view.active { display: block; }
 
   /* ── DASHBOARD ── */
-  .page-header { margin-bottom: 22px; }
+  .page-header { margin-bottom: 22px; overflow: hidden; }
   .page-header h2 {
     font-family: var(--font-display);
     font-size: 42px;
@@ -229,14 +246,19 @@
     color: var(--text);
     line-height: 1;
     margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .page-header p { color: var(--text3); font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); }
+  .page-header p { color: var(--text3); font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 22px;
+    max-width: 100%;
+    overflow: hidden;
   }
   .stat-card {
     background: var(--surface);
@@ -274,6 +296,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
     gap: 12px;
+    max-width: 100%;
   }
 
   .project-card {
@@ -330,13 +353,14 @@
     padding: 2px 7px;
     border-radius: 3px;
     flex-shrink: 0;
+    font-weight: 500;
   }
-  .badge-pre { background: rgba(56,168,212,0.1); color: var(--accent2); }
-  .badge-prod { background: rgba(212,170,44,0.1); color: var(--accent); }
-  .badge-post { background: rgba(196,86,110,0.1); color: var(--accent3); }
-  .badge-done { background: rgba(46,168,100,0.1); color: var(--green); }
+  .badge-pre { background: rgba(56,168,212,0.15); color: #7dd0f5; }
+  .badge-prod { background: rgba(212,170,44,0.15); color: #f0cf70; }
+  .badge-post { background: rgba(196,86,110,0.15); color: #e08095; }
+  .badge-done { background: rgba(46,168,100,0.15); color: #60d090; }
 
-  .project-card-meta { color: var(--text3); font-size: 11.5px; margin-bottom: 14px; line-height: 1.7; }
+  .project-card-meta { color: var(--text3); font-size: 11.5px; margin-bottom: 14px; line-height: 1.7; overflow: hidden; text-overflow: ellipsis; }
   .project-card-footer { display: flex; justify-content: space-between; align-items: center; }
   .project-card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
   .tag {
@@ -344,10 +368,11 @@
     padding: 2px 6px;
     border-radius: 3px;
     background: var(--surface2);
-    color: var(--text3);
+    color: var(--text2);
     font-family: var(--font-mono);
     border: 1px solid var(--border2);
     letter-spacing: 0.5px;
+    white-space: nowrap;
   }
 
   .new-project-card {
@@ -382,6 +407,7 @@
     box-shadow: var(--shadow);
     position: relative;
     overflow: hidden;
+    max-width: 100%;
   }
   .project-header::after {
     content: '';
@@ -391,7 +417,7 @@
     background: var(--accent);
     opacity: 0.8;
   }
-  .project-header-left { padding-left: 8px; }
+  .project-header-left { padding-left: 8px; overflow: hidden; }
   .project-header-left h2 {
     font-family: var(--font-display);
     font-size: 40px;
@@ -399,8 +425,11 @@
     color: var(--text);
     line-height: 1;
     margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .project-header-meta { display: flex; gap: 16px; color: var(--text3); font-size: 11px; flex-wrap: wrap; font-family: var(--font-mono); letter-spacing: 0.5px; }
+  .project-header-meta { display: flex; gap: 16px; color: var(--text3); font-size: 11px; flex-wrap: wrap; font-family: var(--font-mono); letter-spacing: 0.5px; overflow: hidden; }
   .project-header-meta span { display: flex; align-items: center; gap: 4px; }
 
   .section-tabs {
@@ -413,6 +442,8 @@
     margin-bottom: 18px;
     flex-wrap: wrap;
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
   }
   .section-tab {
     padding: 9px 14px;
@@ -439,6 +470,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px;
+    max-width: 100%;
   }
   .doc-card {
     background: var(--surface);
@@ -447,6 +479,7 @@
     padding: 16px;
     cursor: pointer;
     transition: all 0.14s;
+    overflow: hidden;
   }
   .doc-card:hover {
     border-color: var(--border);
@@ -455,7 +488,7 @@
     box-shadow: var(--shadow);
   }
   .doc-card-icon { font-size: 20px; margin-bottom: 8px; opacity: 0.85; }
-  .doc-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .doc-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .doc-card-sub { font-size: 11px; color: var(--text3); }
   .doc-card-status {
     margin-top: 10px;
@@ -483,6 +516,166 @@
   }
   .new-doc-card:hover { border-color: var(--accent2); color: var(--accent2); }
 
+  /* ── FILES PAGE ── */
+  .file-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .file-tab {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    transition: all 0.12s;
+  }
+  .file-tab:hover { color: var(--text2); border-color: var(--border); }
+  .file-tab.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(230,188,60,0.3);
+  }
+
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    max-width: 100%;
+  }
+  .file-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.14s;
+    position: relative;
+    overflow: hidden;
+  }
+  .file-card:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .file-card-preview {
+    width: 100%;
+    height: 100px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    overflow: hidden;
+  }
+  .file-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .file-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-card-meta {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .file-card-type {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: var(--surface3);
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .file-card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .file-card:hover .file-card-actions { opacity: 1; }
+  .file-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.12s;
+  }
+  .file-action-btn:hover { background: var(--surface3); color: var(--text2); }
+  .file-action-btn.delete:hover { background: rgba(196,68,68,0.15); border-color: rgba(196,68,68,0.3); color: var(--red); }
+
+  .file-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.14s;
+    margin-bottom: 20px;
+    background: var(--surface);
+  }
+  .file-upload-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .file-upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .file-upload-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+  .file-upload-text {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .file-upload-hint {
+    color: var(--text3);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  .file-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .file-empty-icon { font-size: 48px; opacity: 0.3; margin-bottom: 16px; }
+  .file-empty-text { font-size: 14px; margin-bottom: 8px; color: var(--text2); }
+  .file-empty-hint { font-size: 12px; font-family: var(--font-mono); }
+
   /* ── MODAL ── */
   .modal-overlay {
     display: none;
@@ -495,6 +688,7 @@
     justify-content: center;
   }
   .modal-overlay.open { display: flex !important; }
+  
   .modal {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -504,6 +698,7 @@
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
     animation: none;
     box-shadow: var(--shadow-lg);
@@ -542,7 +737,7 @@
   .modal-close:hover { background: var(--surface3); color: var(--text2); }
 
   /* ── FORMS ── */
-  .form-group { margin-bottom: 14px; }
+  .form-group { margin-bottom: 14px; overflow: hidden; }
   .form-label {
     font-size: 9px;
     font-weight: 600;
@@ -569,11 +764,58 @@
     border-color: var(--accent2);
     box-shadow: 0 0 0 2px rgba(56,168,212,0.08);
   }
+  .form-input-sm {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12px;
+    outline: none;
+  }
+  .form-input-sm:focus {
+    border-color: var(--accent2);
+  }
+  .form-textarea-sm {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12px;
+    resize: vertical;
+    min-height: 40px;
+    line-height: 1.4;
+    outline: none;
+  }
+  .form-textarea-sm:focus {
+    border-color: var(--accent2);
+  }
+  .form-input-minimal {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 4px 0;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input-minimal:focus {
+    border-bottom-color: var(--accent2);
+  }
+  .form-input-minimal::placeholder { color: var(--text3); }
   .form-input::placeholder { color: var(--text3); }
   .form-textarea { resize: vertical; min-height: 78px; line-height: 1.55; }
   .form-select option { background: var(--surface2); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 100%; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; max-width: 100%; }
   .form-actions {
     display: flex;
     gap: 7px;
@@ -588,6 +830,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 12.5px;
+    min-width: 600px;
   }
   .data-table th {
     text-align: left;
@@ -613,13 +856,17 @@
   .data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.012); }
   .data-table tbody tr:hover td { background: var(--surface3); color: var(--text); cursor: pointer; }
   .data-table tr:last-child td { border-bottom: none; }
+  .data-table td { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .data-table td[title] { cursor: help; }
 
   .table-container {
     background: var(--surface);
     border: 1px solid var(--border2);
     border-radius: var(--radius-lg);
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     box-shadow: var(--shadow);
+    max-width: 100%;
   }
   .table-toolbar {
     padding: 10px 14px;
@@ -698,14 +945,14 @@
   }
   .breakdown-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .breakdown-field-label {
-    font-size: 9.5px;
+    font-size: 11px;
     color: var(--text3);
     font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     margin-bottom: 3px;
   }
-  .breakdown-field-val { font-size: 13px; color: var(--text); }
+  .breakdown-field-val { font-size: 14px; color: var(--text); font-weight: 500; }
   .breakdown-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -718,181 +965,535 @@
   }
   .breakdown-cell {
     background: var(--surface);
-    padding: 10px 12px;
-    min-height: 76px;
+    padding: 12px 14px;
+    min-height: 80px;
   }
   .breakdown-cell-label {
-    font-size: 9px;
+    font-size: 10px;
     color: var(--text3);
     font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     margin-bottom: 5px;
   }
   .breakdown-cell textarea {
     background: transparent;
     border: none;
     color: var(--text2);
-    font-size: 12px;
+    font-size: 13px;
     font-family: var(--font-body);
     resize: none;
     width: 100%;
     outline: none;
-    min-height: 54px;
-    line-height: 1.55;
+    min-height: 56px;
+    line-height: 1.5;
   }
   .breakdown-cell textarea:focus { color: var(--text); }
 
   /* ── CALLSHEET ── */
   .cs-page {
-    background: white;
-    color: #000;
-    margin: 24px auto;
-    max-width: 900px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    background: #fff;
+    color: #1a1a1a;
+    margin: 0 auto 32px;
+    max-width: 1000px;
+    width: 100%;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
     page-break-after: always;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    box-sizing: border-box;
   }
   .cs-top-bar {
-    padding: 20px;
-    border-bottom: 2px solid #333;
+    padding: 0;
+    border-bottom: 3px solid #1a1a1a;
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    background: #f9f9f9;
+    align-items: stretch;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  }
+  .cs-logo-section {
+    width: 140px;
+    min-width: 140px;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
   }
   .cs-logo-drop {
-    width: 80px;
-    height: 80px;
-    border: 2px dashed #ccc;
-    background: white;
+    width: 100px;
+    height: 100px;
+    border: 2px dashed #555;
+    background: #2a2a2a;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     border-radius: 4px;
     flex-shrink: 0;
+    transition: all 0.2s ease;
   }
-  .cs-logo-drop:hover { background: #f5f5f5; border-color: #999; }
-  .cs-header-info { flex: 1; }
-  .cs-toggle-bar {
-    padding: 12px 20px;
-    background: #fff;
-    border-bottom: 1px solid #ddd;
+  .cs-logo-drop:hover { border-color: #888; background: #333; }
+  .cs-logo-drop img { border-radius: 2px; }
+  .cs-header-main {
+    flex: 1;
+    padding: 24px 28px;
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cs-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .cs-header-info { flex: 1; }
+  .cs-header-info h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    color: #1a1a1a;
+    font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
+    text-transform: uppercase;
+  }
+  .cs-header-info .cs-prod-info {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+  .cs-header-meta {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+  }
+  .cs-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cs-meta-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #999;
+    font-weight: 600;
+  }
+  .cs-meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  .cs-date-box {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+  }
+  .cs-date-box input[type="date"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .cs-date-day {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    font-family: 'Arial Black', sans-serif;
+  }
+  .cs-date-month {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 4px;
+    opacity: 0.8;
+  }
+  .cs-date-year {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+  .cs-toggle-bar {
+    padding: 0;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    gap: 0;
     flex-wrap: wrap;
   }
   .cs-toggle {
-    padding: 6px 12px;
-    background: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    padding: 12px 18px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #e0e0e0;
     cursor: pointer;
     font-size: 11px;
-    font-weight: bold;
+    font-weight: 600;
     text-transform: uppercase;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    letter-spacing: 1px;
+    color: #666;
+    font-family: 'Arial', sans-serif;
   }
-  .cs-toggle:hover { background: #e0e0e0; }
-  .cs-toggle.active { background: #333; color: white; border-color: #333; }
+  .cs-toggle:last-child { border-right: none; }
+  .cs-toggle:hover { background: #fff; color: #1a1a1a; }
+  .cs-toggle.active { 
+    background: #1a1a1a; 
+    color: white; 
+  }
   .cs-content {
-    padding: 20px;
+    padding: 28px 32px;
     font-size: 13px;
+    background: #fff;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .cs-content * {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+  .cs-content input, .cs-content textarea, .cs-content select {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .cs-section {
-    margin-bottom: 24px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 32px;
+    padding-bottom: 28px;
+    border-bottom: 2px solid #f0f0f0;
+    max-width: 100%;
+    overflow-x: hidden;
   }
+  .cs-section:last-child { border-bottom: none; }
   .cs-heading {
-    margin: 0 0 16px 0;
-    font-size: 12px;
-    font-weight: bold;
+    margin: 0 0 20px 0;
+    font-size: 13px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #000;
+    letter-spacing: 2px;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Arial', sans-serif;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
   }
+  .cs-heading::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background: #d4aa2c;
+    border-radius: 2px;
+  }
+  .cs-heading button {
+    margin-left: auto;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cs-heading button:hover { background: #eee; }
   .cs-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  .cs-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .cs-field { margin-bottom: 12px; }
+  .cs-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  
+  /* Call Time Cards */
+  .cs-call-times {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .cs-call-card {
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .cs-call-card.highlight {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #fff;
+  }
+  .cs-call-card.highlight .cs-call-label {
+    color: rgba(255,255,255,0.7);
+  }
+  .cs-call-card.highlight .cs-call-value {
+    color: #fff;
+  }
+  .cs-call-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .cs-call-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: 'Arial', sans-serif;
+  }
+  .cs-weather-row {
+    display: flex;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+  .cs-weather-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cs-weather-icon {
+    width: 24px;
+    height: 24px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+  }
+  .cs-weather-text {
+    font-size: 12px;
+    color: #555;
+  }
+  
+  .cs-field { margin-bottom: 16px; }
   .cs-field label { 
     display: block;
     font-size: 10px;
-    font-weight: bold;
+    font-weight: 600;
     text-transform: uppercase;
     color: #666;
-    margin-bottom: 2px;
-    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
   }
   .cs-field input,
   .cs-field textarea {
     width: 100%;
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 12px;
+    padding: 10px 0;
+    border: none;
+    border-bottom: 2px solid #e0e0e0;
+    border-radius: 0;
+    font-size: 14px;
+    background: transparent;
+    transition: border-color 0.2s ease;
+    font-family: 'Arial', sans-serif;
+  }
+  .cs-field input:focus,
+  .cs-field textarea:focus {
+    outline: none;
+    border-bottom-color: #1a1a1a;
+  }
+  .cs-field input::placeholder,
+  .cs-field textarea::placeholder {
+    color: #bbb;
+    font-style: italic;
   }
   .cs-inline {
-    width: 150px;
-    padding: 4px !important;
-    font-size: 11px !important;
-    border: 1px solid #ddd !important;
+    width: 200px;
+    padding: 6px 0 !important;
+    font-size: 13px !important;
+    border-bottom: 2px solid #ddd !important;
+    border-radius: 0 !important;
+    font-weight: 500;
   }
   .cs-note {
-    font-size: 11px;
-    margin-bottom: 8px;
-    color: #666;
+    font-size: 12px;
+    margin-bottom: 14px;
+    color: #555;
+    font-weight: 500;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border-left: 3px solid #d4aa2c;
+    border-radius: 0 4px 4px 0;
   }
-  .cs-spacer { height: 12px; }
+  .cs-spacer { height: 20px; }
   .cs-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e5e5;
+    table-layout: fixed;
   }
   .cs-table th, .cs-table td {
-    padding: 6px;
+    padding: 12px 14px;
     text-align: left;
-    border: 1px solid #ddd;
+    border: none;
+    border-bottom: 1px solid #eee;
     font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .cs-table th {
-    background: #f5f5f5;
-    font-weight: bold;
+    background: #f8f9fa;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 10px;
+    color: #555;
+    border-bottom: 2px solid #ddd;
+  }
+  .cs-table tr:hover td {
+    background: #fafafa;
+  }
+  .cs-table tbody tr:nth-child(even) td {
+    background: #fcfcfc;
   }
   .cs-table input {
     width: 100%;
-    padding: 3px;
+    padding: 6px 0;
     border: none;
-    font-size: 11px;
+    border-bottom: 1px solid #ccc;
+    font-size: 13px;
+    background: transparent;
+    transition: border-color 0.2s ease;
+    border-radius: 0;
+    font-family: 'Arial', sans-serif;
+    color: #1a1a1a;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cs-table input:focus {
+    outline: none;
+    border-bottom-color: #1a1a1a;
+    background: #fafafa;
+  }
+  .cs-table input::placeholder {
+    color: #888;
+    font-style: italic;
+  }
+  .cs-table th:first-child,
+  .cs-table td:first-child {
+    border-left: none;
+  }
+  .cs-table th:last-child,
+  .cs-table td:last-child {
+    border-right: none;
+    width: 40px;
+    text-align: center;
   }
   .cs-add-btn {
-    padding: 6px 12px;
-    background: #fff;
+    padding: 12px 20px;
+    background: #f8f9fa;
     border: 1px dashed #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+  .cs-add-btn:hover { background: #f0f0f0; border-color: #999; color: #1a1a1a; }
+  .btn-tiny {
+    padding: 5px 10px;
+    background: #f5f5f5;
+    border: none;
     border-radius: 3px;
     cursor: pointer;
     font-size: 11px;
-    color: #666;
+    color: #888;
+    transition: all 0.15s ease;
   }
-  .cs-add-btn:hover { background: #f9f9f9; }
-  .btn-tiny {
-    padding: 2px 6px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 10px;
-    color: #999;
-  }
-  .btn-tiny:hover { background: #eee; }
+  .btn-tiny:hover { background: #eee; color: #333; }
   .cs-notes {
     width: 100%;
     height: 120px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-family: var(--font-body);
-    font-size: 12px;
+    padding: 14px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-family: 'Arial', sans-serif;
+    font-size: 13px;
+    background: #fafafa;
+    transition: border-color 0.2s ease;
+    line-height: 1.5;
+  }
+  .cs-notes:focus {
+    outline: none;
+    border-color: #1a1a1a;
+    background: #fff;
+  }
+  .cs-crew-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .cs-crew-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #5bc0eb;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .cs-crew-item label {
+    min-width: 80px;
+    max-width: 100px;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #5bc0eb;
+    letter-spacing: 0.8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cs-crew-item input {
+    flex: 1;
+    min-width: 60px;
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    background: transparent;
+    font-size: 13px;
+    border-radius: 0;
+    font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cs-crew-item input:focus {
+    outline: none;
+    border-bottom-color: #1a1a1a;
   }
   
   @media print {
@@ -928,11 +1529,51 @@
     }
     .cs-table th, .cs-table td {
       border: 1px solid #000;
-      padding: 4px;
+      padding: 6px 8px;
       page-break-inside: avoid;
+    }
+    .cs-table th {
+      background: #f0f0f0 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cs-table tbody tr:nth-child(even) td {
+      background: #f8f8f8 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .cs-section {
       page-break-inside: avoid;
+    }
+    .cs-page {
+      box-shadow: none;
+      border: 1px solid #ddd;
+      margin: 0;
+      max-width: 100%;
+    }
+    .cs-heading {
+      border-bottom: 1px solid #ccc;
+    }
+    .cs-call-card {
+      border: 1px solid #ccc;
+    }
+    .cs-call-card.highlight {
+      background: #1a1a1a !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cs-call-card.highlight .cs-call-label {
+      color: #fff !important;
+    }
+    .cs-crew-item {
+      border-left: 3px solid #5bc0eb !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cs-note {
+      border-left: 3px solid #d4aa2c !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
   }
   .cs-wrap {
@@ -957,16 +1598,17 @@
   .cs-field {
     background: transparent;
     border: none;
-    border-bottom: 1px dashed transparent;
+    border-bottom: 1px solid var(--border);
     color: var(--text);
     font-family: var(--font-body);
     font-size: 13px;
-    padding: 2px 2px;
+    padding: 6px 2px;
     outline: none;
     width: 100%;
     transition: border-color .15s;
+    border-radius: 0;
   }
-  .cs-field:hover { border-bottom-color: var(--border); }
+  .cs-field:hover { border-bottom-color: var(--text3); }
   .cs-field:focus { border-bottom-color: var(--accent2); background: rgba(79,195,247,0.03); }
   .cs-field::placeholder { color: var(--text3); font-style: italic; }
   .cs-field-lg {
@@ -1033,50 +1675,57 @@
   .cs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .cs-table th {
     text-align: left;
-    padding: 5px 8px;
+    padding: 8px 10px;
     font-size: 8.5px;
     font-family: var(--font-mono);
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: var(--text);
-    border-bottom: 1px solid var(--border2);
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
     background: var(--surface2);
   }
   .cs-table td {
-    padding: 4px 6px;
-    border-bottom: 1px solid rgba(30,30,40,0.8);
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(30,30,40,0.5);
     vertical-align: middle;
   }
   .cs-table tr:last-child td { border-bottom: none; }
+  .cs-table tr:hover td { background: rgba(255,255,255,0.02); }
   .cs-table input {
     background: transparent;
     border: none;
-    border-bottom: 1px dashed transparent;
-    color: #000;
+    border-bottom: 1px solid #999;
+    color: #1a1a1a;
     font-family: var(--font-body);
-    font-size: 12px;
-    padding: 2px 2px;
+    font-size: 13px;
+    padding: 6px 2px;
     outline: none;
     width: 100%;
+    transition: border-color .15s;
+    border-radius: 0;
+    font-weight: 500;
   }
-  .cs-table input:hover { border-bottom-color: var(--border); }
-  .cs-table input:focus { border-bottom-color: var(--accent2); }
+  .cs-table input:hover { border-bottom-color: #555; }
+  .cs-table input:focus { border-bottom-color: #1a1a1a; background: rgba(0,0,0,0.02); }
+  .cs-table input::placeholder { color: #888; font-style: italic; }
   .cs-add-row {
     font-size: 10.5px;
     color: var(--text3);
-    padding: 5px 6px;
+    padding: 8px 10px;
     cursor: pointer;
     display: inline-block;
-    margin-top: 3px;
+    margin-top: 6px;
     font-family: var(--font-mono);
     letter-spacing: 0.5px;
     transition: color 0.12s;
+    border-radius: 4px;
   }
-  .cs-add-row:hover { color: var(--accent2); }
+  .cs-add-row:hover { color: var(--accent2); background: rgba(91,192,235,0.05); }
   .cs-notes-area {
     background: transparent;
     border: none;
-    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
     font-family: var(--font-body);
     font-size: 12.5px;
     line-height: 1.75;
@@ -1084,8 +1733,11 @@
     resize: vertical;
     min-height: 110px;
     outline: none;
+    padding: 8px;
+    transition: border-color .15s;
+    border-radius: 0;
   }
-  .cs-notes-area:focus { color: var(--text2); }
+  .cs-notes-area:focus { border-bottom-color: var(--accent2); color: var(--text); background: rgba(79,195,247,0.03); }
 
   /* ── BUDGET ── */
   .budget-summary {
@@ -1295,6 +1947,35 @@
     .stats-row { grid-template-columns: 1fr; }
     .form-row, .form-row-3 { grid-template-columns: 1fr; }
   }
+  /* Callsheet responsive fixes */
+  @media (max-width: 768px) {
+    .cs-page {
+      max-width: 100%;
+      margin: 0 0 16px 0;
+      border-radius: 0;
+    }
+    .cs-top-bar {
+      flex-direction: column;
+    }
+    .cs-logo-section, .cs-header-main, .cs-date-box {
+      width: 100% !important;
+      min-width: 100% !important;
+      text-align: center;
+    }
+    .cs-header-row {
+      flex-direction: column;
+      gap: 12px;
+    }
+    .cs-header-meta {
+      flex-wrap: wrap;
+    }
+    .cs-crew-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .cs-call-times {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1302,7 +1983,7 @@
   <!-- SIDEBAR -->
   <aside id="sidebar">
     <div class="sidebar-logo">
-      <h1>FILMFORGE</h1>
+      <h1>BLACK FOUNTAIN</h1>
       <span>Production Suite</span>
     </div>
 
@@ -1313,6 +1994,15 @@
       </div>
       <div class="nav-item" onclick="showView('team')">
         <span class="icon">👥</span> Team
+      </div>
+      <div class="nav-item" onclick="showView('contacts')">
+        <span class="icon">📱</span> Contacts
+      </div>
+      <div class="nav-item" onclick="showView('locations')">
+        <span class="icon">📍</span> Locations
+      </div>
+      <div class="nav-item" onclick="showView('files')">
+        <span class="icon">📁</span> Files
       </div>
     </div>
 
@@ -1333,7 +2023,7 @@
     <header id="topbar">
       <div>
         <div class="topbar-title" id="topbar-title">Dashboard</div>
-        <div class="topbar-breadcrumb" id="topbar-breadcrumb">FilmForge</div>
+        <div class="topbar-breadcrumb" id="topbar-breadcrumb">Black Fountain</div>
       </div>
       <div class="topbar-right">
         <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
@@ -1437,7 +2127,7 @@
               <button class="btn btn-sm btn-primary" onclick="openExportModal()">⬇ Export PDF</button>
             </div>
           </div>
-          <div id="callsheet-list"></div>
+          <div id="callsheet-list" style="max-width:100%;overflow-x:hidden;"></div>
         </div>
 
         <!-- SECTION: SCHEDULE -->
@@ -1620,11 +2310,11 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">WARDROBE / COSTUME / MAKE-UP</h3>
-            <button class="btn btn-primary btn-sm" onclick="addPropItem('wardrobe')">+ Add Item</button>
+            <button class="btn btn-primary btn-sm" onclick="addWardrobeItem()">+ Add Item</button>
           </div>
           <div class="table-container">
             <table class="data-table">
-              <thead><tr><th>Item</th><th>Quantity</th><th>Character/s</th><th>Scene/s</th><th>Location/s</th><th>Page/s</th><th>Notes</th><th></th></tr></thead>
+              <thead><tr><th>Item</th><th>Character/s</th><th>Scene/s</th><th>Size</th><th>Condition</th><th>Location</th><th>Notes</th><th></th></tr></thead>
               <tbody id="wardrobe-body"></tbody>
             </table>
           </div>
@@ -1691,6 +2381,200 @@
         </div>
 
       </div><!-- /view-project -->
+
+      <!-- CONTACTS VIEW -->
+      <div class="view" id="view-contacts">
+        <div class="page-header">
+          <h2>CONTACTS</h2>
+          <p>All cast and crew contacts across projects</p>
+        </div>
+        <div id="contacts-list"></div>
+      </div>
+
+      <!-- LOCATIONS VIEW -->
+      <div class="view" id="view-locations">
+        <div class="page-header">
+          <h2>LOCATIONS</h2>
+          <p>All locations across projects</p>
+        </div>
+        <div id="locations-list"></div>
+      </div>
+
+      <!-- FILES VIEW -->
+      <div class="view" id="view-files">
+        <div class="page-header">
+          <h2>FILES</h2>
+          <p>Scripts, photos, storyboards & production assets</p>
+        </div>
+        
+        <div class="file-tabs" id="file-tabs">
+          <div class="file-tab active" data-category="all">All Files</div>
+          <div class="file-tab" data-category="script">Scripts</div>
+          <div class="file-tab" data-category="location">Location Photos</div>
+          <div class="file-tab" data-category="bts">BTS / Stills</div>
+          <div class="file-tab" data-category="moodboard">Moodboards</div>
+          <div class="file-tab" data-category="storyboard">Storyboards</div>
+        </div>
+
+        <div class="file-upload-zone" id="file-upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="file-upload-icon">☁️</div>
+          <div class="file-upload-text">Drop files here or click to upload</div>
+          <div class="file-upload-hint">Scripts, location photos, BTS, moodboards, storyboards</div>
+        </div>
+        <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileUpload(this.files)">
+
+        <div class="file-grid" id="file-grid"></div>
+      </div>
+
+      <!-- DELETE FILE MODAL -->
+      <div class="modal-overlay" id="modal-delete-file">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>DELETE FILE</h3>
+            <button class="modal-close" onclick="closeModal('modal-delete-file')">✕</button>
+          </div>
+          <input type="hidden" id="delete-file-id">
+          <p style="margin:16px 0;color:var(--text2)">Delete <strong id="delete-file-name" style="color:var(--text)"></strong>? This cannot be undone.</p>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-delete-file')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmDeleteFile()">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT CONTACT MODAL -->
+      <div class="modal-overlay" id="modal-edit-contact">
+        <div class="modal" style="max-width:480px">
+          <div class="modal-header">
+            <h3>Edit Contact</h3>
+            <button class="modal-close" onclick="closeModal('modal-edit-contact')">✕</button>
+          </div>
+          <input type="hidden" id="edit-contact-name">
+          <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0 24px">
+            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Name</label>
+              <input class="form-input-minimal" id="edit-contact-name-display" placeholder="Name" style="font-size:16px;font-weight:500">
+            </div>
+            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Phone</label>
+              <input class="form-input-minimal" id="edit-contact-phone" placeholder="+44...">
+            </div>
+            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Email</label>
+              <input class="form-input-minimal" id="edit-contact-email" placeholder="email@example.com" type="email">
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:500;color:var(--text2);margin-bottom:8px;display:block">Socials</label>
+              <div id="edit-contact-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
+              <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('edit-contact-socials-container')">+ Add Social</button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-edit-contact')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEditedContact()">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMOVE CONTACT MODAL -->
+      <div class="modal-overlay" id="modal-remove-contact">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>REMOVE CONTACT</h3>
+            <button class="modal-close" onclick="closeModal('modal-remove-contact')">✕</button>
+          </div>
+          <input type="hidden" id="remove-contact-name-hidden">
+          <p style="margin:16px 0;color:var(--text2)">Remove contact details for <strong id="remove-contact-name" style="color:var(--text)"></strong>? This will clear their contact info from all projects.</p>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-remove-contact')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmRemoveContact()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMOVE CALLSHEET ROW MODAL -->
+      <div class="modal-overlay" id="modal-remove-csrow">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>REMOVE</h3>
+            <button class="modal-close" onclick="closeModal('modal-remove-csrow')">✕</button>
+          </div>
+          <input type="hidden" id="remove-csrow-csidx">
+          <input type="hidden" id="remove-csrow-arraykey">
+          <input type="hidden" id="remove-csrow-rowidx">
+          <p style="margin:16px 0;color:var(--text2)">Remove <strong id="remove-csrow-name" style="color:var(--text)"></strong>?</p>
+          <div class="form-group" style="margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="remove-csrow-also-contacts">
+              <span>Also remove their contact details from Contacts page</span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-remove-csrow')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmRemoveCSRow()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD CAST MODAL -->
+      <div class="modal-overlay" id="modal-add-cast">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>ADD CAST</h3>
+            <button class="modal-close" onclick="closeModal('modal-add-cast')">✕</button>
+          </div>
+          <input type="hidden" id="add-cast-csidx">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Name *</label>
+              <input class="form-input" id="add-cast-name" placeholder="Performer name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Character</label>
+              <input class="form-input" id="add-cast-character" placeholder="Character name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Or select from contacts</label>
+            <select class="form-select" id="add-cast-contact-select" onchange="autofillCastFromContact()">
+              <option value="">— Select existing contact —</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input class="form-input" id="add-cast-phone" placeholder="+44...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" id="add-cast-email" placeholder="email@example.com" type="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Socials</label>
+            <div id="add-cast-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('add-cast-socials-container')">+ Add Social</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Call Time</label>
+              <input class="form-input" id="add-cast-calltime" placeholder="00:00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Est. Wrap</label>
+              <input class="form-input" id="add-cast-wrap" placeholder="00:00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Point of Contact</label>
+            <input class="form-input" id="add-cast-poc" placeholder="Name/Number">
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-add-cast')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveAddCast()">Add Cast</button>
+          </div>
+        </div>
+      </div>
 
       <!-- TEAM VIEW -->
       <div class="view" id="view-team">
@@ -1790,6 +2674,12 @@
       <div class="form-group">
         <label class="form-label">Name</label>
         <input class="form-input" id="pers-name" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Or select from contacts</label>
+        <select class="form-select" id="pers-contact-select" onchange="autofillPersonnelFromContact()">
+          <option value="">— Select existing contact —</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Role / Character</label>
@@ -2019,8 +2909,8 @@
       <div class="form-group">
         <label class="form-label">Shot Type</label>
         <select class="form-select" id="sched-type">
-          <option>WS</option><option>MS</option><option>CU</option><option>ECU</option>
-          <option>OTS</option><option>POV</option><option>Insert</option><option>Aerial</option><option>Other</option>
+          <option>Wide</option><option>Mid/Medium</option><option>Close-Up</option><option>Extreme Close-Up</option>
+          <option>Over-the-Shoulder</option><option>POV/Point of View</option><option>Insert</option><option>Aerial</option><option>Establishing</option><option>B-Roll</option><option>Other</option>
         </select>
       </div>
     </div>
@@ -2126,7 +3016,9 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Shot Type</label>
-        <select class="form-select" id="shot-type"><option>CU</option><option>ECU</option><option>MS</option><option>WS</option><option>OTS</option><option>POV</option><option>Insert</option><option>Aerial</option><option>Other</option></select>
+        <select class="form-select" id="shot-type"><option>Wide</option><option>Mid/Medium</option><option>Close-Up</option><option>Extreme Close-Up</option>
+          <option>Over-the-Shoulder</option><option>POV/Point of View</option><option>Insert</option><option>Aerial</option><option>Establishing</option><option>B-Roll</option><option>Other</option>
+        </select>
       </div>
       <div class="form-group"><label class="form-label">Movement</label>
         <select class="form-select" id="shot-movement"><option>Stationary</option><option>Handheld</option><option>Dolly</option><option>Pan</option><option>Tilt</option><option>Crane</option><option>Gimbal</option><option>Tracking</option></select>
@@ -2138,7 +3030,7 @@
     <div class="form-row">
       <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="shot-location" placeholder="e.g. The Kitchen"></div>
       <div class="form-group"><label class="form-label">Sound</label>
-        <select class="form-select" id="shot-sound"><option value="Yes">Yes</option><option value="No">No</option><option value="MOS">MOS</option></select>
+        <select class="form-select" id="shot-sound"><option value="Yes">Yes</option><option value="No">No</option><option value="MOS">MOS (filmed without recording synchronized audio)</option></select>
       </div>
     </div>
     <div class="form-group"><label class="form-label">Shot Description</label><textarea class="form-textarea" id="shot-desc" style="min-height:60px" placeholder="Describe the shot..."></textarea></div>
@@ -2159,7 +3051,7 @@
   </div>
 </div>
 
-<!-- PROP / WARDROBE ITEM MODAL -->
+<!-- PROP MODAL -->
 <div class="modal-overlay" id="modal-prop">
   <div class="modal">
     <div class="modal-header"><h3 id="modal-prop-title">ADD PROP</h3><button class="modal-close" onclick="closeModal('modal-prop')">✕</button></div>
@@ -2181,6 +3073,31 @@
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-prop')">Cancel</button>
       <button class="btn btn-primary" onclick="savePropItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- WARDROBE MODAL -->
+<div class="modal-overlay" id="modal-wardrobe">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-wardrobe-title">ADD WARDROBE ITEM</h3><button class="modal-close" onclick="closeModal('modal-wardrobe')">✕</button></div>
+    <input type="hidden" id="wardrobe-edit-idx">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Item Name</label><input class="form-input" id="wardrobe-name" placeholder="e.g. Blue Jacket"></div>
+      <div class="form-group"><label class="form-label">Character</label><input class="form-input" id="wardrobe-chars" placeholder="e.g. Detective"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Scene/s</label><input class="form-input" id="wardrobe-scenes" placeholder="e.g. 1, 3, 5"></div>
+      <div class="form-group"><label class="form-label">Size</label><input class="form-input" id="wardrobe-size" placeholder="e.g. M, 32 waist"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Condition</label><input class="form-input" id="wardrobe-condition" placeholder="e.g. New, Worn, Damaged"></div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="wardrobe-loc" placeholder="e.g. Costume Dept"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="wardrobe-notes" style="min-height:60px"></textarea></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-wardrobe')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWardrobeItem()">Save</button>
     </div>
   </div>
 </div>
@@ -2217,13 +3134,16 @@
       <div class="form-group"><label class="form-label">Hazard</label><input class="form-input" id="risk-hazard" placeholder="e.g. Trip hazard from cables"></div>
       <div class="form-group"><label class="form-label">Who might be harmed & how?</label><input class="form-input" id="risk-who" placeholder="e.g. Crew — could fall and injure themselves"></div>
     </div>
-    <div class="form-row-3">
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Risk Factor (1–5)</label><input class="form-input" id="risk-factor" type="number" min="1" max="5" placeholder="3"></div>
-      <div class="form-group"><label class="form-label">New Risk Factor</label><input class="form-input" id="risk-newfactor" type="number" min="1" max="5" placeholder="1"></div>
-      <div></div>
+      <div class="form-group"></div>
     </div>
     <div class="form-group"><label class="form-label">Control Measures in Place</label><textarea class="form-textarea" id="risk-controls" style="min-height:60px" placeholder="What's already being done?"></textarea></div>
     <div class="form-group"><label class="form-label">Further Control Measures?</label><textarea class="form-textarea" id="risk-further" style="min-height:60px" placeholder="What else could be done?"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">New Risk Factor</label><input class="form-input" id="risk-newfactor" type="number" min="1" max="5" placeholder="1"></div>
+      <div class="form-group"></div>
+    </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-risk')">Cancel</button>
       <button class="btn btn-primary" onclick="saveRiskRow()">Save</button>
@@ -2243,10 +3163,41 @@
   </div>
 </div>
 
+<!-- FIELDS SETTINGS MODAL -->
+<div class="modal-overlay" id="modal-settings" onclick="if(event.target === this) closeModal('modal-settings')">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>VISIBLE FIELDS</h3>
+      <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+    <input type="hidden" id="modal-settings-csidx">
+    <div id="modal-settings-content"></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="closeModal('modal-settings')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CALLSHEET MODAL -->
+<div class="modal-overlay" id="modal-delete-cs" onclick="if(event.target === this) closeModal('modal-delete-cs')">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>DELETE CALLSHEET</h3>
+      <button class="modal-close" onclick="closeModal('modal-delete-cs')">✕</button>
+    </div>
+    <p style="margin:16px 0;color:var(--text2);font-size:14px;">Are you sure you want to delete this callsheet? This action cannot be undone.</p>
+    <input type="hidden" id="modal-delete-cs-idx">
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-delete-cs')">Cancel</button>
+      <button class="btn btn-danger" onclick="doDeleteCallsheet()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD CUSTOM FIELD MODAL -->
 <div class="modal-overlay" id="modal-customfield">
   <div class="modal">
-    <div class="modal-header"><h3>ADD CUSTOM ROLE</h3><button class="modal-close" onclick="closeModal('modal-customfield')">✕</button></div>
+    <div class="modal-header"><h3>ADD CREW MEMBER</h3><button class="modal-close" onclick="closeModal('modal-customfield')">✕</button></div>
     <div class="form-group">
       <label class="form-label">Select Role</label>
       <select class="form-select" id="custom-field-select" onchange="onCustomFieldSelectChange()">
@@ -2288,9 +3239,34 @@
       <label class="form-label">Other Role Name</label>
       <input class="form-input" id="custom-field-label" placeholder="Enter role name">
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="custom-field-name" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Or select from contacts</label>
+        <select class="form-select" id="custom-field-contact-select" onchange="autofillCrewFromContact()">
+          <option value="">— Select existing contact —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="custom-field-phone" placeholder="+44...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="custom-field-email" placeholder="email@example.com" type="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Socials</label>
+      <div id="custom-field-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('custom-field-socials-container')">+ Add Social</button>
+    </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-customfield')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCSCustomField()">Add Role</button>
+      <button class="btn btn-primary" onclick="saveCSCustomField()">Add Crew Member</button>
     </div>
   </div>
 </div>
@@ -2305,8 +3281,203 @@
 let store = {
   projects: [],
   teamMembers: [],
-  currentProjectId: null
+  currentProjectId: null,
+  files: []
 };
+
+const FILE_CATEGORIES = {
+  script: { label: 'Scripts', icon: '📄', extensions: ['pdf','doc','docx','txt'] },
+  location: { label: 'Location Photos', icon: '📍', extensions: ['jpg','jpeg','png','gif','webp'] },
+  bts: { label: 'BTS / Stills', icon: '📸', extensions: ['jpg','jpeg','png','gif','webp'] },
+  moodboard: { label: 'Moodboards', icon: '🎨', extensions: ['jpg','jpeg','png','gif','webp'] },
+  storyboard: { label: 'Storyboards', icon: '🎬', extensions: ['jpg','jpeg','png','gif','webp'] }
+};
+
+function getFileCategory(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  for (const [cat, info] of Object.entries(FILE_CATEGORIES)) {
+    if (info.extensions.includes(ext)) return cat;
+  }
+  return 'bts'; // default for images
+}
+
+function getFileIcon(file) {
+  if (file.data.startsWith('data:image')) {
+    return `<img src="${file.data}" alt="${file.name}">`;
+  }
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return '📄';
+  if (['doc','docx','txt'].includes(ext)) return '📝';
+  return '📁';
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+let currentFileCategory = 'all';
+
+function renderFiles() {
+  const grid = document.getElementById('file-grid');
+  const files = currentFileCategory === 'all' 
+    ? store.files 
+    : store.files.filter(f => f.category === currentFileCategory);
+  
+  if (files.length === 0) {
+    grid.innerHTML = `
+      <div class="file-empty" style="grid-column: 1/-1">
+        <div class="file-empty-icon">📁</div>
+        <div class="file-empty-text">No files yet</div>
+        <div class="file-empty-hint">Upload scripts, photos, storyboards and more</div>
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = files.map(file => `
+    <div class="file-card" onclick="viewFile('${file.id}')">
+      <div class="file-card-actions">
+        <button class="file-action-btn" onclick="event.stopPropagation(); downloadFile('${file.id}')" title="Download">⬇</button>
+        <button class="file-action-btn delete" onclick="event.stopPropagation(); deleteFile('${file.id}')" title="Delete">✕</button>
+      </div>
+      <div class="file-card-preview">${getFileIcon(file)}</div>
+      <div class="file-card-name">${file.name}</div>
+      <div class="file-card-meta">
+        <span class="file-card-type">${FILE_CATEGORIES[file.category]?.label || file.category}</span>
+        <span>${formatFileSize(file.size)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleFileUpload(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  
+  Array.from(fileList).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const fileData = {
+        id: makeId(),
+        name: file.name,
+        category: getFileCategory(file.name),
+        type: file.type,
+        size: file.size,
+        data: e.target.result,
+        uploadedAt: new Date().toISOString()
+      };
+      store.files.push(fileData);
+      saveStore();
+      renderFiles();
+      showToast('File uploaded: ' + file.name, 'success');
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  // Reset file input
+  document.getElementById('file-input').value = '';
+}
+
+function deleteFile(id) {
+  const file = store.files.find(f => f.id === id);
+  if (!file) return;
+  document.getElementById('delete-file-id').value = id;
+  document.getElementById('delete-file-name').textContent = file.name;
+  openModal('modal-delete-file');
+}
+
+function confirmDeleteFile() {
+  const id = document.getElementById('delete-file-id').value;
+  store.files = store.files.filter(f => f.id !== id);
+  saveStore();
+  closeModal('modal-delete-file');
+  renderFiles();
+  showToast('File deleted', 'info');
+}
+
+function downloadFile(id) {
+  const file = store.files.find(f => f.id === id);
+  if (!file) return;
+  
+  const link = document.createElement('a');
+  link.href = file.data;
+  link.download = file.name;
+  link.click();
+}
+
+function viewFile(id) {
+  const file = store.files.find(f => f.id === id);
+  if (!file) return;
+  
+  // Open in new tab for viewing
+  const win = window.open();
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  if (file.data.startsWith('data:image')) {
+    win.document.write(`<img src="${file.data}" style="max-width:100%;height:auto">`);
+  } else if (ext === 'pdf') {
+    // Display PDF inline using iframe
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${file.name}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { height: 100%; overflow: hidden; }
+            iframe { width: 100%; height: 100%; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="${file.data}"></iframe>
+        </body>
+      </html>
+    `);
+  } else {
+    // For other files, show info and download link
+    win.document.write(`
+      <html>
+        <head><title>${file.name}</title></head>
+        <body style="margin:0;padding:20px;font-family:sans-serif;background:#f5f5f5">
+          <div style="background:white;padding:40px;border-radius:8px;max-width:800px;margin:40px auto">
+            <h2>${file.name}</h2>
+            <p>Size: ${formatFileSize(file.size)}</p>
+            <p><a href="${file.data}" download="${file.name}" style="background:#e6bc3c;color:#000;padding:10px 20px;text-decoration:none;border-radius:4px">Download File</a></p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+}
+
+// File tab switching
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('file-tabs').addEventListener('click', function(e) {
+    if (e.target.classList.contains('file-tab')) {
+      document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      currentFileCategory = e.target.dataset.category;
+      renderFiles();
+    }
+  });
+  
+  // Drag and drop
+  const uploadZone = document.getElementById('file-upload-zone');
+  uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('dragover');
+  });
+  uploadZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.classList.remove('dragover');
+  });
+  uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('dragover');
+    handleFileUpload(e.dataTransfer.files);
+  });
+});
 
 const EQUIP_CATEGORIES = [
   'Camera','Glass (Lenses)','Batteries','Grip Equipment','Accessories',
@@ -2368,7 +3539,11 @@ function manualSave() {
 function loadStore() {
   try {
     const raw = localStorage.getItem('filmforge_v1');
-    if (raw) store = JSON.parse(raw);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      store = { ...store, ...loaded };
+      if (!store.files) store.files = [];
+    }
   } catch(e) {}
 }
 
@@ -2384,12 +3559,24 @@ function showView(name) {
 
   if (name === 'dashboard') {
     document.getElementById('topbar-title').textContent = 'Dashboard';
-    document.getElementById('topbar-breadcrumb').textContent = 'FilmForge';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain';
     renderDashboard();
   } else if (name === 'team') {
     document.getElementById('topbar-title').textContent = 'Team';
-    document.getElementById('topbar-breadcrumb').textContent = 'FilmForge / Team';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Team';
     renderTeam();
+  } else if (name === 'contacts') {
+    document.getElementById('topbar-title').textContent = 'Contacts';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Contacts';
+    renderContacts();
+  } else if (name === 'locations') {
+    document.getElementById('topbar-title').textContent = 'Locations';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Locations';
+    renderLocations();
+  } else if (name === 'files') {
+    document.getElementById('topbar-title').textContent = 'Files';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Files';
+    renderFiles();
   }
 }
 
@@ -2402,7 +3589,7 @@ function showProjectView(id) {
   document.getElementById('view-project').classList.add('active');
 
   document.getElementById('topbar-title').textContent = p.title.toUpperCase();
-  document.getElementById('topbar-breadcrumb').textContent = `FilmForge / ${p.title}`;
+  document.getElementById('topbar-breadcrumb').textContent = `Black Fountain / ${p.title}`;
   document.getElementById('proj-title').textContent = p.title.toUpperCase();
 
   const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE'};
@@ -2579,7 +3766,7 @@ function renderSection(name) {
   if (name === 'overview') renderOverview(p);
   else if (name === 'shotlist') { if(!p.shots) p.shots=[]; renderShotList(p); }
   else if (name === 'props') { if(!p.props) p.props=[]; renderPropTable('props','props-body',p); }
-  else if (name === 'wardrobe') { if(!p.wardrobe) p.wardrobe=[]; renderPropTable('wardrobe','wardrobe-body',p); }
+  else if (name === 'wardrobe') { if(!p.wardrobe) p.wardrobe=[]; renderWardrobeTable(p); }
   else if (name === 'soundlog') { if(!p.soundlog) p.soundlog=[]; renderSoundLog(p); }
   else if (name === 'riskassess') { if(!p.risks) p.risks=[]; renderRiskAssessment(p); }
   else if (name === 'releases') { if(!p.releases) p.releases=[]; renderReleases(p); }
@@ -2638,20 +3825,23 @@ function renderBreakdown(p) {
     <div class="breakdown-card">
       <div class="breakdown-card-header">
         <div class="breakdown-info">
-          <div class="breakdown-field"><div class="breakdown-field-label">Scene #</div><div class="breakdown-field-val">${s.sceneNum || '—'}</div></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Breakdown Page</div><div class="breakdown-field-val">${s.bpNum || '—'}</div></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Script Pages</div><div class="breakdown-field-val">${s.scriptPages || '—'}</div></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Page Count</div><div class="breakdown-field-val">${s.pageCount || '—'}</div></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Int / Ext</div><div class="breakdown-field-val">${s.intExt || '—'}</div></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Day / Night</div><div class="breakdown-field-val">${s.dayNight || '—'}</div></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Scene #</div><input class="form-input form-input-sm" value="${s.sceneNum||''}" onchange="updateBreakdownField(${i},'sceneNum',this.value)" placeholder="—"></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Breakdown Page</div><input class="form-input form-input-sm" value="${s.bpNum||''}" onchange="updateBreakdownField(${i},'bpNum',this.value)" placeholder="—"></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Script Pages</div><input class="form-input form-input-sm" value="${s.scriptPages||''}" onchange="updateBreakdownField(${i},'scriptPages',this.value)" placeholder="—"></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Page Count</div><input class="form-input form-input-sm" value="${s.pageCount||''}" onchange="updateBreakdownField(${i},'pageCount',this.value)" placeholder="—"></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Int / Ext</div><input class="form-input form-input-sm" value="${s.intExt||''}" onchange="updateBreakdownField(${i},'intExt',this.value)" placeholder="—"></div>
+          <div class="breakdown-field"><div class="breakdown-field-label">Day / Night</div><input class="form-input form-input-sm" value="${s.dayNight||''}" onchange="updateBreakdownField(${i},'dayNight',this.value)" placeholder="—"></div>
         </div>
         <button class="btn btn-sm btn-danger" onclick="removeBreakdownScene(${i})">✕</button>
       </div>
       <div style="margin-bottom:10px">
         <div class="breakdown-field-label">Scene Description</div>
-        <div class="breakdown-field-val">${s.description || '—'}</div>
+        <textarea class="form-textarea form-textarea-sm" onchange="updateBreakdownField(${i},'description',this.value)" placeholder="—">${s.description||''}</textarea>
       </div>
-      <div style="margin-bottom:6px"><div class="breakdown-field-label">Location</div><div class="breakdown-field-val">${s.location || '—'}</div></div>
+      <div style="margin-bottom:6px">
+        <div class="breakdown-field-label">Location</div>
+        <input class="form-input form-input-sm" value="${s.location||''}" onchange="updateBreakdownField(${i},'location',this.value)" placeholder="—">
+      </div>
       <div class="breakdown-grid">
         ${['cast','extras','props','stunts','vehicles','sfx','wardrobe','makeup','setDressing','greenery','sound','specialEquip','productionNotes'].map((f,fi) => `
           <div class="breakdown-cell">
@@ -2698,6 +3888,10 @@ function addBreakdownScene() {
 // CALLSHEET
 function renderCallsheet(p) {
   const el = document.getElementById('callsheet-list');
+  if (!p || !p.callsheets) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><h4>No project selected</h4><p>Select a project to view callsheets</p></div>';
+    return;
+  }
   if (!p.callsheets.length) {
     el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><h4>No callsheets yet</h4><p>Create a callsheet for each shoot day</p></div>`;
     return;
@@ -2707,25 +3901,46 @@ function renderCallsheet(p) {
     const dateStr = c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) : 'TBD';
     
     // Helper to show/hide sections
-    const show = (sectionKey) => !c[sectionKey] ? 'block' : 'none';
+    const show = (sectionKey) => c[sectionKey] ? 'none' : 'block';
     
     return `
     <div class="cs-page">
       <!-- HEADER -->
       <div class="cs-top-bar">
-        <div style="display:flex;gap:20px;align-items:flex-start;flex:1;">
+        <div class="cs-logo-section">
           <div class="cs-logo-drop" id="cs-logo-${i}" onclick="uploadCallsheetLogo(${i})" title="Click to upload logo">
-            ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#aaa;font-size:10px;">LOGO</span>'}
+            ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#888;font-size:10px;">LOGO</span>'}
           </div>
-          <div class="cs-header-info">
-            <h1 style="margin:0;font-size:18px;font-weight:bold;">${c.prodTitle||p.title}</h1>
-            <div style="font-size:12px;color:#666;">Production ${c.prodNum||p.num} | ${dateStr}</div>
-            <div style="font-size:11px;color:#999;margin-top:4px;">${c.company||p.company||'—'}</div>
-          </div>
-          <label class="pdf-hide" style="display:flex;align-items:center;gap:4px;font-size:11px;"><input type="checkbox" ${c.exportSelected ? 'checked' : ''} onchange="updateCSF(${i},'exportSelected',this.checked)"> Export</label>
         </div>
-        <button class="btn btn-sm pdf-hide" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());">${c.minimized ? '▼' : '▲'} ${c.minimized ? 'Expand' : 'Minimize'}</button>
-        <button class="btn btn-sm btn-danger pdf-hide" onclick="removeCallsheet(${i})" style="margin-top:0;">✕</button>
+        <div class="cs-header-main">
+          <div class="cs-header-row">
+            <div class="cs-header-info">
+              <h1>${c.prodTitle||p.title}</h1>
+              <div class="cs-prod-info">Production ${c.prodNum||p.num} • ${c.company||p.company||'—'}</div>
+              <div class="cs-header-meta">
+                <div class="cs-meta-item">
+                  <span class="cs-meta-label">Shoot Day</span>
+                  <input type="number" min="1" value="${c.shootDay || i + 1}" onchange="updateCSF(${i},'shootDay',this.value)" style="width:50px;padding:2px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);">
+                </div>
+                <div class="cs-meta-item">
+                  <span class="cs-meta-label">Date</span>
+                  <input type="date" value="${c.date||''}" onchange="updateCSF(${i},'date',this.value)" style="padding:2px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);">
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-sm" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());" style="display:${c.minimized ? 'none' : 'block'};">▼ Minimize</button>
+              <button class="btn btn-sm" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());" style="display:${c.minimized ? 'block' : 'none'};">✚ Expand</button>
+              <button class="btn btn-sm" onclick="confirmDeleteCallsheet(${i});" style="color:#c44444;">🗑 Delete</button>
+              <label class="pdf-hide" style="display:flex;align-items:center;gap:6px;font-size:11px;"><input type="checkbox" ${c.exportSelected ? 'checked' : ''} onchange="updateCSF(${i},'exportSelected',this.checked)"> Export</label>
+            </div>
+          </div>
+        </div>
+        <div class="cs-date-box">
+          <div class="cs-date-day">${c.date ? new Date(c.date + 'T12:00:00').getDate() : '—'}</div>
+          <div class="cs-date-month">${c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {month:'short'}).toUpperCase() : 'DATE'}</div>
+          <div class="cs-date-year">${c.date ? new Date(c.date + 'T12:00:00').getFullYear() : '2024'}</div>
+        </div>
       </div>
       
       <div style="display: ${c.minimized ? 'none' : 'block'};">
@@ -2736,40 +3951,70 @@ function renderCallsheet(p) {
         <button class="cs-toggle ${!c.hideCast ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideCast');renderCallsheet(currentProject());">Cast</button>
         <button class="cs-toggle ${!c.hideSchedule ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideSchedule');renderCallsheet(currentProject());">Schedule</button>
         <button class="cs-toggle ${!c.hideNotes ? 'active' : ''}" onclick="toggleCSectionVisibility(${i},'hideNotes');renderCallsheet(currentProject());">Notes</button>
+        <button class="cs-toggle" onclick="toggleCallsheetMinimize(${i});renderCallsheet(currentProject());" style="margin-left:auto;">${c.minimized ? '✚ Expand' : '▼ Minimize'}</button>
       </div>
       
       <div class="cs-content">
         <!-- CREW & CALL TIMES -->
         <div class="cs-section" style="display:${show('hideCrewCall')};">
-          <h3 class="cs-heading">CREW & CALL TIMES <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'crew');renderCallsheet(currentProject());">${c.minimizedCrew ? '+' : '-'}</button></h3>
+          <h3 class="cs-heading">CREW & CALL TIMES <button onclick="toggleSectionMinimize(${i}, 'crew');renderCallsheet(currentProject());">${c.minimizedCrew ? '+' : '-'} Section</button></h3>
           <div style="display: ${c.minimizedCrew ? 'none' : 'block'};">
-          <div class="cs-2col">
-            <div>
-              ${(c.customFields||[]).map((cf, fi) => `
-                <div class="cs-field" style="display:flex;align-items:center;gap:4px"><label style="flex:1">${cf.label}</label><input value="${cf.value||''}" onchange="updateCSCustomField(${i},${fi},this.value)" style="flex:1"><button class="btn-tiny pdf-hide" onclick="removeCSCustomField(${i},${fi})" style="color:var(--red)" title="Remove">✕</button></div>
-              `).join('')}
-              <button class="btn-tiny pdf-hide" onclick="addCSCustomField(${i})" style="margin-top:8px;color:var(--accent2)">+ Add Role</button>
+          
+          <!-- Call Time Cards -->
+          <div class="cs-call-times">
+            <div class="cs-call-card highlight">
+              <div class="cs-call-label">Crew Call</div>
+              <div class="cs-call-value">${c.crewCall||'—'}</div>
+            </div>
+            <div class="cs-call-card">
+              <div class="cs-call-label">First Shot</div>
+              <div class="cs-call-value">${c.shootCall||'—'}</div>
+            </div>
+            <div class="cs-call-card">
+              <div class="cs-call-label">Est. Wrap</div>
+              <div class="cs-call-value">${c.estWrap||'—'}</div>
+            </div>
+            <div class="cs-call-card">
+              <div class="cs-call-label">Daylight</div>
+              <div class="cs-call-value">${c.daylight||'—'}</div>
             </div>
           </div>
-          <div class="cs-spacer"></div>
-          <h4 style="margin:0;font-size:12px;font-weight:bold;text-transform:uppercase;">Call Times <button class="btn-tiny pdf-hide" onclick="toggleCSFields(${i})" style="font-size:9px">⚙</button></h4>
-          <div class="cs-3col">
-            <div class="cs-field"><label>Crew Call</label><input value="${c.crewCall||''}" onchange="updateCSF(${i},'crewCall',this.value)"></div>
-            <div class="cs-field"><label>First Shot Time</label><input value="${c.shootCall||''}" onchange="updateCSF(${i},'shootCall',this.value)"></div>
-            <div class="cs-field"><label>Est. Wrap</label><input value="${c.estWrap||''}" onchange="updateCSF(${i},'estWrap',this.value)"></div>
+          
+          <!-- Weather Row -->
+          <div class="cs-weather-row">
+            <div class="cs-weather-item">
+              <div class="cs-weather-icon">☁</div>
+              <div class="cs-weather-text"><input value="${c.weather||''}" onchange="updateCSF(${i},'weather',this.value)" placeholder="Weather" style="border:none;background:transparent;font-size:12px;width:120px;"></div>
+            </div>
+            <div class="cs-weather-item">
+              <div class="cs-weather-icon">💧</div>
+              <div class="cs-weather-text"><input value="${c.weatherDetail||''}" onchange="updateCSF(${i},'weatherDetail',this.value)" placeholder="Rain/Wind" style="border:none;background:transparent;font-size:12px;width:100px;"></div>
+            </div>
+            <button class="cs-toggle" style="margin-left:auto;padding:6px 12px;" onclick="toggleCSFields(${i})">⚙ Settings</button>
           </div>
+          
           <div class="cs-spacer"></div>
-          <div class="cs-3col">
-            <div class="cs-field"><label>Daylight</label><input value="${c.daylight||''}" onchange="updateCSF(${i},'daylight',this.value)" placeholder="06:30-20:00"></div>
-            <div class="cs-field"><label>Weather</label><input value="${c.weather||''}" onchange="updateCSF(${i},'weather',this.value)" placeholder="Cloudy / 14°C"></div>
-            <div class="cs-field"><label>Rain/Wind</label><input value="${c.weatherDetail||''}" onchange="updateCSF(${i},'weatherDetail',this.value)" placeholder="20% / Light"></div>
+          
+          <!-- Crew Contacts -->
+          <h4 style="margin:0 0 14px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#555;">Key Crew Contacts</h4>
+          <div class="cs-crew-grid">
+            ${(c.customFields||[]).map((cf, fi) => `
+              <div class="cs-crew-item">
+                <label>${cf.label}</label>
+                <input value="${cf.value||''}" onchange="updateCSCustomField(${i},${fi},this.value)" placeholder="Name">
+                <input value="${cf.phone||''}" onchange="updateCSCustomField(${i},${fi},this.value,'phone')" placeholder="Phone" style="width:100px;">
+                <input value="${cf.email||''}" onchange="updateCSCustomField(${i},${fi},this.value,'email')" placeholder="Email" style="width:130px;">
+                <button class="btn-tiny" onclick="removeCSCustomField(${i},${fi})" style="color:#c44444" title="Remove">✕</button>
+              </div>
+            `).join('')}
           </div>
+          <button class="cs-add-btn" onclick="addCSCustomField(${i})" style="margin-top:12px;">+ Add Crew Contact</button>
           </div>
         </div>
         
         <!-- LOCATIONS -->
         <div class="cs-section" style="display:${show('hideLocations')};">
-          <h3 class="cs-heading">LOCATIONS <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'locations');renderCallsheet(currentProject());">${c.minimizedLocations ? '+' : '-'}</button></h3>
+          <h3 class="cs-heading">LOCATIONS <button onclick="toggleSectionMinimize(${i}, 'locations');renderCallsheet(currentProject());">${c.minimizedLocations ? '+' : '-'} Section</button></h3>
           <div style="display: ${c.minimizedLocations ? 'none' : 'block'};">
           <table class="cs-table">
             <thead><tr><th>Location</th><th>Parking & Notes</th><th>Nearest Hospital</th><th></th></tr></thead>
@@ -2783,18 +4028,18 @@ function renderCallsheet(p) {
                 </tr>`).join('')}
             </tbody>
           </table>
-          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'locRows',{loc:'',parking:'',hospital:''})">+ Add Location</button>
+          <button class="cs-add-btn" onclick="addCSRow(${i},'locRows',{loc:'',parking:'',hospital:''})">+ Add Location</button>
           </div>
         </div>
         
         <!-- CAST -->
         <div class="cs-section" style="display:${show('hideCast')};">
-          <h3 class="cs-heading">CAST <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'cast');renderCallsheet(currentProject());">${c.minimizedCast ? '+' : '-'}</button></h3>
+          <h3 class="cs-heading">CAST <button onclick="toggleSectionMinimize(${i}, 'cast');renderCallsheet(currentProject());">${c.minimizedCast ? '+' : '-'} Section</button></h3>
           <div style="display: ${c.minimizedCast ? 'none' : 'block'};">
-          <div class="cs-note">Actors contact: <input class="cs-inline" value="${c.actorsContact||''}" onchange="updateCSF(${i},'actorsContact',this.value)" placeholder="Name/Number"></div>
-          <div class="cs-note">SAs contact: <input class="cs-inline" value="${c.sasContact||''}" onchange="updateCSF(${i},'sasContact',this.value)" placeholder="Name/Number"></div>
+          <div class="cs-note">Actors Point of Contact: <input class="cs-inline" value="${c.actorsContact||''}" onchange="updateCSF(${i},'actorsContact',this.value)" placeholder="Name/Number"></div>
+          <div class="cs-note">Supporting Artists Point of Contact: <input class="cs-inline" value="${c.sasContact||''}" onchange="updateCSF(${i},'sasContact',this.value)" placeholder="Name/Number"></div>
           <table class="cs-table">
-            <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point Of Contact</th><th></th></tr></thead>
+            <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point Of Contact</th>${c.hideContactDetails !== true ? '<th>Contact</th><th>Socials</th>' : ''}<th></th></tr></thead>
             <tbody>
               ${(c.castRows||[]).map((r,ri) => `
                 <tr>
@@ -2803,17 +4048,20 @@ function renderCallsheet(p) {
                   <td><input value="${r.callTime||''}" onchange="updateCSRow(${i},'castRows',${ri},'callTime',this.value)" placeholder="00:00" style="max-width:50px;"></td>
                   <td><input value="${r.wrapTime||''}" onchange="updateCSRow(${i},'castRows',${ri},'wrapTime',this.value)" placeholder="00:00" style="max-width:50px;"></td>
                   <td><input value="${r.poc||''}" onchange="updateCSRow(${i},'castRows',${ri},'poc',this.value)" placeholder="Name/Num"></td>
+                  ${c.hideContactDetails !== true ? `
+                  <td><input value="${r.contact||''}" onchange="updateCSRow(${i},'castRows',${ri},'contact',this.value)" placeholder="Phone/Email"></td>
+                  <td><input value="${r.socials||''}" onchange="updateCSRow(${i},'castRows',${ri},'socials',this.value)" placeholder="@handle"></td>` : ''}
                   <td><button class="btn-tiny" onclick="removeCSRow(${i},'castRows',${ri})">✕</button></td>
                 </tr>`).join('')}
             </tbody>
           </table>
-          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'castRows',{actor:'',character:'',callTime:'',wrapTime:'',poc:''})">+ Add Cast</button>
+          <button class="cs-add-btn" onclick="openAddCastModal(${i})">+ Add Cast</button>
           </div>
         </div>
         
         <!-- SCHEDULE -->
         <div class="cs-section" style="display:${show('hideSchedule')};">
-          <h3 class="cs-heading">ESTIMATED SCHEDULE <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'schedule');renderCallsheet(currentProject());">${c.minimizedSchedule ? '+' : '-'}</button></h3>
+          <h3 class="cs-heading">ESTIMATED SCHEDULE <button onclick="toggleSectionMinimize(${i}, 'schedule');renderCallsheet(currentProject());">${c.minimizedSchedule ? '+' : '-'} Section</button></h3>
           <div style="display: ${c.minimizedSchedule ? 'none' : 'block'};">
           <table class="cs-table">
             <thead><tr><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est.</th><th></th></tr></thead>
@@ -2832,16 +4080,21 @@ function renderCallsheet(p) {
                 </tr>`).join('')}
             </tbody>
           </table>
-          <button class="cs-add-btn pdf-hide" onclick="addCSRow(${i},'schedRows',{time:'',scene:'',shot:'',shotType:'',desc:'',cast:'',pages:'',est:''})">+ Add Row</button>
+          <button class="cs-add-btn" onclick="addCSRow(${i},'schedRows',{time:'',scene:'',shot:'',shotType:'',desc:'',cast:'',pages:'',est:''})">+ Add Row</button>
           </div>
         </div>
         
         <!-- NOTES -->
         <div class="cs-section" style="display:${show('hideNotes')};">
-          <h3 class="cs-heading">NOTES & INFORMATION <button class="btn-tiny pdf-hide" onclick="toggleSectionMinimize(${i}, 'notes');renderCallsheet(currentProject());">${c.minimizedNotes ? '+' : '-'}</button></h3>
+          <h3 class="cs-heading">NOTES & INFORMATION <button onclick="toggleSectionMinimize(${i}, 'notes');renderCallsheet(currentProject());">${c.minimizedNotes ? '+' : '-'} Section</button></h3>
           <div style="display: ${c.minimizedNotes ? 'none' : 'block'};">
-          <textarea class="cs-notes" onchange="updateCSF(${i},'generalNotes',this.value)">${c.generalNotes||''}</textarea>
+          <textarea class="cs-notes" onchange="updateCSF(${i},'generalNotes',this.value)" placeholder="Enter any important notes, safety information, or production updates..."></textarea>
           </div>
+        </div>
+        
+        <!-- DELETE BUTTON -->
+        <div style="padding: 16px 32px 24px; border-top: 1px solid #eee; margin-top: 8px;">
+          <button class="btn btn-sm btn-danger" onclick="removeCallsheet(${i})" style="background:#fee;border-color:#fcc;color:#c44444;">🗑 Delete Callsheet</button>
         </div>
       </div>
       </div>
@@ -2874,7 +4127,18 @@ function addCSRow(csIdx, arrayKey, template) {
 function addCSCustomField(csIdx) {
   document.getElementById('custom-field-select').value = '';
   document.getElementById('custom-field-label').value = '';
+  document.getElementById('custom-field-name').value = '';
+  document.getElementById('custom-field-phone').value = '';
+  document.getElementById('custom-field-email').value = '';
+  // Initialize socials container with one empty field
+  const socialsContainer = document.getElementById('custom-field-socials-container');
+  socialsContainer.innerHTML = '';
+  addSocialField('custom-field-socials-container', 'instagram', '');
   document.getElementById('custom-field-other-group').style.display = 'none';
+  
+  // Populate contact dropdown
+  populateContactSelect('custom-field-contact-select');
+  
   document.getElementById('modal-customfield').classList.add('open');
   document.getElementById('modal-customfield').dataset.csIdx = csIdx;
 }
@@ -2910,10 +4174,27 @@ function saveCSCustomField() {
     return;
   }
   
+  const name = document.getElementById('custom-field-name').value.trim();
+  const phone = document.getElementById('custom-field-phone').value.trim();
+  const email = document.getElementById('custom-field-email').value.trim();
+  const socials = collectSocials('custom-field-socials-container');
+  
   const csIdx = parseInt(document.getElementById('modal-customfield').dataset.csIdx);
   const p = currentProject();
   if (!p.callsheets[csIdx].customFields) p.callsheets[csIdx].customFields = [];
-  p.callsheets[csIdx].customFields.push({label: label, value: ''});
+  p.callsheets[csIdx].customFields.push({
+    label: label, 
+    value: name || '',
+    phone: phone || '',
+    email: email || '',
+    socials: socials || ''
+  });
+  
+  // Also save to persistent contacts if name is provided (even without phone/email)
+  if (name) {
+    saveContactToProject(p, name, label, phone, email, socials);
+  }
+  
   saveStore();
   closeModal('modal-customfield');
   renderCallsheet(p);
@@ -2928,10 +4209,18 @@ function removeCSCustomField(csIdx, fieldIdx) {
   }
 }
 
-function updateCSCustomField(csIdx, fieldIdx, val) {
+function updateCSCustomField(csIdx, fieldIdx, val, extra) {
   const p = currentProject();
   if (p.callsheets[csIdx].customFields && p.callsheets[csIdx].customFields[fieldIdx]) {
-    p.callsheets[csIdx].customFields[fieldIdx].value = val;
+    if (extra === 'phone') {
+      p.callsheets[csIdx].customFields[fieldIdx].phone = val;
+    } else if (extra === 'email') {
+      p.callsheets[csIdx].customFields[fieldIdx].email = val;
+    } else if (extra === 'socials') {
+      p.callsheets[csIdx].customFields[fieldIdx].socials = val;
+    } else {
+      p.callsheets[csIdx].customFields[fieldIdx].value = val;
+    }
     saveStore();
   }
 }
@@ -2969,10 +4258,9 @@ function showAllCSFields(csIdx) {
 }
 
 function toggleCSFields(csIdx) {
-  // Show a simple prompt to manage which fields are visible
+  // Show a modal to manage which fields are visible
   const p = currentProject();
   const c = p.callsheets[csIdx];
-  if (!c.hiddenFields) c.hiddenFields = [];
   
   const fieldLabels = {
     dirProd: 'Director', producer: 'Producer', dop: 'DoP', pm: 'PM', ad1: '1st AD', sound: 'Sound',
@@ -2980,35 +4268,302 @@ function toggleCSFields(csIdx) {
     daylight: 'Daylight', weather: 'Weather', weatherDetail: 'Rain/Wind'
   };
   
-  let msg = 'Current visible fields:\n';
+  let html = '<div style="padding:8px 0;">';
   Object.keys(fieldLabels).forEach(f => {
-    msg += (c.hiddenFields.includes(f) ? '✗ ' : '✓ ') + fieldLabels[f] + '\n';
+    const isHidden = c[f]; // These are boolean properties like 'hideCrewCall'
+    html += '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:4px;margin:2px 0;">';
+    html += '<input type="checkbox" ' + (isHidden ? '' : 'checked') + ' onchange="toggleCSField(' + csIdx + ', \'' + f + '\')" style="width:16px;height:16px;cursor:pointer;">';
+    html += '<span style="font-size:13px;">' + fieldLabels[f] + '</span>';
+    html += '</label>';
   });
-  msg += '\nEnter field names to toggle (comma separated) or leave empty to close:';
+  html += '</div>';
   
-  const input = prompt(msg);
-  if (input !== null) {
-    const toToggle = input.split(',').map(s => s.trim()).filter(s => s);
-    toToggle.forEach(name => {
-      const field = Object.keys(fieldLabels).find(f => fieldLabels[f].toLowerCase().includes(name.toLowerCase()));
-      if (field) {
-        if (c.hiddenFields.includes(field)) {
-          c.hiddenFields = c.hiddenFields.filter(f => f !== field);
-        } else {
-          c.hiddenFields.push(field);
-        }
-      }
-    });
-    saveStore();
-    renderCallsheet(p);
-  }
+  document.getElementById('modal-settings-content').innerHTML = html;
+  document.getElementById('modal-settings-csidx').value = csIdx;
+  document.getElementById('modal-settings').classList.add('open');
+}
+
+function toggleCSField(csIdx, field) {
+  const p = currentProject();
+  const c = p.callsheets[csIdx];
+  
+  // Toggle the boolean property
+  c[field] = !c[field];
+  
+  saveStore();
+  renderCallsheet(p);
 }
 
 function removeCSRow(csIdx, arrayKey, rowIdx) {
+  console.log('removeCSRow called', csIdx, arrayKey, rowIdx);
   const p = currentProject();
+  console.log('currentProject:', p);
+  const row = p.callsheets[csIdx][arrayKey][rowIdx];
+  console.log('row:', row);
+  let name = '';
+  if (arrayKey === 'castRows') {
+    name = row.actor || 'this cast member';
+  } else if (arrayKey === 'locRows') {
+    name = row.loc || 'this location';
+  } else if (arrayKey === 'schedRows') {
+    name = row.scene ? 'Scene ' + row.scene : 'this schedule item';
+  } else {
+    name = 'this item';
+  }
+  document.getElementById('remove-csrow-csidx').value = csIdx;
+  document.getElementById('remove-csrow-arraykey').value = arrayKey;
+  document.getElementById('remove-csrow-rowidx').value = rowIdx;
+  document.getElementById('remove-csrow-name').textContent = name;
+  document.getElementById('remove-csrow-also-contacts').checked = false;
+  openModal('modal-remove-csrow');
+}
+
+function confirmRemoveCSRow() {
+  const csIdx = parseInt(document.getElementById('remove-csrow-csidx').value);
+  const arrayKey = document.getElementById('remove-csrow-arraykey').value;
+  const rowIdx = parseInt(document.getElementById('remove-csrow-rowidx').value);
+  const alsoRemoveContacts = document.getElementById('remove-csrow-also-contacts').checked;
+  
+  closeModal('modal-remove-csrow');
+  
+  const p = currentProject();
+  const row = p.callsheets[csIdx][arrayKey][rowIdx];
+  
+  // If removing and checkbox is checked, also remove from persistent contacts
+  if (alsoRemoveContacts) {
+    let nameToRemove = '';
+    if (arrayKey === 'castRows' && row.actor) {
+      nameToRemove = row.actor;
+    } else if (arrayKey === 'customFields' && row.value) {
+      nameToRemove = row.value;
+    }
+    
+    if (nameToRemove) {
+      // Remove from persistent contacts in ALL projects
+      store.projects.forEach(proj => {
+        removeContactFromProject(proj, nameToRemove);
+      });
+    }
+  }
+  
+  // If removing a cast row and checkbox is checked, also remove from contacts
+  if (alsoRemoveContacts && arrayKey === 'castRows' && row.actor) {
+    const name = row.actor;
+    store.projects.forEach(proj => {
+      (proj.callsheets || []).forEach(cs => {
+        (cs.castRows || []).forEach(r => {
+          if (r.actor && r.actor.toLowerCase() === name.toLowerCase()) {
+            r.contact = '';
+          }
+        });
+        (cs.customFields || []).forEach(cf => {
+          if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
+            cf.phone = '';
+            cf.email = '';
+          }
+        });
+      });
+      (proj.cast || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          r.number = '';
+          r.email = '';
+        }
+      });
+      (proj.extras || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          r.number = '';
+          r.email = '';
+        }
+      });
+      (proj.unit || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          r.number = '';
+          r.email = '';
+        }
+      });
+    });
+  }
+  
   p.callsheets[csIdx][arrayKey].splice(rowIdx, 1);
   saveStore();
   renderCallsheet(p);
+}
+
+function openAddCastModal(csIdx) {
+  document.getElementById('add-cast-csidx').value = csIdx;
+  document.getElementById('add-cast-name').value = '';
+  document.getElementById('add-cast-character').value = '';
+  document.getElementById('add-cast-phone').value = '';
+  document.getElementById('add-cast-email').value = '';
+  // Initialize socials container with one empty field
+  const socialsContainer = document.getElementById('add-cast-socials-container');
+  socialsContainer.innerHTML = '';
+  addSocialField('add-cast-socials-container', 'instagram', '');
+  document.getElementById('add-cast-calltime').value = '';
+  document.getElementById('add-cast-wrap').value = '';
+  document.getElementById('add-cast-poc').value = '';
+  
+  // Populate contact dropdown
+  populateContactSelect('add-cast-contact-select');
+  
+  openModal('modal-add-cast');
+}
+
+// Populate contact select dropdown
+function populateContactSelect(selectId) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '<option value="">— Select existing contact —</option>';
+  
+  // Gather all unique contacts from all projects
+  const contacts = [];
+  store.projects.forEach(p => {
+    (p.contacts || []).forEach(c => {
+      if (c.name && !contacts.some(existing => existing.name.toLowerCase() === c.name.toLowerCase())) {
+        contacts.push({ name: c.name, phone: c.phone, email: c.email, socials: c.socials });
+      }
+    });
+  });
+  
+  // Sort alphabetically
+  contacts.sort((a, b) => a.name.localeCompare(b.name));
+  
+  contacts.forEach(c => {
+    const option = document.createElement('option');
+    option.value = JSON.stringify({name: c.name, phone: c.phone || '', email: c.email || '', socials: c.socials || ''});
+    option.textContent = c.name;
+    select.appendChild(option);
+  });
+}
+
+// Autofill cast from selected contact
+function autofillCastFromContact() {
+  const select = document.getElementById('add-cast-contact-select');
+  const data = select.value;
+  if (!data) return;
+  
+  try {
+    const contact = JSON.parse(data);
+    document.getElementById('add-cast-name').value = contact.name;
+    document.getElementById('add-cast-phone').value = contact.phone;
+    document.getElementById('add-cast-email').value = contact.email;
+    
+    // Handle socials
+    const socialsContainer = document.getElementById('add-cast-socials-container');
+    socialsContainer.innerHTML = '';
+    
+    if (contact.socials) {
+      // Parse stored socials and add fields
+      const socialParts = contact.socials.split(',').map(s => s.trim()).filter(Boolean);
+      socialParts.forEach(s => {
+        let platform = 'instagram';
+        let handle = s;
+        if (s.includes('||')) {
+          const parts = s.split('||');
+          platform = parts[0];
+          handle = parts.slice(1).join('||');
+        }
+        addSocialField('add-cast-socials-container', platform, handle);
+      });
+    } else {
+      addSocialField('add-cast-socials-container', 'instagram', '');
+    }
+  } catch(e) {
+    console.error('Error parsing contact data', e);
+  }
+}
+
+// Autofill crew from selected contact
+function autofillCrewFromContact() {
+  const select = document.getElementById('custom-field-contact-select');
+  const data = select.value;
+  if (!data) return;
+  
+  try {
+    const contact = JSON.parse(data);
+    document.getElementById('custom-field-name').value = contact.name;
+    document.getElementById('custom-field-phone').value = contact.phone;
+    document.getElementById('custom-field-email').value = contact.email;
+    
+    // Handle socials
+    const socialsContainer = document.getElementById('custom-field-socials-container');
+    socialsContainer.innerHTML = '';
+    
+    if (contact.socials) {
+      const socialParts = contact.socials.split(',').map(s => s.trim()).filter(Boolean);
+      socialParts.forEach(s => {
+        let platform = 'instagram';
+        let handle = s;
+        if (s.includes('||')) {
+          const parts = s.split('||');
+          platform = parts[0];
+          handle = parts.slice(1).join('||');
+        }
+        addSocialField('custom-field-socials-container', platform, handle);
+      });
+    } else {
+      addSocialField('custom-field-socials-container', 'instagram', '');
+    }
+  } catch(e) {
+    console.error('Error parsing contact data', e);
+  }
+}
+
+// Autofill personnel (cast/extras/unit) from selected contact
+function autofillPersonnelFromContact() {
+  const select = document.getElementById('pers-contact-select');
+  const data = select.value;
+  if (!data) return;
+  
+  try {
+    const contact = JSON.parse(data);
+    document.getElementById('pers-name').value = contact.name;
+    document.getElementById('pers-number').value = contact.phone || '';
+    document.getElementById('pers-email').value = contact.email || '';
+    document.getElementById('pers-social').value = contact.socials || '';
+  } catch(e) {
+    console.error('Error parsing contact data', e);
+  }
+}
+
+function saveAddCast() {
+  const csIdx = parseInt(document.getElementById('add-cast-csidx').value);
+  const name = document.getElementById('add-cast-name').value.trim();
+  const character = document.getElementById('add-cast-character').value.trim();
+  const phone = document.getElementById('add-cast-phone').value.trim();
+  const email = document.getElementById('add-cast-email').value.trim();
+  const socials = collectSocials('add-cast-socials-container');
+  const callTime = document.getElementById('add-cast-calltime').value.trim();
+  const wrapTime = document.getElementById('add-cast-wrap').value.trim();
+  const poc = document.getElementById('add-cast-poc').value.trim();
+  
+  if (!name) {
+    showToast('Name is required', 'error');
+    return;
+  }
+  
+  // Combine contact info
+  const contactParts = [phone, email].filter(Boolean);
+  const contact = contactParts.join(' / ');
+  
+  const p = currentProject();
+  if (!p.callsheets[csIdx].castRows) p.callsheets[csIdx].castRows = [];
+  p.callsheets[csIdx].castRows.push({
+    actor: name,
+    character: character,
+    callTime: callTime,
+    wrapTime: wrapTime,
+    poc: poc,
+    contact: contact,
+    socials: socials
+  });
+  
+  // Also save to persistent contacts (even without phone/email)
+  saveContactToProject(p, name, 'Cast', phone, email, socials);
+  
+  saveStore();
+  closeModal('modal-add-cast');
+  renderCallsheet(p);
+  showToast('Cast member added', 'success');
 }
 
 function removeCallsheet(i) {
@@ -3018,38 +4573,211 @@ function removeCallsheet(i) {
   renderCallsheet(p);
 }
 
-function addCallsheet() {
-  const p = currentProject();
-  p.callsheets.push({
-    date: '', prodNum: p.num, prodTitle: p.title,
-    company: p.company || '',
-    dirProd: p.director || '', producer: p.producer || '',
-    dop: '', pm: '', ad1: '', sound: '',
-    crewCall: '', shootCall: '', estWrap: '',
-    daylight: '', weather: '', weatherDetail: '',
-    actorsContact: '', sasContact: '',
-    locRows: [{loc:'', parking:'', hospital:''}],
-    castRows: [],
-    schedRows: [],
-    generalNotes: '',
-    logoDataUrl: null,
-    customFields: [],
-    hiddenFields: [], // Array of field names to hide
-    hideCrewCall: false,
-    hideLocations: false,
-    hideCast: false,
-    hideSchedule: false,
-    hideNotes: false,
-    minimized: false,
-    minimizedCrew: false,
-    minimizedLocations: false,
-    minimizedCast: false,
-    minimizedSchedule: false,
-    minimizedNotes: false,
-    exportSelected: true
+function confirmDeleteCallsheet(i) {
+  document.getElementById('modal-delete-cs-idx').value = i;
+  document.getElementById('modal-delete-cs').classList.add('open');
+}
+
+function doDeleteCallsheet() {
+  const i = parseInt(document.getElementById('modal-delete-cs-idx').value, 10);
+  removeCallsheet(i);
+  closeModal('modal-delete-cs');
+}
+
+// Helper function to save contact to project's persistent contacts array
+function saveContactToProject(project, name, role, phone, email, socials) {
+  if (!project.contacts) project.contacts = [];
+  
+  // Check if contact already exists
+  const existingIdx = project.contacts.findIndex(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+  
+  if (existingIdx >= 0) {
+    // Update existing
+    project.contacts[existingIdx].phone = phone || project.contacts[existingIdx].phone;
+    project.contacts[existingIdx].email = email || project.contacts[existingIdx].email;
+    if (socials) project.contacts[existingIdx].socials = socials;
+    if (role && !project.contacts[existingIdx].roles.includes(role)) {
+      project.contacts[existingIdx].roles.push(role);
+    }
+  } else {
+    // Add new
+    project.contacts.push({
+      name: name,
+      roles: [role],
+      phone: phone || '',
+      email: email || '',
+      socials: socials || ''
+    });
+  }
+}
+
+// Add a new social field row
+function addSocialField(containerId, platform = 'instagram', handle = '') {
+  const container = document.getElementById(containerId);
+  const rowId = containerId + '-row-' + Date.now();
+  const row = document.createElement('div');
+  row.className = 'social-field-row';
+  row.style.cssText = 'display:flex;gap:8px;align-items:center';
+  row.innerHTML = `
+    <select class="form-select" style="width:120px;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:4px 0" data-platform>
+      <option value="instagram" ${platform === 'instagram' ? 'selected' : ''}>📸</option>
+      <option value="facebook" ${platform === 'facebook' ? 'selected' : ''}>📘</option>
+      <option value="twitter" ${platform === 'twitter' ? 'selected' : ''}>🐦</option>
+      <option value="bluesky" ${platform === 'bluesky' ? 'selected' : ''}>☁️</option>
+      <option value="tiktok" ${platform === 'tiktok' ? 'selected' : ''}>🎵</option>
+      <option value="youtube" ${platform === 'youtube' ? 'selected' : ''}>▶️</option>
+      <option value="linkedin" ${platform === 'linkedin' ? 'selected' : ''}>💼</option>
+      <option value="website" ${platform === 'website' ? 'selected' : ''}>🌐</option>
+      <option value="other" ${platform === 'other' ? 'selected' : ''}>📎</option>
+    </select>
+    <input class="form-input-minimal" placeholder="@handle or URL" value="${handle}" data-handle style="flex:1">
+    <button type="button" class="btn btn-sm btn-ghost" onclick="this.parentElement.remove()" style="padding:4px 8px">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+// Collect socials from the container
+function collectSocials(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return '';
+  const rows = container.querySelectorAll('.social-field-row');
+  const socials = [];
+  rows.forEach(row => {
+    const platform = row.querySelector('[data-platform]').value;
+    const handle = row.querySelector('[data-handle]').value.trim();
+    if (handle) {
+      socials.push(platform + '||' + handle);
+    }
   });
-  saveStore();
-  renderCallsheet(p);
+  return socials.join(',');
+}
+
+// Render socials from stored format to clickable links
+function renderSocialLinks(socialsStr) {
+  if (!socialsStr) return '—';
+  const socials = socialsStr.split(',').map(s => s.trim()).filter(Boolean);
+  if (!socials.length) return '—';
+  
+  return socials.map(s => {
+    // Extract handle - remove any platform prefixes and separators
+    let raw = s;
+    
+    // Remove common separators and everything before them
+    let handle = raw;
+    if (handle.includes('||')) {
+      handle = handle.split('||').pop();
+    } else if (handle.includes(':') && !handle.includes('://')) {
+      handle = handle.split(':').pop();
+    }
+    
+    // Also remove any remaining platform name prefixes like "instagram" at start
+    const platformNames = ['instagram', 'facebook', 'twitter', 'tiktok', 'bluesky', 'youtube', 'linkedin', 'website'];
+    const lowerHandle = handle.toLowerCase();
+    for (const platform of platformNames) {
+      if (lowerHandle.startsWith(platform)) {
+        handle = handle.substring(platform.length);
+        break;
+      }
+    }
+    
+    // Clean the handle
+    handle = handle.replace(/^[:|@\s]+/, '').trim();
+    
+    if (!handle) return '';
+    
+    // Try to detect platform from the original string
+    let platform = 'website';
+    const lowerRaw = raw.toLowerCase();
+    if (lowerRaw.includes('instagram')) platform = 'instagram';
+    else if (lowerRaw.includes('facebook')) platform = 'facebook';
+    else if (lowerRaw.includes('twitter') || lowerRaw.includes('x.com')) platform = 'twitter';
+    else if (lowerRaw.includes('tiktok')) platform = 'tiktok';
+    else if (lowerRaw.includes('bluesky')) platform = 'bluesky';
+    else if (lowerRaw.includes('youtube')) platform = 'youtube';
+    else if (lowerRaw.includes('linkedin')) platform = 'linkedin';
+    
+    // Build URL
+    let url = handle;
+    if (!url.match(/^https?:\/\//)) {
+      // Remove @ if present
+      const cleanHandle = handle.replace(/^@/, '');
+      switch(platform) {
+        case 'instagram': url = 'https://instagram.com/' + cleanHandle; break;
+        case 'facebook': url = 'https://facebook.com/' + cleanHandle; break;
+        case 'twitter': url = 'https://twitter.com/' + cleanHandle; break;
+        case 'bluesky': url = 'https://bsky.app/profile/' + cleanHandle; break;
+        case 'tiktok': url = 'https://tiktok.com/@' + cleanHandle; break;
+        case 'youtube': url = 'https://youtube.com/' + cleanHandle; break;
+        case 'linkedin': url = 'https://linkedin.com/in/' + cleanHandle; break;
+        default: url = 'https://' + cleanHandle;
+      }
+    }
+    
+    // Get icon
+    let icon = '🌐';
+    switch(platform) {
+      case 'instagram': icon = '📸'; break;
+      case 'facebook': icon = '📘'; break;
+      case 'twitter': icon = '🐦'; break;
+      case 'bluesky': icon = '☁️'; break;
+      case 'tiktok': icon = '🎵'; break;
+      case 'youtube': icon = '▶️'; break;
+      case 'linkedin': icon = '💼'; break;
+    }
+    
+    // Display: icon + handle (only handle is clickable)
+    return `${icon} <a href="${url}" target="_blank" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
+  }).join('');
+}
+
+// Helper function to remove contact from project's persistent contacts array
+function removeContactFromProject(project, name) {
+  if (!project.contacts) return;
+  project.contacts = project.contacts.filter(c => !c.name || c.name.toLowerCase() !== name.toLowerCase());
+}
+
+function addCallsheet() {
+  try {
+    const p = currentProject();
+    if (!p) {
+      showToast('No project selected', 'error');
+      return;
+    }
+    p.callsheets.push({
+      date: '', prodNum: p.num, prodTitle: p.title,
+      company: p.company || '',
+      dirProd: p.director || '', producer: p.producer || '',
+      dop: '', pm: '', ad1: '', sound: '',
+      crewCall: '', shootCall: '', estWrap: '',
+      daylight: '', weather: '', weatherDetail: '',
+      actorsContact: '', sasContact: '',
+      locRows: [{loc:'', parking:'', hospital:''}],
+      castRows: [],
+      schedRows: [],
+      generalNotes: '',
+      logoDataUrl: null,
+      customFields: [],
+      hiddenFields: [], // Array of field names to hide
+      hideContactDetails: true, // Hide contact details by default
+      hideCrewCall: false,
+      hideLocations: false,
+      hideCast: false,
+      hideSchedule: false,
+      hideNotes: false,
+      minimized: false,
+      minimizedCrew: false,
+      minimizedLocations: false,
+      minimizedCast: false,
+      minimizedSchedule: false,
+      minimizedNotes: false,
+      exportSelected: true
+    });
+    saveStore();
+    renderCallsheet(p);
+  } catch (e) {
+    console.error('Error adding callsheet:', e);
+    showToast('Error adding callsheet: ' + e.message, 'error');
+  }
 }
 
 function toggleCSectionVisibility(csIdx, sectionKey) {
@@ -3062,6 +4790,7 @@ function toggleCallsheetMinimize(csIdx) {
   const p = currentProject();
   p.callsheets[csIdx].minimized = !p.callsheets[csIdx].minimized;
   saveStore();
+  renderCallsheet(p);
 }
 
 function toggleSectionMinimize(csIdx, section) {
@@ -3119,21 +4848,17 @@ function openExportModal() {
 
 function doExportPDF() {
   const p = currentProject();
-  const selectedCallsheets = [];
   
-  p.callsheets.forEach((c, i) => {
-    const checkbox = document.getElementById(`export-check-${i}`);
-    if (checkbox && checkbox.checked) {
-      selectedCallsheets.push(c);
-    }
-  });
+  // Export all callsheets (not just selected ones)
+  const selectedCallsheets = p.callsheets;
   
-  closeModal('modal-export');
-  
-  if (!selectedCallsheets.length) {
-    alert('Please select at least one callsheet to export.');
+  if (!selectedCallsheets || !selectedCallsheets.length) {
+    alert('No callsheets to export. Create a callsheet first.');
     return;
   }
+  
+  // Close export modal
+  closeModal('modal-export');
   
   // Create a temporary container with only selected callsheets
   const tempContainer = document.createElement('div');
@@ -3141,14 +4866,63 @@ function doExportPDF() {
   // Add print styles to temp container
   const style = document.createElement('style');
   style.textContent = `
+    body { margin: 0; padding: 0; }
+    .cs-page { 
+      max-width: 1000px !important;
+      width: 100% !important;
+      margin: 0 auto !important;
+      page-break-after: auto; 
+      margin-top: 10px !important; 
+      box-shadow: none !important; 
+      border: 1px solid #ddd !important; 
+      overflow: hidden !important;
+    }
+    .cs-page:last-child { page-break-after: auto; }
+    .cs-top-bar { overflow: hidden !important; }
+    .cs-header-main { overflow: hidden !important; }
+    .cs-crew-grid { 
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px !important;
+      overflow: hidden !important;
+    }
+    .cs-crew-item { 
+      overflow: hidden !important;
+      white-space: nowrap !important;
+    }
+    .cs-crew-item input {
+      max-width: 120px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    .cs-call-times {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 12px !important;
+      overflow: hidden !important;
+    }
+    .cs-weather-row {
+      flex-wrap: wrap !important;
+      overflow: hidden !important;
+    }
     .cs-table { page-break-inside: avoid !important; break-inside: avoid !important; }
     .cs-table th, .cs-table td { page-break-inside: avoid !important; break-inside: avoid !important; }
-    .cs-section { page-break-inside: avoid !important; break-inside: avoid !important; }
-    .cs-page { page-break-after: auto; margin-top: 10px !important; }
-    .cs-page:last-child { page-break-after: auto; }
+    .cs-section { page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; }
     .cs-page .cs-heading button, .cs-page .cs-section button, 
     .cs-page button, .cs-page .btn-tiny, .cs-page .pdf-hide, 
     .cs-page .cs-add-btn, .cs-page .cs-add-row { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+    .cs-heading { border-bottom: 1px solid #ccc !important; padding-bottom: 8px !important; }
+    .cs-call-card { border: 1px solid #ccc !important; }
+    .cs-call-card.highlight { background: #1a1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-call-card.highlight .cs-call-label { color: #fff !important; }
+    .cs-call-card.highlight .cs-call-value { color: #fff !important; }
+    .cs-crew-item { border-left: 3px solid #5bc0eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-note { border-left: 3px solid #d4aa2c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-table th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-table tbody tr:nth-child(even) td { background: #f8f8f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-weather-row { background: #f8f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-date-box { background: #1a1a1a !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    input, textarea { border: none !important; background: transparent !important; }
   `;
   tempContainer.appendChild(style);
   
@@ -3203,10 +4977,16 @@ function doExportPDF() {
     }
   });
   
+  // Make inputs have dark text for PDF
+  tempContainer.querySelectorAll('.cs-page input').forEach(el => {
+    el.style.color = '#000';
+    el.style.fontWeight = '500';
+  });
+  
   // Make inputs look like lines (underline only, no box) in PDF
   tempContainer.querySelectorAll('.cs-page input, .cs-page textarea').forEach(el => {
     el.style.border = 'none';
-    el.style.borderBottom = '1px solid #ccc';
+    el.style.borderBottom = '1px solid #999';
     el.style.background = 'transparent';
     el.style.borderRadius = '0';
     el.style.padding = '2px 0';
@@ -3282,15 +5062,34 @@ function renderSingleCallsheet(c, i) {
   <div class="cs-page">
     <!-- HEADER -->
     <div class="cs-top-bar">
-      <div style="display:flex;gap:20px;align-items:flex-start;flex:1;">
+      <div class="cs-logo-section">
         <div class="cs-logo-drop">
-          ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#aaa;font-size:10px;">LOGO</span>'}
+          ${c.logoDataUrl ? `<img src="${c.logoDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;">` : '<span style="color:#888;font-size:10px;">LOGO</span>'}
         </div>
-        <div class="cs-header-info">
-          <h1 style="margin:0;font-size:18px;font-weight:bold;">${c.prodTitle||p.title}</h1>
-          <div style="font-size:12px;color:#666;">Production ${c.prodNum||p.num} | ${dateStr}</div>
-          <div style="font-size:11px;color:#999;margin-top:4px;">${c.company||p.company||'—'}</div>
+      </div>
+      <div class="cs-header-main">
+        <div class="cs-header-row">
+          <div class="cs-header-info">
+            <h1>${c.prodTitle||p.title}</h1>
+            <div class="cs-prod-info">Production ${c.prodNum||p.num} • ${c.company||p.company||'—'}</div>
+            <div class="cs-header-meta">
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Shoot Day</span>
+                <span class="cs-meta-value">Day ${i + 1}</span>
+              </div>
+              <div class="cs-meta-item">
+                <span class="cs-meta-label">Date</span>
+                <span class="cs-meta-value">${dateStr}</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="cs-date-box">
+        <input type="date" value="${c.date||''}" onchange="updateCSF(${i},'date',this.value)" style="background:transparent;border:none;color:inherit;text-align:center;width:100%;">
+        <div class="cs-date-day">${c.date ? new Date(c.date + 'T12:00:00').getDate() : '—'}</div>
+        <div class="cs-date-month">${c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {month:'short'}).toUpperCase() : 'DATE'}</div>
+        <div class="cs-date-year">${c.date ? new Date(c.date + 'T12:00:00').getFullYear() : '2024'}</div>
       </div>
     </div>
     
@@ -3309,25 +5108,52 @@ function renderSingleCallsheet(c, i) {
       <div class="cs-section" style="display:${show('hideCrewCall')};">
         <h3 class="cs-heading">CREW & CALL TIMES</h3>
         <div style="display: ${c.minimizedCrew ? 'none' : 'block'};">
-        <div class="cs-2col">
-          <div>
-            ${(c.customFields||[]).map((cf) => `
-              <div class="cs-field"><label>${cf.label}</label><input value="${cf.value||''}"></div>
-            `).join('')}
+        
+        <!-- Call Time Cards -->
+        <div class="cs-call-times">
+          <div class="cs-call-card highlight">
+            <div class="cs-call-label">Crew Call</div>
+            <div class="cs-call-value">${c.crewCall||'—'}</div>
+          </div>
+          <div class="cs-call-card">
+            <div class="cs-call-label">First Shot</div>
+            <div class="cs-call-value">${c.shootCall||'—'}</div>
+          </div>
+          <div class="cs-call-card">
+            <div class="cs-call-label">Est. Wrap</div>
+            <div class="cs-call-value">${c.estWrap||'—'}</div>
+          </div>
+          <div class="cs-call-card">
+            <div class="cs-call-label">Daylight</div>
+            <div class="cs-call-value">${c.daylight||'—'}</div>
           </div>
         </div>
-        <div class="cs-spacer"></div>
-        <h4 style="margin:0;font-size:12px;font-weight:bold;text-transform:uppercase;">Call Times</h4>
-        <div class="cs-3col">
-          <div class="cs-field"><label>Crew Call</label><input value="${c.crewCall||''}"></div>
-          <div class="cs-field"><label>First Shot Time</label><input value="${c.shootCall||''}"></div>
-          <div class="cs-field"><label>Est. Wrap</label><input value="${c.estWrap||''}"></div>
+        
+        <!-- Weather Row -->
+        <div class="cs-weather-row">
+          <div class="cs-weather-item">
+            <div class="cs-weather-icon">☁</div>
+            <div class="cs-weather-text">${c.weather||'Weather'}</div>
+          </div>
+          <div class="cs-weather-item">
+            <div class="cs-weather-icon">💧</div>
+            <div class="cs-weather-text">${c.weatherDetail||'Rain/Wind'}</div>
+          </div>
         </div>
+        
         <div class="cs-spacer"></div>
-        <div class="cs-3col">
-          <div class="cs-field"><label>Daylight</label><input value="${c.daylight||''}" placeholder="06:30-20:00"></div>
-          <div class="cs-field"><label>Weather</label><input value="${c.weather||''}" placeholder="Cloudy / 14°C"></div>
-          <div class="cs-field"><label>Rain/Wind</label><input value="${c.weatherDetail||''}" placeholder="20% / Light"></div>
+        
+        <!-- Crew Contacts -->
+        <h4 style="margin:0 0 14px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#555;">Key Crew Contacts</h4>
+        <div class="cs-crew-grid">
+          ${(c.customFields||[]).map((cf) => `
+            <div class="cs-crew-item">
+              <label>${cf.label}</label>
+              <input value="${cf.value||''}" placeholder="Name">
+              <input value="${cf.phone||''}" placeholder="Phone" style="width:100px;">
+              <input value="${cf.email||''}" placeholder="Email" style="width:130px;">
+            </div>
+          `).join('')}
         </div>
         </div>
       </div>
@@ -3354,10 +5180,10 @@ function renderSingleCallsheet(c, i) {
       <div class="cs-section" style="display:${show('hideCast')};">
         <h3 class="cs-heading">CAST</h3>
         <div style="display: ${c.minimizedCast ? 'none' : 'block'};">
-        <div class="cs-note">Actors contact: <input class="cs-inline" value="${c.actorsContact||''}"></div>
-        <div class="cs-note">SAs contact: <input class="cs-inline" value="${c.sasContact||''}"></div>
+        <div class="cs-note">Actors Point of Contact: ${c.actorsContact||'—'}</div>
+        <div class="cs-note">Supporting Artists Point of Contact: ${c.sasContact||'—'}</div>
         <table class="cs-table">
-          <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point of Contact</th></tr></thead>
+          <thead><tr><th>Actor</th><th>Character</th><th>Call</th><th>Est. Wrap</th><th>Point Of Contact</th>${!c.hideContactDetails ? '<th>Contact</th><th>Socials</th>' : ''}</tr></thead>
           <tbody>
             ${(c.castRows||[]).map((r) => `
               <tr>
@@ -3366,6 +5192,9 @@ function renderSingleCallsheet(c, i) {
                 <td><input value="${r.callTime||''}" style="max-width:50px;"></td>
                 <td><input value="${r.wrapTime||''}" style="max-width:50px;"></td>
                 <td><input value="${r.poc||''}"></td>
+                ${!c.hideContactDetails ? `
+                <td><input value="${r.contact||''}"></td>
+                <td><input value="${r.socials||''}"></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -3478,6 +5307,7 @@ function addPersonnel(type) {
   document.getElementById('pers-confirmed').value = 'green';
   document.getElementById('pers-dept-group').style.display = (type === 'unit') ? 'block' : 'none';
   document.getElementById('pers-social-group').style.display = (type === 'unit') ? 'block' : 'none';
+  populateContactSelect('pers-contact-select');
   openModal('modal-personnel');
 }
 function editPersonnel(type, i) {
@@ -3799,29 +5629,35 @@ function renderScoutingList(p) {
     <div class="breakdown-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <strong>${s.name||'Untitled Location'}</strong>
-        <button class="btn btn-sm btn-danger" onclick="removeScoutingSheet(${i})">✕</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="toggleScoutingMinimize(${i})">${s.minimized ? '✚ Expand' : '▼ Minimize'}</button>
+          <button class="btn btn-sm btn-danger" onclick="removeScoutingSheet(${i})">✕</button>
+        </div>
       </div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${s.name||''}" onchange="updateScouting(${i},'name',this.value)"></div><div class="form-group"><label class="form-label">Date of Visit</label><input class="form-input" type="date" value="${s.date||''}" onchange="updateScouting(${i},'date',this.value)"></div></div>
-      <div class="form-group"><label class="form-label">Scouted By</label><input class="form-input" value="${s.scoutedBy||''}" onchange="updateScouting(${i},'scoutedBy',this.value)"></div>
-      <div class="form-group"><label class="form-label">General Information</label><textarea class="form-textarea" onchange="updateScouting(${i},'info',this.value)">${s.info||''}</textarea></div>
-      <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'address',this.value)">${s.address||''}</textarea></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" value="${s.contact||''}" onchange="updateScouting(${i},'contact',this.value)"></div>
-        <div class="form-group"><label class="form-label">Overall Suitability</label><input class="form-input" value="${s.suitability||''}" onchange="updateScouting(${i},'suitability',this.value)"></div>
+      <div style="display: ${s.minimized ? 'none' : 'block'};">
+        <div class="form-row"><div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${s.name||''}" onchange="updateScouting(${i},'name',this.value)"></div><div class="form-group"><label class="form-label">Date of Visit</label><input class="form-input" type="date" value="${s.date||''}" onchange="updateScouting(${i},'date',this.value)"></div></div>
+        <div class="form-group"><label class="form-label">Scouted By</label><input class="form-input" value="${s.scoutedBy||''}" onchange="updateScouting(${i},'scoutedBy',this.value)"></div>
+        <div class="form-group"><label class="form-label">General Information</label><textarea class="form-textarea" onchange="updateScouting(${i},'info',this.value)">${s.info||''}</textarea></div>
+        <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'address',this.value)">${s.address||''}</textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" value="${s.contact||''}" onchange="updateScouting(${i},'contact',this.value)"></div>
+          <div class="form-group"><label class="form-label">Overall Suitability</label><input class="form-input" value="${s.suitability||''}" onchange="updateScouting(${i},'suitability',this.value)"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Accessibility</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'accessibility',this.value)">${s.accessibility||''}</textarea></div>
+        <div class="form-group"><label class="form-label">Lighting Conditions</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'lighting',this.value)">${s.lighting||''}</textarea></div>
+        <div class="form-group"><label class="form-label">Sound Considerations</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'sound',this.value)">${s.sound||''}</textarea></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Power & Electrical</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'power',this.value)">${s.power||''}</textarea></div><div class="form-group"><label class="form-label">Set Dressing Notes</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'setDressing',this.value)">${s.setDressing||''}</textarea></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Permissions / Legal</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'permissions',this.value)">${s.permissions||''}</textarea></div><div class="form-group"><label class="form-label">Production Logistics</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'logistics',this.value)">${s.logistics||''}</textarea></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Pros</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'pros',this.value)">${s.pros||''}</textarea></div><div class="form-group"><label class="form-label">Cons</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'cons',this.value)">${s.cons||''}</textarea></div></div>
+        <div class="form-group"><label class="form-label">Networking Notes (credits etc.)</label><textarea class="form-textarea" onchange="updateScouting(${i},'networking',this.value)">${s.networking||''}</textarea></div>
       </div>
-      <div class="form-group"><label class="form-label">Accessibility</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'accessibility',this.value)">${s.accessibility||''}</textarea></div>
-      <div class="form-group"><label class="form-label">Lighting Conditions</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'lighting',this.value)">${s.lighting||''}</textarea></div>
-      <div class="form-group"><label class="form-label">Sound Considerations</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'sound',this.value)">${s.sound||''}</textarea></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Power & Electrical</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'power',this.value)">${s.power||''}</textarea></div><div class="form-group"><label class="form-label">Set Dressing Notes</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'setDressing',this.value)">${s.setDressing||''}</textarea></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Permissions / Legal</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'permissions',this.value)">${s.permissions||''}</textarea></div><div class="form-group"><label class="form-label">Production Logistics</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'logistics',this.value)">${s.logistics||''}</textarea></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Pros</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'pros',this.value)">${s.pros||''}</textarea></div><div class="form-group"><label class="form-label">Cons</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'cons',this.value)">${s.cons||''}</textarea></div></div>
-      <div class="form-group"><label class="form-label">Networking Notes (credits etc.)</label><textarea class="form-textarea" onchange="updateScouting(${i},'networking',this.value)">${s.networking||''}</textarea></div>
     </div>
   `).join('');
 }
 function addScoutingSheet() { const p=currentProject(); p.scoutingSheets.push({name:'',date:'',scoutedBy:''}); saveStore(); renderScoutingList(p); }
 function removeScoutingSheet(i) { const p=currentProject(); p.scoutingSheets.splice(i,1); saveStore(); renderScoutingList(p); }
 function updateScouting(i,field,val) { const p=currentProject(); p.scoutingSheets[i][field]=val; saveStore(); }
+function toggleScoutingMinimize(i) { const p=currentProject(); p.scoutingSheets[i].minimized = !p.scoutingSheets[i].minimized; saveStore(); renderScoutingList(p); }
 
 // TEAM
 function renderTeam() {
@@ -3848,9 +5684,664 @@ function saveInvite() {
 }
 function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTeam();}
 
+// CONTACTS
+function renderContacts() {
+  const el = document.getElementById('contacts-list');
+  
+  // Get current filter
+  const filterSelect = document.getElementById('contacts-filter');
+  const filterProject = filterSelect ? filterSelect.value : 'all';
+  
+  // Gather all contacts from all projects - merge roles properly
+  const contactsMap = {};
+  store.projects.forEach(p => {
+    // From persistent contacts
+    (p.contacts || []).forEach(c => {
+      if (c.name) {
+        const key = c.name.toLowerCase();
+        if (!contactsMap[key]) {
+          contactsMap[key] = { name: c.name, roles: [], projects: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '' };
+        }
+        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        (c.roles || ['Contact']).forEach(r => {
+          if (!contactsMap[key].roles.includes(r)) contactsMap[key].roles.push(r);
+        });
+        if (c.phone) contactsMap[key].phone = c.phone;
+        if (c.email) contactsMap[key].email = c.email;
+        if (c.socials) contactsMap[key].socials = c.socials;
+      }
+    });
+    
+    // Also check callsheet data
+    (p.callsheets || []).forEach(cs => {
+      (cs.castRows || []).forEach(r => {
+        if (r.actor) {
+          const key = r.actor.toLowerCase();
+          if (!contactsMap[key]) {
+            contactsMap[key] = { name: r.actor, roles: [], projects: [], phone: '', email: '', socials: '' };
+          }
+          if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+          if (!contactsMap[key].roles.includes('Cast')) contactsMap[key].roles.push('Cast');
+        }
+      });
+      (cs.customFields || []).forEach(cf => {
+        if (cf.value) {
+          const key = cf.value.toLowerCase();
+          if (!contactsMap[key]) {
+            contactsMap[key] = { name: cf.value, roles: [], projects: [], phone: '', email: '', socials: '' };
+          }
+          if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+          if (!contactsMap[key].roles.includes(cf.label)) contactsMap[key].roles.push(cf.label);
+          if (cf.phone) contactsMap[key].phone = cf.phone;
+          if (cf.email) contactsMap[key].email = cf.email;
+        }
+      });
+    });
+    // From personnel
+    (p.cast || []).forEach(r => {
+      if (r.name) {
+        const key = r.name.toLowerCase();
+        if (!contactsMap[key]) {
+          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+        }
+        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].roles.includes('Cast')) contactsMap[key].roles.push('Cast');
+        if (r.number) contactsMap[key].phone = r.number;
+        if (r.email) contactsMap[key].email = r.email;
+      }
+    });
+    (p.extras || []).forEach(r => {
+      if (r.name) {
+        const key = r.name.toLowerCase();
+        if (!contactsMap[key]) {
+          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+        }
+        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].roles.includes('Extra')) contactsMap[key].roles.push('Extra');
+        if (r.number) contactsMap[key].phone = r.number;
+        if (r.email) contactsMap[key].email = r.email;
+      }
+    });
+    (p.unit || []).forEach(r => {
+      if (r.name) {
+        const key = r.name.toLowerCase();
+        if (!contactsMap[key]) {
+          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+        }
+        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        const role = r.role || 'Crew';
+        if (!contactsMap[key].roles.includes(role)) contactsMap[key].roles.push(role);
+        if (r.number) contactsMap[key].phone = r.number;
+        if (r.email) contactsMap[key].email = r.email;
+      }
+    });
+  });
+  
+  // Convert to array
+  let contacts = Object.values(contactsMap).map(c => ({
+    name: c.name,
+    role: c.roles.join(', '),
+    projects: c.projects.join(', '),
+    projectId: c.projects[0] ? store.projects.find(p => p.title === c.projects[0])?.id : null,
+    phone: c.phone,
+    email: c.email,
+    socials: c.socials
+  }));
+  
+  // Filter contacts
+  const filteredContacts = filterProject === 'all' 
+    ? contacts 
+    : contacts.filter(c => c.projectId === filterProject);
+  
+  // Always render the filter dropdown, even if no contacts
+  el.innerHTML = `<div style="margin-bottom:16px">
+    <select id="contacts-filter" onchange="renderContacts()" class="form-select" style="max-width:300px">
+      <option value="all">All Projects</option>
+      ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
+    </select>
+  </div>`;
+  
+  if (!filteredContacts.length) {
+    el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📱</div><h3>No contacts yet</h3><p style="color:var(--text2);margin-top:8px">Add contact details to cast or crew to see them here</p></div>';
+    return;
+  }
+  
+  // Helper function to convert social handles to clickable links
+  function renderSocialLinks(socialsStr) {
+    if (!socialsStr) return '—';
+    const socials = socialsStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (!socials.length) return '—';
+    
+    return socials.map(s => {
+      // Extract handle - remove any platform prefixes and separators
+      let raw = s;
+      
+      // Remove common separators and everything before them
+      let handle = raw;
+      if (handle.includes('||')) {
+        handle = handle.split('||').pop();
+      } else if (handle.includes(':') && !handle.includes('://')) {
+        handle = handle.split(':').pop();
+      }
+      
+      // Also remove any remaining platform name prefixes like "instagram" at start
+      const platformNames = ['instagram', 'facebook', 'twitter', 'tiktok', 'bluesky', 'youtube', 'linkedin', 'website'];
+      const lowerHandle = handle.toLowerCase();
+      for (const platform of platformNames) {
+        if (lowerHandle.startsWith(platform)) {
+          handle = handle.substring(platform.length);
+          break;
+        }
+      }
+      
+      // Clean the handle
+      handle = handle.replace(/^[:|@\s]+/, '').trim();
+      
+      if (!handle) return '';
+      
+      // Try to detect platform from the original string
+      let platform = 'website';
+      const lowerRaw = raw.toLowerCase();
+      if (lowerRaw.includes('instagram')) platform = 'instagram';
+      else if (lowerRaw.includes('facebook')) platform = 'facebook';
+      else if (lowerRaw.includes('twitter') || lowerRaw.includes('x.com')) platform = 'twitter';
+      else if (lowerRaw.includes('tiktok')) platform = 'tiktok';
+      else if (lowerRaw.includes('bluesky')) platform = 'bluesky';
+      else if (lowerRaw.includes('youtube')) platform = 'youtube';
+      else if (lowerRaw.includes('linkedin')) platform = 'linkedin';
+      
+      // Build URL
+      let url = handle;
+      if (!url.match(/^https?:\/\//)) {
+        // Remove @ if present
+        const cleanHandle = handle.replace(/^@/, '');
+        switch(platform) {
+          case 'instagram': url = 'https://instagram.com/' + cleanHandle; break;
+          case 'facebook': url = 'https://facebook.com/' + cleanHandle; break;
+          case 'twitter': url = 'https://twitter.com/' + cleanHandle; break;
+          case 'bluesky': url = 'https://bsky.app/profile/' + cleanHandle; break;
+          case 'tiktok': url = 'https://tiktok.com/@' + cleanHandle; break;
+          case 'youtube': url = 'https://youtube.com/' + cleanHandle; break;
+          case 'linkedin': url = 'https://linkedin.com/in/' + cleanHandle; break;
+          default: url = 'https://' + cleanHandle;
+        }
+      }
+      
+      // Get icon
+      let icon = '🌐';
+      switch(platform) {
+        case 'instagram': icon = '📸'; break;
+        case 'facebook': icon = '📘'; break;
+        case 'twitter': icon = '🐦'; break;
+        case 'bluesky': icon = '☁️'; break;
+        case 'tiktok': icon = '🎵'; break;
+        case 'youtube': icon = '▶️'; break;
+        case 'linkedin': icon = '💼'; break;
+      }
+      
+      // Display: icon + handle (only handle is clickable)
+      return `${icon} <a href="${url}" target="_blank" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
+    }).join('');
+  }
+  
+  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Projects</th><th>Phone</th><th>Email</th><th>Socials</th><th></th></tr></thead><tbody>` + 
+    filteredContacts.map((c, i) => `
+      <tr>
+        <td style="font-weight:500" title="${c.name}">${c.name}</td>
+        <td title="${c.role}"><span class="tag">${c.role}</span></td>
+        <td title="${c.projects}">${c.projects}</td>
+        <td title="${c.phone || ''}">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent2)">${c.phone}</a>` : '—'}</td>
+        <td title="${c.email || ''}">${c.email ? `<a href="mailto:${c.email}" style="color:var(--accent2)">${c.email}</a>` : '—'}</td>
+        <td title="${c.socials || ''}">${renderSocialLinks(c.socials)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ghost" onclick="editContact('${c.name.replace(/'/g, "\\'")}')" title="Edit">✎</button>
+          <button class="btn btn-sm btn-danger" onclick="removeContact('${c.name.replace(/'/g, "\\'")}')">✕</button>
+        </td>
+      </tr>
+    `).join('') + 
+    '</tbody></table></div>';
+}
+
+// LOCATIONS
+function renderLocations() {
+  const el = document.getElementById('locations-list');
+  
+  // Get current filter
+  const filterSelect = document.getElementById('locations-filter');
+  const filterProject = filterSelect ? filterSelect.value : 'all';
+  
+  // Gather all locations from all projects (both locations table and scouting sheets)
+  const locationsMap = {};
+  store.projects.forEach(p => {
+    // From locations table
+    (p.locations || []).forEach(l => {
+      if (l.name) {
+        const key = l.name.toLowerCase() + '|' + p.id;
+        locationsMap[key] = { 
+          name: l.name, 
+          project: p.title, 
+          projectId: p.id,
+          date: l.date || '',
+          suitability: l.suitability || '',
+          cost: l.cost || '',
+          accessibility: l.access || '',
+          decision: l.decision || '',
+          notes: l.rules || '',
+          source: 'location'
+        };
+      }
+    });
+    // From scouting sheets
+    (p.scoutingSheets || []).forEach(s => {
+      if (s.name) {
+        const key = s.name.toLowerCase() + '|' + p.id;
+        if (!locationsMap[key]) {
+          locationsMap[key] = { 
+            name: s.name, 
+            project: p.title, 
+            projectId: p.id,
+            date: s.date || '',
+            suitability: s.suitability || '',
+            cost: s.cost || '',
+            accessibility: s.accessibility || '',
+            decision: '',
+            notes: s.info || '',
+            source: 'scouting'
+          };
+        }
+      }
+    });
+  });
+  
+  // Convert to array
+  let locations = Object.values(locationsMap).map(l => ({
+    name: l.name,
+    project: l.project,
+    projectId: l.projectId,
+    date: l.date,
+    suitability: l.suitability,
+    cost: l.cost,
+    accessibility: l.accessibility,
+    decision: l.decision,
+    notes: l.notes
+  }));
+  
+  // Sort by project then name
+  locations.sort((a, b) => {
+    if (a.project !== b.project) return a.project.localeCompare(b.project);
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Filter locations
+  const filteredLocations = filterProject === 'all' 
+    ? locations 
+    : locations.filter(l => l.projectId === filterProject);
+  
+  // Always render the filter dropdown
+  el.innerHTML = `<div style="margin-bottom:16px">
+    <select id="locations-filter" onchange="renderLocations()" class="form-select" style="max-width:300px">
+      <option value="all">All Projects</option>
+      ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
+    </select>
+  </div>`;
+  
+  if (!filteredLocations.length) {
+    el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No locations yet</h3><p style="color:var(--text2);margin-top:8px">Add locations to projects to see them here</p></div>';
+    return;
+  }
+  
+  // Get suitability badge class
+  function getSuitabilityBadge(s) {
+    if (s === 'suitable') return '<span class="tag" style="background:var(--green)">Suitable</span>';
+    if (s === 'possible') return '<span class="tag" style="background:var(--orange)">Possibly Suitable</span>';
+    if (s === 'unsuitable') return '<span class="tag" style="background:var(--red)">Unsuitable</span>';
+    return '—';
+  }
+  
+  // Get decision badge
+  function getDecisionBadge(d) {
+    if (d === 'confirmed') return '<span class="tag" style="background:var(--green)">Confirmed ✓</span>';
+    if (d === 'backup') return '<span class="tag" style="background:var(--orange)">Backup</span>';
+    if (d === 'rejected') return '<span class="tag" style="background:var(--red)">Rejected ✗</span>';
+    return '<span class="tag">TBD</span>';
+  }
+  
+  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr>
+    <th>Location</th>
+    <th>Project</th>
+    <th>Date Scouted</th>
+    <th>Suitability</th>
+    <th>Cost <span title="Costs change, cost accurate as of date enquired" style="cursor:help">ⓘ</span></th>
+    <th>Accessibility</th>
+    <th>Decision</th>
+    <th>Notes</th>
+  </tr></thead><tbody>` + 
+    filteredLocations.map((l, i) => `
+      <tr style="cursor:pointer" onclick="showLocationDetails('${l.name.replace(/'/g, "\\'")}', '${l.projectId}')">
+        <td style="font-weight:500">${l.name}</td>
+        <td>${l.project}</td>
+        <td>${l.date || '—'}</td>
+        <td>${getSuitabilityBadge(l.suitability)}</td>
+        <td>${l.cost || '—'}</td>
+        <td>${l.accessibility || '—'}</td>
+        <td>${getDecisionBadge(l.decision)}</td>
+        <td>${l.notes ? (l.notes.length > 50 ? l.notes.substring(0,50)+'...' : l.notes) : '—'}</td>
+      </tr>
+    `).join('') + 
+    '</tbody></table></div>';
+}
+
+function showLocationDetails(locationName, projectId) {
+  // For now, just show a toast - could be expanded to show photos in a modal
+  showToast('Location: ' + locationName + ' - Photos view coming soon', 'info');
+}
+
+function removeContact(name) {
+  // Show confirmation modal instead of browser confirm
+  document.getElementById('remove-contact-name').textContent = name;
+  document.getElementById('remove-contact-name-hidden').value = name;
+  openModal('modal-remove-contact');
+}
+
+function confirmRemoveContact() {
+  const name = document.getElementById('remove-contact-name-hidden').value;
+  closeModal('modal-remove-contact');
+  
+  // Remove from persistent contacts in all projects
+  store.projects.forEach(p => {
+    removeContactFromProject(p, name);
+  });
+  
+  // Also clear from callsheet data
+  store.projects.forEach(p => {
+    // Clear from callsheet cast rows
+    (p.callsheets || []).forEach(cs => {
+      (cs.castRows || []).forEach(r => {
+        if (r.actor && r.actor.toLowerCase() === name.toLowerCase()) {
+          r.contact = '';
+        }
+      });
+      // Clear from customFields
+      (cs.customFields || []).forEach(cf => {
+        if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
+          cf.phone = '';
+          cf.email = '';
+        }
+      });
+    });
+    // Clear from personnel
+    (p.cast || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = '';
+        r.email = '';
+      }
+    });
+    (p.extras || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = '';
+        r.email = '';
+      }
+    });
+    (p.unit || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = '';
+        r.email = '';
+      }
+    });
+  });
+  
+  saveStore();
+  renderContacts();
+  showToast('Contact removed', 'success');
+}
+
+function editContact(name) {
+  // Find the contact info - first check persistent contacts, then other sources
+  let phone = '';
+  let email = '';
+  let socials = '';
+  
+  // First check persistent contacts
+  for (const p of store.projects) {
+    const contact = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+    if (contact) {
+      phone = contact.phone || '';
+      email = contact.email || '';
+      socials = contact.socials || '';
+      break;
+    }
+  }
+  
+  // If not found in persistent, check other sources
+  if (!phone && !email) {
+    store.projects.forEach(p => {
+      (p.callsheets || []).forEach(cs => {
+        (cs.castRows || []).forEach(r => {
+          if (r.actor && r.actor.toLowerCase() === name.toLowerCase() && r.contact) {
+            phone = r.contact;
+          }
+        });
+        (cs.customFields || []).forEach(cf => {
+          if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
+            phone = cf.phone || '';
+            email = cf.email || '';
+          }
+        });
+      });
+      (p.cast || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          phone = r.number || '';
+          email = r.email || '';
+        }
+      });
+      (p.extras || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          phone = r.number || '';
+          email = r.email || '';
+        }
+      });
+      (p.unit || []).forEach(r => {
+        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+          phone = r.number || '';
+          email = r.email || '';
+        }
+      });
+    });
+  }
+  
+  // Populate the socials container
+  const socialsContainer = document.getElementById('edit-contact-socials-container');
+  socialsContainer.innerHTML = '';
+  
+  if (socials) {
+    // Parse stored socials (format: platform:handle,platform:handle)
+    const socialParts = socials.split(',').map(s => s.trim()).filter(Boolean);
+    socialParts.forEach(s => {
+      const [platform, handle] = s.split(':');
+      addSocialField('edit-contact-socials-container', platform || 'instagram', handle || '');
+    });
+  } else {
+    // Add one empty field
+    addSocialField('edit-contact-socials-container', 'instagram', '');
+  }
+  
+  document.getElementById('edit-contact-name').value = name;
+  document.getElementById('edit-contact-name-display').value = name;
+  document.getElementById('edit-contact-phone').value = phone;
+  document.getElementById('edit-contact-email').value = email;
+  openModal('modal-edit-contact');
+}
+
+function saveEditedContact() {
+  const name = document.getElementById('edit-contact-name').value;
+  const phone = document.getElementById('edit-contact-phone').value.trim();
+  const email = document.getElementById('edit-contact-email').value.trim();
+  const socials = collectSocials('edit-contact-socials-container');
+  
+  if (!name) {
+    showToast('Name required', 'error');
+    return;
+  }
+  
+  // Update contact in persistent storage first
+  store.projects.forEach(p => {
+    const contactIdx = (p.contacts || []).findIndex(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+    if (contactIdx >= 0) {
+      p.contacts[contactIdx].phone = phone;
+      p.contacts[contactIdx].email = email;
+      p.contacts[contactIdx].socials = socials;
+    } else if (phone || email || socials) {
+      // Create new contact if not found
+      if (!p.contacts) p.contacts = [];
+      p.contacts.push({ name: name, roles: ['Contact'], phone: phone, email: email, socials: socials });
+    }
+  });
+  
+  // Also update callsheet data
+  store.projects.forEach(p => {
+    // Update callsheet cast rows
+    (p.callsheets || []).forEach(cs => {
+      (cs.castRows || []).forEach(r => {
+        if (r.actor && r.actor.toLowerCase() === name.toLowerCase()) {
+          r.contact = phone || '';
+        }
+      });
+      // Update customFields
+      (cs.customFields || []).forEach(cf => {
+        if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
+          cf.phone = phone;
+          cf.email = email;
+        }
+      });
+    });
+    // Update personnel
+    (p.cast || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = phone;
+        r.email = email;
+      }
+    });
+    (p.extras || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = phone;
+        r.email = email;
+      }
+    });
+    (p.unit || []).forEach(r => {
+      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+        r.number = phone;
+        r.email = email;
+      }
+    });
+  });
+  
+  saveStore();
+  closeModal('modal-edit-contact');
+  renderContacts();
+  showToast('Contact updated', 'success');
+}
+
 // ══════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════
+// CALLSHEET HTML BUILDING
+// ══════════════════════════════════════════
+
+function buildCallsheetHTML(p, csIdx) {
+  const c = p.callsheets[csIdx];
+  const dateStr = c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'DATE TBC';
+  
+  let html = '<div class="cs-page">';
+  html += '<div class="cs-header">';
+  if (c.logoDataUrl) {
+    html += '<img src="' + c.logoDataUrl + '" class="cs-logo">';
+  } else {
+    html += '<div class="cs-title">' + (p.title || 'Untitled') + '</div>';
+  }
+  html += '<div class="cs-date">' + dateStr + '</div>';
+  html += '</div>';
+  
+  // Call time & shooting info
+  if (c.callTime || c.shootDay) {
+    html += '<div class="cs-call-time">';
+    if (c.shootDay) html += 'DAY ' + c.shootDay + ' — ';
+    if (c.callTime) html += 'CALL: ' + c.callTime;
+    html += '</div>';
+  }
+  
+  // Location
+  if (c.location) {
+    html += '<div class="cs-section"><div class="cs-section-title">LOCATION</div>';
+    html += '<div class="cs-scene-list">' + c.location + '</div></div>';
+  }
+  
+  // Scenes
+  if (c.scenes && c.scenes.length) {
+    html += '<div class="cs-section"><div class="cs-section-title">SCENES</div>';
+    html += '<div class="cs-scene-list">' + c.scenes.join(', ') + '</div></div>';
+  }
+  
+  // Weather
+  if (c.weather) {
+    html += '<div class="cs-section"><div class="cs-section-title">WEATHER</div>';
+    html += '<div class="cs-scene-list">' + c.weather + '</div></div>';
+  }
+  
+  // Cast calls
+  if (c.castRows && c.castRows.length) {
+    html += '<div class="cs-section"><div class="cs-section-title">CAST CALLS</div>';
+    c.castRows.forEach(row => {
+      html += '<div class="cs-call-card' + (row.callTime === c.callTime ? ' highlight' : '') + '">';
+      html += '<div class="cs-call-label">' + (row.actor || '') + '</div>';
+      html += '<div class="cs-call-value">' + (row.callTime || 'TBC') + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  
+  // Extras
+  if (c.extraRows && c.extraRows.length) {
+    html += '<div class="cs-section"><div class="cs-section-title">EXTRAS</div>';
+    c.extraRows.forEach(row => {
+      html += '<div class="cs-call-card">';
+      html += '<div class="cs-call-label">' + (row.name || '') + '</div>';
+      html += '<div class="cs-call-value">' + (row.callTime || 'TBC') + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  
+  // Crew
+  if (c.crewRows && c.crewRows.length) {
+    html += '<div class="cs-section"><div class="cs-section-title">CREW</div>';
+    c.crewRows.forEach(row => {
+      html += '<div class="cs-crew-item">' + (row.role || '') + ': ' + (row.name || '') + '</div>';
+    });
+    html += '</div>';
+  }
+  
+  // Transport
+  if (c.transport) {
+    html += '<div class="cs-section"><div class="cs-section-title">TRANSPORT</div>';
+    html += '<div class="cs-note">' + c.transport + '</div></div>';
+  }
+  
+  // Catering
+  if (c.catering) {
+    html += '<div class="cs-section"><div class="cs-section-title">CATERING</div>';
+    html += '<div class="cs-note">' + c.catering + '</div></div>';
+  }
+  
+  // Notes
+  if (c.notes) {
+    html += '<div class="cs-section"><div class="cs-section-title">NOTES</div>';
+    html += '<div class="cs-note">' + c.notes + '</div></div>';
+  }
+  
+  html += '</div>';
+  return html;
+}
+
 function exportData() {
   const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
   const a=document.createElement('a');
@@ -3864,14 +6355,9 @@ function exportData() {
 // MODAL HELPERS
 // ══════════════════════════════════════════
 function openModal(id) {
-  console.log('openModal called with id:', id);
   const overlay = document.getElementById(id);
-  console.log('overlay element:', overlay);
   if (!overlay) { console.log('overlay NOT FOUND'); return; }
-  console.log('overlay classList before:', overlay.classList.value);
   overlay.classList.add('open');
-  console.log('overlay classList after:', overlay.classList.value);
-  console.log('overlay display computed:', window.getComputedStyle(overlay).display);
   overlay.dataset.justOpened = Date.now();
   // focus first input inside the modal after a short delay
   setTimeout(() => {
@@ -3879,7 +6365,12 @@ function openModal(id) {
     if (first) first.focus();
   }, 60);
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove('open');
+  }
+}
 
 // ── KEYBOARD SHORTCUTS ──
 // Map modal id → save function
@@ -3893,6 +6384,7 @@ const MODAL_SAVE = {
   'modal-invite':    () => saveInvite(),
   'modal-shot':      () => saveShot(),
   'modal-prop':      () => savePropItem(),
+  'modal-wardrobe': () => saveWardrobeItem(),
   'modal-sound':     () => saveSoundEntry(),
   'modal-risk':      () => saveRiskRow(),
 };
@@ -4074,6 +6566,74 @@ function removePropItem(type,i) {
   else renderPropTable('wardrobe','wardrobe-body',p);
 }
 
+// WARDROBE FUNCTIONS
+function renderWardrobeTable(p) {
+  const list = p.wardrobe || [];
+  const tbody = document.getElementById('wardrobe-body');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state" style="padding:20px"><h4>No items yet</h4></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((item,i) => `
+    <tr>
+      <td><strong>${item.name}</strong></td>
+      <td>${item.chars||'—'}</td>
+      <td>${item.scenes||'—'}</td>
+      <td>${item.size||'—'}</td>
+      <td>${item.condition||'—'}</td>
+      <td>${item.loc||'—'}</td>
+      <td>${item.notes||'—'}</td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="editWardrobeItem(${i})">✎</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removeWardrobeItem(${i})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function addWardrobeItem() {
+  document.getElementById('wardrobe-edit-idx').value='';
+  document.getElementById('modal-wardrobe-title').textContent='ADD WARDROBE ITEM';
+  ['name','chars','scenes','size','condition','loc','notes'].forEach(f=>document.getElementById('wardrobe-'+f).value='');
+  openModal('modal-wardrobe');
+}
+function editWardrobeItem(i) {
+  const item=currentProject().wardrobe[i];
+  document.getElementById('wardrobe-edit-idx').value=i;
+  document.getElementById('modal-wardrobe-title').textContent='EDIT WARDROBE ITEM';
+  document.getElementById('wardrobe-name').value=item.name||'';
+  document.getElementById('wardrobe-chars').value=item.chars||'';
+  document.getElementById('wardrobe-scenes').value=item.scenes||'';
+  document.getElementById('wardrobe-size').value=item.size||'';
+  document.getElementById('wardrobe-condition').value=item.condition||'';
+  document.getElementById('wardrobe-loc').value=item.loc||'';
+  document.getElementById('wardrobe-notes').value=item.notes||'';
+  openModal('modal-wardrobe');
+}
+function saveWardrobeItem() {
+  const p=currentProject();
+  const name=document.getElementById('wardrobe-name').value.trim();
+  if(!name){showToast('Name required','info');return;}
+  if(!p.wardrobe) p.wardrobe=[];
+  const item={
+    name,
+    chars: document.getElementById('wardrobe-chars').value,
+    scenes: document.getElementById('wardrobe-scenes').value,
+    size: document.getElementById('wardrobe-size').value,
+    condition: document.getElementById('wardrobe-condition').value,
+    loc: document.getElementById('wardrobe-loc').value,
+    notes: document.getElementById('wardrobe-notes').value
+  };
+  const idx=document.getElementById('wardrobe-edit-idx').value;
+  if(idx!=='') p.wardrobe[parseInt(idx)]=item; else p.wardrobe.push(item);
+  saveStore(); closeModal('modal-wardrobe');
+  renderWardrobeTable(p);
+  showToast('Saved','success');
+}
+function removeWardrobeItem(i) {
+  const p=currentProject(); p.wardrobe.splice(i,1); saveStore();
+  renderWardrobeTable(p);
+}
+
 // ══════════════════════════════════════════
 // SOUND LOG
 // ══════════════════════════════════════════
@@ -4219,28 +6779,33 @@ function renderTechScouts(p) {
     <div class="breakdown-card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <strong>${scout.name||'Tech Scout'}</strong>
-        <button class="btn btn-sm btn-danger" onclick="removeTechScout(${si})">✕</button>
-      </div>
-      <div class="form-row" style="margin-bottom:14px">
-        <div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${scout.name||''}" onchange="updateTechScout(${si},'name',this.value)"></div>
-        <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
-      </div>
-      ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
-        <div style="margin-bottom:16px">
-          <div style="font-family:var(--font-display);font-size:16px;letter-spacing:1px;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${cat}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${items.map((item,ii)=>{
-              const key=cat+'_'+ii;
-              const checked=(scout.checks||{})[key];
-              return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border-radius:6px;cursor:pointer" onclick="toggleTechCheck(${si},'${key}')">
-                <div class="equip-check${checked?' checked':''}" style="margin-top:1px;flex-shrink:0"></div>
-                <span style="font-size:12px;color:var(--text2);line-height:1.4">${item}</span>
-              </div>`;
-            }).join('')}
-          </div>
-          <div class="form-group" style="margin-top:8px"><label class="form-label">Notes — ${cat}</label><textarea class="form-textarea" style="min-height:50px" onchange="updateTechScout(${si},'notes_${cat}',this.value)">${(scout['notes_'+cat])||''}</textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="toggleTechScoutMinimize(${si})">${scout.minimized ? '✚ Expand' : '▼ Minimize'}</button>
+          <button class="btn btn-sm btn-danger" onclick="removeTechScout(${si})">✕</button>
         </div>
-      `).join('')}
+      </div>
+      <div style="display: ${scout.minimized ? 'none' : 'block'};">
+        <div class="form-row" style="margin-bottom:14px">
+          <div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${scout.name||''}" onchange="updateTechScout(${si},'name',this.value)"></div>
+          <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
+        </div>
+        ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
+          <div style="margin-bottom:16px">
+            <div style="font-family:var(--font-display);font-size:16px;letter-spacing:1px;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${cat}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              ${items.map((item,ii)=>{
+                const key=cat+'_'+ii;
+                const checked=(scout.checks||{})[key];
+                return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border-radius:6px;cursor:pointer" onclick="toggleTechCheck(${si},'${key}')">
+                  <div class="equip-check${checked?' checked':''}" style="margin-top:1px;flex-shrink:0"></div>
+                  <span style="font-size:12px;color:var(--text2);line-height:1.4">${item}</span>
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="form-group" style="margin-top:8px"><label class="form-label">Notes — ${cat}</label><textarea class="form-textarea" style="min-height:50px" onchange="updateTechScout(${si},'notes_${cat}',this.value)">${(scout['notes_'+cat])||''}</textarea></div>
+          </div>
+        `).join('')}
+      </div>
     </div>
   `).join('');
 }
@@ -4248,6 +6813,7 @@ function addTechScout(){const p=currentProject();if(!p.techScouts)p.techScouts=[
 function removeTechScout(i){const p=currentProject();p.techScouts.splice(i,1);saveStore();renderTechScouts(p);}
 function updateTechScout(i,field,val){const p=currentProject();p.techScouts[i][field]=val;saveStore();}
 function toggleTechCheck(si,key){const p=currentProject();if(!p.techScouts[si].checks)p.techScouts[si].checks={};p.techScouts[si].checks[key]=!p.techScouts[si].checks[key];saveStore();renderTechScouts(p);}
+function toggleTechScoutMinimize(i) { const p=currentProject(); p.techScouts[i].minimized = !p.techScouts[i].minimized; saveStore(); renderTechScouts(p); }
 
 // ══════════════════════════════════════════
 // INIT
