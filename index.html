@@ -4340,6 +4340,13 @@ function loadStore() {
           f.projectId = store.projects[f.projectId]?.id ?? null;
         }
       });
+      // Validate currentProjectId - clear if project no longer exists
+      if (store.currentProjectId) {
+        const projExists = store.projects?.some(p => p.id === store.currentProjectId);
+        if (!projExists) {
+          store.currentProjectId = null;
+        }
+      }
     }
   } catch(e) {}
 }
