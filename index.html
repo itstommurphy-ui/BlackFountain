@@ -4358,6 +4358,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector(`.nav-item[onclick*="${name}"]`) || document.querySelector(`.nav-item[data-view="${name}"]`);
   if (navItem) navItem.classList.add('active');
   
@@ -4418,9 +4419,9 @@ function showProjectView(id) {
     ${p.genre ? `<span>🎭 ${p.genre}</span>` : ''}
   `;
 
-  document.querySelectorAll('.sidebar-projects .project-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.id === id);
-  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+  renderSidebarProjects();
 
   showSection('overview');
 }
@@ -6346,13 +6347,7 @@ function showContactsView(subview) {
   if (subview === 'crew') contactTypeFilter = 'crew';
   else if (subview === 'talent') contactTypeFilter = 'cast';
   else contactTypeFilter = 'all';
-  showView('contacts');
-  // Highlight contacts nav item (showView can't find it by onclick attribute)
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const contactsNav = document.querySelector('.nav-item[data-view="contacts"]');
-  if (contactsNav) contactsNav.classList.add('active');
-  // Mark sub-item active (showView clears .nav-item active, sub-items are separate)
-  document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+  showView('contacts'); // clears project-items, nav-items, nav-subitems; sets contacts nav-item active
   if (subview !== 'all') {
     const sub = document.querySelector(`.nav-subitem[data-subview="${subview}"]`);
     if (sub) sub.classList.add('active');
