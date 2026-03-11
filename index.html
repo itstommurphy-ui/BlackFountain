@@ -229,6 +229,23 @@
   .btn-ghost:hover { background: var(--surface2); border-color: var(--border); color: var(--text2); }
   .btn-danger { border-color: transparent; color: var(--red); background: transparent; }
   .btn-danger:hover { background: rgba(196,68,68,0.08); border-color: rgba(196,68,68,0.2); }
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 16px;
+  }
+  .btn-back:hover { background: var(--surface3); border-color: var(--surface4); color: var(--text); }
 
   /* ── CONTENT ── */
   #content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; }
@@ -616,6 +633,54 @@
     transition: opacity 0.12s;
   }
   .file-card:hover .file-card-actions { opacity: 1; }
+  .file-card.selected .file-card-actions { opacity: 1; }
+
+  .file-select-check {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    opacity: 0;
+    transition: opacity 0.12s, background 0.1s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #fff;
+    z-index: 2;
+  }
+  .file-card:hover .file-select-check { opacity: 1; }
+  .file-card.selected .file-select-check {
+    opacity: 1;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .file-card.selected {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  }
+
+  .file-bulk-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .file-bulk-bar.visible { display: flex; }
+  .file-bulk-bar-count { font-weight: 600; color: var(--text); margin-right: 4px; }
+  .file-bulk-sep { flex: 1; }
+  .file-bulk-clear { cursor: pointer; color: var(--text3); font-size: 11px; text-decoration: underline; }
   .file-action-btn {
     width: 24px;
     height: 24px;
@@ -858,6 +923,117 @@
   .data-table tr:last-child td { border-bottom: none; }
   .data-table td { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .data-table td[title] { cursor: help; }
+  .data-table tr.expand-row td { background: var(--surface2) !important; padding: 0; }
+  .data-table tr.expand-row td { border-bottom: 1px solid var(--border2); }
+  .expand-photo-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .expand-photo-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface3);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 1px solid var(--border2);
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .expand-photo-thumb:hover { transform: scale(1.02); }
+  .expand-photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .expand-photo-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.72);
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 3px 2px;
+    gap: 1px;
+  }
+  .expand-photo-thumb:hover .expand-photo-actions { display: flex; }
+  .expand-photo-action-btn {
+    font-size: 13px;
+    line-height: 1;
+    padding: 2px 3px;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+    opacity: 0.85;
+  }
+  .expand-photo-action-btn:hover { opacity: 1; background: rgba(255,255,255,0.18); }
+  .expand-photo-action-btn.danger:hover { background: rgba(220,60,60,0.4); }
+  .photos-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .photos-badge:hover { text-decoration: underline; }
+
+  /* ── BUDGET SUMMARY ── */
+  .budget-summary {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .budget-total {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: var(--shadow);
+  }
+  .budget-total .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .budget-total .amount {
+    font-size: 24px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+  .budget-total.estimate {
+    border-left: 3px solid var(--accent);
+  }
+  .budget-total.estimate .amount {
+    color: var(--accent);
+  }
+  .budget-total.actual {
+    border-left: 3px solid var(--accent2);
+  }
+  .budget-total.actual .amount {
+    color: var(--accent2);
+  }
+  .budget-total.variance {
+    border-left: 3px solid var(--text2);
+  }
 
   .table-container {
     background: var(--surface);
@@ -1624,6 +1800,26 @@
             </div>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
+
+          <!-- PROJECT FILES WIDGET -->
+          <div style="margin-top:28px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <h3 class="section-heading" style="margin:0;">PROJECT FILES</h3>
+              <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+                + Upload File
+                <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.fdx" style="display:none" onchange="handleFileUploadFromOverview(this.files)">
+              </label>
+            </div>
+            <div id="overview-files-bulk-bar" class="file-bulk-bar">
+              <span class="file-bulk-bar-count" id="overview-bulk-count"></span>
+              <span>files selected</span>
+              <div class="file-bulk-sep"></div>
+              <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('overview'),getActivePid())">🔀 Move</button>
+              <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('overview'),getActivePid())">🗑 Remove</button>
+              <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
+            </div>
+            <div id="overview-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
+          </div>
         </div>
 
         <!-- SECTION: BREAKDOWN -->
@@ -1903,18 +2099,24 @@
 
       <!-- CONTACTS VIEW -->
       <div class="view" id="view-contacts">
-        <div class="page-header">
-          <h2>CONTACTS</h2>
-          <p>All cast and crew contacts across projects</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2>CONTACTS</h2>
+            <p>All cast and crew contacts across projects</p>
+          </div>
+          <button class="btn btn-primary" onclick="addNewContact()" style="margin-top:6px">+ Add Contact</button>
         </div>
         <div id="contacts-list"></div>
       </div>
 
       <!-- LOCATIONS VIEW -->
       <div class="view" id="view-locations">
-        <div class="page-header">
-          <h2>LOCATIONS</h2>
-          <p>All locations across projects</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2>LOCATIONS</h2>
+            <p>All locations across projects</p>
+          </div>
+          <button class="btn btn-primary" onclick="addLocationGlobal()" style="margin-top:6px">+ Add Location</button>
         </div>
         <div id="locations-list"></div>
       </div>
@@ -1925,14 +2127,24 @@
           <h2>FILES</h2>
           <p>Scripts, photos, storyboards & production assets</p>
         </div>
-        
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <select class="form-select" id="files-project-filter" onchange="renderFiles()" style="max-width:280px;font-size:12px;">
+            <option value="all">All Projects</option>
+          </select>
+        </div>
+
         <div class="file-tabs" id="file-tabs">
           <div class="file-tab active" data-category="all">All Files</div>
-          <div class="file-tab" data-category="script">Scripts</div>
-          <div class="file-tab" data-category="location">Location Photos</div>
-          <div class="file-tab" data-category="bts">BTS / Stills</div>
-          <div class="file-tab" data-category="moodboard">Moodboards</div>
-          <div class="file-tab" data-category="storyboard">Storyboards</div>
+          <div class="file-tab" data-category="script">📄 Scripts</div>
+          <div class="file-tab" data-category="location">📍 Locations</div>
+          <div class="file-tab" data-category="bts">🎬 BTS</div>
+          <div class="file-tab" data-category="stills">📸 Stills</div>
+          <div class="file-tab" data-category="people">👥 People</div>
+          <div class="file-tab" data-category="moodboard">🎨 Moodboards</div>
+          <div class="file-tab" data-category="storyboard">🖼️ Storyboards</div>
+          <div class="file-tab" data-category="contract">📋 Contracts</div>
+          <div class="file-tab" data-category="other">📁 Other</div>
         </div>
 
         <div class="file-upload-zone" id="file-upload-zone" onclick="document.getElementById('file-input').click()">
@@ -1942,43 +2154,176 @@
         </div>
         <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileUpload(this.files)">
 
+        <div id="files-bulk-bar" class="file-bulk-bar">
+          <span class="file-bulk-bar-count" id="files-bulk-count"></span>
+          <span>files selected</span>
+          <div class="file-bulk-sep"></div>
+          <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'),null)">🔀 Move</button>
+          <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'),null)">🗑 Remove / Delete</button>
+          <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
+        </div>
         <div class="file-grid" id="file-grid"></div>
       </div>
 
-      <!-- DELETE FILE MODAL -->
-      <div class="modal-overlay" id="modal-delete-file">
+      <!-- MANAGE FILE MODAL -->
+      <!-- EDIT FILE MODAL -->
+      <div class="modal-overlay" id="modal-manage-file">
+        <div class="modal" style="max-width:500px">
+          <div class="modal-header">
+            <h3>EDIT FILE</h3>
+            <button class="modal-close" onclick="closeModal('modal-manage-file')">✕</button>
+          </div>
+          <input type="hidden" id="manage-file-id">
+          <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0 20px;">
+
+            <div>
+              <label class="form-label">File Name</label>
+              <input class="form-input" id="manage-file-name" type="text">
+            </div>
+
+            <div>
+              <label class="form-label">Description / Notes</label>
+              <input class="form-input" id="manage-file-desc" type="text" placeholder="Optional notes…">
+            </div>
+
+            <div>
+              <label class="form-label">Categories</label>
+              <div id="manage-file-cats" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);"></div>
+            </div>
+
+            <div id="mf-people-section" style="display:none;">
+              <label class="form-label">Who's in this?</label>
+              <div id="mf-people-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:6px;"></div>
+              <div style="position:relative;">
+                <input class="form-input" id="mf-people-input" placeholder="Search or add person…" style="font-size:12px;" autocomplete="off"
+                  oninput="mfPeopleSearch(this)" onkeydown="mfPeopleKey(event)">
+                <div id="mf-people-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:150px;overflow-y:auto;box-shadow:var(--shadow);"></div>
+              </div>
+              <div style="margin-top:5px;font-size:10px;color:var(--text3);">New people will be added to project contacts on save.</div>
+            </div>
+
+            <div id="mf-location-section" style="display:none;">
+              <label class="form-label">Linked Location</label>
+              <select class="form-select" id="mf-location-select" style="font-size:12px;" onchange="mfLocationSelectChange()">
+                <option value="">— None —</option>
+              </select>
+              <div id="mf-location-new-row" style="display:none;margin-top:6px;">
+                <input class="form-input" id="mf-location-new" placeholder="New location name…" style="font-size:12px;">
+                <div style="margin-top:4px;font-size:10px;color:var(--text3);">Will be added to this project's locations.</div>
+              </div>
+            </div>
+
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-manage-file')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmManageFile()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVE FILE(S) MODAL -->
+      <div class="modal-overlay" id="modal-move-file">
         <div class="modal" style="max-width:400px">
           <div class="modal-header">
-            <h3>DELETE FILE</h3>
-            <button class="modal-close" onclick="closeModal('modal-delete-file')">✕</button>
+            <h3 id="move-file-title">MOVE FILE</h3>
+            <button class="modal-close" onclick="closeModal('modal-move-file')">✕</button>
           </div>
-          <input type="hidden" id="delete-file-id">
-          <p style="margin:16px 0;color:var(--text2)">Delete <strong id="delete-file-name" style="color:var(--text)"></strong>? This cannot be undone.</p>
+          <input type="hidden" id="move-file-source-pid">
+          <div id="move-file-ids-store" style="display:none"></div>
+          <div class="form-group" style="margin:16px 0 14px;">
+            <label class="form-label">Move to</label>
+            <select class="form-select" id="move-file-target" style="font-size:12px;"></select>
+          </div>
+          <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);cursor:pointer;padding:12px 14px;background:var(--surface2);border-radius:var(--radius);margin-bottom:22px;">
+            <input type="checkbox" id="move-file-keep-copy" style="width:14px;height:14px;flex-shrink:0;">
+            <span>Also keep a copy in <strong id="move-file-source-label" style="color:var(--text);"></strong></span>
+          </label>
           <div class="form-actions">
-            <button class="btn" onclick="closeModal('modal-delete-file')">Cancel</button>
-            <button class="btn btn-danger" onclick="confirmDeleteFile()">Delete</button>
+            <button class="btn" onclick="closeModal('modal-move-file')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmMoveFile()">Move</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMOVE / DELETE FILE(S) MODAL -->
+      <div class="modal-overlay" id="modal-remove-file">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header">
+            <h3 id="remove-file-title">REMOVE FILE</h3>
+            <button class="modal-close" onclick="closeModal('modal-remove-file')">✕</button>
+          </div>
+          <input type="hidden" id="remove-file-source-pid">
+          <div id="remove-file-ids-store" style="display:none"></div>
+          <p id="remove-file-body" style="margin:16px 0 14px;color:var(--text2);"></p>
+          <label id="remove-file-delete-row" style="display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--text2);cursor:pointer;padding:12px 14px;background:var(--surface2);border-radius:var(--radius);margin-bottom:22px;">
+            <input type="checkbox" id="remove-file-also-delete" style="width:14px;height:14px;flex-shrink:0;margin-top:1px;">
+            <span id="remove-file-delete-label">Also permanently delete from the site entirely</span>
+          </label>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-remove-file')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmRemoveFiles()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- legacy stubs -->
+      <div id="modal-delete-file" style="display:none"><input type="hidden" id="delete-file-id"><input type="hidden" id="delete-file-name"></div>
+      <div id="modal-delete-file-confirm" style="display:none"><input type="hidden" id="delete-confirm-file-id"><span id="delete-confirm-file-name"></span></div>
+
+      <!-- UPLOAD FILE MODAL -->
+      <div class="modal-overlay" id="modal-upload-file">
+        <div class="modal" style="max-width:520px">
+          <div class="modal-header">
+            <h3>UPLOAD FILES</h3>
+            <button class="modal-close" onclick="cancelFileUpload()">✕</button>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label class="form-label">Link to Project</label>
+            <select class="form-select" id="upload-project-select" style="font-size:12px;"></select>
+          </div>
+          <div id="upload-file-list" style="display:flex;flex-direction:column;gap:14px;margin-bottom:8px;max-height:55vh;overflow-y:auto;padding-right:4px;"></div>
+          <div class="form-actions">
+            <button class="btn" onclick="cancelFileUpload()">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmFileUpload()">Upload All</button>
           </div>
         </div>
       </div>
 
       <!-- EDIT CONTACT MODAL -->
       <div class="modal-overlay" id="modal-edit-contact">
-        <div class="modal" style="max-width:480px">
+        <div class="modal modal-lg" style="max-width:640px">
           <div class="modal-header">
             <h3>Edit Contact</h3>
             <button class="modal-close" onclick="closeModal('modal-edit-contact')">✕</button>
           </div>
           <input type="hidden" id="edit-contact-name">
           <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0 24px">
-            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Name</label>
               <input class="form-input-minimal" id="edit-contact-name-display" placeholder="Name" style="font-size:16px;font-weight:500">
             </div>
-            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
+              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Type</label>
+              <div style="display:flex;gap:20px">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text2)">
+                  <input type="checkbox" id="edit-contact-type-cast" style="width:14px;height:14px;accent-color:var(--accent2)">
+                  Cast / Talent
+                </label>
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text2)">
+                  <input type="checkbox" id="edit-contact-type-crew" style="width:14px;height:14px;accent-color:var(--accent)">
+                  Crew
+                </label>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
+              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Role(s)</label>
+              <input class="form-input-minimal" id="edit-contact-default-role" placeholder="e.g. Gaffer, Director of Photography">
+            </div>
+            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Phone</label>
               <input class="form-input-minimal" id="edit-contact-phone" placeholder="+44...">
             </div>
-            <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px">
+            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Email</label>
               <input class="form-input-minimal" id="edit-contact-email" placeholder="email@example.com" type="email">
             </div>
@@ -1986,6 +2331,12 @@
               <label class="form-label" style="font-weight:500;color:var(--text2);margin-bottom:8px;display:block">Socials</label>
               <div id="edit-contact-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
               <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('edit-contact-socials-container')">+ Add Social</button>
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:500;color:var(--text2);margin-bottom:4px;display:block">Projects &amp; Roles</label>
+              <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Link this contact to specific projects and set their role on each. Phone, email and socials apply globally.</p>
+              <div id="edit-contact-projects-container" style="display:flex;flex-direction:column;gap:8px"></div>
+              <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addContactProjectField()">+ Add to Project</button>
             </div>
           </div>
           <div class="form-actions">
@@ -2007,6 +2358,22 @@
           <div class="form-actions">
             <button class="btn" onclick="closeModal('modal-remove-contact')">Cancel</button>
             <button class="btn btn-danger" onclick="confirmRemoveContact()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORPHAN CONTACT PROMPT -->
+      <div class="modal-overlay" id="modal-orphan-contact">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header">
+            <h3>REMOVE CONTACT?</h3>
+            <button class="modal-close" onclick="closeModal('modal-orphan-contact')">✕</button>
+          </div>
+          <input type="hidden" id="orphan-contact-name">
+          <p style="margin:16px 0 24px;color:var(--text2);line-height:1.5;"><strong id="orphan-contact-display" style="color:var(--text)"></strong> no longer appears anywhere on the site. Remove their contact details from the Contacts page?</p>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-orphan-contact')">Keep</button>
+            <button class="btn btn-danger" onclick="confirmOrphanRemove()">Remove</button>
           </div>
         </div>
       </div>
@@ -2353,7 +2720,18 @@
       </div>
       <div class="form-group">
         <label class="form-label">Cost / Fee</label>
-        <input class="form-input" id="loc-cost" placeholder="e.g. Free / £200/day">
+        <div style="display:flex;gap:6px">
+          <input class="form-input" id="loc-cost" placeholder="e.g. 200 or Free" style="flex:1">
+          <select class="form-select" id="loc-cost-period" style="width:130px">
+            <option value="">— period —</option>
+            <option value="flat">Flat fee</option>
+            <option value="hour">per hour</option>
+            <option value="half-day">per half-day</option>
+            <option value="day">per day</option>
+            <option value="week">per week</option>
+            <option value="month">per month</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -2386,18 +2764,155 @@
         <input class="form-input" id="loc-problems" placeholder="Any known issues...">
       </div>
       <div class="form-group">
-        <label class="form-label">Decision</label>
+        <label class="form-label">Confirmation Status</label>
         <select class="form-select" id="loc-decision">
           <option value="">TBD</option>
           <option value="confirmed">Confirmed ✓</option>
+          <option value="needed">Confirmation Needed</option>
           <option value="backup">Backup</option>
           <option value="rejected">Rejected ✗</option>
         </select>
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="loc-notes" placeholder="Additional notes about this location..." style="min-height:70px"></textarea>
+    </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-location')">Cancel</button>
       <button class="btn btn-primary" onclick="saveLocation()">Save Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT LOCATION GLOBAL -->
+<div class="modal-overlay" id="modal-edit-location-global">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>EDIT LOCATION</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-location-global')">✕</button>
+    </div>
+    <input type="hidden" id="gloc-project-id">
+    <input type="hidden" id="gloc-loc-idx">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Location Name</label>
+        <input class="form-input" id="gloc-name" placeholder="e.g. The Old Mill">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project</label>
+        <select class="form-select" id="gloc-project-select"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Scouting Status</label>
+        <select class="form-select" id="gloc-recce">
+          <option value="no">Not yet scouted</option>
+          <option value="scheduled">Scout scheduled</option>
+          <option value="yes">Scouted</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Suitability</label>
+        <select class="form-select" id="gloc-suit">
+          <option value="">— TBD —</option>
+          <option value="suitable">Suitable</option>
+          <option value="possible">Possibly Suitable</option>
+          <option value="unsuitable">Unsuitable</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Cost / Fee</label>
+        <div style="display:flex;gap:6px">
+          <input class="form-input" id="gloc-cost" placeholder="e.g. 200 or Free" style="flex:1">
+          <select class="form-select" id="gloc-cost-period" style="width:130px">
+            <option value="">— period —</option>
+            <option value="flat">Flat fee</option>
+            <option value="hour">per hour</option>
+            <option value="half-day">per half-day</option>
+            <option value="day">per day</option>
+            <option value="week">per week</option>
+            <option value="month">per month</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Accessibility</label>
+        <input class="form-input" id="gloc-access" placeholder="e.g. Easy parking, stairs">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Availability</label>
+        <input class="form-input" id="gloc-avail" placeholder="e.g. Weekends only">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contacted Owner?</label>
+        <select class="form-select" id="gloc-contacted">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+          <option value="na">N/A</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Confirmation Status</label>
+        <select class="form-select" id="gloc-decision">
+          <option value="">TBD</option>
+          <option value="confirmed">Confirmed ✓</option>
+          <option value="needed">Confirmation Needed</option>
+          <option value="backup">Backup</option>
+          <option value="rejected">Rejected ✗</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Natural Light</label>
+        <input class="form-input" id="gloc-light" placeholder="Good / Poor / Mixed">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Power Availability</label>
+        <input class="form-input" id="gloc-power" placeholder="e.g. Multiple sockets">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Potential Problems</label>
+        <input class="form-input" id="gloc-problems" placeholder="Any known issues...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rules / Restrictions</label>
+      <input class="form-input" id="gloc-rules" placeholder="e.g. No filming after 10pm">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="gloc-notes" placeholder="Additional notes about this location..." style="min-height:70px"></textarea>
+    </div>
+    <div style="border-top:1px solid var(--border2);margin:16px 0 12px;padding-top:14px">
+      <label class="form-label" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Location Contact</label>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">The person to contact about this location (owner, manager, etc.)</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" id="gloc-contact-name" placeholder="e.g. Jane Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" id="gloc-contact-phone" placeholder="+44...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="gloc-contact-email" placeholder="email@example.com" type="email">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-edit-location-global')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLocationGlobal()">Save</button>
     </div>
   </div>
 </div>
@@ -2801,33 +3316,48 @@ let store = {
   projects: [],
   teamMembers: [],
   currentProjectId: null,
-  files: []
+  files: [],
+  contacts: [],
+  locations: []
 };
 
 const FILE_CATEGORIES = {
-  script: { label: 'Scripts', icon: '📄', extensions: ['pdf','doc','docx','txt'] },
-  location: { label: 'Location Photos', icon: '📍', extensions: ['jpg','jpeg','png','gif','webp'] },
-  bts: { label: 'BTS / Stills', icon: '📸', extensions: ['jpg','jpeg','png','gif','webp'] },
-  moodboard: { label: 'Moodboards', icon: '🎨', extensions: ['jpg','jpeg','png','gif','webp'] },
-  storyboard: { label: 'Storyboards', icon: '🎬', extensions: ['jpg','jpeg','png','gif','webp'] }
+  script:     { label: 'Scripts',          icon: '📄', extensions: ['pdf','doc','docx','txt','fdx'] },
+  location:   { label: 'Location Photos',  icon: '📍', extensions: ['jpg','jpeg','png','gif','webp'] },
+  bts:        { label: 'BTS',             icon: '🎬', extensions: ['jpg','jpeg','png','gif','webp'] },
+  stills:     { label: 'Stills',          icon: '📸', extensions: ['jpg','jpeg','png','gif','webp'] },
+  people:     { label: 'People',           icon: '👥', extensions: ['jpg','jpeg','png','gif','webp'] },
+  moodboard:  { label: 'Moodboards',       icon: '🎨', extensions: ['jpg','jpeg','png','gif','webp'] },
+  storyboard: { label: 'Storyboards',      icon: '🖼️', extensions: ['jpg','jpeg','png','gif','webp','pdf'] },
+  contract:   { label: 'Contracts',        icon: '📋', extensions: ['pdf','doc','docx'] },
+  other:      { label: 'Other',            icon: '📁', extensions: [] },
 };
+
+// Normalise file → always read categories as array (migrates old single category string)
+function fileCategories(file) {
+  if (Array.isArray(file.categories)) return file.categories;
+  if (file.category && file.category !== '') return [file.category];
+  return ['other'];
+}
 
 function getFileCategory(filename) {
   const ext = filename.split('.').pop().toLowerCase();
   for (const [cat, info] of Object.entries(FILE_CATEGORIES)) {
     if (info.extensions.includes(ext)) return cat;
   }
-  return 'bts'; // default for images
+  return 'other';
 }
 
 function getFileIcon(file) {
-  if (file.data.startsWith('data:image')) {
+  if (file.data && file.data.startsWith('data:image')) {
     return `<img src="${file.data}" alt="${file.name}">`;
   }
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (['pdf'].includes(ext)) return '📄';
-  if (['doc','docx','txt'].includes(ext)) return '📝';
-  return '📁';
+  const ext = (file.name || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf') return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (ext === 'txt') return '📃';
+  if (['fdx'].includes(ext)) return '🎞️';
+  return FILE_CATEGORIES[file.category]?.icon || '📁';
 }
 
 function formatFileSize(bytes) {
@@ -2837,88 +3367,817 @@ function formatFileSize(bytes) {
 }
 
 let currentFileCategory = 'all';
+const selectedFileIds = new Set();
 
-function renderFiles() {
-  const grid = document.getElementById('file-grid');
-  const files = currentFileCategory === 'all' 
-    ? store.files 
-    : store.files.filter(f => f.category === currentFileCategory);
-  
-  if (files.length === 0) {
-    grid.innerHTML = `
-      <div class="file-empty" style="grid-column: 1/-1">
-        <div class="file-empty-icon">📁</div>
-        <div class="file-empty-text">No files yet</div>
-        <div class="file-empty-hint">Upload scripts, photos, storyboards and more</div>
-      </div>
-    `;
-    return;
-  }
-  
-  grid.innerHTML = files.map(file => `
-    <div class="file-card" onclick="viewFile('${file.id}')">
-      <div class="file-card-actions">
-        <button class="file-action-btn" onclick="event.stopPropagation(); downloadFile('${file.id}')" title="Download">⬇</button>
-        <button class="file-action-btn delete" onclick="event.stopPropagation(); deleteFile('${file.id}')" title="Delete">✕</button>
-      </div>
-      <div class="file-card-preview">${getFileIcon(file)}</div>
-      <div class="file-card-name">${file.name}</div>
-      <div class="file-card-meta">
-        <span class="file-card-type">${FILE_CATEGORIES[file.category]?.label || file.category}</span>
-        <span>${formatFileSize(file.size)}</span>
-      </div>
-    </div>
-  `).join('');
+// Normalise file → always read projectIds as array (migrates old single projectId)
+function fileProjectIds(file) {
+  if (Array.isArray(file.projectIds)) return file.projectIds;
+  if (file.projectId !== undefined && file.projectId !== null) return [file.projectId];
+  return [];
 }
 
-function handleFileUpload(fileList) {
+function populateFilesProjectFilter() {
+  const sel = document.getElementById('files-project-filter');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = `<option value="all">All Projects</option>` +
+    store.projects.map((p, i) =>
+      `<option value="${i}" ${current == i ? 'selected' : ''}>${p.title || 'Untitled Project'}</option>`
+    ).join('');
+}
+
+function renderFiles() {
+  populateFilesProjectFilter();
+  const grid = document.getElementById('file-grid');
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+
+  let files = (store.files || []);
+  if (projectFilter !== 'all') {
+    const pid = parseInt(projectFilter);
+    files = files.filter(f => fileProjectIds(f).includes(pid));
+  }
+  if (currentFileCategory !== 'all') {
+    files = files.filter(f => fileCategories(f).includes(currentFileCategory));
+  }
+
+  if (files.length === 0) {
+    grid.innerHTML = `
+      <div class="file-empty" style="grid-column:1/-1">
+        <div class="file-empty-icon">📁</div>
+        <div class="file-empty-text">No files yet</div>
+        <div class="file-empty-hint">Upload scripts, photos, storyboards, contracts and more</div>
+      </div>`;
+    updateBulkBars();
+    return;
+  }
+
+  grid.innerHTML = files.map(file => {
+    const pids = fileProjectIds(file);
+    const cats = fileCategories(file);
+    const projectBadge = projectFilter === 'all' && pids.length > 0
+      ? `<div style="margin-top:4px;font-size:9px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+           ${pids.map(pid => store.projects[pid]?.title || '').filter(Boolean).join(', ')}
+         </div>`
+      : '';
+    const catBadge = cats.map(c => `${FILE_CATEGORIES[c]?.icon || '📁'}`).join(' ');
+    const peopleTags = (file.people || []).length
+      ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
+      : '';
+    return `
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','files')">
+      <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
+      <div class="file-card-actions">
+        <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'],null)" title="Move to project">🔀</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
+        <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'],null)" title="Remove / delete">🗑</button>
+      </div>
+      <div class="file-card-preview">${getFileIcon(file)}</div>
+      <div class="file-card-name" title="${file.name}">${file.name}</div>
+      <div class="file-card-meta">
+        <span class="file-card-type">${catBadge}</span>
+        <span>${formatFileSize(file.size)}</span>
+      </div>
+      ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
+      ${peopleTags}
+      ${projectBadge}
+    </div>`;
+  }).join('');
+  updateBulkBars();
+}
+
+function renderOverviewFiles() {
+  const grid = document.getElementById('overview-files-grid');
+  if (!grid) return;
+  const p = currentProject();
+  if (!p) return;
+  const projectId = p.id;
+  const files = (store.files || []).filter(f => fileProjectIds(f).includes(projectId));
+
+  if (files.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border2);border-radius:var(--radius);">No files yet — upload scripts, photos, contracts and more</div>`;
+    updateBulkBars();
+    return;
+  }
+
+  grid.innerHTML = files.map(file => {
+    const cats = fileCategories(file);
+    const catBadge = cats.map(c => `${FILE_CATEGORIES[c]?.icon || '📁'}`).join(' ');
+    const peopleTags = (file.people || []).length
+      ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
+      : '';
+    return `
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" style="font-size:11px;">
+      <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','overview')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
+      <div class="file-card-actions">
+        <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'],'${projectId}')" title="Move to project">🔀</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
+        <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'],'${projectId}')" title="Remove from project">🗑</button>
+      </div>
+      <div class="file-card-preview">${getFileIcon(file)}</div>
+      <div class="file-card-name" title="${file.name}">${file.name}</div>
+      <div class="file-card-meta">
+        <span class="file-card-type">${catBadge}</span>
+        <span>${formatFileSize(file.size)}</span>
+      </div>
+      ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
+      ${peopleTags}
+    </div>`;
+  }).join('');
+  updateBulkBars();
+}
+
+// ── Multi-select ─────────────────────────────────────────────────────────────
+function toggleFileSelect(id, context) {
+  if (selectedFileIds.has(id)) selectedFileIds.delete(id);
+  else selectedFileIds.add(id);
+  if (context === 'files') renderFiles();
+  else renderOverviewFiles();
+}
+
+function fileCardClick(event, id, context) {
+  // If any are selected, clicking a card toggles selection instead of opening
+  if (selectedFileIds.size > 0) {
+    event.stopPropagation();
+    toggleFileSelect(id, context);
+  } else {
+    viewFile(id);
+  }
+}
+
+function getActivePid() {
+  const p = currentProject();
+  return p ? p.id : null;
+}
+
+// Returns array of selected IDs that are relevant in the given context
+function getSelectedInContext(context) {
+  if (context === 'overview') {
+    const pid = getActivePid();
+    return [...selectedFileIds].filter(id => {
+      const f = (store.files || []).find(f => f.id === id);
+      return f && (pid === null || fileProjectIds(f).includes(pid));
+    });
+  }
+  return [...selectedFileIds];
+}
+
+function clearFileSelection() {
+  selectedFileIds.clear();
+  renderFiles();
+  renderOverviewFiles();
+}
+
+function updateBulkBars() {
+  const count = selectedFileIds.size;
+  // Main files bar
+  const bar = document.getElementById('files-bulk-bar');
+  const cnt = document.getElementById('files-bulk-count');
+  if (bar) { bar.classList.toggle('visible', count > 0); if (cnt) cnt.textContent = count; }
+  // Overview bar
+  const obar = document.getElementById('overview-files-bulk-bar');
+  const ocnt = document.getElementById('overview-bulk-count');
+  if (obar) {
+    const pid = getActivePid();
+    const overviewCount = pid !== null
+      ? [...selectedFileIds].filter(id => { const f=(store.files||[]).find(f=>f.id===id); return f && fileProjectIds(f).includes(pid); }).length
+      : count;
+    obar.classList.toggle('visible', overviewCount > 0);
+    if (ocnt) ocnt.textContent = overviewCount;
+  }
+}
+
+// ── Rename ───────────────────────────────────────────────────────────────────
+function openManageFile(id) {
+  const file = (store.files || []).find(f => f.id === id);
+  if (!file) return;
+
+  document.getElementById('manage-file-id').value = id;
+  document.getElementById('manage-file-name').value = file.name;
+  document.getElementById('manage-file-desc').value = file.description || '';
+
+  const cats = fileCategories(file);
+
+  // Build category checkboxes
+  const catsEl = document.getElementById('manage-file-cats');
+  catsEl.innerHTML = Object.entries(FILE_CATEGORIES).map(([k, v]) =>
+    `<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;">
+      <input type="checkbox" data-mfcat="${k}" ${cats.includes(k) ? 'checked' : ''} style="width:13px;height:13px;" onchange="mfCatChange()">
+      ${v.icon} ${v.label}
+    </label>`
+  ).join('');
+
+  // People tags
+  const tagsEl = document.getElementById('mf-people-tags');
+  tagsEl.innerHTML = '';
+  document.getElementById('mf-people-input').value = '';
+  document.getElementById('mf-people-dropdown').style.display = 'none';
+  (file.people || []).forEach(name => {
+    // Find their role from the project contacts if available
+    let role = '';
+    fileProjectIds(file).forEach(pid => {
+      const proj = store.projects.find(p => p.id === pid);
+      const contact = (proj?.contacts || []).find(c => c.name?.toLowerCase() === name.toLowerCase());
+      if (contact && contact.roles && contact.roles.length) role = contact.roles.join(', ');
+    });
+    mfAddPersonTag(name, role);
+  });
+
+  // Location dropdown — pull from all projects this file belongs to, plus current
+  const allLocs = new Set();
+  const pids = fileProjectIds(file);
+  const currentPid = currentProject()?.id;
+  [...new Set([...pids, currentPid].filter(Boolean))].forEach(pid => {
+    const proj = store.projects.find(p => p.id === pid);
+    (proj?.locations || []).forEach(l => { if (l.name) allLocs.add(l.name); });
+  });
+  const currentLoc = file.location || '';
+  if (currentLoc) allLocs.add(currentLoc);
+
+  const locSel = document.getElementById('mf-location-select');
+  locSel.innerHTML = `<option value="">— None —</option>` +
+    [...allLocs].sort().map(n => `<option value="${n}" ${n === currentLoc ? 'selected' : ''}>${n}</option>`).join('') +
+    `<option value="__new__">+ Create new location…</option>`;
+  document.getElementById('mf-location-new').value = '';
+  document.getElementById('mf-location-new-row').style.display = 'none';
+
+  // Show/hide conditional sections
+  mfCatChange();
+
+  openModal('modal-manage-file');
+}
+
+function mfCatChange() {
+  const checked = [...document.querySelectorAll('#manage-file-cats [data-mfcat]:checked')].map(cb => cb.dataset.mfcat);
+  document.getElementById('mf-people-section').style.display = checked.includes('people') ? 'block' : 'none';
+  document.getElementById('mf-location-section').style.display = checked.includes('location') ? 'block' : 'none';
+}
+
+function mfLocationSelectChange() {
+  document.getElementById('mf-location-new-row').style.display =
+    document.getElementById('mf-location-select').value === '__new__' ? 'block' : 'none';
+}
+
+function mfAddPersonTag(name, existingRole) {
+  name = name.trim();
+  if (!name) return;
+  const tagsEl = document.getElementById('mf-people-tags');
+  if ([...tagsEl.querySelectorAll('[data-mfperson]')].some(t => t.dataset.mfperson.toLowerCase() === name.toLowerCase())) return;
+
+  const isNew = !getAllContactNames().some(n => n.toLowerCase() === name.toLowerCase());
+
+  const tag = document.createElement('span');
+  tag.dataset.mfperson = name;
+  tag.dataset.role = existingRole || '';
+  tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;background:var(--surface3);border-radius:12px;color:var(--text2);';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = '👤 ' + name;
+  tag.appendChild(nameSpan);
+
+  if (isNew || existingRole) {
+    const roleInput = document.createElement('input');
+    roleInput.placeholder = 'role…';
+    roleInput.value = existingRole || '';
+    roleInput.style.cssText = 'width:80px;font-size:10px;padding:2px 5px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
+    roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
+    roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    tag.appendChild(roleInput);
+  }
+
+  const removeBtn = document.createElement('span');
+  removeBtn.style.cssText = 'cursor:pointer;color:var(--text3);';
+  removeBtn.textContent = '✕';
+  removeBtn.addEventListener('click', () => tag.remove());
+  tag.appendChild(removeBtn);
+
+  tagsEl.appendChild(tag);
+}
+
+function mfPeopleSearch(input) {
+  const q = input.value.trim().toLowerCase();
+  const dropdown = document.getElementById('mf-people-dropdown');
+  if (!q) { dropdown.style.display = 'none'; return; }
+  const tagged = new Set([...document.querySelectorAll('#mf-people-tags [data-mfperson]')].map(t => t.dataset.mfperson.toLowerCase()));
+  const matches = getAllContactNames().filter(n => n.toLowerCase().includes(q) && !tagged.has(n.toLowerCase()));
+  const showCreate = !getAllContactNames().some(n => n.toLowerCase() === q) && !tagged.has(q);
+  const addAndClose = name => `mfAddPersonTag('${name.replace(/'/g,"\\'")}');document.getElementById('mf-people-input').value='';document.getElementById('mf-people-dropdown').style.display='none';`;
+  let html = matches.map(n => `<div style="padding:7px 10px;cursor:pointer;font-size:12px;" onmousedown="event.preventDefault();${addAndClose(n)}">${n}</div>`).join('');
+  if (showCreate) html += `<div style="padding:7px 10px;cursor:pointer;font-size:12px;color:var(--accent);${matches.length ? 'border-top:1px solid var(--border)' : ''}" onmousedown="event.preventDefault();mfAddPersonTag(document.getElementById('mf-people-input').value.trim());document.getElementById('mf-people-input').value='';document.getElementById('mf-people-dropdown').style.display='none';">+ Add "${input.value.trim()}"</div>`;
+  dropdown.innerHTML = html;
+  dropdown.style.display = html ? 'block' : 'none';
+}
+
+function mfPeopleKey(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const val = document.getElementById('mf-people-input').value.trim();
+    if (val) { mfAddPersonTag(val); document.getElementById('mf-people-input').value = ''; document.getElementById('mf-people-dropdown').style.display = 'none'; }
+  }
+}
+
+function confirmManageFile() {
+  const id = document.getElementById('manage-file-id').value;
+  const file = (store.files || []).find(f => f.id === id);
+  if (!file) return;
+
+  // Name & description
+  const newName = document.getElementById('manage-file-name').value.trim();
+  if (newName) file.name = newName;
+  file.description = document.getElementById('manage-file-desc').value.trim();
+
+  // Categories — migrate legacy single field
+  const cats = [...document.querySelectorAll('#manage-file-cats [data-mfcat]:checked')].map(cb => cb.dataset.mfcat);
+  file.categories = cats.length ? cats : ['other'];
+  delete file.category;
+
+  // People — update tags and add new ones to contacts (with roles)
+  const peopleTags = [...document.querySelectorAll('#mf-people-tags [data-mfperson]')];
+  const people = peopleTags.map(t => t.dataset.mfperson);
+  file.people = people;
+  if (people.length) {
+    fileProjectIds(file).forEach(pid => {
+      const proj = store.projects.find(p => p.id === pid);
+      if (!proj) return;
+      proj.contacts = proj.contacts || [];
+      peopleTags.forEach(tag => {
+        const name = tag.dataset.mfperson;
+        const roleVal = (tag.dataset.role || '').trim();
+        const roles = roleVal ? roleVal.split(',').map(r => r.trim()).filter(Boolean) : ['Contact'];
+        const existingIdx = proj.contacts.findIndex(c => c.name?.toLowerCase() === name.toLowerCase());
+        if (existingIdx >= 0) {
+          if (roleVal) proj.contacts[existingIdx].roles = roles;
+        } else {
+          proj.contacts.push({ name, roles, phone: '', email: '', manual: true });
+        }
+      });
+    });
+  }
+
+  // Location
+  if (file.categories.includes('location')) {
+    const sel = document.getElementById('mf-location-select');
+    if (sel.value === '__new__') {
+      const newLoc = document.getElementById('mf-location-new').value.trim();
+      file.location = newLoc;
+      if (newLoc) {
+        const p = currentProject();
+        if (p) {
+          p.locations = p.locations || [];
+          if (!p.locations.some(l => l.name.toLowerCase() === newLoc.toLowerCase()))
+            p.locations.push({ name: newLoc, suit: 'possible', contacted: 'no', recce: 'no', decision: '' });
+        }
+      }
+    } else {
+      file.location = sel.value;
+    }
+  } else {
+    file.location = '';
+  }
+
+  saveStore();
+  closeModal('modal-manage-file');
+  renderFiles(); renderOverviewFiles();
+  showToast('File updated', 'success');
+}
+
+// ── Move (single or bulk) ────────────────────────────────────────────────────
+function openMoveFile(ids, sourcePid) {
+  if (!ids || ids.length === 0) return;
+  // For move options: union of projects files are NOT in
+  const allPids = new Set();
+  ids.forEach(id => {
+    const f = (store.files||[]).find(f=>f.id===id);
+    if (f) fileProjectIds(f).forEach(p => allPids.add(p));
+  });
+  const options = store.projects
+    .map((p, i) => !allPids.has(i) || ids.length > 1
+      ? `<option value="${i}">${p.title || 'Untitled Project'}</option>` : '')
+    .filter(Boolean).join('');
+
+  // For multi-file, show all projects as targets
+  const fullOptions = store.projects
+    .map((p, i) => `<option value="${i}">${p.title || 'Untitled Project'}</option>`).join('');
+
+  const targetOptions = ids.length === 1
+    ? (() => {
+        const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{});
+        return store.projects.map((p,i) => pids.includes(i) ? '' : `<option value="${i}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
+      })()
+    : fullOptions;
+
+  if (!targetOptions) { showToast('No other projects to move to', 'info'); return; }
+
+  const sourceLabel = sourcePid !== null && sourcePid !== undefined
+    ? (store.projects[sourcePid]?.title || 'this project')
+    : (ids.length === 1
+        ? (() => { const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{}); return pids.length===1 ? (store.projects[pids[0]]?.title||'this project') : 'current projects'; })()
+        : 'current projects');
+
+  document.getElementById('move-file-ids-store').dataset.ids = JSON.stringify(ids);
+  document.getElementById('move-file-source-pid').value = sourcePid ?? '';
+  document.getElementById('move-file-target').innerHTML = targetOptions;
+  document.getElementById('move-file-keep-copy').checked = false;
+  document.getElementById('move-file-source-label').textContent = sourceLabel;
+  document.getElementById('move-file-title').textContent = ids.length > 1 ? `MOVE ${ids.length} FILES` : 'MOVE FILE';
+  openModal('modal-move-file');
+}
+
+function confirmMoveFile() {
+  const ids = JSON.parse(document.getElementById('move-file-ids-store').dataset.ids || '[]');
+  const sourcePidRaw = document.getElementById('move-file-source-pid').value;
+  const sourcePid = sourcePidRaw !== '' ? parseInt(sourcePidRaw) : null;
+  const targetPid = parseInt(document.getElementById('move-file-target').value);
+  const keepCopy = document.getElementById('move-file-keep-copy').checked;
+  if (isNaN(targetPid)) return;
+
+  ids.forEach(id => {
+    const file = (store.files||[]).find(f=>f.id===id);
+    if (!file) return;
+    if (!Array.isArray(file.projectIds)) { file.projectIds = fileProjectIds(file); delete file.projectId; }
+    if (!file.projectIds.includes(targetPid)) file.projectIds.push(targetPid);
+    if (!keepCopy && sourcePid !== null) {
+      file.projectIds = file.projectIds.filter(p => p !== sourcePid);
+    }
+  });
+
+  saveStore();
+  closeModal('modal-move-file');
+  clearFileSelection();
+  showToast(`${ids.length > 1 ? ids.length + ' files' : 'File'} moved to ${store.projects[targetPid]?.title || 'project'}`, 'success');
+}
+
+// ── Remove / Delete (single or bulk) ────────────────────────────────────────
+function openRemoveFiles(ids, sourcePid) {
+  if (!ids || ids.length === 0) return;
+  const projectName = sourcePid !== null && sourcePid !== undefined
+    ? (store.projects[sourcePid]?.title || 'this project') : null;
+  const count = ids.length;
+  const fileWord = count > 1 ? `${count} files` : `"${(store.files||[]).find(f=>f.id===ids[0])?.name || 'file'}"`;
+
+  document.getElementById('remove-file-ids-store').dataset.ids = JSON.stringify(ids);
+  document.getElementById('remove-file-source-pid').value = sourcePid ?? '';
+  document.getElementById('remove-file-title').textContent = count > 1 ? `REMOVE ${count} FILES` : 'REMOVE FILE';
+
+  if (projectName) {
+    document.getElementById('remove-file-body').innerHTML =
+      `Remove ${fileWord} from <strong style="color:var(--text)">${projectName}</strong>? The file${count>1?'s':''} will remain accessible from other projects and the Files tab.`;
+    document.getElementById('remove-file-delete-label').textContent =
+      `Also permanently delete from the site entirely (removes from all projects)`;
+  } else {
+    document.getElementById('remove-file-body').innerHTML =
+      `Remove ${fileWord} from this project? The file${count>1?'s':''} will remain accessible from other projects and the Files tab.`;
+    document.getElementById('remove-file-delete-label').textContent =
+      `Also permanently delete from the site entirely`;
+  }
+
+  document.getElementById('remove-file-also-delete').checked = false;
+  // Show the delete-entirely row only when there's a source project (i.e. project dashboard context)
+  // On global files tab with no project, only option is delete entirely
+  if (sourcePid === null || sourcePid === undefined) {
+    document.getElementById('remove-file-body').innerHTML =
+      `Permanently delete ${fileWord}? This removes ${count>1?'them':'it'} from all projects and cannot be undone.`;
+    document.getElementById('remove-file-delete-row').style.display = 'none';
+    document.getElementById('remove-file-also-delete').checked = true;
+  } else {
+    document.getElementById('remove-file-delete-row').style.display = 'flex';
+  }
+
+  openModal('modal-remove-file');
+}
+
+function confirmRemoveFiles() {
+  const ids = JSON.parse(document.getElementById('remove-file-ids-store').dataset.ids || '[]');
+  const sourcePidRaw = document.getElementById('remove-file-source-pid').value;
+  const sourcePid = sourcePidRaw !== '' ? parseInt(sourcePidRaw) : null;
+  const alsoDelete = document.getElementById('remove-file-also-delete').checked;
+
+  if (alsoDelete) {
+    store.files = (store.files||[]).filter(f => !ids.includes(f.id));
+  } else if (sourcePid !== null) {
+    ids.forEach(id => {
+      const file = (store.files||[]).find(f=>f.id===id);
+      if (!file) return;
+      if (!Array.isArray(file.projectIds)) { file.projectIds = fileProjectIds(file); delete file.projectId; }
+      file.projectIds = file.projectIds.filter(p => p !== sourcePid);
+    });
+  }
+
+  saveStore();
+  closeModal('modal-remove-file');
+  clearFileSelection();
+  showToast(alsoDelete ? `${ids.length > 1 ? ids.length + ' files' : 'File'} deleted` : `Removed from project`, alsoDelete ? 'info' : 'info');
+}
+
+// ── Legacy stubs ─────────────────────────────────────────────────────────────
+function removeFileFromProject(id, pid) { openRemoveFiles([id], pid); }
+function openDeleteFileConfirm(id) { openRemoveFiles([id], null); }
+function confirmDeleteFileEntirely() {}
+function manageFileDelete() {}
+function deleteFile(id) { openRemoveFiles([id], null); }
+function deleteFileFromOverview(id) { const p = currentProject(); openRemoveFiles([id], p ? store.projects.indexOf(p) : null); }
+function confirmDeleteFile() {}
+function renameFile(id) { openManageFile(id); }
+function confirmRenameFile() {}
+
+function handleFileUploadFromOverview(fileList) {
+  const p = currentProject();
+  const presetProjectId = p ? p.id : null;
+  handleFileUpload(fileList, presetProjectId);
+}
+
+function handleFileUpload(fileList, presetProjectId) {
   if (!fileList || fileList.length === 0) return;
-  
-  Array.from(fileList).forEach(file => {
+  _pendingFiles = [];
+
+  // Populate project selector
+  const projSelect = document.getElementById('upload-project-select');
+  const currentProjId = presetProjectId ?? currentProject()?.id;
+  projSelect.innerHTML = store.projects.map(proj =>
+    `<option value="${proj.id}" ${proj.id === currentProjId ? 'selected' : ''}>${proj.title || 'Untitled Project'}</option>`
+  ).join('');
+
+  const container = document.getElementById('upload-file-list');
+  container.innerHTML = '';
+
+  Array.from(fileList).forEach((file, idx) => {
+    const suggestedCat = getFileCategory(file.name);
+    const nameNoExt = file.name.replace(/\.[^.]+$/, '');
+    _pendingFiles.push({ file, dataUrl: null });
+
+    const isImage = file.type.startsWith('image/');
+    const row = document.createElement('div');
+    row.style.cssText = 'border:1px solid var(--border2);border-radius:var(--radius);padding:12px;background:var(--surface2);';
+
+    // Build category checkboxes
+    const catChecks = Object.entries(FILE_CATEGORIES).map(([k,v]) =>
+      `<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" data-idx="${idx}" data-field="cat-${k}" ${k===suggestedCat?'checked':''} style="width:13px;height:13px;" onchange="uploadRowCatChange(this,${idx})">
+        ${v.icon} ${v.label}
+      </label>`
+    ).join('');
+
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div data-thumb style="width:52px;height:52px;border-radius:6px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">
+          ${getFileIcon({name:file.name, data:'', category:suggestedCat})}
+        </div>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name} · ${formatFileSize(file.size)}</span>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" data-idx="${idx}" data-field="name" value="${nameNoExt}" style="font-size:12px;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Categories</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:8px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);">
+          ${catChecks}
+        </div>
+      </div>
+      <div data-people-section-${idx} style="display:${suggestedCat==='people'?'block':'none'};margin-bottom:10px;">
+        <label class="form-label">Who's in this?</label>
+        <div data-people-tags-${idx} style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <div style="position:relative;flex:1;">
+            <input class="form-input" data-idx="${idx}" data-field="people-input" placeholder="Search or add person…" style="font-size:12px;" autocomplete="off"
+              oninput="uploadPeopleSearch(this,${idx})" onkeydown="uploadPeopleKey(event,${idx})">
+            <div data-people-dropdown-${idx} style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:50;max-height:140px;overflow-y:auto;box-shadow:var(--shadow);"></div>
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3);">People not already in contacts will be added when you upload.</div>
+      </div>
+      <div data-location-section-${idx} style="display:${suggestedCat==='location'?'block':'none'};margin-bottom:10px;">
+        <label class="form-label">Link to Location</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select class="form-select" data-idx="${idx}" data-field="location-select" style="font-size:12px;flex:1;" onchange="uploadLocationSelectChange(this,${idx})">
+            <option value="">— Select existing location —</option>
+            ${(currentProject()?.locations || []).map(l => `<option value="${l.name}">${l.name}</option>`).join('')}
+            <option value="__new__">+ Create new location…</option>
+          </select>
+        </div>
+        <div data-new-location-${idx} style="display:none;margin-top:6px;">
+          <input class="form-input" data-idx="${idx}" data-field="location-new" placeholder="New location name…" style="font-size:12px;">
+          <div style="margin-top:4px;font-size:10px;color:var(--text3);">This location will be added to the project when you upload.</div>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Description / Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <input class="form-input" data-idx="${idx}" data-field="description" placeholder="e.g. Final draft, Location scout photos…" style="font-size:12px;">
+      </div>`;
+    container.appendChild(row);
+
     const reader = new FileReader();
-    reader.onload = function(e) {
-      const fileData = {
-        id: makeId(),
-        name: file.name,
-        category: getFileCategory(file.name),
-        type: file.type,
-        size: file.size,
-        data: e.target.result,
-        uploadedAt: new Date().toISOString()
-      };
-      store.files.push(fileData);
-      saveStore();
-      renderFiles();
-      showToast('File uploaded: ' + file.name, 'success');
+    reader.onload = e => {
+      _pendingFiles[idx].dataUrl = e.target.result;
+      if (isImage) {
+        const thumb = row.querySelector('[data-thumb]');
+        if (thumb) thumb.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+      }
     };
     reader.readAsDataURL(file);
   });
-  
-  // Reset file input
+
+  openModal('modal-upload-file');
   document.getElementById('file-input').value = '';
 }
 
-function deleteFile(id) {
-  const file = store.files.find(f => f.id === id);
-  if (!file) return;
-  document.getElementById('delete-file-id').value = id;
-  document.getElementById('delete-file-name').textContent = file.name;
-  openModal('modal-delete-file');
+function cancelFileUpload() {
+  _pendingFiles = [];
+  closeModal('modal-upload-file');
 }
 
-function confirmDeleteFile() {
-  const id = document.getElementById('delete-file-id').value;
-  store.files = store.files.filter(f => f.id !== id);
+// Show/hide people/location sections when categories are toggled
+function uploadRowCatChange(checkbox, idx) {
+  const field = checkbox.dataset.field; // e.g. 'cat-people' or 'cat-location'
+  if (field === 'cat-people') {
+    const section = document.querySelector(`[data-people-section-${idx}]`);
+    if (section) section.style.display = checkbox.checked ? 'block' : 'none';
+  }
+  if (field === 'cat-location') {
+    const section = document.querySelector(`[data-location-section-${idx}]`);
+    if (section) section.style.display = checkbox.checked ? 'block' : 'none';
+  }
+}
+
+function uploadLocationSelectChange(select, idx) {
+  const newRow = document.querySelector(`[data-new-location-${idx}]`);
+  if (newRow) newRow.style.display = select.value === '__new__' ? 'block' : 'none';
+}
+
+// Build list of all contacts across all projects for autocomplete
+function getAllContactNames() {
+  const seen = new Set();
+  (store.projects || []).forEach(p => {
+    (p.contacts || []).forEach(c => { if (c.name) seen.add(c.name); });
+  });
+  return [...seen].sort();
+}
+
+function uploadPeopleSearch(input, idx) {
+  const q = input.value.trim().toLowerCase();
+  const dropdown = document.querySelector(`[data-people-dropdown-${idx}]`);
+  if (!dropdown) return;
+  if (!q) { dropdown.style.display = 'none'; return; }
+
+  const existing = getAllContactNames();
+  const tagged = new Set([...document.querySelectorAll(`[data-people-tag-idx="${idx}"]`)].map(t => t.dataset.name.toLowerCase()));
+  const matches = existing.filter(n => n.toLowerCase().includes(q) && !tagged.has(n.toLowerCase()));
+
+  const showCreate = !existing.some(n => n.toLowerCase() === q) && !tagged.has(q);
+  let html = matches.map(n =>
+    `<div style="padding:7px 10px;cursor:pointer;font-size:12px;" onmousedown="event.preventDefault();uploadAddPerson('${n.replace(/'/g,"\\'")}',${idx})">${n}</div>`
+  ).join('');
+  if (showCreate) html += `<div style="padding:7px 10px;cursor:pointer;font-size:12px;color:var(--accent);border-top:${matches.length?'1px solid var(--border)':'none'}" onmousedown="event.preventDefault();uploadAddPerson(document.querySelector('[data-idx=\\'${idx}\\'][data-field=\\'people-input\\']').value.trim(),${idx})">+ Add "${input.value.trim()}"</div>`;
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = html ? 'block' : 'none';
+}
+
+function uploadPeopleKey(event, idx) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const input = document.querySelector(`[data-idx="${idx}"][data-field="people-input"]`);
+    const val = input?.value.trim();
+    if (val) uploadAddPerson(val, idx);
+  }
+}
+
+function uploadAddPerson(name, idx) {
+  name = name.trim();
+  if (!name) return;
+  const tagsEl = document.querySelector(`[data-people-tags-${idx}]`);
+  const dropdown = document.querySelector(`[data-people-dropdown-${idx}]`);
+  const input = document.querySelector(`[data-idx="${idx}"][data-field="people-input"]`);
+  if (!tagsEl) return;
+
+  // Prevent duplicates
+  if ([...tagsEl.querySelectorAll('[data-people-tag-idx]')].some(t => t.dataset.name.toLowerCase() === name.toLowerCase())) return;
+
+  const isNew = !getAllContactNames().some(n => n.toLowerCase() === name.toLowerCase());
+
+  const tag = document.createElement('span');
+  tag.dataset.peopleTagIdx = idx;
+  tag.dataset.name = name;
+  tag.dataset.role = '';
+  tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:var(--surface3);border-radius:12px;color:var(--text2);';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = '👤 ' + name;
+  tag.appendChild(nameSpan);
+
+  // For new contacts, show a small role input inside the tag
+  if (isNew) {
+    const roleInput = document.createElement('input');
+    roleInput.placeholder = 'role…';
+    roleInput.style.cssText = 'width:70px;font-size:10px;padding:1px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
+    roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
+    roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    tag.appendChild(roleInput);
+  }
+
+  const removeBtn = document.createElement('span');
+  removeBtn.style.cssText = 'cursor:pointer;color:var(--text3);margin-left:2px;';
+  removeBtn.textContent = '✕';
+  removeBtn.addEventListener('click', () => tag.remove());
+  tag.appendChild(removeBtn);
+
+  tagsEl.appendChild(tag);
+
+  if (input) input.value = '';
+  if (dropdown) dropdown.style.display = 'none';
+}
+
+
+function confirmFileUpload() {
+  const container = document.getElementById('upload-file-list');
+  const projectId = document.getElementById('upload-project-select').value;
+  let saved = 0;
+
+  _pendingFiles.forEach((pending, idx) => {
+    if (!pending.dataUrl) return;
+    const nameEl = container.querySelector(`[data-idx="${idx}"][data-field="name"]`);
+    const descEl = container.querySelector(`[data-idx="${idx}"][data-field="description"]`);
+    const ext = pending.file.name.split('.').pop().toLowerCase();
+    const displayName = (nameEl?.value.trim() || pending.file.name) + (nameEl?.value.includes('.') ? '' : '.' + ext);
+
+    // Collect checked categories
+    const cats = Object.keys(FILE_CATEGORIES).filter(k => {
+      const cb = container.querySelector(`[data-idx="${idx}"][data-field="cat-${k}"]`);
+      return cb && cb.checked;
+    });
+    if (cats.length === 0) cats.push('other');
+
+    // Collect tagged people
+    const peopleTags = container.querySelectorAll(`[data-people-tag-idx="${idx}"]`);
+    const people = [...peopleTags].map(t => t.dataset.name).filter(Boolean);
+
+    // Add new people to project contacts if not already there
+    const projForUpload = store.projects.find(p => p.id === projectId);
+    if (people.length > 0 && projForUpload) {
+      const proj = projForUpload;
+      proj.contacts = proj.contacts || [];
+      peopleTags.forEach(tagEl => {
+        const name = tagEl.dataset.name;
+        if (!name) return;
+        const exists = proj.contacts.some(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+        if (!exists) {
+          const roleVal = (tagEl.dataset.role || '').trim();
+          const roles = roleVal ? roleVal.split(',').map(r => r.trim()).filter(Boolean) : ['Contact'];
+          proj.contacts.push({ name, roles, phone: '', email: '', manual: true });
+        }
+      });
+    }
+
+    // Collect linked location
+    let location = '';
+    if (cats.includes('location')) {
+      const locSel = container.querySelector(`[data-idx="${idx}"][data-field="location-select"]`);
+      if (locSel?.value === '__new__') {
+        const locNew = container.querySelector(`[data-idx="${idx}"][data-field="location-new"]`);
+        location = locNew?.value.trim() || '';
+        // Add new location to project if not already there
+        if (location && projForUpload) {
+          const proj = projForUpload;
+          proj.locations = proj.locations || [];
+          if (!proj.locations.some(l => l.name.toLowerCase() === location.toLowerCase())) {
+            proj.locations.push({ name: location, suit: 'possible', contacted: 'no', recce: 'no', decision: '' });
+          }
+        }
+      } else {
+        location = locSel?.value || '';
+      }
+    }
+
+    store.files = store.files || [];
+    store.files.push({
+      id: makeId(),
+      name: displayName,
+      categories: cats,
+      people,
+      location,
+      description: descEl?.value.trim() || '',
+      type: pending.file.type,
+      size: pending.file.size,
+      data: pending.dataUrl,
+      projectIds: [projectId],
+      uploadedAt: new Date().toISOString(),
+    });
+    saved++;
+  });
+
   saveStore();
-  closeModal('modal-delete-file');
+  _pendingFiles = [];
+  closeModal('modal-upload-file');
   renderFiles();
-  showToast('File deleted', 'info');
+  renderOverviewFiles();
+  showToast(`${saved} file${saved !== 1 ? 's' : ''} uploaded`, 'success');
 }
 
 function downloadFile(id) {
-  const file = store.files.find(f => f.id === id);
+  const file = (store.files || []).find(f => f.id === id);
   if (!file) return;
-  
   const link = document.createElement('a');
   link.href = file.data;
   link.download = file.name;
@@ -2926,48 +4185,18 @@ function downloadFile(id) {
 }
 
 function viewFile(id) {
-  const file = store.files.find(f => f.id === id);
+  const file = (store.files || []).find(f => f.id === id);
   if (!file) return;
-  
-  // Open in new tab for viewing
   const win = window.open();
   const ext = file.name.split('.').pop().toLowerCase();
-  
   if (file.data.startsWith('data:image')) {
-    win.document.write(`<img src="${file.data}" style="max-width:100%;height:auto">`);
+    win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${file.data}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
   } else if (ext === 'pdf') {
-    // Display PDF inline using iframe
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${file.name}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { height: 100%; overflow: hidden; }
-            iframe { width: 100%; height: 100%; border: none; }
-          </style>
-        </head>
-        <body>
-          <iframe src="${file.data}"></iframe>
-        </body>
-      </html>
-    `);
+    win.document.write(`<!DOCTYPE html><html><head><title>${file.name}</title><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;overflow:hidden;}iframe{width:100%;height:100%;border:none;}</style></head><body><iframe src="${file.data}"></iframe></body></html>`);
   } else {
-    // For other files, show info and download link
-    win.document.write(`
-      <html>
-        <head><title>${file.name}</title></head>
-        <body style="margin:0;padding:20px;font-family:sans-serif;background:#f5f5f5">
-          <div style="background:white;padding:40px;border-radius:8px;max-width:800px;margin:40px auto">
-            <h2>${file.name}</h2>
-            <p>Size: ${formatFileSize(file.size)}</p>
-            <p><a href="${file.data}" download="${file.name}" style="background:#e6bc3c;color:#000;padding:10px 20px;text-decoration:none;border-radius:4px">Download File</a></p>
-          </div>
-        </body>
-      </html>
-    `);
+    win.document.write(`<html><head><title>${file.name}</title></head><body style="margin:0;padding:20px;font-family:sans-serif;background:#f5f5f5"><div style="background:white;padding:40px;border-radius:8px;max-width:600px;margin:40px auto"><h2 style="margin-bottom:12px">${file.name}</h2><p style="color:#666;margin-bottom:20px">${formatFileSize(file.size)}</p><a href="${file.data}" download="${file.name}" style="background:#e6bc3c;color:#000;padding:10px 20px;text-decoration:none;border-radius:4px;font-weight:600">Download</a></div></body></html>`);
   }
+  win.document.close();
 }
 
 // File tab switching
@@ -3062,6 +4291,20 @@ function loadStore() {
       const loaded = JSON.parse(raw);
       store = { ...store, ...loaded };
       if (!store.files) store.files = [];
+      if (!store.contacts) store.contacts = [];
+      if (!store.locations) store.locations = [];
+      // Migrate: convert legacy integer projectIds (array indices) to project UUID strings
+      store.files.forEach(f => {
+        if (f.projectIds) {
+          f.projectIds = f.projectIds.map(pid => {
+            if (typeof pid === 'number') return store.projects[pid]?.id ?? null;
+            return pid;
+          }).filter(Boolean);
+        }
+        if (typeof f.projectId === 'number') {
+          f.projectId = store.projects[f.projectId]?.id ?? null;
+        }
+      });
     }
   } catch(e) {}
 }
@@ -3095,6 +4338,7 @@ function showView(name) {
   } else if (name === 'files') {
     document.getElementById('topbar-title').textContent = 'Files';
     document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Files';
+    selectedFileIds.clear();
     renderFiles();
   }
 }
@@ -3331,6 +4575,8 @@ function renderOverview(p) {
       </div>
     </div>
   `).join('');
+
+  renderOverviewFiles();
 }
 
 // BREAKDOWN
@@ -3419,10 +4665,13 @@ function renderCallsheet(p) {
   }
   el.innerHTML = p.callsheets.map((c, i) => buildCallsheetCard(p, c, i)).join('');
   initCallsheetDragDrop(p);
-  // Attach location autocomplete to any new location inputs
+  // Attach location and hospital autocomplete to any new inputs
   setTimeout(() => {
     el.querySelectorAll('[data-loc-auto]:not([data-loc-auto-attached])').forEach(inp => {
       if (window.attachLocAuto) window.attachLocAuto(inp);
+    });
+    el.querySelectorAll('[data-hosp-auto]:not([data-hosp-auto-attached])').forEach(inp => {
+      if (window.attachHospAuto) window.attachHospAuto(inp);
     });
   }, 100);
 }
@@ -3555,6 +4804,13 @@ function buildCrewSection(c, i) {
           <div class="cs-weather-icon">💧</div>
           <input class="cs-weather-input" value="${c.weatherDetail || ''}" placeholder="Rain / Wind / Temp" onchange="updateCSF(${i},'weatherDetail',this.value)">
         </div>
+        ${(() => {
+          if (!c.date) return `<span class="pdf-hide" style="margin-left:auto;font-size:11px;color:#aaa;white-space:nowrap">Set a date to fetch weather</span>`;
+          const daysAway = Math.round((new Date(c.date + 'T12:00:00') - new Date()) / 86400000);
+          if (daysAway > 16) return `<span class="pdf-hide" title="Open-Meteo forecasts up to 16 days ahead — check back closer to the shoot date" style="margin-left:auto;font-size:11px;color:#aaa;white-space:nowrap;cursor:help">⛅ Forecast available in ~${daysAway - 16} days</span>`;
+          if (daysAway < -1) return `<button class="cs-section-btn pdf-hide" onclick="fetchCallsheetWeather(${i})" style="margin-left:auto;white-space:nowrap;padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;opacity:0.7">📅 Get Historical</button>`;
+          return `<button class="cs-section-btn pdf-hide" onclick="fetchCallsheetWeather(${i})" style="margin-left:auto;white-space:nowrap;padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;">⛅ Get Weather</button>`;
+        })()}
       </div>
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#888;margin-bottom:10px;">Key Crew Contacts</div>
       <div class="cs-crew-grid">
@@ -3584,18 +4840,19 @@ function buildLocationsSection(c, i) {
     </div>
     <div style="display:${c.minimizedLocations ? 'none' : 'block'};">
       <table class="cs-table">
-        <thead><tr><th>Location / Address</th><th>Parking &amp; Notes</th><th>Nearest A&amp;E</th><th class="pdf-hide"></th></tr></thead>
+        <thead><tr><th>Venue / Address</th><th>City</th><th>Parking &amp; Notes</th><th>Nearest A&amp;E</th><th class="pdf-hide"></th></tr></thead>
         <tbody>
           ${(c.locRows || []).map((r, ri) => `
             <tr>
-              <td><input class="cs-table-input" value="${r.loc || ''}" placeholder="Full address" autocomplete="off" data-loc-auto onchange="updateCSRow(${i},'locRows',${ri},'loc',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.loc || ''}" placeholder="Venue, street address…" autocomplete="off" data-loc-auto onchange="updateCSRow(${i},'locRows',${ri},'loc',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.city || ''}" placeholder="City" onchange="updateCSRow(${i},'locRows',${ri},'city',this.value)" style="max-width:120px"></td>
               <td><input class="cs-table-input" value="${r.parking || ''}" placeholder="Parking info, restrictions…" onchange="updateCSRow(${i},'locRows',${ri},'parking',this.value)"></td>
-              <td><input class="cs-table-input" value="${r.hospital || ''}" placeholder="Hospital name &amp; postcode" onchange="updateCSRow(${i},'locRows',${ri},'hospital',this.value)"></td>
+              <td><input class="cs-table-input" value="${r.hospital || ''}" placeholder="Hospital name &amp; postcode" autocomplete="off" data-hosp-auto data-row-idx="${ri}" data-cs-idx="${i}" onchange="updateCSRow(${i},'locRows',${ri},'hospital',this.value)"></td>
               <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'locRows',${ri})">✕</button></td>
             </tr>`).join('')}
         </tbody>
       </table>
-      <button class="cs-add-row-btn pdf-hide" onclick="addCSRow(${i},'locRows',{loc:'',parking:'',hospital:''})">+ Add Location</button>
+      <button class="cs-add-row-btn pdf-hide" onclick="addCSRow(${i},'locRows',{loc:'',city:'',parking:'',hospital:''})">+ Add Location</button>
     </div>`;
 }
 
@@ -3833,14 +5090,117 @@ function addCSRow(csIdx, arrayKey, template) {
   renderCallsheet(p);
 }
 
+// Remove a name from p.contacts[] only if they're no longer referenced anywhere in the project
+function isPersonStillInProject(p, name) {
+  const key = name.toLowerCase();
+  return (
+    (p.cast || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.extras || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.unit || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.callsheets || []).some(cs =>
+      (cs.castRows || []).some(r => r.actor?.toLowerCase() === key) ||
+      (cs.customFields || []).some(cf => cf.value?.toLowerCase() === key)
+    )
+  );
+}
+
+function isPersonAnywhereOnSite(name) {
+  const key = name.toLowerCase();
+  return store.projects.some(p =>
+    (p.cast || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.extras || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.unit || []).some(r => r.name?.toLowerCase() === key) ||
+    (p.contacts || []).some(c => c.name?.toLowerCase() === key) ||
+    (p.callsheets || []).some(cs =>
+      (cs.castRows || []).some(r => r.actor?.toLowerCase() === key) ||
+      (cs.customFields || []).some(cf => cf.value?.toLowerCase() === key)
+    )
+  );
+}
+
+// Gather whatever info we know about a person from live project data
+function gatherPersonInfo(name) {
+  const key = name.toLowerCase();
+  let phone = '', email = '', roles = [], socials = '';
+  store.projects.forEach(p => {
+    (p.contacts || []).forEach(c => {
+      if (c.name?.toLowerCase() === key) {
+        if (c.phone) phone = c.phone;
+        if (c.email) email = c.email;
+        if (c.socials) socials = c.socials;
+        (c.roles || []).forEach(r => { if (!roles.includes(r)) roles.push(r); });
+      }
+    });
+    [...(p.cast||[]), ...(p.extras||[]), ...(p.unit||[])].forEach(r => {
+      if (r.name?.toLowerCase() === key) {
+        if (r.number || r.phone) phone = r.number || r.phone || phone;
+        if (r.email) email = r.email;
+      }
+    });
+    (p.callsheets||[]).forEach(cs => {
+      (cs.castRows||[]).forEach(r => { if (r.actor?.toLowerCase() === key && r.contact) phone = r.contact; });
+      (cs.customFields||[]).forEach(cf => {
+        if (cf.value?.toLowerCase() === key) {
+          if (cf.phone) phone = cf.phone;
+          if (cf.email) email = cf.email;
+        }
+      });
+    });
+  });
+  if (!roles.length) roles = ['Contact'];
+  return { phone, email, socials, roles };
+}
+
+function maybePromptOrphanContact(p, name) {
+  if (!name) return;
+  if (isPersonStillInProject(p, name)) return;
+  if (isPersonAnywhereOnSite(name)) return;
+  // Before prompting, ensure a p.contacts[] entry exists so "Keep" preserves them
+  p.contacts = p.contacts || [];
+  const key = name.toLowerCase();
+  if (!p.contacts.some(c => c.name?.toLowerCase() === key)) {
+    const info = gatherPersonInfo(name);
+    p.contacts.push({ name, roles: info.roles, phone: info.phone, email: info.email, socials: info.socials });
+    saveStore();
+  }
+  document.getElementById('orphan-contact-name').value = name;
+  document.getElementById('orphan-contact-display').textContent = name;
+  openModal('modal-orphan-contact');
+}
+
+function confirmOrphanRemove() {
+  const name = document.getElementById('orphan-contact-name').value;
+  if (name) {
+    const key = name.toLowerCase();
+    store.projects.forEach(p => {
+      p.contacts = (p.contacts || []).filter(c => c.name?.toLowerCase() !== key);
+    });
+    saveStore();
+    if (document.getElementById('contacts-list')) renderContacts();
+  }
+  closeModal('modal-orphan-contact');
+}
+
 function removeCSRow(csIdx, arrayKey, rowIdx) {
   const p = currentProject();
   if (!p.callsheets[csIdx][arrayKey]) return;
+  const row = p.callsheets[csIdx][arrayKey][rowIdx];
+  const removedName = arrayKey === 'castRows' ? row?.actor : row?.value;
   p.callsheets[csIdx][arrayKey].splice(rowIdx, 1);
   saveStore();
   renderCallsheet(p);
+  if (removedName) maybePromptOrphanContact(p, removedName);
 }
 
+function removePersonnel(type, i) {
+  const p = currentProject();
+  const removedName = p[type][i]?.name;
+  p[type].splice(i, 1);
+  saveStore();
+  if (type === 'cast' || type === 'extras') renderCast(p);
+  else renderUnit(p);
+  if (removedName) maybePromptOrphanContact(p, removedName);
+}
 function addCSCustomField(csIdx) {
   document.getElementById('custom-field-select').value = '';
   document.getElementById('custom-field-label').value = '';
@@ -3958,7 +5318,7 @@ function addCallsheet() {
     dirProd: p.director || '', producer: p.producer || '',
     crewCall: '', shootCall: '', estWrap: '', daylight: '', weather: '', weatherDetail: '',
     actorsContact: '', sasContact: '',
-    locRows: [{loc:'', parking:'', hospital:''}],
+    locRows: [{loc:'', city:'', parking:'', hospital:''}],
     castRows: [], schedRows: [], generalNotes: '',
     logoDataUrl: null, customFields: [],
     sectionOrder: ['crew','locations','cast','schedule','notes'],
@@ -4051,25 +5411,127 @@ function doExportPDF() {
   });
   if (!toExport.length) { showToast('Select at least one callsheet', 'info'); return; }
   closeModal('modal-export');
-  const tempContainer = document.createElement('div');
-  tempContainer.style.cssText = 'position:absolute;left:-9999px;top:0;width:1000px;';
-  document.body.appendChild(tempContainer);
-  tempContainer.innerHTML = toExport.map((c) => renderSingleCallsheet(c, p.callsheets.indexOf(c))).join('');
-  tempContainer.querySelectorAll('button,.pdf-hide').forEach(el => el.remove());
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-  script.onload = () => {
-    html2pdf().set({
-      margin: 8,
-      filename: `Callsheet-${p.title}.pdf`,
-      image: { type: 'jpeg', quality: 0.97 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-    }).from(tempContainer).save().then(() => document.body.removeChild(tempContainer));
-  };
-  document.head.appendChild(script);
-  showToast('Generating PDF…', 'info');
+
+  // Build raw HTML then sanitise it for print:
+  // 1. Strip .pdf-hide and buttons
+  // 2. Replace <input> with <span> and <textarea> with <div> so no placeholder bleed
+  const rawHTML = toExport.map((c) => renderSingleCallsheet(c, p.callsheets.indexOf(c))).join('');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = rawHTML;
+  tmp.querySelectorAll('.pdf-hide, button, input[type="date"]').forEach(el => el.remove());
+  // Replace inputs with spans carrying the same value/text
+  tmp.querySelectorAll('input').forEach(el => {
+    const span = document.createElement('span');
+    span.className = el.className;
+    span.textContent = el.value || '';
+    el.replaceWith(span);
+  });
+  tmp.querySelectorAll('textarea').forEach(el => {
+    const div = document.createElement('div');
+    div.className = el.className;
+    div.style.cssText = 'white-space:pre-wrap;';
+    div.textContent = el.value || '';
+    el.replaceWith(div);
+  });
+  const callsheetHTML = tmp.innerHTML;
+
+  document.getElementById('print-iframe')?.remove();
+  const iframe = document.createElement('iframe');
+  iframe.id = 'print-iframe';
+  iframe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;pointer-events:none;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+@page{margin:12mm;size:A4;}
+@media print{
+  html,body{margin:0!important;padding:0!important;}
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#fff;font-family:Arial,"Helvetica Neue",sans-serif;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+/* Callsheet page */
+.cs-page{background:#fff;color:#1a1a1a;margin:0 0 20px;width:100%;font-family:Arial,sans-serif;page-break-after:always;break-after:page;}
+.cs-page:last-child{page-break-after:auto;break-after:auto;}
+
+/* Header */
+.cs-top-bar{display:flex;flex-direction:row;align-items:stretch;border-bottom:3px solid #1a1a1a;width:100%;}
+.cs-logo-section{width:120px;min-width:120px;max-width:120px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:14px;}
+.cs-logo-drop{width:80px;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.cs-logo-drop img{width:100%;height:100%;object-fit:contain;}
+.cs-header-main{flex:1;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;}
+.cs-header-info h1{font-size:24px;font-weight:900;letter-spacing:1px;margin-bottom:3px;color:#1a1a1a;text-transform:uppercase;line-height:1.1;}
+.cs-prod-info{font-size:11px;color:#666;font-weight:500;margin-bottom:2px;}
+.cs-header-meta{display:flex;gap:14px;margin-top:8px;padding-top:8px;border-top:1px solid #eee;flex-wrap:wrap;}
+.cs-meta-item{display:flex;flex-direction:column;gap:2px;}
+.cs-meta-label{font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#999;font-weight:700;}
+.cs-meta-value,.cs-meta-input{font-size:12px;font-weight:700;color:#1a1a1a;}
+.cs-date-box{background:#1a1a1a;color:#fff;padding:14px 18px;text-align:center;min-width:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;flex-shrink:0;}
+.cs-date-day{font-size:28px;font-weight:900;line-height:1;color:#fff;}
+.cs-date-month{font-size:9px;text-transform:uppercase;letter-spacing:2px;margin-top:3px;color:rgba(255,255,255,0.8);}
+.cs-date-year{font-size:10px;color:rgba(255,255,255,0.6);margin-top:1px;}
+/* Hide the toggle bar entirely */
+.cs-toggle-bar,.cs-header-controls,.cs-ctrl-btn,.cs-section-btn,.cs-drag-handle,.cs-add-row-btn{display:none!important;}
+
+/* Content */
+.cs-content{padding:20px 24px;}
+.cs-draggable-section{margin-bottom:22px;page-break-inside:avoid;break-inside:avoid;}
+.cs-heading{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid #e0e0e0;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1a1a1a;page-break-after:avoid;break-after:avoid;}
+.cs-heading::before{content:'';display:block;width:4px;height:14px;background:#d4aa2c;border-radius:2px;flex-shrink:0;}
+
+/* Call times */
+.cs-call-times{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;}
+.cs-call-card{background:#f8f9fa;border:1px solid #e5e5e5;border-radius:4px;padding:10px 12px;text-align:center;}
+.cs-call-card.highlight{background:#1a1a1a!important;border-color:#1a1a1a;}
+.cs-call-label{font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#888;margin-bottom:4px;font-weight:700;display:block;}
+.cs-call-card.highlight .cs-call-label{color:rgba(255,255,255,0.65)!important;}
+.cs-call-input,.cs-call-value{font-size:16px;font-weight:800;color:#1a1a1a;display:block;text-align:center;width:100%;}
+.cs-call-card.highlight .cs-call-input,.cs-call-card.highlight .cs-call-value{color:#fff!important;}
+
+/* Weather */
+.cs-weather-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9fa;border-radius:4px;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;}
+.cs-weather-item{display:flex;align-items:center;gap:6px;}
+.cs-weather-icon{width:20px;height:20px;background:#1a1a1a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;flex-shrink:0;}
+.cs-weather-input{font-size:11px;color:#555;width:auto;}
+
+/* Crew grid */
+.cs-crew-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;page-break-inside:avoid;break-inside:avoid;}
+.cs-crew-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f8f9fa;border-left:3px solid #5bc0eb;border-radius:0 4px 4px 0;page-break-inside:avoid;break-inside:avoid;}
+.cs-crew-role{font-size:9px;font-weight:800;text-transform:uppercase;color:#5bc0eb;letter-spacing:0.8px;width:88px;min-width:88px;flex-shrink:0;padding-top:2px;}
+.cs-crew-inputs{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.cs-crew-field{font-size:11px;color:#1a1a1a;font-weight:500;display:block;padding:1px 0;border-bottom:1px solid #e8e8e8;width:100%;}
+.cs-crew-field:last-child{border-bottom:none;}
+
+/* Tables */
+.cs-table{width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #e8e8e8;}
+.cs-table th{text-align:left;padding:7px 9px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#666;background:#f5f5f5;border-bottom:2px solid #e0e0e0;white-space:nowrap;}
+.cs-table td{padding:6px 9px;border-bottom:1px solid #f0f0f0;vertical-align:middle;font-size:11.5px;}
+.cs-table tr{page-break-inside:avoid;break-inside:avoid;}
+.cs-table tr:last-child td{border-bottom:none;}
+.cs-table-input{font-size:11.5px;color:#1a1a1a;font-weight:500;display:block;width:100%;}
+
+/* Cast note row */
+.cs-note{font-size:11px;color:#555;padding:7px 10px;background:#f8f9fa;border-left:3px solid #d4aa2c;border-radius:0 4px 4px 0;margin-bottom:8px;display:flex;align-items:center;gap:8px;page-break-inside:avoid;break-inside:avoid;}
+.cs-note-input{font-size:11px;color:#1a1a1a;font-weight:600;flex:1;}
+.cs-notes-area{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fafafa;font-size:12px;line-height:1.6;color:#333;white-space:pre-wrap;}
+</style></head><body>${callsheetHTML}</body></html>`);
+  doc.close();
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch(e) {
+      console.error('Print failed:', e);
+      showToast('Print failed — try right-clicking and Print', 'info');
+    }
+  }, 500);
+
+  showToast('Opening print dialog…', 'info');
+}
+
+
 
 function addSocialField(containerId, platform = 'instagram', handle = '') {
   const container = document.getElementById(containerId);
@@ -4171,8 +5633,9 @@ function saveContactToProject(project, name, role, phone, email, socials) {
     if (email)  project.contacts[idx].email  = email;
     if (socials)project.contacts[idx].socials = socials;
     if (role && !project.contacts[idx].roles.includes(role)) project.contacts[idx].roles.push(role);
+    project.contacts[idx].manual = true; // mark as explicitly saved
   } else {
-    project.contacts.push({ name, roles:[role], phone:phone||'', email:email||'', socials:socials||'' });
+    project.contacts.push({ name, roles:[role], phone:phone||'', email:email||'', socials:socials||'', manual: true });
   }
 }
 
@@ -4309,13 +5772,7 @@ function savePersonnel() {
   else if (type === 'unit') renderUnit(p);
   showToast('Saved', 'success');
 }
-function removePersonnel(type, i) {
-  const p = currentProject();
-  p[type].splice(i,1);
-  saveStore();
-  if (type==='cast'||type==='extras') renderCast(p);
-  else renderUnit(p);
-}
+// removePersonnel defined above near removeCSRow
 
 // UNIT LIST
 function renderUnit(p) {
@@ -4538,7 +5995,7 @@ function renderLocations(p) {
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
         <td>${l.avail||'—'}</td>
-        <td>${l.cost||'—'}</td>
+        <td>${l.cost ? (l.costPeriod ? l.cost+' '+l.costPeriod : l.cost) : '—'}</td>
         <td>${l.access||'—'}</td>
         <td>${l.recce||'—'}</td>
         <td>${l.decision||'TBD'}</td>
@@ -4553,11 +6010,12 @@ function renderLocations(p) {
 }
 function addLocation() {
   document.getElementById('loc-edit-idx').value='';
-  ['name','avail','rules','cost','access','light','power','problems'].forEach(f=>document.getElementById('loc-'+f).value='');
+  ['name','avail','rules','cost','access','light','power','problems','notes'].forEach(f=>{const el=document.getElementById('loc-'+f);if(el)el.value='';});
   document.getElementById('loc-suit').value='suitable';
   document.getElementById('loc-contacted').value='no';
   document.getElementById('loc-recce').value='no';
   document.getElementById('loc-decision').value='';
+  document.getElementById('loc-cost-period').value='';
   openModal('modal-location');
   setTimeout(() => {
     const inp = document.getElementById('loc-name');
@@ -4573,12 +6031,14 @@ function editLocation(i) {
   document.getElementById('loc-avail').value=l.avail||'';
   document.getElementById('loc-rules').value=l.rules||'';
   document.getElementById('loc-cost').value=l.cost||'';
+  document.getElementById('loc-cost-period').value=l.costPeriod||'';
   document.getElementById('loc-access').value=l.access||'';
   document.getElementById('loc-recce').value=l.recce||'no';
   document.getElementById('loc-light').value=l.light||'';
   document.getElementById('loc-power').value=l.power||'';
   document.getElementById('loc-problems').value=l.problems||'';
   document.getElementById('loc-decision').value=l.decision||'';
+  document.getElementById('loc-notes').value=l.notes||'';
   openModal('modal-location');
 }
 function removeLocation(i) { const p=currentProject(); p.locations.splice(i,1); saveStore(); renderLocations(p); }
@@ -4586,10 +6046,175 @@ function saveLocation() {
   const p=currentProject();
   const name=document.getElementById('loc-name').value.trim();
   if(!name){showToast('Location name required','info');return;}
-  const l={name,suit:document.getElementById('loc-suit').value,contacted:document.getElementById('loc-contacted').value,avail:document.getElementById('loc-avail').value,rules:document.getElementById('loc-rules').value,cost:document.getElementById('loc-cost').value,access:document.getElementById('loc-access').value,recce:document.getElementById('loc-recce').value,light:document.getElementById('loc-light').value,power:document.getElementById('loc-power').value,problems:document.getElementById('loc-problems').value,decision:document.getElementById('loc-decision').value};
+  const l={
+    name,
+    suit:document.getElementById('loc-suit').value,
+    contacted:document.getElementById('loc-contacted').value,
+    avail:document.getElementById('loc-avail').value,
+    rules:document.getElementById('loc-rules').value,
+    cost:document.getElementById('loc-cost').value,
+    costPeriod:document.getElementById('loc-cost-period').value,
+    access:document.getElementById('loc-access').value,
+    recce:document.getElementById('loc-recce').value,
+    light:document.getElementById('loc-light').value,
+    power:document.getElementById('loc-power').value,
+    problems:document.getElementById('loc-problems').value,
+    decision:document.getElementById('loc-decision').value,
+    notes:document.getElementById('loc-notes').value
+  };
   const idx=document.getElementById('loc-edit-idx').value;
   if(idx!=='') p.locations[parseInt(idx)]=l; else p.locations.push(l);
   saveStore(); closeModal('modal-location'); renderLocations(p); showToast('Location saved','success');
+}
+
+function addLocationGlobal() {
+  // Populate project selector with all projects (blank = unlinked)
+  const projSelect = document.getElementById('gloc-project-select');
+  projSelect.innerHTML = `<option value="">— No Project —</option>` +
+    store.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+  // Clear all fields
+  document.getElementById('gloc-project-id').value = '';
+  document.getElementById('gloc-loc-idx').value = '-1';
+  ['gloc-name','gloc-cost','gloc-access','gloc-avail','gloc-light','gloc-power','gloc-problems','gloc-rules','gloc-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('gloc-suit').value = '';
+  document.getElementById('gloc-recce').value = 'no';
+  document.getElementById('gloc-cost-period').value = '';
+  document.getElementById('gloc-contacted').value = 'no';
+  document.getElementById('gloc-decision').value = '';
+  document.getElementById('gloc-contact-name').value = '';
+  document.getElementById('gloc-contact-phone').value = '';
+  document.getElementById('gloc-contact-email').value = '';
+  openModal('modal-edit-location-global');
+}
+
+function editLocationGlobal(projectId, locIdx) {
+  let l;
+  if (projectId === '_global') {
+    l = (store.locations || [])[locIdx];
+  } else {
+    const p = store.projects.find(proj => proj.id === projectId);
+    l = p && p.locations[locIdx];
+  }
+  if (!l) return;
+  // Populate project selector (with blank "no project" option)
+  const projSelect = document.getElementById('gloc-project-select');
+  projSelect.innerHTML = `<option value="">— No Project —</option>` +
+    store.projects.map(proj =>
+      `<option value="${proj.id}" ${proj.id === projectId ? 'selected' : ''}>${proj.title}</option>`
+    ).join('');
+  document.getElementById('gloc-project-id').value = projectId;
+  document.getElementById('gloc-loc-idx').value = locIdx;
+  document.getElementById('gloc-name').value = l.name || '';
+  document.getElementById('gloc-suit').value = l.suit || '';
+  document.getElementById('gloc-recce').value = l.recce || 'no';
+  document.getElementById('gloc-cost').value = l.cost || '';
+  document.getElementById('gloc-cost-period').value = l.costPeriod || '';
+  document.getElementById('gloc-access').value = l.access || '';
+  document.getElementById('gloc-avail').value = l.avail || '';
+  document.getElementById('gloc-contacted').value = l.contacted || 'no';
+  document.getElementById('gloc-decision').value = l.decision || '';
+  document.getElementById('gloc-light').value = l.light || '';
+  document.getElementById('gloc-power').value = l.power || '';
+  document.getElementById('gloc-problems').value = l.problems || '';
+  document.getElementById('gloc-rules').value = l.rules || '';
+  document.getElementById('gloc-notes').value = l.notes || '';
+  document.getElementById('gloc-contact-name').value = l.contactName || '';
+  document.getElementById('gloc-contact-phone').value = l.contactPhone || '';
+  document.getElementById('gloc-contact-email').value = l.contactEmail || '';
+  openModal('modal-edit-location-global');
+}
+
+function deleteLocationGlobal(projectId, locIdx) {
+  if (!confirm('Delete this location?')) return;
+  if (projectId === '_global') {
+    if (store.locations) store.locations.splice(locIdx, 1);
+  } else {
+    const p = store.projects.find(proj => proj.id === projectId);
+    if (p && p.locations) p.locations.splice(locIdx, 1);
+  }
+  saveStore();
+  renderLocations();
+  showToast('Location deleted', 'success');
+}
+
+function saveLocationGlobal() {
+  const projectId = document.getElementById('gloc-project-id').value;
+  const rawIdx = document.getElementById('gloc-loc-idx').value;
+  const locIdx = parseInt(rawIdx);
+  const isNew = rawIdx === '-1' || rawIdx === '';
+  const name = document.getElementById('gloc-name').value.trim();
+  if (!name) { showToast('Location name required', 'info'); return; }
+  const targetProjectId = document.getElementById('gloc-project-select').value;
+
+  const locationData = {
+    name,
+    suit: document.getElementById('gloc-suit').value,
+    recce: document.getElementById('gloc-recce').value,
+    cost: document.getElementById('gloc-cost').value,
+    costPeriod: document.getElementById('gloc-cost-period').value,
+    access: document.getElementById('gloc-access').value,
+    avail: document.getElementById('gloc-avail').value,
+    contacted: document.getElementById('gloc-contacted').value,
+    decision: document.getElementById('gloc-decision').value,
+    light: document.getElementById('gloc-light').value,
+    power: document.getElementById('gloc-power').value,
+    problems: document.getElementById('gloc-problems').value,
+    rules: document.getElementById('gloc-rules').value,
+    notes: document.getElementById('gloc-notes').value,
+    contactName: document.getElementById('gloc-contact-name').value.trim(),
+    contactPhone: document.getElementById('gloc-contact-phone').value.trim(),
+    contactEmail: document.getElementById('gloc-contact-email').value.trim()
+  };
+
+  if (isNew) {
+    if (targetProjectId) {
+      // Link to a project
+      const destProject = store.projects.find(p => p.id === targetProjectId);
+      if (!destProject) { showToast('Project not found', 'error'); return; }
+      if (!destProject.locations) destProject.locations = [];
+      destProject.locations.push(locationData);
+    } else {
+      // No project — save as unlinked location
+      if (!store.locations) store.locations = [];
+      store.locations.push(locationData);
+    }
+  } else if (projectId === '_global') {
+    // Editing an unlinked location from store.locations
+    const gIdx = parseInt(locIdx);
+    if (!store.locations || !store.locations[gIdx]) { showToast('Location not found', 'error'); return; }
+    if (targetProjectId) {
+      // Move to a project
+      store.locations.splice(gIdx, 1);
+      const destProject = store.projects.find(p => p.id === targetProjectId);
+      if (destProject) {
+        if (!destProject.locations) destProject.locations = [];
+        destProject.locations.push(locationData);
+      }
+    } else {
+      store.locations[gIdx] = { ...store.locations[gIdx], ...locationData };
+    }
+  } else {
+    const sourceProject = store.projects.find(p => p.id === projectId);
+    if (!sourceProject || !sourceProject.locations[locIdx]) { showToast('Location not found', 'error'); return; }
+    if (!targetProjectId || targetProjectId === projectId) {
+      sourceProject.locations[locIdx] = { ...sourceProject.locations[locIdx], ...locationData };
+    } else {
+      // Move to a different project
+      sourceProject.locations.splice(locIdx, 1);
+      const destProject = store.projects.find(p => p.id === targetProjectId);
+      if (destProject) {
+        if (!destProject.locations) destProject.locations = [];
+        destProject.locations.push(locationData);
+      }
+    }
+  }
+
+  saveStore();
+  closeModal('modal-edit-location-global');
+  renderLocations();
+  showToast(isNew ? 'Location added' : 'Location updated', 'success');
 }
 
 // SCOUTING SHEETS
@@ -4656,13 +6281,33 @@ function saveInvite() {
 function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTeam();}
 
 // CONTACTS
+let contactTypeFilter = 'all';
+let contactRoleFilter = 'all';
+let _cachedContacts = []; // populated by renderContacts, used by editContact
+
+function setContactTypeFilter(type) {
+  contactTypeFilter = type;
+  renderContacts();
+}
+
 function renderContacts() {
   const el = document.getElementById('contacts-list');
-  
-  // Get current filter
+
+  // Get current filters
   const filterSelect = document.getElementById('contacts-filter');
   const filterProject = filterSelect ? filterSelect.value : 'all';
-  
+  const roleFilterSelect = document.getElementById('contacts-role-filter');
+  if (roleFilterSelect) contactRoleFilter = roleFilterSelect.value;
+
+  // Helper: merge type strings e.g. 'cast' + 'crew' → 'cast,crew'
+  function mergeContactType(existing, incoming) {
+    if (!incoming) return existing || '';
+    if (!existing) return incoming;
+    const cur = existing.split(',').map(t => t.trim()).filter(Boolean);
+    incoming.split(',').forEach(t => { if (t && !cur.includes(t)) cur.push(t); });
+    return cur.join(',');
+  }
+
   // Gather all contacts from all projects - merge roles properly
   const contactsMap = {};
   store.projects.forEach(p => {
@@ -4671,37 +6316,49 @@ function renderContacts() {
       if (c.name) {
         const key = c.name.toLowerCase();
         if (!contactsMap[key]) {
-          contactsMap[key] = { name: c.name, roles: [], projects: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '' };
+          contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '' };
         }
-        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].projects.includes(p.title)) {
+          contactsMap[key].projects.push(p.title);
+          contactsMap[key].projectIds.push(p.id);
+        }
         (c.roles || ['Contact']).forEach(r => {
           if (!contactsMap[key].roles.includes(r)) contactsMap[key].roles.push(r);
         });
         if (c.phone) contactsMap[key].phone = c.phone;
         if (c.email) contactsMap[key].email = c.email;
         if (c.socials) contactsMap[key].socials = c.socials;
+        if (c.type && !contactsMap[key].type) contactsMap[key].type = c.type;
+        if (c.defaultRole && !contactsMap[key].defaultRole) contactsMap[key].defaultRole = c.defaultRole;
       }
     });
-    
+
     // Also check callsheet data
     (p.callsheets || []).forEach(cs => {
       (cs.castRows || []).forEach(r => {
         if (r.actor) {
           const key = r.actor.toLowerCase();
           if (!contactsMap[key]) {
-            contactsMap[key] = { name: r.actor, roles: [], projects: [], phone: '', email: '', socials: '' };
+            contactsMap[key] = { name: r.actor, roles: [], projects: [], projectIds: [], phone: '', email: '', socials: '', type: 'cast' };
           }
-          if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+          if (!contactsMap[key].projects.includes(p.title)) {
+            contactsMap[key].projects.push(p.title);
+            contactsMap[key].projectIds.push(p.id);
+          }
           if (!contactsMap[key].roles.includes('Cast')) contactsMap[key].roles.push('Cast');
+          contactsMap[key].type = mergeContactType(contactsMap[key].type, 'cast');
         }
       });
       (cs.customFields || []).forEach(cf => {
         if (cf.value) {
           const key = cf.value.toLowerCase();
           if (!contactsMap[key]) {
-            contactsMap[key] = { name: cf.value, roles: [], projects: [], phone: '', email: '', socials: '' };
+            contactsMap[key] = { name: cf.value, roles: [], projects: [], projectIds: [], phone: '', email: '', socials: '', type: '' };
           }
-          if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+          if (!contactsMap[key].projects.includes(p.title)) {
+            contactsMap[key].projects.push(p.title);
+            contactsMap[key].projectIds.push(p.id);
+          }
           if (!contactsMap[key].roles.includes(cf.label)) contactsMap[key].roles.push(cf.label);
           if (cf.phone) contactsMap[key].phone = cf.phone;
           if (cf.email) contactsMap[key].email = cf.email;
@@ -4713,10 +6370,14 @@ function renderContacts() {
       if (r.name) {
         const key = r.name.toLowerCase();
         if (!contactsMap[key]) {
-          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+          contactsMap[key] = { name: r.name, roles: [], projects: [], projectIds: [], phone: '', email: '', socials: '', type: 'cast' };
         }
-        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].projects.includes(p.title)) {
+          contactsMap[key].projects.push(p.title);
+          contactsMap[key].projectIds.push(p.id);
+        }
         if (!contactsMap[key].roles.includes('Cast')) contactsMap[key].roles.push('Cast');
+        contactsMap[key].type = mergeContactType(contactsMap[key].type, 'cast');
         if (r.number) contactsMap[key].phone = r.number;
         if (r.email) contactsMap[key].email = r.email;
       }
@@ -4725,10 +6386,14 @@ function renderContacts() {
       if (r.name) {
         const key = r.name.toLowerCase();
         if (!contactsMap[key]) {
-          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+          contactsMap[key] = { name: r.name, roles: [], projects: [], projectIds: [], phone: '', email: '', socials: '', type: '' };
         }
-        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].projects.includes(p.title)) {
+          contactsMap[key].projects.push(p.title);
+          contactsMap[key].projectIds.push(p.id);
+        }
         if (!contactsMap[key].roles.includes('Extra')) contactsMap[key].roles.push('Extra');
+        contactsMap[key].type = mergeContactType(contactsMap[key].type, 'cast');
         if (r.number) contactsMap[key].phone = r.number;
         if (r.email) contactsMap[key].email = r.email;
       }
@@ -4737,65 +6402,118 @@ function renderContacts() {
       if (r.name) {
         const key = r.name.toLowerCase();
         if (!contactsMap[key]) {
-          contactsMap[key] = { name: r.name, roles: [], projects: [], phone: '', email: '', socials: '' };
+          contactsMap[key] = { name: r.name, roles: [], projects: [], projectIds: [], phone: '', email: '', socials: '', type: '' };
         }
-        if (!contactsMap[key].projects.includes(p.title)) contactsMap[key].projects.push(p.title);
+        if (!contactsMap[key].projects.includes(p.title)) {
+          contactsMap[key].projects.push(p.title);
+          contactsMap[key].projectIds.push(p.id);
+        }
         const role = r.role || 'Crew';
         if (!contactsMap[key].roles.includes(role)) contactsMap[key].roles.push(role);
+        contactsMap[key].type = mergeContactType(contactsMap[key].type, 'crew');
         if (r.number) contactsMap[key].phone = r.number;
         if (r.email) contactsMap[key].email = r.email;
       }
     });
   });
-  
+
+  // Also pull in global contacts not linked to any project
+  (store.contacts || []).forEach(c => {
+    if (!c.name) return;
+    const key = c.name.toLowerCase();
+    if (!contactsMap[key]) {
+      contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '' };
+    } else {
+      if (c.phone) contactsMap[key].phone = c.phone;
+      if (c.email) contactsMap[key].email = c.email;
+      if (c.socials) contactsMap[key].socials = c.socials;
+      if (c.type) contactsMap[key].type = mergeContactType(contactsMap[key].type, c.type);
+      if (c.defaultRole && !contactsMap[key].defaultRole) contactsMap[key].defaultRole = c.defaultRole;
+    }
+  });
+
   // Convert to array
   let contacts = Object.values(contactsMap).map(c => ({
     name: c.name,
     role: c.roles.join(', '),
+    roles: c.roles,
+    defaultRole: c.defaultRole || '',
     projects: c.projects.join(', '),
-    projectId: c.projects[0] ? store.projects.find(p => p.title === c.projects[0])?.id : null,
+    projectIds: c.projectIds,
+    projectId: c.projectIds[0] || null,
     phone: c.phone,
     email: c.email,
-    socials: c.socials
+    socials: c.socials,
+    type: c.type || ''
   }));
-  
-  // Filter contacts
-  const filteredContacts = filterProject === 'all' 
-    ? contacts 
-    : contacts.filter(c => c.projectId === filterProject);
-  
-  // Always render the filter dropdown, even if no contacts
-  el.innerHTML = `<div style="margin-bottom:16px">
-    <select id="contacts-filter" onchange="renderContacts()" class="form-select" style="max-width:300px">
-      <option value="all">All Projects</option>
+
+  // Cache for use by editContact
+  _cachedContacts = contacts;
+
+  // Build unique roles list for filter dropdown
+  const allRoles = new Set();
+  contacts.forEach(c => c.roles.forEach(r => { if (r) allRoles.add(r); }));
+  const uniqueRoles = Array.from(allRoles).sort();
+
+  // Apply type filter
+  let filteredContacts = contacts;
+  if (contactTypeFilter === 'cast') filteredContacts = filteredContacts.filter(c => (c.type||'').includes('cast'));
+  else if (contactTypeFilter === 'crew') filteredContacts = filteredContacts.filter(c => (c.type||'').includes('crew'));
+
+  // Apply role filter
+  if (contactRoleFilter && contactRoleFilter !== 'all') {
+    filteredContacts = filteredContacts.filter(c => c.roles.includes(contactRoleFilter));
+  }
+
+  // Apply project filter
+  if (filterProject === 'none') {
+    filteredContacts = filteredContacts.filter(c => c.projectIds.length === 0);
+  } else if (filterProject !== 'all') {
+    filteredContacts = filteredContacts.filter(c => c.projectIds.includes(filterProject));
+  }
+
+  // Render filter bar
+  const typeBtnStyle = (t) => contactTypeFilter === t
+    ? 'btn btn-sm btn-primary'
+    : 'btn btn-sm';
+
+  el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
+    <div style="display:flex;gap:4px">
+      <button class="${typeBtnStyle('all')}" onclick="setContactTypeFilter('all')">All</button>
+      <button class="${typeBtnStyle('cast')}" onclick="setContactTypeFilter('cast')">Cast / Talent</button>
+      <button class="${typeBtnStyle('crew')}" onclick="setContactTypeFilter('crew')">Crew</button>
+    </div>
+    <select id="contacts-role-filter" onchange="renderContacts()" class="form-select" style="max-width:200px">
+      <option value="all" ${contactRoleFilter === 'all' ? 'selected' : ''}>All Roles / Depts</option>
+      ${uniqueRoles.map(r => `<option value="${r}" ${contactRoleFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
+    </select>
+    <select id="contacts-filter" onchange="renderContacts()" class="form-select" style="max-width:220px">
+      <option value="all" ${filterProject === 'all' ? 'selected' : ''}>All Projects</option>
+      <option value="none" ${filterProject === 'none' ? 'selected' : ''}>No Linked Project</option>
       ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
     </select>
+    <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${filteredContacts.length} contact${filteredContacts.length !== 1 ? 's' : ''}</span>
   </div>`;
-  
+
   if (!filteredContacts.length) {
-    el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📱</div><h3>No contacts yet</h3><p style="color:var(--text2);margin-top:8px">Add contact details to cast or crew to see them here</p></div>';
+    el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📱</div><h3>No contacts</h3><p style="color:var(--text2);margin-top:8px">No contacts match the current filters</p></div>';
     return;
   }
-  
+
   // Helper function to convert social handles to clickable links
   function renderSocialLinks(socialsStr) {
     if (!socialsStr) return '—';
     const socials = socialsStr.split(',').map(s => s.trim()).filter(Boolean);
     if (!socials.length) return '—';
-    
+
     return socials.map(s => {
-      // Extract handle - remove any platform prefixes and separators
       let raw = s;
-      
-      // Remove common separators and everything before them
       let handle = raw;
       if (handle.includes('||')) {
         handle = handle.split('||').pop();
       } else if (handle.includes(':') && !handle.includes('://')) {
         handle = handle.split(':').pop();
       }
-      
-      // Also remove any remaining platform name prefixes like "instagram" at start
       const platformNames = ['instagram', 'facebook', 'twitter', 'tiktok', 'bluesky', 'youtube', 'linkedin', 'website'];
       const lowerHandle = handle.toLowerCase();
       for (const platform of platformNames) {
@@ -4804,13 +6522,8 @@ function renderContacts() {
           break;
         }
       }
-      
-      // Clean the handle
       handle = handle.replace(/^[:|@\s]+/, '').trim();
-      
       if (!handle) return '';
-      
-      // Try to detect platform from the original string
       let platform = 'website';
       const lowerRaw = raw.toLowerCase();
       if (lowerRaw.includes('instagram')) platform = 'instagram';
@@ -4820,11 +6533,8 @@ function renderContacts() {
       else if (lowerRaw.includes('bluesky')) platform = 'bluesky';
       else if (lowerRaw.includes('youtube')) platform = 'youtube';
       else if (lowerRaw.includes('linkedin')) platform = 'linkedin';
-      
-      // Build URL
       let url = handle;
       if (!url.match(/^https?:\/\//)) {
-        // Remove @ if present
         const cleanHandle = handle.replace(/^@/, '');
         switch(platform) {
           case 'instagram': url = 'https://instagram.com/' + cleanHandle; break;
@@ -4837,8 +6547,6 @@ function renderContacts() {
           default: url = 'https://' + cleanHandle;
         }
       }
-      
-      // Get icon
       let icon = '🌐';
       switch(platform) {
         case 'instagram': icon = '📸'; break;
@@ -4849,55 +6557,110 @@ function renderContacts() {
         case 'youtube': icon = '▶️'; break;
         case 'linkedin': icon = '💼'; break;
       }
-      
-      // Display: icon + handle (only handle is clickable)
       return `${icon} <a href="${url}" target="_blank" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
     }).join('');
   }
-  
-  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Projects</th><th>Phone</th><th>Email</th><th>Socials</th><th></th></tr></thead><tbody>` + 
-    filteredContacts.map((c, i) => `
-      <tr>
-        <td style="font-weight:500" title="${c.name}">${c.name}</td>
-        <td title="${c.role}"><span class="tag">${c.role}</span></td>
-        <td title="${c.projects}">${c.projects}</td>
+
+  function getTypeBadge(type) {
+    const types = (type || '').split(',').map(t => t.trim()).filter(Boolean);
+    if (!types.length) return '<span style="color:var(--text3);font-size:11px">—</span>';
+    return types.map(t => {
+      if (t === 'cast') return '<span class="tag" style="background:rgba(91,192,235,0.15);color:var(--accent2);border-color:rgba(91,192,235,0.2)">Cast</span>';
+      if (t === 'crew') return '<span class="tag" style="background:rgba(196,86,110,0.15);color:#e08095;border-color:rgba(196,86,110,0.2)">Crew</span>';
+      return '';
+    }).join(' ');
+    // unreachable — keep type-detection in aggregation consistent
+    return '<span style="color:var(--text3);font-size:11px">—</span>';
+  }
+
+  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr><th>Name</th><th>Type</th><th>Role / Dept</th><th>Projects</th><th>Phone</th><th>Email</th><th>Socials</th><th>Photos</th><th></th></tr></thead><tbody>` +
+    filteredContacts.map((c, i) => {
+      const photos = getFilesForPerson(c.name);
+      const isExpanded = expandedContacts.has(c.name.toLowerCase());
+      const photosBadge = photos.length
+        ? `<span class="photos-badge" onclick="event.stopPropagation();toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">📷 ${photos.length}</span>`
+        : '<span style="color:var(--text3);font-size:11px;">—</span>';
+      const mainRow = `<tr onclick="toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">
+        <td style="font-weight:500;white-space:nowrap" title="${c.name}">
+          ${c.name}
+          <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editContact('${c.name.replace(/'/g, "\\'")}')" style="padding:2px 6px;margin-left:4px;opacity:0.6" title="Edit contact">✎</button>
+          ${photos.length ? (isExpanded ? '▾' : '▸') : ''}
+        </td>
+        <td>${getTypeBadge(c.type)}</td>
+        <td title="${c.role || c.defaultRole}">${c.role ? `<span class="tag">${c.role}</span>` : (c.defaultRole ? `<span class="tag" style="opacity:0.7" title="General role">${c.defaultRole}</span>` : '—')}</td>
+        <td title="${c.projects}">${c.projects || '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
         <td title="${c.phone || ''}">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent2)">${c.phone}</a>` : '—'}</td>
         <td title="${c.email || ''}">${c.email ? `<a href="mailto:${c.email}" style="color:var(--accent2)">${c.email}</a>` : '—'}</td>
         <td title="${c.socials || ''}">${renderSocialLinks(c.socials)}</td>
+        <td>${photosBadge}</td>
         <td style="white-space:nowrap">
-          <button class="btn btn-sm btn-ghost" onclick="editContact('${c.name.replace(/'/g, "\\'")}')" title="Edit">✎</button>
-          <button class="btn btn-sm btn-danger" onclick="removeContact('${c.name.replace(/'/g, "\\'")}')">✕</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeContact('${c.name.replace(/'/g, "\\'")}')">✕</button>
         </td>
-      </tr>
-    `).join('') + 
+      </tr>`;
+      return mainRow + (isExpanded ? photoStripContactHTML(photos, c.name, 9) : '');
+    }).join('') +
     '</tbody></table></div>';
+
+  // Location Contacts section
+  const locationContacts = [];
+  store.projects.forEach(p => {
+    (p.locations || []).forEach(l => {
+      if (l.contactName) locationContacts.push({ contactName: l.contactName, contactPhone: l.contactPhone || '', contactEmail: l.contactEmail || '', locationName: l.name, project: p.title });
+    });
+  });
+  (store.locations || []).forEach(l => {
+    if (l.contactName) locationContacts.push({ contactName: l.contactName, contactPhone: l.contactPhone || '', contactEmail: l.contactEmail || '', locationName: l.name, project: '—' });
+  });
+
+  if (locationContacts.length) {
+    el.innerHTML += `<div style="margin-top:32px">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">📍 Location Contacts</h3>
+      <div class="table-container"><table class="data-table"><thead><tr>
+        <th>Name</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th>
+      </tr></thead><tbody>` +
+      locationContacts.map(lc => `<tr>
+        <td style="font-weight:500">${lc.contactName}</td>
+        <td>${lc.locationName || '—'}</td>
+        <td>${lc.project}</td>
+        <td>${lc.contactPhone ? `<a href="tel:${lc.contactPhone}" style="color:var(--accent2)">${lc.contactPhone}</a>` : '—'}</td>
+        <td>${lc.contactEmail ? `<a href="mailto:${lc.contactEmail}" style="color:var(--accent2)">${lc.contactEmail}</a>` : '—'}</td>
+      </tr>`).join('') +
+      '</tbody></table></div></div>';
+  }
 }
 
-// LOCATIONS
+// LOCATIONS (global view)
 function renderLocations() {
   const el = document.getElementById('locations-list');
-  
+
   // Get current filter
   const filterSelect = document.getElementById('locations-filter');
   const filterProject = filterSelect ? filterSelect.value : 'all';
-  
-  // Gather all locations from all projects (both locations table and scouting sheets)
+
+  // Gather all locations from all projects
   const locationsMap = {};
   store.projects.forEach(p => {
     // From locations table
-    (p.locations || []).forEach(l => {
+    (p.locations || []).forEach((l, locIdx) => {
       if (l.name) {
         const key = l.name.toLowerCase() + '|' + p.id;
-        locationsMap[key] = { 
-          name: l.name, 
-          project: p.title, 
+        const costDisplay = l.cost
+          ? (l.costPeriod ? `${l.cost} ${l.costPeriod}` : l.cost)
+          : '';
+        locationsMap[key] = {
+          name: l.name,
+          project: p.title,
           projectId: p.id,
+          locIdx,
           date: l.date || '',
-          suitability: l.suitability || '',
-          cost: l.cost || '',
+          suitability: l.suit || '',
+          cost: costDisplay,
           accessibility: l.access || '',
           decision: l.decision || '',
-          notes: l.rules || '',
+          notes: (l.notes ? l.notes + (l.rules ? '\n' + l.rules : '') : l.rules) || '',
+          contactName: l.contactName || '',
+          contactPhone: l.contactPhone || '',
+          contactEmail: l.contactEmail || '',
           source: 'location'
         };
       }
@@ -4907,10 +6670,11 @@ function renderLocations() {
       if (s.name) {
         const key = s.name.toLowerCase() + '|' + p.id;
         if (!locationsMap[key]) {
-          locationsMap[key] = { 
-            name: s.name, 
-            project: p.title, 
+          locationsMap[key] = {
+            name: s.name,
+            project: p.title,
             projectId: p.id,
+            locIdx: null,
             date: s.date || '',
             suitability: s.suitability || '',
             cost: s.cost || '',
@@ -4923,89 +6687,258 @@ function renderLocations() {
       }
     });
   });
-  
-  // Convert to array
-  let locations = Object.values(locationsMap).map(l => ({
-    name: l.name,
-    project: l.project,
-    projectId: l.projectId,
-    date: l.date,
-    suitability: l.suitability,
-    cost: l.cost,
-    accessibility: l.accessibility,
-    decision: l.decision,
-    notes: l.notes
-  }));
-  
+
+  // Include unlinked locations from store.locations
+  (store.locations || []).forEach((l, gIdx) => {
+    if (!l.name) return;
+    const key = l.name.toLowerCase() + '|_global';
+    const costDisplay = l.cost
+      ? (l.costPeriod ? `${l.cost} ${l.costPeriod}` : l.cost)
+      : '';
+    locationsMap[key] = {
+      name: l.name,
+      project: '—',
+      projectId: '_global',
+      locIdx: gIdx,
+      date: l.date || '',
+      suitability: l.suit || '',
+      cost: costDisplay,
+      accessibility: l.access || '',
+      decision: l.decision || '',
+      notes: (l.notes ? l.notes + (l.rules ? '\n' + l.rules : '') : l.rules) || '',
+      contactName: l.contactName || '',
+      contactPhone: l.contactPhone || '',
+      contactEmail: l.contactEmail || '',
+      source: 'location'
+    };
+  });
+
+  let locations = Object.values(locationsMap);
+
   // Sort by project then name
   locations.sort((a, b) => {
     if (a.project !== b.project) return a.project.localeCompare(b.project);
     return a.name.localeCompare(b.name);
   });
-  
-  // Filter locations
-  const filteredLocations = filterProject === 'all' 
-    ? locations 
+
+  // Filter
+  const filteredLocations = filterProject === 'all'
+    ? locations
     : locations.filter(l => l.projectId === filterProject);
-  
-  // Always render the filter dropdown
-  el.innerHTML = `<div style="margin-bottom:16px">
-    <select id="locations-filter" onchange="renderLocations()" class="form-select" style="max-width:300px">
-      <option value="all">All Projects</option>
+
+  // Filter bar
+  el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
+    <select id="locations-filter" onchange="renderLocations()" class="form-select" style="max-width:280px">
+      <option value="all" ${filterProject === 'all' ? 'selected' : ''}>All Locations</option>
       ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
+      ${(store.locations || []).length ? `<option value="_global" ${filterProject === '_global' ? 'selected' : ''}>— Unlinked —</option>` : ''}
     </select>
+    <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${filteredLocations.length} location${filteredLocations.length !== 1 ? 's' : ''}</span>
   </div>`;
-  
+
   if (!filteredLocations.length) {
     el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No locations yet</h3><p style="color:var(--text2);margin-top:8px">Add locations to projects to see them here</p></div>';
     return;
   }
-  
-  // Get suitability badge class
+
   function getSuitabilityBadge(s) {
-    if (s === 'suitable') return '<span class="tag" style="background:var(--green)">Suitable</span>';
-    if (s === 'possible') return '<span class="tag" style="background:var(--orange)">Possibly Suitable</span>';
-    if (s === 'unsuitable') return '<span class="tag" style="background:var(--red)">Unsuitable</span>';
-    return '—';
+    if (s === 'suitable') return '<span class="tag" style="background:rgba(46,168,100,0.2);color:#60d090;border-color:rgba(46,168,100,0.25)">Suitable</span>';
+    if (s === 'possible') return '<span class="tag" style="background:rgba(212,136,58,0.2);color:#f0a860;border-color:rgba(212,136,58,0.25)">Possibly Suitable</span>';
+    if (s === 'unsuitable') return '<span class="tag" style="background:rgba(196,68,68,0.2);color:#e08080;border-color:rgba(196,68,68,0.25)">Unsuitable</span>';
+    return '<span style="color:var(--text3);font-size:11px">—</span>';
   }
-  
-  // Get decision badge
+
   function getDecisionBadge(d) {
-    if (d === 'confirmed') return '<span class="tag" style="background:var(--green)">Confirmed ✓</span>';
-    if (d === 'backup') return '<span class="tag" style="background:var(--orange)">Backup</span>';
-    if (d === 'rejected') return '<span class="tag" style="background:var(--red)">Rejected ✗</span>';
-    return '<span class="tag">TBD</span>';
+    if (d === 'confirmed') return '<span class="tag" style="background:rgba(46,168,100,0.2);color:#60d090;border-color:rgba(46,168,100,0.25)">Confirmed ✓</span>';
+    if (d === 'needed') return '<span class="tag" style="background:rgba(230,188,60,0.15);color:var(--accent);border-color:rgba(230,188,60,0.3)">Confirmation Needed</span>';
+    if (d === 'backup') return '<span class="tag" style="background:rgba(212,136,58,0.2);color:#f0a860;border-color:rgba(212,136,58,0.25)">Backup</span>';
+    if (d === 'rejected') return '<span class="tag" style="background:rgba(196,68,68,0.2);color:#e08080;border-color:rgba(196,68,68,0.25)">Rejected ✗</span>';
+    return '<span class="tag" style="color:var(--text3)">TBD</span>';
   }
-  
+
   el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr>
     <th>Location</th>
     <th>Project</th>
+    <th>Contact</th>
     <th>Date Scouted</th>
     <th>Suitability</th>
-    <th>Cost <span title="Costs change, cost accurate as of date enquired" style="cursor:help">ⓘ</span></th>
+    <th>Cost <span title="Cost accurate as of date scouted" style="cursor:help;opacity:0.6">ⓘ</span></th>
     <th>Accessibility</th>
-    <th>Decision</th>
+    <th>Status</th>
     <th>Notes</th>
-  </tr></thead><tbody>` + 
-    filteredLocations.map((l, i) => `
-      <tr style="cursor:pointer" onclick="showLocationDetails('${l.name.replace(/'/g, "\\'")}', '${l.projectId}')">
-        <td style="font-weight:500">${l.name}</td>
+    <th>Photos</th>
+    <th></th>
+  </tr></thead><tbody>` +
+    filteredLocations.map((l) => {
+      const photos = getFilesForLocation(l.name);
+      const key = l.name + '|' + l.projectId;
+      const isExpanded = expandedLocations.has(key);
+      const photosBadge = photos.length
+        ? `<span class="photos-badge" onclick="event.stopPropagation();toggleLocationExpand('${l.name.replace(/'/g,"\\'")}','${l.projectId}')">📷 ${photos.length}</span>`
+        : '<span style="color:var(--text3);font-size:11px;">—</span>';
+      const editBtn = l.locIdx !== null
+        ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editLocationGlobal('${l.projectId}',${l.locIdx})" title="Edit location">✎</button>
+           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLocationGlobal('${l.projectId}',${l.locIdx})" title="Delete location" style="padding:2px 6px">🗑</button>`
+        : '';
+      const contactCell = l.contactName
+        ? `<span style="font-size:12px">${l.contactName}${l.contactPhone ? `<br><a href="tel:${l.contactPhone}" style="color:var(--accent2);font-size:11px">${l.contactPhone}</a>` : ''}${l.contactEmail ? `<br><a href="mailto:${l.contactEmail}" style="color:var(--accent2);font-size:11px">${l.contactEmail}</a>` : ''}</span>`
+        : '<span style="color:var(--text3);font-size:11px">—</span>';
+      const mainRow = `<tr onclick="toggleLocationExpand('${l.name.replace(/'/g,"\\'")}','${l.projectId}')">
+        <td style="font-weight:500">${l.name} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
         <td>${l.project}</td>
-        <td>${l.date || '—'}</td>
+        <td>${contactCell}</td>
+        <td style="white-space:nowrap">${l.date || '—'}</td>
         <td>${getSuitabilityBadge(l.suitability)}</td>
-        <td>${l.cost || '—'}</td>
+        <td style="white-space:nowrap">${l.cost || '—'}</td>
         <td>${l.accessibility || '—'}</td>
         <td>${getDecisionBadge(l.decision)}</td>
-        <td>${l.notes ? (l.notes.length > 50 ? l.notes.substring(0,50)+'...' : l.notes) : '—'}</td>
-      </tr>
-    `).join('') + 
+        <td style="max-width:180px">${l.notes ? (l.notes.length > 60 ? l.notes.substring(0,60)+'…' : l.notes) : '—'}</td>
+        <td>${photosBadge}</td>
+        <td style="white-space:nowrap">${editBtn}</td>
+      </tr>`;
+      return mainRow + (isExpanded ? photoStripHTML(photos, 10) : '');
+    }).join('') +
     '</tbody></table></div>';
 }
 
 function showLocationDetails(locationName, projectId) {
-  // For now, just show a toast - could be expanded to show photos in a modal
-  showToast('Location: ' + locationName + ' - Photos view coming soon', 'info');
+  toggleLocationExpand(locationName, projectId);
 }
+
+// ── File attachment helpers ───────────────────────────────────────────────────
+function getFilesForPerson(name) {
+  if (!name) return [];
+  const key = name.toLowerCase();
+  return (store.files || []).filter(f => (f.people || []).some(p => p.toLowerCase() === key));
+}
+
+function getFilesForLocation(locationName) {
+  if (!locationName) return [];
+  const key = locationName.toLowerCase();
+  return (store.files || []).filter(f =>
+    fileCategories(f).includes('location') && (f.location || '').toLowerCase() === key
+  );
+}
+
+function expandThumbHTML(f) {
+  const preview = f.data && f.data.startsWith('data:image')
+    ? `<img src="${f.data}">`
+    : `<span>${FILE_CATEGORIES[fileCategories(f)[0]]?.icon || '📁'}</span>`;
+  return `<div class="expand-photo-thumb" title="${f.name}" onclick="viewFile('${f.id}')">
+    ${preview}
+    <div class="expand-photo-actions">
+      <span class="expand-photo-action-btn" onclick="event.stopPropagation();openManageFile('${f.id}')" title="Edit">✏️</span>
+      <span class="expand-photo-action-btn" onclick="event.stopPropagation();openMoveFile(['${f.id}'],null)" title="Move">🔀</span>
+      <span class="expand-photo-action-btn" onclick="event.stopPropagation();downloadFile('${f.id}')" title="Download">⬇️</span>
+      <span class="expand-photo-action-btn danger" onclick="event.stopPropagation();openRemoveFiles(['${f.id}'],null)" title="Delete">🗑</span>
+    </div>
+  </div>`;
+}
+
+function photoStripHTML(files, colspan) {
+  if (!files.length) {
+    return `<tr class="expand-row"><td colspan="${colspan}"><div class="expand-photo-strip" style="color:var(--text3);font-size:12px;padding:14px;">No photos tagged yet.</div></td></tr>`;
+  }
+  const thumbs = files.map(expandThumbHTML).join('');
+  return `<tr class="expand-row"><td colspan="${colspan}"><div class="expand-photo-strip">${thumbs}</div></td></tr>`;
+}
+
+// ── Contact project-role helpers ─────────────────────────────────────────────
+function addContactProjectField(projectId, role) {
+  const container = document.getElementById('edit-contact-projects-container');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.className = 'contact-project-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center';
+
+  const sel = document.createElement('select');
+  sel.className = 'form-select contact-project-select';
+  const blankOpt = document.createElement('option');
+  blankOpt.value = '';
+  blankOpt.textContent = '— Select Project —';
+  sel.appendChild(blankOpt);
+  store.projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.title;
+    if (p.id === projectId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  const input = document.createElement('input');
+  input.className = 'form-input contact-role-input';
+  input.placeholder = 'Role (e.g. Director, Gaffer)';
+  input.value = role || '';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-sm btn-danger';
+  btn.style.flexShrink = '0';
+  btn.textContent = '✕';
+  btn.addEventListener('click', () => row.remove());
+
+  row.appendChild(sel);
+  row.appendChild(input);
+  row.appendChild(btn);
+  container.appendChild(row);
+}
+
+function collectProjectRoles() {
+  const rows = document.querySelectorAll('#edit-contact-projects-container .contact-project-row');
+  const result = [];
+  rows.forEach(row => {
+    const projectId = row.querySelector('.contact-project-select')?.value;
+    const role = row.querySelector('.contact-role-input')?.value?.trim();
+    if (projectId) result.push({ projectId, role: role || 'Contact' });
+  });
+  return result;
+}
+
+// Contact photo strip — grouped by project with clear headers
+function photoStripContactHTML(files, contactName, colspan) {
+  if (!files.length) {
+    return `<tr class="expand-row"><td colspan="${colspan}"><div style="padding:12px 16px;color:var(--text3);font-size:12px;font-family:var(--font-mono)">No photos tagged yet.</div></td></tr>`;
+  }
+  // Group photos by project (files store projectIds as array)
+  const byProject = {};
+  files.forEach(f => {
+    const pid = (f.projectIds && f.projectIds.length) ? f.projectIds[0] : f.projectId;
+    const proj = store.projects.find(p => p.id === pid);
+    const key = proj ? proj.title : 'No Project';
+    if (!byProject[key]) byProject[key] = [];
+    byProject[key].push(f);
+  });
+  const groups = Object.entries(byProject);
+  let inner = '';
+  groups.forEach(([projTitle, projFiles]) => {
+    const thumbs = projFiles.map(expandThumbHTML).join('');
+    inner += `<div style="margin-bottom:12px">
+      <div style="font-size:10.5px;color:var(--accent2);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border2)">${projTitle} <span style="color:var(--text3)">(${projFiles.length})</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${thumbs}</div>
+    </div>`;
+  });
+  return `<tr class="expand-row"><td colspan="${colspan}"><div style="padding:12px 16px">${inner}</div></td></tr>`;
+}
+
+// Track which rows are expanded
+const expandedContacts = new Set();
+const expandedLocations = new Set();
+
+function toggleContactExpand(name) {
+  const key = name.toLowerCase();
+  if (expandedContacts.has(key)) expandedContacts.delete(key);
+  else expandedContacts.add(key);
+  renderContacts();
+}
+
+function toggleLocationExpand(locationName, projectId) {
+  const key = locationName + '|' + projectId;
+  if (expandedLocations.has(key)) expandedLocations.delete(key);
+  else expandedLocations.add(key);
+  renderLocations();
+}
+
 
 function removeContact(name) {
   // Show confirmation modal instead of browser confirm
@@ -5022,6 +6955,11 @@ function confirmRemoveContact() {
   store.projects.forEach(p => {
     removeContactFromProject(p, name);
   });
+
+  // Remove from global contacts
+  if (store.contacts) {
+    store.contacts = store.contacts.filter(c => !c.name || c.name.toLowerCase() !== name.toLowerCase());
+  }
   
   // Also clear from callsheet data
   store.projects.forEach(p => {
@@ -5066,146 +7004,178 @@ function confirmRemoveContact() {
   showToast('Contact removed', 'success');
 }
 
+function addNewContact() {
+  // Clear all fields and open the edit modal for a brand-new contact
+  document.getElementById('edit-contact-name').value = '';
+  document.getElementById('edit-contact-name-display').value = '';
+  document.getElementById('edit-contact-default-role').value = '';
+  document.getElementById('edit-contact-phone').value = '';
+  document.getElementById('edit-contact-email').value = '';
+  document.getElementById('edit-contact-type-cast').checked = false;
+  document.getElementById('edit-contact-type-crew').checked = false;
+  const socialsContainer = document.getElementById('edit-contact-socials-container');
+  socialsContainer.innerHTML = '';
+  addSocialField('edit-contact-socials-container', 'instagram', '');
+  document.getElementById('edit-contact-projects-container').innerHTML = '';
+  openModal('modal-edit-contact');
+}
+
 function editContact(name) {
-  // Find the contact info - first check persistent contacts, then other sources
-  let phone = '';
-  let email = '';
-  let socials = '';
-  
-  // First check persistent contacts
-  for (const p of store.projects) {
-    const contact = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === name.toLowerCase());
-    if (contact) {
-      phone = contact.phone || '';
-      email = contact.email || '';
-      socials = contact.socials || '';
-      break;
-    }
-  }
-  
-  // If not found in persistent, check other sources
-  if (!phone && !email) {
-    store.projects.forEach(p => {
-      (p.callsheets || []).forEach(cs => {
-        (cs.castRows || []).forEach(r => {
-          if (r.actor && r.actor.toLowerCase() === name.toLowerCase() && r.contact) {
-            phone = r.contact;
-          }
-        });
-        (cs.customFields || []).forEach(cf => {
-          if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
-            phone = cf.phone || '';
-            email = cf.email || '';
-          }
-        });
-      });
-      (p.cast || []).forEach(r => {
-        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
-          phone = r.number || '';
-          email = r.email || '';
-        }
-      });
-      (p.extras || []).forEach(r => {
-        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
-          phone = r.number || '';
-          email = r.email || '';
-        }
-      });
-      (p.unit || []).forEach(r => {
-        if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
-          phone = r.number || '';
-          email = r.email || '';
-        }
-      });
-    });
-  }
-  
+  // Use the cached contact data built by renderContacts (same aggregation as what's displayed)
+  const cached = _cachedContacts.find(c => c.name.toLowerCase() === name.toLowerCase());
+  let phone       = cached ? cached.phone       || '' : '';
+  let email       = cached ? cached.email       || '' : '';
+  let socials     = cached ? cached.socials     || '' : '';
+  let type        = cached ? cached.type        || '' : '';
+  let defaultRole = cached ? cached.defaultRole || '' : '';
+
   // Populate the socials container
   const socialsContainer = document.getElementById('edit-contact-socials-container');
   socialsContainer.innerHTML = '';
-  
+
   if (socials) {
-    // Parse stored socials (format: platform:handle,platform:handle)
+    // Socials stored as "platform||handle,platform||handle"
     const socialParts = socials.split(',').map(s => s.trim()).filter(Boolean);
     socialParts.forEach(s => {
-      const [platform, handle] = s.split(':');
+      const sepIdx = s.indexOf('||');
+      const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'instagram';
+      const handle   = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
       addSocialField('edit-contact-socials-container', platform || 'instagram', handle || '');
     });
   } else {
-    // Add one empty field
     addSocialField('edit-contact-socials-container', 'instagram', '');
   }
-  
+
+  // Populate project-role associations — one row per role (manual contacts only)
+  const projectsContainer = document.getElementById('edit-contact-projects-container');
+  projectsContainer.innerHTML = '';
+  store.projects.forEach(p => {
+    const contact = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+    if (contact && contact.manual) {
+      const roles = contact.roles && contact.roles.length ? contact.roles : ['Contact'];
+      roles.forEach(r => addContactProjectField(p.id, r));
+    }
+  });
+
   document.getElementById('edit-contact-name').value = name;
   document.getElementById('edit-contact-name-display').value = name;
+  document.getElementById('edit-contact-default-role').value = defaultRole;
   document.getElementById('edit-contact-phone').value = phone;
   document.getElementById('edit-contact-email').value = email;
+  const typeArr = (type || '').split(',').map(t => t.trim());
+  document.getElementById('edit-contact-type-cast').checked = typeArr.includes('cast');
+  document.getElementById('edit-contact-type-crew').checked = typeArr.includes('crew');
   openModal('modal-edit-contact');
 }
 
 function saveEditedContact() {
-  const name = document.getElementById('edit-contact-name').value;
+  // Use display name — the hidden field is the old lookup key (empty for new contacts)
+  const oldName = document.getElementById('edit-contact-name').value;
+  const name = document.getElementById('edit-contact-name-display').value.trim();
   const phone = document.getElementById('edit-contact-phone').value.trim();
   const email = document.getElementById('edit-contact-email').value.trim();
   const socials = collectSocials('edit-contact-socials-container');
-  
+  const typeArr = [];
+  if (document.getElementById('edit-contact-type-cast').checked) typeArr.push('cast');
+  if (document.getElementById('edit-contact-type-crew').checked) typeArr.push('crew');
+  const type = typeArr.join(',');
+  const defaultRole = document.getElementById('edit-contact-default-role').value.trim();
+  const projectRoles = collectProjectRoles();
+
   if (!name) {
     showToast('Name required', 'error');
     return;
   }
-  
-  // Update contact in persistent storage first
+
+  // Collect all roles per project from the UI rows (supports multiple rows per project)
+  const rolesByProject = {};
+  projectRoles.forEach(pr => {
+    if (!rolesByProject[pr.projectId]) rolesByProject[pr.projectId] = [];
+    const r = pr.role.trim();
+    if (r && !rolesByProject[pr.projectId].includes(r)) rolesByProject[pr.projectId].push(r);
+  });
+
+  // Update persistent contacts across all projects
   store.projects.forEach(p => {
-    const contactIdx = (p.contacts || []).findIndex(c => c.name && c.name.toLowerCase() === name.toLowerCase());
-    if (contactIdx >= 0) {
-      p.contacts[contactIdx].phone = phone;
-      p.contacts[contactIdx].email = email;
-      p.contacts[contactIdx].socials = socials;
-    } else if (phone || email || socials) {
-      // Create new contact if not found
-      if (!p.contacts) p.contacts = [];
-      p.contacts.push({ name: name, roles: ['Contact'], phone: phone, email: email, socials: socials });
+    // Support name changes: find by old name if changed, else by new name
+    const lookupName = oldName || name;
+    const contactIdx = (p.contacts || []).findIndex(c => c.name && c.name.toLowerCase() === lookupName.toLowerCase());
+    const rolesForProject = rolesByProject[p.id];
+
+    if (rolesForProject) {
+      // Explicitly assigned roles for this project
+      if (contactIdx >= 0) {
+        p.contacts[contactIdx] = { ...p.contacts[contactIdx], name, phone, email, socials, type, defaultRole, roles: rolesForProject, manual: true };
+      } else {
+        if (!p.contacts) p.contacts = [];
+        p.contacts.push({ name, roles: rolesForProject, phone, email, socials, type, defaultRole, manual: true });
+      }
+    } else if (contactIdx >= 0) {
+      if (p.contacts[contactIdx].manual) {
+        // Was manually linked to this project — no rows remain for it, so unlink them
+        p.contacts.splice(contactIdx, 1);
+      } else {
+        // Auto-detected from cast/unit/callsheet — update info but don't unlink
+        p.contacts[contactIdx].name = name;
+        p.contacts[contactIdx].phone = phone;
+        p.contacts[contactIdx].email = email;
+        p.contacts[contactIdx].socials = socials;
+        p.contacts[contactIdx].type = type;
+      }
     }
   });
-  
-  // Also update callsheet data
+
+  // If contact has no project links, save to global store.contacts as fallback
+  if (!store.contacts) store.contacts = [];
+  const globalIdx = store.contacts.findIndex(c => c.name && c.name.toLowerCase() === (oldName || name).toLowerCase());
+  if (Object.keys(rolesByProject).length === 0) {
+    // No project assignments — persist in global contacts
+    if (globalIdx >= 0) {
+      store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole };
+    } else {
+      store.contacts.push({ name, phone, email, socials, type, defaultRole });
+    }
+  } else if (globalIdx >= 0) {
+    // Was global, now has project links — update info and keep in global too (for info sync)
+    store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole };
+  }
+
+  // Also update callsheet and personnel data (match on old name to handle renames)
+  const lookupKey = (oldName || name).toLowerCase();
   store.projects.forEach(p => {
-    // Update callsheet cast rows
     (p.callsheets || []).forEach(cs => {
       (cs.castRows || []).forEach(r => {
-        if (r.actor && r.actor.toLowerCase() === name.toLowerCase()) {
+        if (r.actor && r.actor.toLowerCase() === lookupKey) {
           r.contact = phone || '';
         }
       });
-      // Update customFields
       (cs.customFields || []).forEach(cf => {
-        if (cf.value && cf.value.toLowerCase() === name.toLowerCase()) {
+        if (cf.value && cf.value.toLowerCase() === lookupKey) {
           cf.phone = phone;
           cf.email = email;
         }
       });
     });
-    // Update personnel
     (p.cast || []).forEach(r => {
-      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+      if (r.name && r.name.toLowerCase() === lookupKey) {
         r.number = phone;
         r.email = email;
       }
     });
     (p.extras || []).forEach(r => {
-      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+      if (r.name && r.name.toLowerCase() === lookupKey) {
         r.number = phone;
         r.email = email;
       }
     });
     (p.unit || []).forEach(r => {
-      if (r.name && r.name.toLowerCase() === name.toLowerCase()) {
+      if (r.name && r.name.toLowerCase() === lookupKey) {
         r.number = phone;
         r.email = email;
       }
     });
   });
-  
+
   saveStore();
   closeModal('modal-edit-contact');
   renderContacts();
@@ -5266,7 +7236,11 @@ const MODAL_SAVE = {
   'modal-risk':         () => saveRiskRow(),
   'modal-add-cast':     () => saveAddCast(),
   'modal-customfield':  () => saveCSCustomField(),
-  'modal-edit-contact': () => saveEditedContact(),
+  'modal-edit-contact':          () => saveEditedContact(),
+  'modal-edit-location-global': () => saveLocationGlobal(),
+  'modal-manage-file':          () => confirmManageFile(),
+  'modal-move-file':          () => confirmMoveFile(),
+  'modal-remove-file':        () => confirmRemoveFiles(),
 };
 
 document.addEventListener('keydown', e => {
@@ -5276,12 +7250,13 @@ document.addEventListener('keydown', e => {
     if (open) { open.classList.remove('open'); return; }
   }
 
-  // Enter → save the open modal (unless focus is in a textarea)
+  // Enter → save the open modal (unless focus is in a textarea or select)
   if (e.key === 'Enter' && !e.shiftKey) {
     const open = document.querySelector('.modal-overlay.open');
     if (!open) return;
-    // Don't intercept Enter in textareas (allow newlines there)
-    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    // Don't intercept Enter in textareas (allow newlines) or selects (allow option picking)
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return;
     const saveFn = MODAL_SAVE[open.id];
     if (saveFn) { e.preventDefault(); saveFn(); }
   }
@@ -5782,6 +7757,226 @@ function toggleTechScoutMinimize(i) { const p=currentProject(); p.techScouts[i].
   window.attachLocAuto = attachLocAuto;
   document.addEventListener('click', e => { if (_acActive && !_acActive.contains(e.target)) closeDropdown(); });
 })();
+
+// ── HOSPITAL AUTOCOMPLETE ───────────────────────────────────────────────────
+// Like attachLocAuto but searches specifically for hospitals/A&E near the city
+
+(function() {
+  let _hTimer = null;
+  let _hActive = null;
+
+  function buildDropdown() {
+    const d = document.createElement('div');
+    d.style.cssText = `
+      position:absolute; z-index:9999; background:#fff; color:#111;
+      border:1px solid #ccc; border-radius:6px;
+      box-shadow:0 8px 24px rgba(0,0,0,.15); max-height:220px;
+      overflow-y:auto; width:100%; top:100%; left:0; margin-top:4px;
+    `;
+    return d;
+  }
+
+  function closeDropdown() {
+    if (_hActive) { _hActive.remove(); _hActive = null; }
+  }
+
+  function getCityForRow(input) {
+    // Walk up to the <tr>, then find the city input in the same row
+    const tr = input.closest('tr');
+    if (!tr) return '';
+    const cityInput = tr.querySelector('td:nth-child(2) input');
+    return cityInput ? cityInput.value.trim() : '';
+  }
+
+  function search(input, query) {
+    if (query.length < 2) { closeDropdown(); return; }
+    clearTimeout(_hTimer);
+    _hTimer = setTimeout(async () => {
+      try {
+        const city = getCityForRow(input);
+        // Search for hospitals — if we have a city, bias strongly toward it
+        const q = city ? `hospital ${query} ${city}` : `hospital ${query}`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&namedetails=1&limit=6&q=${encodeURIComponent(q)}`;
+        const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const data = await res.json();
+        // Filter to only hospital/clinic type results
+        const hospitals = data.filter(r =>
+          ['hospital','clinic','doctors','pharmacy','health','emergency'].some(t =>
+            (r.type||'').includes(t) || (r.class||'').includes(t) || (r.display_name||'').toLowerCase().includes(t)
+          )
+        );
+        renderDropdown(input, hospitals.length ? hospitals : data.slice(0, 4));
+      } catch(e) {}
+    }, 350);
+  }
+
+  function renderDropdown(input, results) {
+    closeDropdown();
+    if (!results || !results.length) return;
+
+    const wrap = input.parentElement;
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+
+    const d = buildDropdown();
+    results.forEach(r => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #eee;line-height:1.4;color:#111;';
+      const name = r.namedetails?.name || r.display_name.split(',')[0];
+      const addr = r.address;
+      const parts = [addr?.road, addr?.city || addr?.town || addr?.village, addr?.postcode].filter(Boolean);
+      item.innerHTML = `<strong>🏥 ${name}</strong><br><span style="font-size:11px;opacity:.5">${parts.join(', ')}</span>`;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        // Fill with name + postcode — most useful for a callsheet
+        const postcode = addr?.postcode ? ` · ${addr.postcode}` : '';
+        input.value = name + postcode;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        closeDropdown();
+      });
+      item.addEventListener('mouseover', () => item.style.background = '#f5f5f5');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+      d.appendChild(item);
+    });
+    wrap.appendChild(d);
+    _hActive = d;
+  }
+
+  function attachHospAuto(input) {
+    if (input.dataset.hospAutoAttached) return;
+    input.dataset.hospAutoAttached = '1';
+    input.addEventListener('input',  () => search(input, input.value));
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') closeDropdown(); });
+    input.addEventListener('blur',   () => setTimeout(closeDropdown, 150));
+  }
+
+  window.attachHospAuto = attachHospAuto;
+  document.addEventListener('click', e => { if (_hActive && !_hActive.contains(e.target)) closeDropdown(); });
+})();
+
+// ── CALLSHEET WEATHER (Open-Meteo, free, no key) ───────────────────────────
+
+async function fetchCallsheetWeather(csIdx) {
+  const p = currentProject();
+  const c = p.callsheets[csIdx];
+  if (!c || !c.date) { showToast('Set a date first', 'info'); return; }
+
+  let lat, lon, resolvedName;
+  const firstRow = (c.locRows || [])[0] || {};
+  const firstLoc = firstRow.city || firstRow.loc || '';
+
+  // Prefer coords already stored by the autocomplete on a location input
+  const locInputs = document.querySelectorAll('[data-loc-auto]');
+  for (const inp of locInputs) {
+    if (inp.dataset.lat && inp.dataset.lon) {
+      lat = parseFloat(inp.dataset.lat);
+      lon = parseFloat(inp.dataset.lon);
+      resolvedName = inp.value;
+      break;
+    }
+  }
+
+  // Fallback: geocode the freetext location, but confirm with user first
+  if ((!lat || !lon) && firstLoc) {
+    try {
+      showToast('Finding location…', 'info');
+      const cc = (navigator.language || 'en-GB').split('-')[1]?.toLowerCase() || 'gb';
+      const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(firstLoc)}`);
+      const geoData = await geo.json();
+
+      if (!geoData.length) { showToast('Could not find that location', 'info'); return; }
+
+      // If there are multiple results or the name is ambiguous, confirm with user
+      const candidates = geoData.slice(0, 5).map(r => {
+        const a = r.address;
+        const parts = [r.name, a?.county || a?.state_district, a?.state, a?.country].filter(Boolean);
+        return { label: parts.join(', '), lat: parseFloat(r.lat), lon: parseFloat(r.lon) };
+      });
+
+      // Show a quick picker toast/modal
+      const confirmed = await confirmWeatherLocation(candidates, firstLoc);
+      if (!confirmed) return;
+      lat = confirmed.lat;
+      lon = confirmed.lon;
+      resolvedName = confirmed.label;
+    } catch(e) {
+      showToast('Could not find that location', 'info'); return;
+    }
+  }
+
+  if (!lat || !lon) { showToast('Add a location first so we know where to check', 'info'); return; }
+
+  try {
+    showToast(`Fetching weather for ${resolvedName}…`, 'info');
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=auto&start_date=${c.date}&end_date=${c.date}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (!data.daily?.weathercode) { showToast('No forecast data for that date', 'info'); return; }
+
+    const code = data.daily.weathercode[0];
+    const tMax = Math.round(data.daily.temperature_2m_max[0]);
+    const tMin = Math.round(data.daily.temperature_2m_min[0]);
+    const rain = data.daily.precipitation_sum[0]?.toFixed(1);
+    const wind = Math.round(data.daily.windspeed_10m_max[0]);
+
+    const WMO = {
+      0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+      45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+      61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',
+      75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',
+      82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',
+      95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'
+    };
+    const EMOJI = {
+      0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',
+      61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',77:'🌨',80:'🌦',
+      81:'🌧',82:'⛈',85:'🌨',86:'🌨',95:'⛈',96:'⛈',99:'⛈'
+    };
+
+    c.weather       = `${EMOJI[code] || '🌡'} ${WMO[code] || 'Unknown'}`;
+    c.weatherDetail = `${tMin}°C – ${tMax}°C · Rain ${rain}mm · Wind ${wind}km/h`;
+    saveStore();
+    renderCallsheet(p);
+    showToast(`Weather updated for ${resolvedName} ✓`, 'success');
+  } catch(e) {
+    showToast('Could not fetch weather — check connection', 'info');
+  }
+}
+
+// Small inline location picker — returns a promise resolving to {lat,lon,label} or null
+function confirmWeatherLocation(candidates, originalQuery) {
+  return new Promise(resolve => {
+    // Remove any existing picker
+    document.getElementById('weather-loc-picker')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'weather-loc-picker';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#111;border-radius:10px;padding:24px;max-width:420px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.3);font-family:inherit;';
+    box.innerHTML = `
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Confirm Location</div>
+      <div style="font-size:13px;color:#555;margin-bottom:16px;">We searched for <strong>"${originalQuery}"</strong> — which did you mean?</div>
+      <div id="wlp-options" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+      <button style="width:100%;padding:8px;background:#f0f0f0;border:none;border-radius:6px;cursor:pointer;font-size:13px;color:#555;" id="wlp-cancel">Cancel</button>
+    `;
+
+    candidates.forEach(c => {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;padding:10px 14px;background:#f8f8f8;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;text-align:left;';
+      btn.textContent = c.label;
+      btn.addEventListener('mouseover', () => btn.style.background = '#e8f0fe');
+      btn.addEventListener('mouseout',  () => btn.style.background = '#f8f8f8');
+      btn.addEventListener('click', () => { overlay.remove(); resolve(c); });
+      box.querySelector('#wlp-options').appendChild(btn);
+    });
+
+    box.querySelector('#wlp-cancel').addEventListener('click', () => { overlay.remove(); resolve(null); });
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  });
+}
 
 // ══════════════════════════════════════════
 // INIT
