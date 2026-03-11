@@ -142,6 +142,27 @@
   }
   .nav-item .icon { font-size: 13px; width: 15px; text-align: center; opacity: 0.7; }
 
+  .nav-subitem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px 4px 30px;
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    margin: 1px 2px;
+    white-space: nowrap;
+  }
+  .nav-subitem:hover { background: var(--surface2); color: var(--text2); }
+  .nav-subitem.active {
+    background: rgba(212,170,44,0.08);
+    color: var(--accent);
+    border-left-color: rgba(212,170,44,0.35);
+  }
+
   .project-item {
     display: flex;
     align-items: center;
@@ -1690,8 +1711,17 @@
       <div class="nav-item" onclick="showView('team')">
         <span class="icon">👥</span> Team
       </div>
-      <div class="nav-item" onclick="showView('contacts')">
+      <div class="nav-item" onclick="showContactsView('all')">
         <span class="icon">📱</span> Contacts
+      </div>
+      <div class="nav-subitem" data-subview="crew" onclick="showContactsView('crew')">
+        <span class="icon" style="font-size:11px">🎬</span> Crew
+      </div>
+      <div class="nav-subitem" data-subview="talent" onclick="showContactsView('talent')">
+        <span class="icon" style="font-size:11px">⭐</span> Talent
+      </div>
+      <div class="nav-subitem" data-subview="locations" onclick="showContactsView('locations')">
+        <span class="icon" style="font-size:11px">📍</span> Location Contacts
       </div>
       <div class="nav-item" onclick="showView('locations')">
         <span class="icon">📍</span> Locations
@@ -2236,7 +2266,7 @@
           </div>
           <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);cursor:pointer;padding:12px 14px;background:var(--surface2);border-radius:var(--radius);margin-bottom:22px;">
             <input type="checkbox" id="move-file-keep-copy" style="width:14px;height:14px;flex-shrink:0;">
-            <span>Also keep a copy in <strong id="move-file-source-label" style="color:var(--text);"></strong></span>
+            <span>Also keep a copy in this project?</span>
           </label>
           <div class="form-actions">
             <button class="btn" onclick="closeModal('modal-move-file')">Cancel</button>
@@ -3753,27 +3783,27 @@ function openMoveFile(ids, sourcePid) {
     if (f) fileProjectIds(f).forEach(p => allPids.add(p));
   });
   const options = store.projects
-    .map((p, i) => !allPids.has(i) || ids.length > 1
-      ? `<option value="${i}">${p.title || 'Untitled Project'}</option>` : '')
+    .map((p, i) => !allPids.has(p.id) || ids.length > 1
+      ? `<option value="${p.id}">${p.title || 'Untitled Project'}</option>` : '')
     .filter(Boolean).join('');
 
   // For multi-file, show all projects as targets
   const fullOptions = store.projects
-    .map((p, i) => `<option value="${i}">${p.title || 'Untitled Project'}</option>`).join('');
+    .map((p, i) => `<option value="${p.id}">${p.title || 'Untitled Project'}</option>`).join('');
 
   const targetOptions = ids.length === 1
     ? (() => {
         const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{});
-        return store.projects.map((p,i) => pids.includes(i) ? '' : `<option value="${i}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
+        return store.projects.map((p,i) => pids.includes(p.id) ? '' : `<option value="${p.id}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
       })()
     : fullOptions;
 
   if (!targetOptions) { showToast('No other projects to move to', 'info'); return; }
 
   const sourceLabel = sourcePid !== null && sourcePid !== undefined
-    ? (store.projects[sourcePid]?.title || 'this project')
+    ? (store.projects.find(p => p.id === sourcePid)?.title || 'this project')
     : (ids.length === 1
-        ? (() => { const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{}); return pids.length===1 ? (store.projects[pids[0]]?.title||'this project') : 'current projects'; })()
+        ? (() => { const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{}); return pids.length===1 ? (store.projects.find(p => p.id === pids[0])?.title||'this project') : 'current projects'; })()
         : 'current projects');
 
   document.getElementById('move-file-ids-store').dataset.ids = JSON.stringify(ids);
@@ -3787,11 +3817,10 @@ function openMoveFile(ids, sourcePid) {
 
 function confirmMoveFile() {
   const ids = JSON.parse(document.getElementById('move-file-ids-store').dataset.ids || '[]');
-  const sourcePidRaw = document.getElementById('move-file-source-pid').value;
-  const sourcePid = sourcePidRaw !== '' ? parseInt(sourcePidRaw) : null;
-  const targetPid = parseInt(document.getElementById('move-file-target').value);
+  const sourcePid = document.getElementById('move-file-source-pid').value || null;
+  const targetPid = document.getElementById('move-file-target').value;
   const keepCopy = document.getElementById('move-file-keep-copy').checked;
-  if (isNaN(targetPid)) return;
+  if (!targetPid) return;
 
   ids.forEach(id => {
     const file = (store.files||[]).find(f=>f.id===id);
@@ -3806,14 +3835,14 @@ function confirmMoveFile() {
   saveStore();
   closeModal('modal-move-file');
   clearFileSelection();
-  showToast(`${ids.length > 1 ? ids.length + ' files' : 'File'} moved to ${store.projects[targetPid]?.title || 'project'}`, 'success');
+  showToast(`${ids.length > 1 ? ids.length + ' files' : 'File'} moved to ${store.projects.find(p => p.id === targetPid)?.title || 'project'}`, 'success');
 }
 
 // ── Remove / Delete (single or bulk) ────────────────────────────────────────
 function openRemoveFiles(ids, sourcePid) {
   if (!ids || ids.length === 0) return;
   const projectName = sourcePid !== null && sourcePid !== undefined
-    ? (store.projects[sourcePid]?.title || 'this project') : null;
+    ? (store.projects.find(p => p.id === sourcePid)?.title || 'this project') : null;
   const count = ids.length;
   const fileWord = count > 1 ? `${count} files` : `"${(store.files||[]).find(f=>f.id===ids[0])?.name || 'file'}"`;
 
@@ -3850,8 +3879,7 @@ function openRemoveFiles(ids, sourcePid) {
 
 function confirmRemoveFiles() {
   const ids = JSON.parse(document.getElementById('remove-file-ids-store').dataset.ids || '[]');
-  const sourcePidRaw = document.getElementById('remove-file-source-pid').value;
-  const sourcePid = sourcePidRaw !== '' ? parseInt(sourcePidRaw) : null;
+  const sourcePid = document.getElementById('remove-file-source-pid').value || null;
   const alsoDelete = document.getElementById('remove-file-also-delete').checked;
 
   if (alsoDelete) {
@@ -4328,8 +4356,9 @@ function showView(name) {
     document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Team';
     renderTeam();
   } else if (name === 'contacts') {
-    document.getElementById('topbar-title').textContent = 'Contacts';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Contacts';
+    const subLabel = contactSubView === 'crew' ? 'Crew' : contactSubView === 'talent' ? 'Talent' : contactSubView === 'locations' ? 'Location Contacts' : '';
+    document.getElementById('topbar-title').textContent = subLabel || 'Contacts';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Contacts' + (subLabel ? ' / ' + subLabel : '');
     renderContacts();
   } else if (name === 'locations') {
     document.getElementById('topbar-title').textContent = 'Locations';
@@ -6283,11 +6312,26 @@ function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTea
 // CONTACTS
 let contactTypeFilter = 'all';
 let contactRoleFilter = 'all';
+let contactSubView = 'all';
 let _cachedContacts = []; // populated by renderContacts, used by editContact
 
 function setContactTypeFilter(type) {
   contactTypeFilter = type;
   renderContacts();
+}
+
+function showContactsView(subview) {
+  contactSubView = subview;
+  if (subview === 'crew') contactTypeFilter = 'crew';
+  else if (subview === 'talent') contactTypeFilter = 'cast';
+  else contactTypeFilter = 'all';
+  showView('contacts');
+  // Mark sub-item active (showView clears .nav-item active, sub-items are separate)
+  document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+  if (subview !== 'all') {
+    const sub = document.querySelector(`.nav-subitem[data-subview="${subview}"]`);
+    if (sub) sub.classList.add('active');
+  }
 }
 
 function renderContacts() {
@@ -6472,17 +6516,28 @@ function renderContacts() {
     filteredContacts = filteredContacts.filter(c => c.projectIds.includes(filterProject));
   }
 
+  // Location Contacts sub-view — show only that section
+  if (contactSubView === 'locations') {
+    el.innerHTML = '';
+    renderLocationContactsSection(el);
+    return;
+  }
+
   // Render filter bar
   const typeBtnStyle = (t) => contactTypeFilter === t
     ? 'btn btn-sm btn-primary'
     : 'btn btn-sm';
 
+  const typeButtons = contactSubView === 'all'
+    ? `<div style="display:flex;gap:4px">
+        <button class="${typeBtnStyle('all')}" onclick="setContactTypeFilter('all')">All</button>
+        <button class="${typeBtnStyle('cast')}" onclick="setContactTypeFilter('cast')">Cast / Talent</button>
+        <button class="${typeBtnStyle('crew')}" onclick="setContactTypeFilter('crew')">Crew</button>
+       </div>`
+    : '';
+
   el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
-    <div style="display:flex;gap:4px">
-      <button class="${typeBtnStyle('all')}" onclick="setContactTypeFilter('all')">All</button>
-      <button class="${typeBtnStyle('cast')}" onclick="setContactTypeFilter('cast')">Cast / Talent</button>
-      <button class="${typeBtnStyle('crew')}" onclick="setContactTypeFilter('crew')">Crew</button>
-    </div>
+    ${typeButtons}
     <select id="contacts-role-filter" onchange="renderContacts()" class="form-select" style="max-width:200px">
       <option value="all" ${contactRoleFilter === 'all' ? 'selected' : ''}>All Roles / Depts</option>
       ${uniqueRoles.map(r => `<option value="${r}" ${contactRoleFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
@@ -6601,7 +6656,10 @@ function renderContacts() {
     }).join('') +
     '</tbody></table></div>';
 
-  // Location Contacts section
+  if (contactSubView === 'all') renderLocationContactsSection(el);
+}
+
+function renderLocationContactsSection(el) {
   const locationContacts = [];
   store.projects.forEach(p => {
     (p.locations || []).forEach(l => {
@@ -6612,21 +6670,26 @@ function renderContacts() {
     if (l.contactName) locationContacts.push({ contactName: l.contactName, contactPhone: l.contactPhone || '', contactEmail: l.contactEmail || '', locationName: l.name, project: '—' });
   });
 
-  if (locationContacts.length) {
-    el.innerHTML += `<div style="margin-top:32px">
-      <h3 style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">📍 Location Contacts</h3>
-      <div class="table-container"><table class="data-table"><thead><tr>
-        <th>Name</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th>
-      </tr></thead><tbody>` +
-      locationContacts.map(lc => `<tr>
-        <td style="font-weight:500">${lc.contactName}</td>
-        <td>${lc.locationName || '—'}</td>
-        <td>${lc.project}</td>
-        <td>${lc.contactPhone ? `<a href="tel:${lc.contactPhone}" style="color:var(--accent2)">${lc.contactPhone}</a>` : '—'}</td>
-        <td>${lc.contactEmail ? `<a href="mailto:${lc.contactEmail}" style="color:var(--accent2)">${lc.contactEmail}</a>` : '—'}</td>
-      </tr>`).join('') +
-      '</tbody></table></div></div>';
+  if (!locationContacts.length) {
+    if (contactSubView === 'locations') {
+      el.innerHTML = '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No location contacts</h3><p style="color:var(--text2);margin-top:8px">Add a contact name to a location to see it here</p></div>';
+    }
+    return;
   }
+
+  el.innerHTML += `<div style="margin-top:${contactSubView === 'locations' ? '0' : '32px'}">
+    ${contactSubView !== 'locations' ? '<h3 style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">📍 Location Contacts</h3>' : ''}
+    <div class="table-container"><table class="data-table"><thead><tr>
+      <th>Name</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th>
+    </tr></thead><tbody>` +
+    locationContacts.map(lc => `<tr>
+      <td style="font-weight:500">${lc.contactName}</td>
+      <td>${lc.locationName || '—'}</td>
+      <td>${lc.project}</td>
+      <td>${lc.contactPhone ? `<a href="tel:${lc.contactPhone}" style="color:var(--accent2)">${lc.contactPhone}</a>` : '—'}</td>
+      <td>${lc.contactEmail ? `<a href="mailto:${lc.contactEmail}" style="color:var(--accent2)">${lc.contactEmail}</a>` : '—'}</td>
+    </tr>`).join('') +
+    '</tbody></table></div></div>';
 }
 
 // LOCATIONS (global view)
