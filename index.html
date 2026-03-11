@@ -1711,7 +1711,7 @@
       <div class="nav-item" onclick="showView('team')">
         <span class="icon">👥</span> Team
       </div>
-      <div class="nav-item" onclick="showContactsView('all')">
+      <div class="nav-item" data-view="contacts" onclick="showContactsView('all')">
         <span class="icon">📱</span> Contacts
       </div>
       <div class="nav-subitem" data-subview="crew" onclick="showContactsView('crew')">
@@ -4358,8 +4358,15 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const navItem = document.querySelector(`.nav-item[onclick*="${name}"]`);
+  const navItem = document.querySelector(`.nav-item[onclick*="${name}"]`) || document.querySelector(`.nav-item[data-view="${name}"]`);
   if (navItem) navItem.classList.add('active');
+  
+  // Clear project highlighting for global views (not project-specific)
+  const globalViews = ['dashboard', 'team', 'contacts', 'locations', 'files'];
+  if (globalViews.includes(name)) {
+    store.currentProjectId = null;
+    renderSidebarProjects();
+  }
 
   if (name === 'dashboard') {
     document.getElementById('topbar-title').textContent = 'Dashboard';
@@ -6340,6 +6347,10 @@ function showContactsView(subview) {
   else if (subview === 'talent') contactTypeFilter = 'cast';
   else contactTypeFilter = 'all';
   showView('contacts');
+  // Highlight contacts nav item (showView can't find it by onclick attribute)
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const contactsNav = document.querySelector('.nav-item[data-view="contacts"]');
+  if (contactsNav) contactsNav.classList.add('active');
   // Mark sub-item active (showView clears .nav-item active, sub-items are separate)
   document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
   if (subview !== 'all') {
