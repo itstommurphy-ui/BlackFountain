@@ -3775,13 +3775,16 @@ function confirmManageFile() {
 
 // ── Move (single or bulk) ────────────────────────────────────────────────────
 function openMoveFile(ids, sourcePid) {
-  if (!ids || ids.length === 0) return;
+  console.log('openMoveFile called', {ids, sourcePid, projectsCount: store.projects?.length});
+  if (!ids || ids.length === 0) { console.log('No ids, returning'); return; }
+  if (!store.projects || store.projects.length === 0) { showToast('No projects exist', 'error'); return; }
   // For move options: union of projects files are NOT in
   const allPids = new Set();
   ids.forEach(id => {
     const f = (store.files||[]).find(f=>f.id===id);
     if (f) fileProjectIds(f).forEach(p => allPids.add(p));
   });
+  console.log('allPids:', allPids);
   const options = store.projects
     .map((p, i) => !allPids.has(p.id) || ids.length > 1
       ? `<option value="${i}">${p.title || 'Untitled Project'}</option>` : '')
@@ -3794,10 +3797,12 @@ function openMoveFile(ids, sourcePid) {
   const targetOptions = ids.length === 1
     ? (() => {
         const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{});
+        console.log('single file pids:', pids);
         return store.projects.map((p,i) => pids.includes(p.id) ? '' : `<option value="${i}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
       })()
     : fullOptions;
 
+  console.log('targetOptions:', targetOptions);
   if (!targetOptions) { showToast('No other projects to move to', 'info'); return; }
 
   const sourceLabel = sourcePid !== null && sourcePid !== undefined
