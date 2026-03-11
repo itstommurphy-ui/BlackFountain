@@ -3784,17 +3784,17 @@ function openMoveFile(ids, sourcePid) {
   });
   const options = store.projects
     .map((p, i) => !allPids.has(p.id) || ids.length > 1
-      ? `<option value="${p.id}">${p.title || 'Untitled Project'}</option>` : '')
+      ? `<option value="${i}">${p.title || 'Untitled Project'}</option>` : '')
     .filter(Boolean).join('');
 
   // For multi-file, show all projects as targets
   const fullOptions = store.projects
-    .map((p, i) => `<option value="${p.id}">${p.title || 'Untitled Project'}</option>`).join('');
+    .map((p, i) => `<option value="${i}">${p.title || 'Untitled Project'}</option>`).join('');
 
   const targetOptions = ids.length === 1
     ? (() => {
         const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{});
-        return store.projects.map((p,i) => pids.includes(p.id) ? '' : `<option value="${p.id}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
+        return store.projects.map((p,i) => pids.includes(p.id) ? '' : `<option value="${i}">${p.title||'Untitled'}</option>`).filter(Boolean).join('');
       })()
     : fullOptions;
 
@@ -3818,8 +3818,10 @@ function openMoveFile(ids, sourcePid) {
 function confirmMoveFile() {
   const ids = JSON.parse(document.getElementById('move-file-ids-store').dataset.ids || '[]');
   const sourcePid = document.getElementById('move-file-source-pid').value || null;
-  const targetPid = document.getElementById('move-file-target').value;
+  const targetIdx = parseInt(document.getElementById('move-file-target').value);
   const keepCopy = document.getElementById('move-file-keep-copy').checked;
+  if (isNaN(targetIdx)) return;
+  const targetPid = store.projects[targetIdx]?.id;
   if (!targetPid) return;
 
   ids.forEach(id => {
@@ -3835,14 +3837,17 @@ function confirmMoveFile() {
   saveStore();
   closeModal('modal-move-file');
   clearFileSelection();
-  showToast(`${ids.length > 1 ? ids.length + ' files' : 'File'} moved to ${store.projects.find(p => p.id === targetPid)?.title || 'project'}`, 'success');
+  showToast(`${ids.length > 1 ? ids.length + ' files' : 'File'} moved to ${store.projects[targetIdx]?.title || 'project'}`, 'success');
 }
 
 // ── Remove / Delete (single or bulk) ────────────────────────────────────────
 function openRemoveFiles(ids, sourcePid) {
   if (!ids || ids.length === 0) return;
+  // sourcePid can be either a project ID string or array index - handle both
   const projectName = sourcePid !== null && sourcePid !== undefined
-    ? (store.projects.find(p => p.id === sourcePid)?.title || 'this project') : null;
+    ? (typeof sourcePid === 'string' 
+        ? (store.projects.find(p => p.id === sourcePid)?.title || 'this project')
+        : (store.projects[sourcePid]?.title || 'this project')) : null;
   const count = ids.length;
   const fileWord = count > 1 ? `${count} files` : `"${(store.files||[]).find(f=>f.id===ids[0])?.name || 'file'}"`;
 
