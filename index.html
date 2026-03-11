@@ -3910,7 +3910,7 @@ function openDeleteFileConfirm(id) { openRemoveFiles([id], null); }
 function confirmDeleteFileEntirely() {}
 function manageFileDelete() {}
 function deleteFile(id) { openRemoveFiles([id], null); }
-function deleteFileFromOverview(id) { const p = currentProject(); openRemoveFiles([id], p ? store.projects.indexOf(p) : null); }
+function deleteFileFromOverview(id) { const p = currentProject(); openRemoveFiles([id], p ? p.id : null); }
 function confirmDeleteFile() {}
 function renameFile(id) { openManageFile(id); }
 function confirmRenameFile() {}
