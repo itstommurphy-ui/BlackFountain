@@ -1225,68 +1225,45 @@
   .doc-editor-header h3 { font-family: var(--font-display); font-size: 20px; letter-spacing: 1.5px; }
   .doc-editor-body { padding: 20px; }
 
-  .breakdown-card {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 18px;
-    margin-bottom: 14px;
-    box-shadow: var(--shadow);
-  }
-  .breakdown-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border2);
-  }
-  .breakdown-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .breakdown-field-label {
-    font-size: 11px;
-    color: var(--text3);
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 3px;
-  }
-  .breakdown-field-val { font-size: 14px; color: var(--text); font-weight: 500; }
-  .breakdown-grid {
+  /* ── SCRIPT BREAKDOWN ── */
+  .bd-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1px;
-    background: var(--border2);
-    border: 1px solid var(--border2);
-    border-radius: 7px;
-    overflow: hidden;
-    margin-top: 12px;
+    grid-template-columns: 1fr 290px;
+    gap: 14px;
+    align-items: start;
   }
-  .breakdown-cell {
-    background: var(--surface);
-    padding: 12px 14px;
-    min-height: 80px;
+  @media (max-width: 720px) { .bd-layout { grid-template-columns: 1fr; } }
+  .bd-script-view {
+    white-space: pre-wrap;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.85;
+    color: var(--text);
+    cursor: text;
+    user-select: text;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    height: clamp(400px, calc(100vh - 320px), 860px);
+    overflow-y: auto;
   }
-  .breakdown-cell-label {
-    font-size: 10px;
-    color: var(--text3);
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
+  .bd-scene-heading { font-weight: 700; color: var(--accent); }
+  .bd-tag { border-radius: 3px; padding: 0 2px; cursor: pointer; transition: opacity 0.1s; }
+  .bd-tag:hover { opacity: 0.72; outline: 2px solid rgba(255,255,255,0.35); }
+  .bd-popover {
+    position: fixed;
+    z-index: 9500;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    display: none;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 340px;
   }
-  .breakdown-cell textarea {
-    background: transparent;
-    border: none;
-    color: var(--text2);
-    font-size: 13px;
-    font-family: var(--font-body);
-    resize: none;
-    width: 100%;
-    outline: none;
-    min-height: 56px;
-    line-height: 1.5;
-  }
-  .breakdown-cell textarea:focus { color: var(--text); }
 
   /* ── CALLSHEET ── */
   /* Wrapper card in the dark app */
@@ -1971,14 +1948,7 @@
         </div>
 
         <!-- SECTION: BREAKDOWN -->
-        <div id="section-breakdown" style="display:none">
-          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 class="section-heading">SCRIPT BREAKDOWN</h3>
-            <button class="btn btn-primary btn-sm" onclick="addBreakdownScene()">+ Add Scene</button>
-          </div>
-          <div id="breakdown-scenes"></div>
-        </div>
+        <div id="section-breakdown" style="display:none"></div>
 
         <!-- SECTION: CALLSHEET -->
         <div id="section-callsheet" style="display:none">
@@ -4446,6 +4416,7 @@ function defaultProject(data) {
     locations: [],
     scoutingSheets: [],
     breakdown: [],
+    scriptBreakdown: { rawText: '', tags: [] },
     callsheets: [],
     schedule: [],
     scripts: [],
@@ -4858,7 +4829,7 @@ function getAllOverviewSections(p) {
     {name:'Risk Assessment', icon:'⚠️',  count: (p.risks||[]).length + ' hazards',                                    tab:'riskassess'},
     {name:'Schedule',        icon:'🕐',  count: p.schedule.length + ' entries',                                       tab:'schedule'},
     {name:'Script & Docs',   icon:'📜',  count: (p.scripts||[]).length + ' files',                                    tab:'script', desc:'PDF · DOC · TXT · FDX · RTF'},
-    {name:'Script Breakdown',icon:'📄',  count: p.breakdown.length + ' scenes',                                       tab:'breakdown'},
+    {name:'Script Breakdown',icon:'📄',  count: (() => { const bd = p.scriptBreakdown; if (!bd?.rawText) return 'No script loaded'; const n = (bd.tags||[]).length; const sc = parseBreakdownScenes(bd.rawText).length; return sc + ' scene' + (sc!==1?'s':'') + ' · ' + n + ' tag' + (n!==1?'s':''); })(), tab:'breakdown'},
     {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
     {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
     {name:'Unit List',       icon:'👥',  count: p.unit.length + ' crew',                                              tab:'unit'},
@@ -5702,6 +5673,37 @@ function removeScriptFile(id) {
   renderScript(p);
 }
 
+// SCRIPT BREAKDOWN CATEGORIES (industry standard colour system)
+const BREAKDOWN_CATEGORIES = [
+  { id: 'cast',        label: 'Cast',          color: '#F5E642', textColor: '#1a1a1a' },
+  { id: 'extras',      label: 'Extras',        color: '#52BE80', textColor: '#fff'    },
+  { id: 'stunts',      label: 'Stunts',        color: '#FF8C42', textColor: '#fff'    },
+  { id: 'props',       label: 'Props',         color: '#D4AC0D', textColor: '#fff'    },
+  { id: 'vehicles',    label: 'Vehicles',      color: '#FF8FAB', textColor: '#1a1a1a' },
+  { id: 'sfx',         label: 'SFX',           color: '#E74C3C', textColor: '#fff'    },
+  { id: 'wardrobe',    label: 'Wardrobe',      color: '#9B59B6', textColor: '#fff'    },
+  { id: 'makeup',      label: 'Makeup / Hair', color: '#C39BD3', textColor: '#1a1a1a' },
+  { id: 'setdressing', label: 'Set Dressing',  color: '#2E86C1', textColor: '#fff'    },
+  { id: 'vfx',         label: 'VFX',           color: '#1ABC9C', textColor: '#fff'    },
+  { id: 'animals',     label: 'Animals',       color: '#E67E22', textColor: '#fff'    },
+  { id: 'sound',       label: 'Sound / Music', color: '#EC407A', textColor: '#fff'    },
+];
+
+// Keyword hints per category for auto-suggest (longest phrases first within each array)
+const BD_SUGGEST_KEYWORDS = {
+  extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation','crowd','extras','audience','mob'],
+  stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight','punch','kick','leap','dive','roll'],
+  props:       ['mobile phone','police badge','id card','gun holster','wedding ring','pickup truck','police car','fire truck','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map'],
+  vehicles:    ['pickup truck','police car','fire truck','limousine','motorcycle','motorbike','helicopter','submarine','aircraft','bicycle','chopper','forklift','tractor','convertible','ambulance','sports car','train','truck','plane','yacht','boat','ship','taxi','limo','jeep','bus','van','suv','cab','jet','car'],
+  sfx:         ['explosion','explodes','detonation','gunfire','gunshot','lightning','thunder','collision','blast','smoke','crash','alarm','siren','storm','flood','fire'],
+  wardrobe:    ['wedding dress','tuxedo','uniform','disguise','costume','armour','jacket','helmet','gloves','armor','dress','coat','robe','vest','mask','suit','hat','cap'],
+  makeup:      ['aged makeup','prosthetic','prosthesis','bleeding','bruised','injured','wounded','blood','bruise','wound','scar','burn'],
+  setdressing: ['bookshelf','whiteboard','chalkboard','curtains','painting','portrait','cabinet','trophy','mirror','table','couch','clock','sofa','desk','lamp','safe','bed'],
+  vfx:         ['force field','laser beam','materializes','hologram','invisible','teleports','digital screen','morphs','transforms','glows','portal','cgi'],
+  animals:     ['gorilla','elephant','parrot','chicken','rabbit','monkey','snake','horse','tiger','bear','wolf','bird','deer','duck','fish','lion','fox','dog','cat','rat','pig','cow'],
+  sound:       ['phone rings','on the radio','voiceover','ringtone','doorbell','narration','singing','melody','music','song','v.o.','o.s.'],
+};
+
 // PROJECT BRIEF
 const BRIEF_TEMPLATES = [
   {
@@ -5877,74 +5879,840 @@ function saveBriefField(key, val) {
 }
 
 // BREAKDOWN
+// ══════════════════════════════════════════
+// SCRIPT BREAKDOWN
+// ══════════════════════════════════════════
+
+let _bdPendingSelection = null;
+let _bdActiveCategory = null;
+let _bdCtxFromScript = false;
+let _bdSuggestions = [];
+let _bdSuggestSelected = new Set();
+
 function renderBreakdown(p) {
-  const el = document.getElementById('breakdown-scenes');
-  if (!p.breakdown.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No scenes yet</h4><p>Add your first scene breakdown</p></div>`;
-    return;
-  }
-  el.innerHTML = p.breakdown.map((s, i) => `
-    <div class="breakdown-card">
-      <div class="breakdown-card-header">
-        <div class="breakdown-info">
-          <div class="breakdown-field"><div class="breakdown-field-label">Scene #</div><input class="form-input form-input-sm" value="${s.sceneNum||''}" onchange="updateBreakdownField(${i},'sceneNum',this.value)" placeholder="—"></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Breakdown Page</div><input class="form-input form-input-sm" value="${s.bpNum||''}" onchange="updateBreakdownField(${i},'bpNum',this.value)" placeholder="—"></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Script Pages</div><input class="form-input form-input-sm" value="${s.scriptPages||''}" onchange="updateBreakdownField(${i},'scriptPages',this.value)" placeholder="—"></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Page Count</div><input class="form-input form-input-sm" value="${s.pageCount||''}" onchange="updateBreakdownField(${i},'pageCount',this.value)" placeholder="—"></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Int / Ext</div><input class="form-input form-input-sm" value="${s.intExt||''}" onchange="updateBreakdownField(${i},'intExt',this.value)" placeholder="—"></div>
-          <div class="breakdown-field"><div class="breakdown-field-label">Day / Night</div><input class="form-input form-input-sm" value="${s.dayNight||''}" onchange="updateBreakdownField(${i},'dayNight',this.value)" placeholder="—"></div>
+  const el = document.getElementById('section-breakdown');
+  if (!el) return;
+  if (!p) { el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No project selected</h4></div>`; return; }
+  if (!p.scriptBreakdown) p.scriptBreakdown = { rawText: '', tags: [] };
+  if (!p.scriptBreakdown.rawText) renderBreakdownImport(el, p);
+  else renderBreakdownEditor(el, p);
+}
+
+function renderBreakdownImport(el, p) {
+  el.innerHTML = `
+    <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 class="section-heading">SCRIPT BREAKDOWN</h3>
+    </div>
+    <div style="max-width:560px;margin:0 auto">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:36px 28px;text-align:center;margin-bottom:16px">
+        <div style="font-size:52px;margin-bottom:14px">🎬</div>
+        <h4 style="margin:0 0 8px;font-size:16px">Load Your Script</h4>
+        <p style="color:var(--text3);font-size:13px;margin:0 0 24px;line-height:1.6">Paste or upload your script to begin tagging elements — cast, props, wardrobe, SFX and more — using the industry colour system. Tags auto-group into a per-scene breakdown report.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
+          <label class="btn btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+            📂 Upload File
+            <input type="file" accept=".txt,.fountain,.fdx" style="display:none" onchange="loadBreakdownFile(this)">
+          </label>
+          <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='block';this.style.display='none'">✏️ Paste Script</button>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="removeBreakdownScene(${i})">✕</button>
+        <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML)</div>
       </div>
-      <div style="margin-bottom:10px">
-        <div class="breakdown-field-label">Scene Description</div>
-        <textarea class="form-textarea form-textarea-sm" onchange="updateBreakdownField(${i},'description',this.value)" placeholder="—">${s.description||''}</textarea>
+      <div id="bd-paste-wrap" style="display:none">
+        <textarea id="bd-paste-input" class="form-textarea" rows="18" placeholder="Paste your script here…
+
+Scene headings are auto-detected, e.g.:
+INT. COFFEE SHOP - DAY
+EXT. STREET - NIGHT
+
+Fountain and plain text both work." style="font-family:monospace;font-size:12px;line-height:1.7;resize:vertical;min-height:260px"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-primary" onclick="loadBreakdownPastedText()">Load Script</button>
+          <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='none'">Cancel</button>
+        </div>
       </div>
-      <div style="margin-bottom:6px">
-        <div class="breakdown-field-label">Location</div>
-        <input class="form-input form-input-sm" value="${s.location||''}" onchange="updateBreakdownField(${i},'location',this.value)" placeholder="—">
+    </div>`;
+}
+
+function renderBreakdownEditor(el, p) {
+  _bdActiveCategory = null;
+  const bd = p.scriptBreakdown;
+  const text = bd.rawText;
+  const tags = bd.tags || [];
+  const scenes = parseBreakdownScenes(text);
+
+  el.innerHTML = `
+    <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <h3 class="section-heading" style="margin:0 0 2px">SCRIPT BREAKDOWN</h3>
+        <div style="font-size:11px;color:var(--text3)" data-bd-counter>${scenes.length} scene${scenes.length!==1?'s':''} · ${tags.length} tag${tags.length!==1?'s':''}</div>
       </div>
-      <div class="breakdown-grid">
-        ${['cast','extras','props','stunts','vehicles','sfx','wardrobe','makeup','setDressing','greenery','sound','specialEquip','productionNotes'].map((f,fi) => `
-          <div class="breakdown-cell">
-            <div class="breakdown-cell-label">${['Cast','Extras','Props/Weapons','Stunts','Vehicles/Animals','Special Effects','Wardrobe','Make-Up/Hair','Set Dressing','Greenery','Sound Effects/Music','Special Equipment','Production Notes'][fi]}</div>
-            <textarea onchange="updateBreakdownField(${i},'${f}',this.value)" placeholder="—">${s[f]||''}</textarea>
-          </div>
-        `).join('')}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
+        <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
+        <button class="btn btn-sm" onclick="exportBreakdownReport()">↓ Export Report</button>
+        <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownScript()">✕ Clear Script</button>
       </div>
     </div>
-  `).join('');
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;white-space:nowrap">CATEGORIES <span style="opacity:0.6;font-weight:500">(click to activate multi-tagging):</span></span>
+      ${BREAKDOWN_CATEGORIES.map(cat => `<span id="bd-key-${cat.id}" onclick="setBdActiveCat('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:box-shadow 0.1s,transform 0.1s;user-select:none">${cat.label}</span>`).join('')}
+    </div>
+    <div id="bd-active-hint" style="font-size:11px;min-height:18px;margin-bottom:8px;padding-left:2px"></div>
+    <div class="bd-layout">
+      <div>
+        <div id="bd-script-view" class="bd-script-view" onmouseup="onBreakdownMouseup(event)">${buildBreakdownHtml(text, tags)}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Breakdown Report</div>
+        <div id="bd-report">${renderBreakdownReport(p, scenes)}</div>
+      </div>
+    </div>`;
+
+  if (!window._bdGlobalHandler) {
+    document.addEventListener('mousedown', function(e) {
+      const pop = document.getElementById('bd-popover');
+      if (!pop || pop.style.display === 'none') return;
+      if (!pop.contains(e.target)) { pop.style.display = 'none'; _bdPendingSelection = null; }
+    });
+    window._bdGlobalHandler = true;
+  }
 }
 
-function updateBreakdownField(idx, field, val) {
-  const p = currentProject();
-  p.breakdown[idx][field] = val;
-  saveStore();
+function parseBreakdownScenes(text) {
+  if (!text) return [];
+  const headingRe = /^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s+.+/i;
+  const lines = text.split('\n');
+  const scenes = [];
+  let current = null, offset = 0;
+  for (const line of lines) {
+    if (headingRe.test(line.trim())) {
+      if (current) { current.end = offset; scenes.push(current); }
+      current = { heading: line.trim(), start: offset, end: -1 };
+    }
+    offset += line.length + 1;
+  }
+  if (current) { current.end = text.length; scenes.push(current); }
+  if (!scenes.length && text.trim()) scenes.push({ heading: 'Full Script', start: 0, end: text.length });
+  return scenes;
 }
 
-function removeBreakdownScene(i) {
-  const p = currentProject();
-  p.breakdown.splice(i, 1);
-  saveStore();
-  renderBreakdown(p);
-}
+function buildBreakdownHtml(text, tags) {
+  const scenes = parseBreakdownScenes(text);
+  const events = [];
+  for (const t of (tags||[])) {
+    events.push({ pos: t.start, type: 'ts', id: t.id, category: t.category });
+    events.push({ pos: t.end,   type: 'te', id: t.id });
+  }
+  for (const s of scenes) {
+    events.push({ pos: s.start,                      type: 'hs', sceneStart: s.start });
+    events.push({ pos: s.start + s.heading.length,   type: 'he' });
+  }
+  events.sort((a,b) => a.pos !== b.pos ? a.pos - b.pos : (a.type[1]==='e' ? -1 : 1));
 
-function addBreakdownScene() {
-  const p = currentProject();
-  // quick modal-free inline add
-  const scene = {
-    sceneNum: String(p.breakdown.length + 1),
-    bpNum: '', scriptPages: '', pageCount: '',
-    intExt: 'INT', dayNight: 'DAY',
-    description: '', location: '',
-    cast:'', extras:'', props:'', stunts:'', vehicles:'',
-    sfx:'', wardrobe:'', makeup:'', setDressing:'',
-    greenery:'', sound:'', specialEquip:'', productionNotes:''
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let html = '', pos = 0;
+  let activeTags = [], inHeading = false, currentSceneStart = null;
+
+  const openAll = () => {
+    let out = inHeading ? `<span class="bd-scene-heading" data-scene-start="${currentSceneStart}">` : '';
+    if (activeTags.length) {
+      const cats = activeTags.map(t => BREAKDOWN_CATEGORIES.find(c => c.id === t.category) || { color:'#aaa', textColor:'#000', label:'?' });
+      const bg = cats.length === 1 ? cats[0].color
+        : `linear-gradient(to right, ${cats.map((c,i) => `${c.color} ${i*100/cats.length}% ${(i+1)*100/cats.length}%`).join(',')})`;
+      const ids = activeTags.map(t => t.id).join(',');
+      out += `<mark class="bd-tag" data-tag-ids="${ids}" onclick="onBdTagClick(this,event)" style="background:${bg};color:${cats[0].textColor};cursor:pointer" title="${cats.map(c=>c.label).join(' + ')}">`;
+    }
+    return out;
   };
-  p.breakdown.push(scene);
+  const closeAll = () => (activeTags.length ? '</mark>' : '') + (inHeading ? '</span>' : '');
+
+  for (const ev of events) {
+    if (ev.pos > pos) html += esc(text.slice(pos, ev.pos));
+    pos = ev.pos;
+    html += closeAll();
+    if      (ev.type === 'ts') activeTags.push({ id: ev.id, category: ev.category });
+    else if (ev.type === 'te') activeTags = activeTags.filter(t => t.id !== ev.id);
+    else if (ev.type === 'hs') { inHeading = true; currentSceneStart = ev.sceneStart; }
+    else if (ev.type === 'he') { inHeading = false; currentSceneStart = null; }
+    html += openAll();
+  }
+  if (pos < text.length) html += esc(text.slice(pos));
+  html += closeAll();
+  return html;
+}
+
+function renderBreakdownReport(p, scenes) {
+  const bd = p.scriptBreakdown;
+  const text = bd.rawText;
+  const tags = bd.tags || [];
+  if (!scenes) scenes = parseBreakdownScenes(text);
+
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const parts = scenes.map(scene => {
+    const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
+    if (!st.length) return '';
+    const byCat = {};
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push({ id: t.id, text: esc(text.slice(t.start, t.end)) }); }
+    return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <div onclick="scrollBreakdownToScene(${scene.start})" style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:5px" title="Jump to scene in script">
+        <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}
+      </div>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        ${BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
+          <div>
+            <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${cat.label}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">
+              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();removeBreakdownTag('${item.id}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).filter(Boolean);
+
+  if (!parts.length) return `<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;line-height:1.6">No elements tagged yet.<br>Select text in the script to begin.</div>`;
+  return parts.join('');
+}
+
+function onBreakdownMouseup(e) {
+  if (e.target.classList.contains('bd-tag')) return;
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) { hideBdPopover(); return; }
+  const container = document.getElementById('bd-script-view');
+  if (!container) return;
+  const range = sel.getRangeAt(0);
+  if (!container.contains(range.commonAncestorContainer)) { hideBdPopover(); return; }
+  const start = getTextOffsetInBd(container, range.startContainer, range.startOffset);
+  const end   = getTextOffsetInBd(container, range.endContainer,   range.endOffset);
+  if (start === end) { hideBdPopover(); return; }
+  _bdPendingSelection = { start: Math.min(start, end), end: Math.max(start, end) };
+  if (_bdActiveCategory) applyBreakdownTag(_bdActiveCategory);
+  else showBdPopover(range.getBoundingClientRect());
+}
+
+function getTextOffsetInBd(container, node, offset) {
+  let total = 0;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    if (walker.currentNode === node) return total + offset;
+    total += walker.currentNode.textContent.length;
+  }
+  return total + offset;
+}
+
+function getBdPopover() {
+  let pop = document.getElementById('bd-popover');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'bd-popover';
+    pop.className = 'bd-popover';
+    document.body.appendChild(pop);
+  }
+  return pop;
+}
+
+function positionBdPopover(x, y) {
+  const pop = document.getElementById('bd-popover');
+  if (!pop) return;
+  const pw = 240, ph = 180;
+  let left = x + 10, top = y + 10;
+  if (left + pw > window.innerWidth)  left = x - pw - 10;
+  if (top  + ph > window.innerHeight) top  = y - ph - 10;
+  pop.style.left = Math.max(8, left) + 'px';
+  pop.style.top  = Math.max(8, top)  + 'px';
+}
+
+function showBdPopover(rect) {
+  const pop = getBdPopover();
+  pop.style.flexDirection = 'row';
+  pop.innerHTML = `<div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;width:100%;margin-bottom:3px">Tag as:</div>
+    ${BREAKDOWN_CATEGORIES.map(cat =>
+      `<button onclick="applyBreakdownTag('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${cat.label}</button>`
+    ).join('')}`;
+  const pw = 340, ph = 120;
+  let top  = rect.bottom + 6, left = rect.left;
+  if (top  + ph > window.innerHeight) top  = rect.top - ph - 6;
+  if (left + pw > window.innerWidth)  left = window.innerWidth - pw - 8;
+  pop.style.top = Math.max(8, top) + 'px';
+  pop.style.left = Math.max(8, left) + 'px';
+  pop.style.display = 'flex';
+}
+
+function hideBdPopover() {
+  const pop = document.getElementById('bd-popover');
+  if (pop) pop.style.display = 'none';
+  _bdPendingSelection = null;
+}
+
+function setBdActiveCat(catId) {
+  _bdActiveCategory = _bdActiveCategory === catId ? null : catId;
+  BREAKDOWN_CATEGORIES.forEach(cat => {
+    const btn = document.getElementById('bd-key-' + cat.id);
+    if (!btn) return;
+    if (cat.id === _bdActiveCategory) {
+      btn.style.outline = '2px solid #fff';
+      btn.style.outlineOffset = '2px';
+      btn.style.boxShadow = '0 0 0 5px rgba(255,255,255,0.18)';
+      btn.style.transform = 'scale(1.08)';
+    } else {
+      btn.style.outline = btn.style.outlineOffset = btn.style.boxShadow = btn.style.transform = '';
+    }
+  });
+  const sv = document.getElementById('bd-script-view');
+  const hint = document.getElementById('bd-active-hint');
+  if (_bdActiveCategory) {
+    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === _bdActiveCategory);
+    if (sv) { sv.style.borderColor = cat.color; sv.style.borderWidth = '2px'; }
+    if (hint) {
+      hint.style.cssText = `background:${cat.color}25;border:1px solid ${cat.color}88;border-radius:6px;padding:5px 10px;font-size:11px`;
+      hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> <strong>Multi-Tagging Mode Active</strong> — select text to tag as ${cat.label}. Click the category again to deactivate.`;
+    }
+  } else {
+    if (sv) { sv.style.borderColor = sv.style.borderWidth = ''; }
+    if (hint) { hint.style.cssText = ''; hint.textContent = ''; }
+  }
+}
+
+function scrollBreakdownToScene(sceneStart) {
+  const sv = document.getElementById('bd-script-view');
+  if (!sv) return;
+  const heading = sv.querySelector(`[data-scene-start="${sceneStart}"]`);
+  if (!heading) return;
+  const headingRect = heading.getBoundingClientRect();
+  const svRect = sv.getBoundingClientRect();
+  sv.scrollTop = sv.scrollTop + headingRect.top - svRect.top - 8;
+}
+
+// Tag context menu
+function onBdTagClick(el, event) {
+  event.stopPropagation();
+  const ids = (el.dataset.tagIds || '').split(',').filter(Boolean);
+  if (!ids.length) return;
+  if (ids.length === 1) showTagActionMenu(ids[0], event.clientX, event.clientY, true);
+  else showTagPickMenu(ids, event.clientX, event.clientY);
+}
+
+function showTagPickMenu(ids, x, y) {
+  const p = currentProject();
+  if (!p?.scriptBreakdown) return;
+  const pop = getBdPopover();
+  pop.style.flexDirection = 'column';
+  const tagItems = ids.map(id => p.scriptBreakdown.tags.find(t => t.id === id)).filter(Boolean);
+  pop.innerHTML = `<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px">Which tag?</div>
+    ${tagItems.map(tag => {
+      const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
+      return `<button onclick="showTagActionMenu('${tag.id}',null,null,true)" style="background:${cat.color};color:${cat.textColor};border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;text-align:left">${cat.label}</button>`;
+    }).join('')}`;
+  positionBdPopover(x, y);
+  pop.style.display = 'flex';
+}
+
+function showTagActionMenu(tagId, x, y, fromScript) {
+  const p = currentProject();
+  if (!p?.scriptBreakdown) return;
+  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  if (!tag) { hideBdPopover(); return; }
+  const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
+  if (fromScript !== undefined) _bdCtxFromScript = !!fromScript;
+  const pop = getBdPopover();
+  pop.style.flexDirection = 'column';
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
+      <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
+    </div>
+    <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
+    <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
+    ${_bdCtxFromScript ? `<button onclick="removeBreakdownTag('${tagId}');hideBdPopover()" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
+  if (x != null) positionBdPopover(x, y);
+  pop.style.display = 'flex';
+}
+
+function showTagCategoryPicker(tagId, action) {
+  const p = currentProject();
+  if (!p?.scriptBreakdown) return;
+  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  if (!tag) { hideBdPopover(); return; }
+  const cats = BREAKDOWN_CATEGORIES.filter(c => c.id !== tag.category);
+  const pop = getBdPopover();
+  pop.style.flexDirection = 'column';
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <button onclick="showTagActionMenu('${tagId}',null,null)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;line-height:1">←</button>
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em">${action === 'add' ? 'Add to:' : 'Change to:'}</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">
+      ${cats.map(cat => `<button onclick="executeTagAction('${tagId}','${action}','${cat.id}')" style="background:${cat.color};color:${cat.textColor};border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${cat.label}</button>`).join('')}
+    </div>`;
+  pop.style.display = 'flex';
+}
+
+function executeTagAction(tagId, action, toCategory) {
+  const p = currentProject();
+  if (!p?.scriptBreakdown) return;
+  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  if (!tag) { hideBdPopover(); return; }
+  if (action === 'move') {
+    tag.category = toCategory;
+  } else if (action === 'add') {
+    p.scriptBreakdown.tags.push({ id: makeId(), category: toCategory, start: tag.start, end: tag.end });
+  }
+  hideBdPopover();
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function applyBreakdownTag(category) {
+  if (!_bdPendingSelection) return;
+  const p = currentProject();
+  if (!p) return;
+  if (!p.scriptBreakdown) p.scriptBreakdown = { rawText: '', tags: [] };
+  const { start, end } = _bdPendingSelection;
+  if (!p.scriptBreakdown.tags) p.scriptBreakdown.tags = [];
+  p.scriptBreakdown.tags.push({ id: makeId(), category, start, end });
+  window.getSelection()?.removeAllRanges();
+  hideBdPopover();
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function removeBreakdownTag(tagId) {
+  const p = currentProject();
+  if (!p?.scriptBreakdown) return;
+  p.scriptBreakdown.tags = p.scriptBreakdown.tags.filter(t => t.id !== tagId);
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function updateBreakdownView(p) {
+  const bd = p.scriptBreakdown;
+  const scenes = parseBreakdownScenes(bd.rawText);
+  const sv = document.getElementById('bd-script-view');
+  if (sv) { const st = sv.scrollTop; sv.innerHTML = buildBreakdownHtml(bd.rawText, bd.tags||[]); sv.scrollTop = st; }
+  const rv = document.getElementById('bd-report');
+  if (rv) rv.innerHTML = renderBreakdownReport(p, scenes);
+  const counter = document.querySelector('[data-bd-counter]');
+  if (counter) counter.textContent = `${scenes.length} scene${scenes.length!==1?'s':''} · ${(bd.tags||[]).length} tag${(bd.tags||[]).length!==1?'s':''}`;
+}
+
+function loadBreakdownFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    let text = ev.target.result;
+    if (file.name.endsWith('.fdx')) {
+      try {
+        const xml = new DOMParser().parseFromString(text, 'text/xml');
+        text = Array.from(xml.querySelectorAll('Paragraph')).map(par =>
+          Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join('')
+        ).filter(s => s.trim()).join('\n');
+      } catch(e) { /* use raw text */ }
+    }
+    const p = currentProject();
+    if (!p) return;
+    p.scriptBreakdown = { rawText: text.trim(), tags: [] };
+    saveStore();
+    renderBreakdown(p);
+  };
+  reader.readAsText(file);
+}
+
+function loadBreakdownPastedText() {
+  const ta = document.getElementById('bd-paste-input');
+  if (!ta?.value.trim()) { showToast('Please paste some script text first', 'error'); return; }
+  const p = currentProject();
+  if (!p) return;
+  p.scriptBreakdown = { rawText: ta.value.trim(), tags: [] };
   saveStore();
   renderBreakdown(p);
-  showToast('Scene added', 'success');
+}
+
+function clearBreakdownScript() {
+  showConfirmDialog('Clear the script and all tags? This cannot be undone.', 'Clear', () => {
+    const p = currentProject();
+    if (!p) return;
+    p.scriptBreakdown = { rawText: '', tags: [] };
+    saveStore();
+    renderBreakdown(p);
+  });
+}
+
+function viewBreakdownReport() {
+  const p = currentProject();
+  if (!p?.scriptBreakdown?.rawText) return;
+  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const scenes = parseBreakdownScenes(text);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  const scenesHtml = scenes.map(scene => {
+    const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
+    const byCat = {};
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(esc(text.slice(t.start, t.end))); }
+    const hasTags = Object.keys(byCat).length > 0;
+    return `
+      <div style="margin-bottom:18px;break-inside:avoid">
+        <div style="background:#1a1a2e;color:#e8e0ff;padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border-radius:6px 6px 0 0">${esc(scene.heading)}</div>
+        <div style="border:1px solid #333;border-top:none;border-radius:0 0 6px 6px;overflow:hidden">
+          ${hasTags
+            ? `<table style="width:100%;border-collapse:collapse">
+                ${BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map((cat, i) => `
+                  <tr style="${i % 2 === 0 ? 'background:#111' : 'background:#161616'}">
+                    <td style="padding:5px 10px;width:130px;vertical-align:top">
+                      <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">${cat.label}</span>
+                    </td>
+                    <td style="padding:5px 10px;font-size:12px;color:#ccc;line-height:1.6">${byCat[cat.id].join(', ')}</td>
+                  </tr>`).join('')}
+              </table>`
+            : `<div style="padding:8px 14px;font-size:12px;color:#555;font-style:italic">No tagged elements</div>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  const ovId = '_bd-report-view';
+  document.getElementById(ovId)?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-y:auto';
+  overlay.innerHTML = `
+    <div style="width:min(820px,96vw);background:#0d0d0d;border:1px solid #333;border-radius:12px;overflow:hidden;margin:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#111;border-bottom:1px solid #333;position:sticky;top:0;z-index:1">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#e8e0ff;letter-spacing:0.05em">SCRIPT BREAKDOWN REPORT</div>
+          <div style="font-size:11px;color:#666;margin-top:2px">${esc(p.title)} · ${scenes.length} scenes · ${tags.length} tags</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="printBreakdownReport()" style="background:#222;border:1px solid #444;color:#ccc;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">⎙ Print</button>
+          <button onclick="document.getElementById('${ovId}').remove()" style="background:rgba(255,255,255,0.08);border:none;color:#fff;cursor:pointer;font-size:20px;border-radius:6px;padding:2px 10px;line-height:1.4">✕</button>
+        </div>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #222">
+          <span style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;align-self:center;margin-right:4px">KEY:</span>
+          ${BREAKDOWN_CATEGORIES.map(cat => `<span style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${cat.label}</span>`).join('')}
+        </div>
+        ${scenesHtml}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function exportBreakdownReport() {
+  const p = currentProject();
+  if (!p?.scriptBreakdown?.rawText) return;
+  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const scenes = parseBreakdownScenes(text);
+  const lines = [
+    'SCRIPT BREAKDOWN REPORT',
+    `Project: ${p.title}`,
+    `Generated: ${new Date().toLocaleDateString()}`,
+    `Scenes: ${scenes.length}  |  Elements tagged: ${tags.length}`,
+    '', '='.repeat(60), ''
+  ];
+  for (const scene of scenes) {
+    const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
+    if (!st.length) continue;
+    const byCat = {};
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(text.slice(t.start, t.end)); }
+    lines.push(scene.heading.toUpperCase(), '-'.repeat(Math.min(scene.heading.length, 60)));
+    for (const cat of BREAKDOWN_CATEGORIES) {
+      if (byCat[cat.id]) lines.push(`  ${(cat.label + ':').padEnd(16)} ${byCat[cat.id].join(', ')}`);
+    }
+    lines.push('');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${p.title.replace(/[^a-z0-9]/gi,'_')}_breakdown.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function printBreakdownReport() {
+  const p = currentProject();
+  if (!p?.scriptBreakdown?.rawText) return;
+  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const scenes = parseBreakdownScenes(text);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  const scenesHtml = scenes.map(scene => {
+    const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
+    const byCat = {};
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(esc(text.slice(t.start, t.end))); }
+    const hasTags = Object.keys(byCat).length > 0;
+    return `<div class="scene">
+      <div class="scene-heading">${esc(scene.heading)}</div>
+      <table class="scene-table">
+        ${hasTags
+          ? BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
+              <tr>
+                <td class="cat-cell"><span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span></td>
+                <td class="items-cell">${byCat[cat.id].join(', ')}</td>
+              </tr>`).join('')
+          : `<tr><td colspan="2" class="empty-cell">No tagged elements</td></tr>`}
+      </table>
+    </div>`;
+  }).join('');
+
+  const keyHtml = BREAKDOWN_CATEGORIES.map(cat =>
+    `<span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span>`
+  ).join('');
+
+  const printHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${esc(p.title)} — Script Breakdown</title>
+  <style>
+    @page { margin: 1.8cm 2cm; size: A4; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 2px solid #111; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
+    .header-meta { font-size: 11px; color: #555; margin-top: 4px; }
+    .key { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; align-items: center; }
+    .key-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-right: 4px; }
+    .cat-pill { display: inline-block; border-radius: 3px; padding: 1px 7px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .scene { margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
+    .scene-heading { background: #1a1a2e; color: #e8e0ff; padding: 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .scene-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-top: none; }
+    .scene-table tr:nth-child(even) { background: #f7f7f7; }
+    .cat-cell { padding: 5px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; }
+    .items-cell { padding: 5px 12px; color: #222; line-height: 1.5; }
+    .empty-cell { padding: 6px 12px; color: #aaa; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="header-title">${esc(p.title)}</div>
+      <div class="header-meta">Script Breakdown Report · ${scenes.length} scenes · ${tags.length} tags · Generated ${new Date().toLocaleDateString()}</div>
+    </div>
+  </div>
+  ${scenesHtml}
+</body>
+</html>`;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.write(printHtml);
+  iframe.contentDocument.close();
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+  iframe.contentWindow.addEventListener('afterprint', () => iframe.remove());
+}
+
+// AUTO-SUGGEST
+// ══════════════════════════════════════════
+
+function detectBreakdownSuggestions(text, existingTags) {
+  if (!text) return [];
+  const suggestions = [];
+  const scenes = parseBreakdownScenes(text);
+  const isTagged = (start, end, cat) =>
+    (existingTags || []).some(t => t.category === cat && t.start <= start && t.end >= end);
+
+  const wordBoundary = (str, idx, len) => {
+    const before = idx > 0 ? str[idx - 1] : ' ';
+    const after  = idx + len < str.length ? str[idx + len] : ' ';
+    return !/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after);
+  };
+
+  // ── 1. Character cue detection ─────────────────────────────
+  const sceneHeadingRe = /^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s/i;
+  const transitionRe   = /^(FADE|CUT|SMASH|DISSOLVE|WIPE|MATCH|JUMP)\b.*TO:\s*$|^FADE (IN|OUT)[.:]?\s*$|^THE END\s*$|^OVER BLACK\.?\s*$|^CONTINUED:?\s*$/i;
+  const charNames = new Set();
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || sceneHeadingRe.test(trimmed) || transitionRe.test(trimmed)) continue;
+    const stripped = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (stripped.length >= 2 && stripped.length <= 40
+      && stripped === stripped.toUpperCase()
+      && /[A-Z]/.test(stripped)
+      && !/^\d+\.?\s*$/.test(stripped)) {
+      charNames.add(stripped);
+    }
+  }
+
+  for (const name of charNames) {
+    const nameLower = name.toLowerCase();
+    for (const scene of scenes) {
+      const st = text.slice(scene.start, scene.end).toLowerCase();
+      let idx = st.indexOf(nameLower);
+      while (idx !== -1) {
+        if (wordBoundary(st, idx, nameLower.length)) {
+          const start = scene.start + idx;
+          const end   = start + name.length;
+          if (!isTagged(start, end, 'cast')) {
+            suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: 'cast', text: text.slice(start, end), start, end, sceneHeading: scene.heading });
+          }
+          break; // first occurrence per scene
+        }
+        idx = st.indexOf(nameLower, idx + 1);
+      }
+    }
+  }
+
+  // ── 2. Keyword matching ────────────────────────────────────
+  for (const [category, keywords] of Object.entries(BD_SUGGEST_KEYWORDS)) {
+    for (const scene of scenes) {
+      const st     = text.slice(scene.start, scene.end);
+      const stLow  = st.toLowerCase();
+      const claimed = []; // avoid double-counting overlapping keywords in same scene+category
+      for (const kw of keywords) {
+        const kwLow = kw.toLowerCase();
+        let idx = stLow.indexOf(kwLow);
+        while (idx !== -1) {
+          const end = idx + kwLow.length;
+          if (wordBoundary(stLow, idx, kwLow.length)
+              && !claimed.some(r => r[0] < end && r[1] > idx)) {
+            const start = scene.start + idx;
+            const tagEnd = start + kw.length;
+            if (!isTagged(start, tagEnd, category)) {
+              claimed.push([idx, end]);
+              suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category, text: text.slice(start, tagEnd), start, end: tagEnd, sceneHeading: scene.heading });
+            }
+            break; // first match per keyword per scene
+          }
+          idx = stLow.indexOf(kwLow, idx + 1);
+        }
+      }
+    }
+  }
+
+  suggestions.sort((a, b) => a.start - b.start);
+  return suggestions;
+}
+
+function showBdSuggestPanel() {
+  const p = currentProject();
+  if (!p?.scriptBreakdown?.rawText) return;
+  const { rawText: text, tags = [] } = p.scriptBreakdown;
+
+  const all = detectBreakdownSuggestions(text, tags);
+  _bdSuggestions = all;
+  _bdSuggestSelected = new Set(all.map(s => s.id));
+
+  if (!all.length) {
+    const m = document.createElement('div');
+    m.id = 'bd-suggest-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center';
+    m.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px 36px;max-width:400px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">✓</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">Nothing new found</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:20px">All detected elements are already tagged, or no recognisable elements were found in the script.</div>
+      <button class="btn btn-sm" onclick="closeBdSuggestModal()">Close</button>
+    </div>`;
+    document.body.appendChild(m);
+    return;
+  }
+
+  const byCat = {};
+  for (const s of all) (byCat[s.category] = byCat[s.category] || []).push(s);
+
+  const catSections = BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => {
+    const items = byCat[cat.id];
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${cat.label}</span>
+        <span style="font-size:11px;color:var(--text3)">${items.length} suggestion${items.length!==1?'s':''}</span>
+        <button onclick="toggleBdCatSuggestions('${cat.id}',true)" style="background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:0 4px">All</button>
+        <button onclick="toggleBdCatSuggestions('${cat.id}',false)" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0 4px">None</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        ${items.map(s => `<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--border)">
+          <input type="checkbox" id="sug_cb_${s.id}" checked onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+          <span style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.text}</span>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const existing = document.getElementById('bd-suggest-modal');
+  if (existing) existing.remove();
+
+  const m = document.createElement('div');
+  m.id = 'bd-suggest-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center';
+  m.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(640px,92vw);max-height:82vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
+        <div>
+          <div style="font-size:15px;font-weight:700">✦ Auto-suggest Tags</div>
+          <div id="bd-sug-count" style="font-size:11px;color:var(--text3);margin-top:3px">${all.length} suggestion${all.length!==1?'s':''} found — deselect any you don't want</div>
+        </div>
+        <button onclick="closeBdSuggestModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 16px;line-height:1">✕</button>
+      </div>
+      <div style="overflow-y:auto;padding:16px 20px;flex:1">${catSections}</div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+        <button onclick="toggleAllBdSuggestions(true)" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:0">Select all</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" style="opacity:0.7" onclick="closeBdSuggestModal()">Cancel</button>
+          <button class="btn btn-sm" id="bd-sug-apply-btn" onclick="applySelectedBdSuggestions()">Apply ${all.length} Tag${all.length!==1?'s':''}</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+function toggleBdSuggestion(id, checked) {
+  checked ? _bdSuggestSelected.add(id) : _bdSuggestSelected.delete(id);
+  updateBdSuggestCount();
+}
+
+function toggleBdCatSuggestions(catId, checked) {
+  for (const s of _bdSuggestions) {
+    if (s.category !== catId) continue;
+    checked ? _bdSuggestSelected.add(s.id) : _bdSuggestSelected.delete(s.id);
+    const cb = document.getElementById(`sug_cb_${s.id}`);
+    if (cb) cb.checked = checked;
+  }
+  updateBdSuggestCount();
+}
+
+function toggleAllBdSuggestions(checked) {
+  for (const s of _bdSuggestions) {
+    checked ? _bdSuggestSelected.add(s.id) : _bdSuggestSelected.delete(s.id);
+    const cb = document.getElementById(`sug_cb_${s.id}`);
+    if (cb) cb.checked = checked;
+  }
+  updateBdSuggestCount();
+}
+
+function updateBdSuggestCount() {
+  const n = _bdSuggestSelected.size;
+  const countEl = document.getElementById('bd-sug-count');
+  const btnEl   = document.getElementById('bd-sug-apply-btn');
+  if (countEl) countEl.textContent = `${n} of ${_bdSuggestions.length} selected`;
+  if (btnEl)   btnEl.textContent   = `Apply ${n} Tag${n!==1?'s':''}`;
+}
+
+function closeBdSuggestModal() {
+  const m = document.getElementById('bd-suggest-modal');
+  if (m) m.remove();
+}
+
+function applySelectedBdSuggestions() {
+  const p = currentProject();
+  if (!p) return;
+  const toApply = _bdSuggestions.filter(s => _bdSuggestSelected.has(s.id));
+  if (!toApply.length) { closeBdSuggestModal(); return; }
+  const bd = p.scriptBreakdown;
+  if (!bd.tags) bd.tags = [];
+  for (const s of toApply) {
+    bd.tags.push({ id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end });
+  }
+  saveProjects();
+  closeBdSuggestModal();
+  const sv = document.getElementById('bd-script-view');
+  if (sv) { const st = sv.scrollTop; sv.innerHTML = buildBreakdownHtml(bd.rawText, bd.tags); sv.scrollTop = st; }
+  const rp = document.getElementById('bd-report');
+  if (rp) rp.innerHTML = renderBreakdownReport(p);
+  const ct = document.querySelector('[data-bd-counter]');
+  if (ct) { const sc = parseBreakdownScenes(bd.rawText).length; const n = bd.tags.length; ct.textContent = sc+' scene'+(sc!==1?'s':'')+' · '+n+' tag'+(n!==1?'s':''); }
 }
 
 // CALLSHEET
