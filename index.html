@@ -1109,53 +1109,41 @@
   }
   .photos-badge:hover { text-decoration: underline; }
 
-  /* ── BUDGET SUMMARY ── */
-  .budget-summary {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+  /* ── BUDGET ── */
+  .budget-summary-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px;
   }
-  .budget-total {
-    flex: 1;
-    min-width: 180px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .bsb-card {
+    flex: 1; min-width: 140px; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 3px;
     box-shadow: var(--shadow);
   }
-  .budget-total .label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text3);
-    font-weight: 500;
+  .bsb-card .bsb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); font-weight: 600; }
+  .bsb-card .bsb-amount { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: var(--text); }
+  .bsb-card.atl { border-top: 3px solid var(--accent); }
+  .bsb-card.atl .bsb-amount { color: var(--accent); }
+  .bsb-card.btl { border-top: 3px solid var(--accent2); }
+  .bsb-card.btl .bsb-amount { color: var(--accent2); }
+  .bsb-card.grand { border-top: 3px solid var(--text2); }
+  .budget-section-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; border-radius: 8px 8px 0 0; margin-top: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   }
-  .budget-total .amount {
-    font-size: 24px;
-    font-weight: 600;
-    font-family: var(--font-mono);
-    color: var(--text);
-  }
-  .budget-total.estimate {
-    border-left: 3px solid var(--accent);
-  }
-  .budget-total.estimate .amount {
-    color: var(--accent);
-  }
-  .budget-total.actual {
-    border-left: 3px solid var(--accent2);
-  }
-  .budget-total.actual .amount {
-    color: var(--accent2);
-  }
-  .budget-total.variance {
-    border-left: 3px solid var(--text2);
-  }
+  .budget-section-head.atl { background: rgba(230,188,60,0.15); border: 1px solid rgba(230,188,60,0.35); border-bottom: none; color: var(--accent); }
+  .budget-section-head.btl { background: rgba(91,192,235,0.1); border: 1px solid rgba(91,192,235,0.25); border-bottom: none; color: var(--accent2); }
+  .budget-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border2); border-radius: 0 0 8px 8px; overflow: hidden; margin-bottom: 4px; }
+  .budget-table th { padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border2); }
+  .budget-table th.num { text-align: right; }
+  .budget-table td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .budget-table td.num { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+  .budget-table td.variance-pos { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--red); }
+  .budget-table td.variance-neg { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--green); }
+  .budget-table td.variance-zero { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text3); }
+  .budget-table tr:last-child td { border-bottom: none; }
+  .budget-table tr:hover td { background: var(--surface2); }
+  .budget-total-row td { font-weight: 700; background: var(--surface2) !important; color: var(--text) !important; font-size: 12px; border-top: 1px solid var(--border2); }
+  .dept-pill { display: inline-block; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
 
   .table-container {
     background: var(--surface);
@@ -2023,36 +2011,16 @@
         <!-- SECTION: BUDGET -->
         <div id="section-budget" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-          <div class="budget-summary" id="budget-summary"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 class="section-heading">ESTIMATED BUDGET</h3>
-            <button class="btn btn-primary btn-sm" onclick="addBudgetLine()">+ Add Line</button>
-          </div>
-          <div class="table-container">
-            <table class="data-table" id="budget-estimate-table">
-              <thead><tr>
-                <th>Category</th><th>Description</th>
-                <th>Cost Per</th><th>Qty</th><th>Total Estimate</th><th></th>
-              </tr></thead>
-              <tbody id="budget-estimate-body"></tbody>
-            </table>
-          </div>
-          <div style="margin-top:24px">
-            <h3 class="section-heading">ACTUAL EXPENSES</h3>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <span></span>
-              <button class="btn btn-primary btn-sm" onclick="addActualExpense()">+ Add Expense</button>
-            </div>
-            <div class="table-container">
-              <table class="data-table" id="budget-actual-table">
-                <thead><tr>
-                  <th>Category</th><th>Description</th>
-                  <th>Actual Cost</th><th></th>
-                </tr></thead>
-                <tbody id="budget-actual-body"></tbody>
-              </table>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading" style="margin:0">BUDGET</h3>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm" onclick="addBudgetLine('atl')" style="background:rgba(230,188,60,0.15);border-color:rgba(230,188,60,0.4);color:var(--accent)">+ ATL Line</button>
+              <button class="btn btn-sm" onclick="addBudgetLine('btl')" style="background:rgba(91,192,235,0.1);border-color:rgba(91,192,235,0.3);color:var(--accent2)">+ BTL Line</button>
             </div>
           </div>
+          <div class="budget-summary-bar" id="budget-summary-bar"></div>
+          <div id="budget-atl-section"></div>
+          <div id="budget-btl-section"></div>
         </div>
 
         <!-- SECTION: EQUIPMENT -->
@@ -2345,6 +2313,11 @@
                 <div id="mf-people-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:150px;overflow-y:auto;box-shadow:var(--shadow);"></div>
               </div>
               <div style="margin-top:5px;font-size:10px;color:var(--text3);">New people will be added to project contacts on save.</div>
+            </div>
+
+            <div>
+              <label class="form-label">Project</label>
+              <select class="form-select" id="mf-project-select" style="font-size:12px;"></select>
             </div>
 
             <div id="mf-location-section" style="display:none;">
@@ -2772,49 +2745,40 @@
 <div class="modal-overlay" id="modal-budget">
   <div class="modal">
     <div class="modal-header">
-      <h3>BUDGET LINE</h3>
+      <h3 id="budget-modal-title">ADD BUDGET LINE</h3>
       <button class="modal-close" onclick="closeModal('modal-budget')">✕</button>
     </div>
     <input type="hidden" id="budget-edit-idx">
-    <div class="form-group">
-      <label class="form-label">Category</label>
-      <select class="form-select" id="bud-cat">
-        <option>Travel Expenses</option>
-        <option>Props & Misc</option>
-        <option>Food & Refreshments</option>
-        <option>Equipment</option>
-        <option>Locations</option>
-        <option>Cast Fees</option>
-        <option>Crew Fees</option>
-        <option>Post-Production</option>
-        <option>Marketing</option>
-        <option>Other</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Type</label>
-      <select class="form-select" id="bud-type" onchange="toggleBudgetFields()">
-        <option value="estimate">Estimated</option>
-        <option value="actual">Actual</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Description</label>
-      <input class="form-input" id="bud-desc" placeholder="What is this for?">
+    <input type="hidden" id="bud-section">
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <input class="form-input" id="bud-dept" list="bud-dept-list" placeholder="e.g. Cast, Camera…" autocomplete="off">
+        <datalist id="bud-dept-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input class="form-input" id="bud-desc" placeholder="What is this for?">
+      </div>
     </div>
     <div class="form-row-3">
       <div class="form-group">
-        <label class="form-label">Cost Per (£)</label>
-        <input class="form-input" id="bud-cost" type="number" placeholder="0.00" min="0" step="0.01">
+        <label class="form-label">Unit Rate (£)</label>
+        <input class="form-input" id="bud-rate" type="number" placeholder="0.00" min="0" step="0.01" oninput="updateBudgetEstPreview()">
       </div>
       <div class="form-group">
-        <label class="form-label">Quantity</label>
-        <input class="form-input" id="bud-qty" type="number" placeholder="1" min="1">
+        <label class="form-label">Units / Days</label>
+        <input class="form-input" id="bud-qty" type="number" placeholder="1" min="0" step="0.5" oninput="updateBudgetEstPreview()">
       </div>
       <div class="form-group">
         <label class="form-label">Actual (£)</label>
-        <input class="form-input" id="bud-actual" type="number" placeholder="0.00" min="0" step="0.01">
+        <input class="form-input" id="bud-actual" type="number" placeholder="optional" min="0" step="0.01">
       </div>
+    </div>
+    <div id="bud-est-preview" style="font-size:12px;color:var(--text3);margin:-6px 0 10px;padding-left:2px"></div>
+    <div class="form-group">
+      <label class="form-label">Notes <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+      <input class="form-input" id="bud-notes" placeholder="Any extra detail…">
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-budget')">Cancel</button>
@@ -3527,8 +3491,8 @@ function populateFilesProjectFilter() {
   if (!sel) return;
   const current = sel.value;
   sel.innerHTML = `<option value="all">All Projects</option>` +
-    store.projects.map((p, i) =>
-      `<option value="${i}" ${current == i ? 'selected' : ''}>${p.title || 'Untitled Project'}</option>`
+    store.projects.map(p =>
+      `<option value="${p.id}" ${current === p.id ? 'selected' : ''}>${p.title || 'Untitled Project'}</option>`
     ).join('');
 }
 
@@ -3540,8 +3504,7 @@ function renderFiles() {
 
   let files = (store.files || []);
   if (projectFilter !== 'all') {
-    const pid = parseInt(projectFilter);
-    files = files.filter(f => fileProjectIds(f).includes(pid));
+    files = files.filter(f => fileProjectIds(f).includes(projectFilter));
   }
   if (currentFileCategory !== 'all') {
     files = files.filter(f => fileCategories(f).includes(currentFileCategory));
@@ -3732,6 +3695,15 @@ function openManageFile(id) {
     mfAddPersonTag(name, role);
   });
 
+  // Project dropdown
+  const currentPids = fileProjectIds(file);
+  const activePid = currentPids[0] || '';
+  document.getElementById('mf-project-select').innerHTML =
+    `<option value="">— No project —</option>` +
+    store.projects.map(proj =>
+      `<option value="${proj.id}" ${proj.id === activePid ? 'selected' : ''}>${proj.title || 'Untitled Project'}</option>`
+    ).join('');
+
   // Location dropdown — pull from all projects this file belongs to, plus current
   const allLocs = new Set();
   const pids = fileProjectIds(file);
@@ -3835,6 +3807,11 @@ function confirmManageFile() {
   const newName = document.getElementById('manage-file-name').value.trim();
   if (newName) file.name = newName;
   file.description = document.getElementById('manage-file-desc').value.trim();
+
+  // Project
+  const selectedPid = document.getElementById('mf-project-select').value;
+  file.projectIds = selectedPid ? [selectedPid] : [];
+  delete file.projectId;
 
   // Categories — migrate legacy single field
   const cats = [...document.querySelectorAll('#manage-file-cats [data-mfcat]:checked')].map(cb => cb.dataset.mfcat);
@@ -5246,13 +5223,15 @@ function addCustomSectionField(csId) {
   renderCustomSection('custom_' + csId);
 }
 function removeCustomSectionField(csId, key) {
-  const p = currentProject();
-  if (!p || !p.customSections) return;
-  const cs = p.customSections.find(x => x.id === csId);
-  if (!cs || !cs.fields) return;
-  cs.fields = cs.fields.filter(f => f.key !== key);
-  saveStore();
-  renderCustomSection('custom_' + csId);
+  showConfirmDialog('Remove this field?', 'Remove', () => {
+    const p = currentProject();
+    if (!p || !p.customSections) return;
+    const cs = p.customSections.find(x => x.id === csId);
+    if (!cs || !cs.fields) return;
+    cs.fields = cs.fields.filter(f => f.key !== key);
+    saveStore();
+    renderCustomSection('custom_' + csId);
+  });
 }
 function saveCustomSectionField(csId, key, val) {
   const p = currentProject();
@@ -5347,13 +5326,15 @@ async function shareCustomSectionFile(csId, fileId) {
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 }
 function removeCustomSectionFile(csId, fileId) {
-  const p = currentProject();
-  if (!p || !p.customSections) return;
-  const cs = p.customSections.find(x => x.id === csId);
-  if (!cs || !cs.files) return;
-  cs.files = cs.files.filter(x => x.id !== fileId);
-  saveStore();
-  renderCustomSection('custom_' + csId);
+  showConfirmDialog('Remove this file?', 'Remove', () => {
+    const p = currentProject();
+    if (!p || !p.customSections) return;
+    const cs = p.customSections.find(x => x.id === csId);
+    if (!cs || !cs.files) return;
+    cs.files = cs.files.filter(x => x.id !== fileId);
+    saveStore();
+    renderCustomSection('custom_' + csId);
+  });
 }
 function openCustomSectionFileRename(csId, fileId) {
   const p = currentProject();
@@ -5666,11 +5647,13 @@ function downloadScriptFile(id) {
 }
 
 function removeScriptFile(id) {
-  const p = currentProject();
-  if (!p || !p.scripts) return;
-  p.scripts = p.scripts.filter(x => x.id !== id);
-  saveStore();
-  renderScript(p);
+  showConfirmDialog('Remove this script file?', 'Remove', () => {
+    const p = currentProject();
+    if (!p || !p.scripts) return;
+    p.scripts = p.scripts.filter(x => x.id !== id);
+    saveStore();
+    renderScript(p);
+  });
 }
 
 // SCRIPT BREAKDOWN CATEGORIES (industry standard colour system)
@@ -5693,11 +5676,11 @@ const BREAKDOWN_CATEGORIES = [
 const BD_SUGGEST_KEYWORDS = {
   extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation','crowd','extras','audience','mob'],
   stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight','punch','kick','leap','dive','roll'],
-  props:       ['mobile phone','police badge','id card','gun holster','wedding ring','pickup truck','police car','fire truck','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map'],
+  props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map','glass','wine'],
   vehicles:    ['pickup truck','police car','fire truck','limousine','motorcycle','motorbike','helicopter','submarine','aircraft','bicycle','chopper','forklift','tractor','convertible','ambulance','sports car','train','truck','plane','yacht','boat','ship','taxi','limo','jeep','bus','van','suv','cab','jet','car'],
   sfx:         ['explosion','explodes','detonation','gunfire','gunshot','lightning','thunder','collision','blast','smoke','crash','alarm','siren','storm','flood','fire'],
   wardrobe:    ['wedding dress','tuxedo','uniform','disguise','costume','armour','jacket','helmet','gloves','armor','dress','coat','robe','vest','mask','suit','hat','cap'],
-  makeup:      ['aged makeup','prosthetic','prosthesis','bleeding','bruised','injured','wounded','blood','bruise','wound','scar','burn'],
+  makeup:      ['face paint','black eye','greasepaint','aged makeup','prosthetic','prosthesis','bleeding','bruised','injured','wounded','blood','bruise','wound','scar','burn'],
   setdressing: ['bookshelf','whiteboard','chalkboard','curtains','painting','portrait','cabinet','trophy','mirror','table','couch','clock','sofa','desk','lamp','safe','bed'],
   vfx:         ['force field','laser beam','materializes','hologram','invisible','teleports','digital screen','morphs','transforms','glows','portal','cgi'],
   animals:     ['gorilla','elephant','parrot','chicken','rabbit','monkey','snake','horse','tiger','bear','wolf','bird','deer','duck','fish','lion','fox','dog','cat','rat','pig','cow'],
@@ -5952,7 +5935,8 @@ function renderBreakdownEditor(el, p) {
         <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
         <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
         <button class="btn btn-sm" onclick="exportBreakdownReport()">↓ Export Report</button>
-        <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownScript()">✕ Clear Script</button>
+        <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownTags()">✕ Clear Tags</button>
+        <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownScript()">🗑 Delete Script</button>
       </div>
     </div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
@@ -6223,7 +6207,7 @@ function showTagActionMenu(tagId, x, y, fromScript) {
     </div>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
-    ${_bdCtxFromScript ? `<button onclick="removeBreakdownTag('${tagId}');hideBdPopover()" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
+    ${_bdCtxFromScript ? `<button onclick="removeBreakdownTag('${tagId}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
   if (x != null) positionBdPopover(x, y);
   pop.style.display = 'flex';
 }
@@ -6277,11 +6261,14 @@ function applyBreakdownTag(category) {
 }
 
 function removeBreakdownTag(tagId) {
-  const p = currentProject();
-  if (!p?.scriptBreakdown) return;
-  p.scriptBreakdown.tags = p.scriptBreakdown.tags.filter(t => t.id !== tagId);
-  saveStore();
-  updateBreakdownView(p);
+  hideBdPopover();
+  showConfirmDialog('Remove this tag?', 'Remove', () => {
+    const p = currentProject();
+    if (!p?.scriptBreakdown) return;
+    p.scriptBreakdown.tags = p.scriptBreakdown.tags.filter(t => t.id !== tagId);
+    saveStore();
+    updateBreakdownView(p);
+  });
 }
 
 function updateBreakdownView(p) {
@@ -6328,8 +6315,18 @@ function loadBreakdownPastedText() {
   renderBreakdown(p);
 }
 
+function clearBreakdownTags() {
+  showConfirmDialog('Clear all tags? This cannot be undone.', 'Clear Tags', () => {
+    const p = currentProject();
+    if (!p) return;
+    p.scriptBreakdown.tags = [];
+    saveStore();
+    renderBreakdown(p);
+  });
+}
+
 function clearBreakdownScript() {
-  showConfirmDialog('Clear the script and all tags? This cannot be undone.', 'Clear', () => {
+  showConfirmDialog('Delete the script and all tags? This cannot be undone.', 'Delete', () => {
     const p = currentProject();
     if (!p) return;
     p.scriptBreakdown = { rawText: '', tags: [] };
@@ -6520,37 +6517,98 @@ function detectBreakdownSuggestions(text, existingTags) {
     return !/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after);
   };
 
-  // ── 1. Character cue detection ─────────────────────────────
+  // ── 1. Character detection ─────────────────────────────────
   const sceneHeadingRe = /^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s/i;
   const transitionRe   = /^(FADE|CUT|SMASH|DISSOLVE|WIPE|MATCH|JUMP)\b.*TO:\s*$|^FADE (IN|OUT)[.:]?\s*$|^THE END\s*$|^OVER BLACK\.?\s*$|^CONTINUED:?\s*$/i;
+  const validNameRe    = /^[A-Z][A-Z\s\-']*$/;
+  const nonCharWords   = new Set([
+    'BANG','BOOM','CRASH','POW','WHAM','SMASH','CRACK','SNAP',
+    'REVEAL','NOTE','BEAT','PAUSE','SILENCE','CONTINUED','MORE','OVER',
+    'BLACK','WHITE','COLOR','COLOUR','SCREEN','TITLES','END TITLES',
+    'MUSIC','SOUND','LATER','MOMENTS LATER','TITLE','CARD','TITLE CARD',
+    'OLD','NEW','CUT','JUMP','FADE','END','THE END','AND',
+  ]);
+  // Group-indicator words → Extras rather than Cast
+  const groupWords = new Set(['ARTISTS','PEOPLE','CROWD','GROUP','OFFICERS','SOLDIERS','GUARDS','EXTRAS','AUDIENCE','SPECTATORS','MEMBERS','STUDENTS','WORKERS','PATRONS','GUESTS','BYSTANDERS','PEDESTRIANS','ONLOOKERS']);
+  const charCategory = name => name.split(/\s+/).some(w => groupWords.has(w)) ? 'extras' : 'cast';
+
+  const isValidName = s =>
+    s.length >= 2 && s.length <= 35
+    && validNameRe.test(s)
+    && s.split(/\s+/).length <= 3
+    && !nonCharWords.has(s);
+
+  // Pass A: standalone character cue lines (speakers)
   const charNames = new Set();
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || sceneHeadingRe.test(trimmed) || transitionRe.test(trimmed)) continue;
     const stripped = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
-    if (stripped.length >= 2 && stripped.length <= 40
-      && stripped === stripped.toUpperCase()
-      && /[A-Z]/.test(stripped)
-      && !/^\d+\.?\s*$/.test(stripped)) {
-      charNames.add(stripped);
+    if (isValidName(stripped)) charNames.add(stripped);
+  }
+
+  // Pass B: ALL-CAPS words/phrases inside *mixed-case* action lines (non-speaking characters e.g. BARTENDER)
+  // Pure all-caps lines are direction/transition text — skip them entirely
+  const allCapsRe = /\b([A-Z]{2,}(?:\s[A-Z]{2,}){0,2})\b/g;
+  const nameStopWords = new Set(['NO','NOT','THE','A','AN','OF','IN','TO','AT','BY','FOR','BUT','AND','OR','IS','IT','AS','BE','DO','GO','IF','ON','UP','SO','MY','WE']);
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || sceneHeadingRe.test(trimmed) || transitionRe.test(trimmed)) continue;
+    if (!/[a-z]/.test(trimmed)) continue; // skip pure all-caps direction lines
+    const strippedLine = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (isValidName(strippedLine)) continue; // already a cue line, handled in Pass A
+    let m;
+    allCapsRe.lastIndex = 0;
+    while ((m = allCapsRe.exec(trimmed)) !== null) {
+      const candidate = m[1].trim();
+      const firstWord = candidate.split(/\s+/)[0];
+      if (isValidName(candidate) && !nameStopWords.has(firstWord)) charNames.add(candidate);
     }
   }
 
-  for (const name of charNames) {
-    const nameLower = name.toLowerCase();
-    for (const scene of scenes) {
-      const st = text.slice(scene.start, scene.end).toLowerCase();
+  // Process longest names first per scene so "MIME ARTISTS" claims its position before "MIME" can.
+  // Within each name, prefer the first ALL-CAPS occurrence (character introduction) over mixed-case.
+  const sortedNames = [...charNames].sort((a, b) => b.length - a.length);
+  for (const scene of scenes) {
+    const st = text.slice(scene.start, scene.end).toLowerCase();
+    const usedRanges = [];
+    for (const name of sortedNames) {
+      const cat = charCategory(name);
+      const nameLower = name.toLowerCase();
+      const nameUpper = name.toUpperCase();
+
+      // Pass 1: first ALL-CAPS occurrence not overlapping an already-claimed range
+      const notOverlapping = absStart => {
+        const e = absStart + name.length;
+        return !usedRanges.some(r => r[0] < e && r[1] > absStart);
+      };
+      let best = null;
       let idx = st.indexOf(nameLower);
       while (idx !== -1) {
         if (wordBoundary(st, idx, nameLower.length)) {
-          const start = scene.start + idx;
-          const end   = start + name.length;
-          if (!isTagged(start, end, 'cast')) {
-            suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: 'cast', text: text.slice(start, end), start, end, sceneHeading: scene.heading });
+          const absStart = scene.start + idx;
+          if (text.slice(absStart, absStart + name.length) === nameUpper && notOverlapping(absStart)) {
+            best = absStart; break;
           }
-          break; // first occurrence per scene
         }
         idx = st.indexOf(nameLower, idx + 1);
+      }
+      // Pass 2: fall back to first uppercase-starting occurrence not already claimed
+      if (best === null) {
+        idx = st.indexOf(nameLower);
+        while (idx !== -1) {
+          if (wordBoundary(st, idx, nameLower.length)) {
+            const absStart = scene.start + idx;
+            if (/[A-Z]/.test(text[absStart]) && notOverlapping(absStart)) { best = absStart; break; }
+          }
+          idx = st.indexOf(nameLower, idx + 1);
+        }
+      }
+      if (best === null) continue;
+      const end = best + name.length;
+      usedRanges.push([best, end]);
+      if (!isTagged(best, end, cat)) {
+        suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: cat, text: text.slice(best, end), start: best, end, sceneHeading: scene.heading });
       }
     }
   }
@@ -6705,7 +6763,7 @@ function applySelectedBdSuggestions() {
   for (const s of toApply) {
     bd.tags.push({ id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end });
   }
-  saveProjects();
+  saveProject();
   closeBdSuggestModal();
   const sv = document.getElementById('bd-script-view');
   if (sv) { const st = sv.scrollTop; sv.innerHTML = buildBreakdownHtml(bd.rawText, bd.tags); sv.scrollTop = st; }
@@ -7247,24 +7305,28 @@ function confirmOrphanRemove() {
 }
 
 function removeCSRow(csIdx, arrayKey, rowIdx) {
-  const p = currentProject();
-  if (!p.callsheets[csIdx][arrayKey]) return;
-  const row = p.callsheets[csIdx][arrayKey][rowIdx];
-  const removedName = arrayKey === 'castRows' ? row?.actor : row?.value;
-  p.callsheets[csIdx][arrayKey].splice(rowIdx, 1);
-  saveStore();
-  renderCallsheet(p);
-  if (removedName) maybePromptOrphanContact(p, removedName);
+  showConfirmDialog('Remove this row?', 'Remove', () => {
+    const p = currentProject();
+    if (!p.callsheets[csIdx][arrayKey]) return;
+    const row = p.callsheets[csIdx][arrayKey][rowIdx];
+    const removedName = arrayKey === 'castRows' ? row?.actor : row?.value;
+    p.callsheets[csIdx][arrayKey].splice(rowIdx, 1);
+    saveStore();
+    renderCallsheet(p);
+    if (removedName) maybePromptOrphanContact(p, removedName);
+  });
 }
 
 function removePersonnel(type, i) {
-  const p = currentProject();
-  const removedName = p[type][i]?.name;
-  p[type].splice(i, 1);
-  saveStore();
-  if (type === 'cast' || type === 'extras') renderCast(p);
-  else renderUnit(p);
-  if (removedName) maybePromptOrphanContact(p, removedName);
+  showConfirmDialog('Remove this person?', 'Remove', () => {
+    const p = currentProject();
+    const removedName = p[type][i]?.name;
+    p[type].splice(i, 1);
+    saveStore();
+    if (type === 'cast' || type === 'extras') renderCast(p);
+    else renderUnit(p);
+    if (removedName) maybePromptOrphanContact(p, removedName);
+  });
 }
 function addCSCustomField(csIdx) {
   document.getElementById('custom-field-select').value = '';
@@ -7318,12 +7380,14 @@ function saveCSCustomField() {
 }
 
 function removeCSCustomField(csIdx, fieldIdx) {
-  const p = currentProject();
-  if (p.callsheets[csIdx].customFields) {
-    p.callsheets[csIdx].customFields.splice(fieldIdx, 1);
-    saveStore();
-    renderCallsheet(p);
-  }
+  showConfirmDialog('Remove this custom field?', 'Remove', () => {
+    const p = currentProject();
+    if (p.callsheets[csIdx].customFields) {
+      p.callsheets[csIdx].customFields.splice(fieldIdx, 1);
+      saveStore();
+      renderCallsheet(p);
+    }
+  });
 }
 
 function updateCSCustomField(csIdx, fieldIdx, val, extra) {
@@ -7741,7 +7805,7 @@ function renderSchedule(p) {
   `).join('');
 }
 function addScheduleRow() { document.getElementById('sched-edit-idx').value=''; ['time','scene','shot','desc','cast','pages','est'].forEach(f => document.getElementById('sched-'+f).value=''); openModal('modal-schedule'); }
-function removeScheduleRow(i) { const p=currentProject(); p.schedule.splice(i,1); saveStore(); renderSchedule(p); }
+function removeScheduleRow(i) { showConfirmDialog('Remove this schedule entry?', 'Remove', () => { const p=currentProject(); p.schedule.splice(i,1); saveStore(); renderSchedule(p); }); }
 function saveScheduleRow() {
   const p=currentProject();
   const row = {
@@ -7879,116 +7943,171 @@ function addUnitMember(dept) {
 }
 
 // BUDGET
+const ATL_DEPTS = ['Story & Rights','Producers','Director','Cast'];
+const BTL_DEPTS = ['Production Design','Art Department','Camera','Lighting & Grip','Sound','Wardrobe','Makeup & Hair','Locations','Transport','Catering','Post-Production','VFX','Music','Marketing','Insurance & Legal','Other'];
+const DEPT_COLORS = ['#F5E642','#52BE80','#FF8C42','#D4AC0D','#FF8FAB','#E74C3C','#9B59B6','#C39BD3','#2E86C1','#1ABC9C','#E67E22','#EC407A'];
+const DEPT_TEXT   = ['#1a1a1a','#fff','#fff','#fff','#1a1a1a','#fff','#fff','#1a1a1a','#fff','#fff','#fff','#fff'];
+
+function deptPillStyle(dept) {
+  let h = 0;
+  for (let i = 0; i < dept.length; i++) h = ((h * 31) + dept.charCodeAt(i)) >>> 0;
+  const idx = h % DEPT_COLORS.length;
+  return `background:${DEPT_COLORS[idx]};color:${DEPT_TEXT[idx]}`;
+}
+
+function fmtMoney(n) { return '£' + (parseFloat(n)||0).toFixed(2); }
+
+function renderBudgetSection(lines, sectionId, sectionLabel, sectionClass, addFn) {
+  const el = document.getElementById(sectionId);
+  const est = lines.reduce((s,b) => s + (parseFloat(b.rate)||0)*(parseFloat(b.qty)||1), 0);
+  const act = lines.filter(b => b.actual !== '' && b.actual != null).reduce((s,b) => s + (parseFloat(b.actual)||0), 0);
+  const hasActual = lines.some(b => b.actual !== '' && b.actual != null);
+
+  let rows = '';
+  if (!lines.length) {
+    rows = `<tr><td colspan="8" style="padding:28px;text-align:center;color:var(--text3);font-size:12px">No ${sectionLabel} lines yet — click "+ ${sectionLabel.includes('Above')?'ATL':'BTL'} Line" to add one</td></tr>`;
+  } else {
+    rows = lines.map(b => {
+      const p = currentProject();
+      const i = p.budget.indexOf(b);
+      const lineEst = (parseFloat(b.rate)||0) * (parseFloat(b.qty)||1);
+      const lineAct = (b.actual !== '' && b.actual != null) ? parseFloat(b.actual)||0 : null;
+      const lineVar = lineAct !== null ? lineAct - lineEst : null;
+      const varClass = lineVar === null ? 'variance-zero' : lineVar > 0 ? 'variance-pos' : lineVar < 0 ? 'variance-neg' : 'variance-zero';
+      return `<tr>
+        <td><span class="dept-pill" style="${deptPillStyle(b.dept||'Other')}">${(b.dept||'Other').replace(/</g,'&lt;')}</span></td>
+        <td style="color:var(--text)">${(b.desc||'—').replace(/</g,'&lt;')}</td>
+        <td class="num">${b.rate ? fmtMoney(b.rate) : '—'}</td>
+        <td class="num">${b.qty != null && b.qty !== '' ? b.qty : '1'}</td>
+        <td class="num">${fmtMoney(lineEst)}</td>
+        <td class="${varClass}">${lineAct !== null ? fmtMoney(lineAct) : '<span style="opacity:0.35">—</span>'}</td>
+        <td class="${varClass}">${lineVar !== null ? (lineVar >= 0 ? '+' : '') + fmtMoney(lineVar) : '<span style="opacity:0.35">—</span>'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ghost" onclick="editBudgetLine(${i})" title="Edit">✎</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeBudgetLine(${i})" title="Delete">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div class="budget-section-head ${sectionClass}">
+      <span>${sectionLabel}</span>
+      <span style="font-size:10px;opacity:0.7">${lines.length} line${lines.length!==1?'s':''}</span>
+    </div>
+    <table class="budget-table">
+      <thead><tr>
+        <th>Department</th><th>Description</th>
+        <th class="num">Rate</th><th class="num">Qty</th>
+        <th class="num">Estimated</th><th class="num">Actual</th><th class="num">Variance</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      ${lines.length ? `<tfoot><tr class="budget-total-row">
+        <td colspan="4" style="text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.6">${sectionLabel} Total</td>
+        <td class="num">${fmtMoney(est)}</td>
+        <td class="num">${hasActual ? fmtMoney(act) : '—'}</td>
+        <td class="num ${est && hasActual ? (act-est > 0 ? 'variance-pos' : act-est < 0 ? 'variance-neg' : 'variance-zero') : ''}">${hasActual && est ? (act-est >= 0 ? '+' : '') + fmtMoney(act-est) : '—'}</td>
+        <td></td>
+      </tr></tfoot>` : ''}
+    </table>`;
+}
+
 function renderBudget(p) {
-  const estimates = p.budget.filter(b => b.type !== 'actual');
-  const actuals = p.budget.filter(b => b.type === 'actual');
-  
-  let estTotal = 0;
-  const estBody = document.getElementById('budget-estimate-body');
-  if (!estimates.length) {
-    estBody.innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">💷</div><h4>No estimated budget lines</h4></div></td></tr>`;
-  } else {
-    estBody.innerHTML = estimates.map((b,i) => {
-      const est = (parseFloat(b.cost)||0) * (parseFloat(b.qty)||1);
-      estTotal += est;
-      return `<tr>
-        <td>${b.cat}</td>
-        <td>${b.desc||'—'}</td>
-        <td>£${parseFloat(b.cost||0).toFixed(2)}</td>
-        <td>${b.qty||1}</td>
-        <td>£${est.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-sm btn-ghost" onclick="editBudgetLine(${p.budget.indexOf(b)})">✎</button>
-          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeBudgetLine(${p.budget.indexOf(b)})">✕</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }
-  
-  let actTotal = 0;
-  const actBody = document.getElementById('budget-actual-body');
-  if (!actuals.length) {
-    actBody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:30px"><div class="icon">💷</div><h4>No actual expenses</h4></div></td></tr>`;
-  } else {
-    actBody.innerHTML = actuals.map((b,i) => {
-      const act = parseFloat(b.actual)||0;
-      actTotal += act;
-      return `<tr>
-        <td>${b.cat}</td>
-        <td>${b.desc||'—'}</td>
-        <td>£${act.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-sm btn-ghost" onclick="editBudgetLine(${p.budget.indexOf(b)})">✎</button>
-          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeBudgetLine(${p.budget.indexOf(b)})">✕</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }
-  
-  const varTotal = actTotal - estTotal;
-  document.getElementById('budget-summary').innerHTML = `
-    <div class="budget-total estimate"><div class="label">Total Estimate</div><div class="amount">£${estTotal.toFixed(2)}</div></div>
-    <div class="budget-total actual"><div class="label">Total Actual</div><div class="amount">£${actTotal.toFixed(2)}</div></div>
-    <div class="budget-total variance"><div class="label">Variance</div><div class="amount" style="color:${varTotal>0?'var(--red)':varTotal<0?'var(--green)':'var(--text2)'}">${varTotal>=0?'+':''}£${varTotal.toFixed(2)}</div></div>
-  `;
+  if (!p.budget) p.budget = [];
+  const atl = p.budget.filter(b => b.section === 'atl');
+  const btl = p.budget.filter(b => b.section !== 'atl');
+
+  renderBudgetSection(atl, 'budget-atl-section', 'Above The Line', 'atl', 'atl');
+  renderBudgetSection(btl, 'budget-btl-section', 'Below The Line', 'btl', 'btl');
+
+  const atlEst = atl.reduce((s,b) => s + (parseFloat(b.rate)||0)*(parseFloat(b.qty)||1), 0);
+  const btlEst = btl.reduce((s,b) => s + (parseFloat(b.rate)||0)*(parseFloat(b.qty)||1), 0);
+  const atlAct = atl.filter(b=>b.actual!==''&&b.actual!=null).reduce((s,b)=>s+(parseFloat(b.actual)||0),0);
+  const btlAct = btl.filter(b=>b.actual!==''&&b.actual!=null).reduce((s,b)=>s+(parseFloat(b.actual)||0),0);
+  const totalEst = atlEst + btlEst;
+  const hasAct = p.budget.some(b=>b.actual!==''&&b.actual!=null);
+  const totalAct = atlAct + btlAct;
+  const variance = totalAct - totalEst;
+  const varColor = variance > 0 ? 'var(--red)' : variance < 0 ? 'var(--green)' : 'var(--text2)';
+
+  document.getElementById('budget-summary-bar').innerHTML = `
+    <div class="bsb-card atl"><div class="bsb-label">ATL Estimated</div><div class="bsb-amount">${fmtMoney(atlEst)}</div></div>
+    <div class="bsb-card btl"><div class="bsb-label">BTL Estimated</div><div class="bsb-amount">${fmtMoney(btlEst)}</div></div>
+    <div class="bsb-card grand"><div class="bsb-label">Total Estimated</div><div class="bsb-amount">${fmtMoney(totalEst)}</div></div>
+    ${hasAct ? `<div class="bsb-card grand"><div class="bsb-label">Total Actual</div><div class="bsb-amount">${fmtMoney(totalAct)}</div></div>
+    <div class="bsb-card"><div class="bsb-label">Variance</div><div class="bsb-amount" style="color:${varColor}">${variance>=0?'+':''}${fmtMoney(variance)}</div></div>` : ''}`;
 }
-function toggleBudgetFields() {
-  const type = document.getElementById('bud-type').value;
-  const costGroup = document.getElementById('bud-cost').closest('.form-group');
-  const qtyGroup = document.getElementById('bud-qty').closest('.form-group');
-  const actualGroup = document.getElementById('bud-actual').closest('.form-group');
-  if (type === 'estimate') {
-    costGroup.style.display = 'block';
-    qtyGroup.style.display = 'block';
-    actualGroup.style.display = 'none';
-  } else {
-    costGroup.style.display = 'none';
-    qtyGroup.style.display = 'none';
-    actualGroup.style.display = 'block';
-  }
+
+function updateBudgetEstPreview() {
+  const rate = parseFloat(document.getElementById('bud-rate').value) || 0;
+  const qty  = parseFloat(document.getElementById('bud-qty').value)  || 1;
+  const est  = rate * qty;
+  const el   = document.getElementById('bud-est-preview');
+  el.textContent = est > 0 ? `= ${fmtMoney(est)} estimated` : '';
 }
-function addBudgetLine() { 
-  document.getElementById('budget-edit-idx').value=''; 
-  ['desc','cost','qty','actual'].forEach(f=>document.getElementById('bud-'+f).value=''); 
-  document.getElementById('bud-cat').value='Travel Expenses'; 
-  document.getElementById('bud-type').value='estimate'; 
-  toggleBudgetFields();
-  openModal('modal-budget'); 
-}
-function addActualExpense() { 
-  document.getElementById('budget-edit-idx').value=''; 
-  ['desc','cost','qty','actual'].forEach(f=>document.getElementById('bud-'+f).value=''); 
-  document.getElementById('bud-cat').value='Travel Expenses'; 
-  document.getElementById('bud-type').value='actual'; 
-  toggleBudgetFields();
-  openModal('modal-budget'); 
-}
-function editBudgetLine(i) {
-  const b = currentProject().budget[i];
-  document.getElementById('budget-edit-idx').value=i;
-  document.getElementById('bud-cat').value=b.cat||'Travel Expenses';
-  document.getElementById('bud-desc').value=b.desc||'';
-  document.getElementById('bud-cost').value=b.cost||'';
-  document.getElementById('bud-qty').value=b.qty||'';
-  document.getElementById('bud-actual').value=b.actual||'';
-  document.getElementById('bud-type').value=b.type||'estimate';
-  toggleBudgetFields();
+
+function addBudgetLine(section) {
+  document.getElementById('budget-edit-idx').value = '';
+  document.getElementById('bud-section').value = section || 'btl';
+  document.getElementById('bud-dept').value = '';
+  document.getElementById('bud-desc').value = '';
+  document.getElementById('bud-rate').value = '';
+  document.getElementById('bud-qty').value = '';
+  document.getElementById('bud-actual').value = '';
+  document.getElementById('bud-notes').value = '';
+  document.getElementById('bud-est-preview').textContent = '';
+  document.getElementById('budget-modal-title').textContent = section === 'atl' ? 'ADD ATL LINE' : 'ADD BTL LINE';
+  const depts = section === 'atl' ? ATL_DEPTS : BTL_DEPTS;
+  document.getElementById('bud-dept-list').innerHTML = depts.map(d => `<option value="${d}">`).join('');
   openModal('modal-budget');
 }
-function removeBudgetLine(i) { const p=currentProject(); p.budget.splice(i,1); saveStore(); renderBudget(p); }
+
+function editBudgetLine(i) {
+  const b = currentProject().budget[i];
+  document.getElementById('budget-edit-idx').value = i;
+  document.getElementById('bud-section').value = b.section || 'btl';
+  document.getElementById('bud-dept').value = b.dept || '';
+  document.getElementById('bud-desc').value = b.desc || '';
+  document.getElementById('bud-rate').value = b.rate || '';
+  document.getElementById('bud-qty').value = b.qty || '';
+  document.getElementById('bud-actual').value = b.actual != null ? b.actual : '';
+  document.getElementById('bud-notes').value = b.notes || '';
+  document.getElementById('budget-modal-title').textContent = 'EDIT BUDGET LINE';
+  const section = b.section || 'btl';
+  const depts = section === 'atl' ? ATL_DEPTS : BTL_DEPTS;
+  document.getElementById('bud-dept-list').innerHTML = depts.map(d => `<option value="${d}">`).join('');
+  updateBudgetEstPreview();
+  openModal('modal-budget');
+}
+
+function removeBudgetLine(i) {
+  showConfirmDialog('Remove this budget line?', 'Remove', () => {
+    const p = currentProject();
+    p.budget.splice(i, 1);
+    saveStore();
+    renderBudget(p);
+  });
+}
+
 function saveBudgetLine() {
-  const p=currentProject();
+  const p = currentProject();
+  const actualVal = document.getElementById('bud-actual').value;
   const b = {
-    type: document.getElementById('bud-type').value,
-    cat: document.getElementById('bud-cat').value,
-    desc: document.getElementById('bud-desc').value,
-    cost: document.getElementById('bud-cost').value,
-    qty: document.getElementById('bud-qty').value||1,
-    actual: document.getElementById('bud-actual').value||0,
+    section: document.getElementById('bud-section').value || 'btl',
+    dept:    document.getElementById('bud-dept').value || 'Other',
+    desc:    document.getElementById('bud-desc').value,
+    rate:    document.getElementById('bud-rate').value,
+    qty:     document.getElementById('bud-qty').value || 1,
+    actual:  actualVal !== '' ? actualVal : null,
+    notes:   document.getElementById('bud-notes').value,
   };
   const idx = document.getElementById('budget-edit-idx').value;
-  if (idx!=='') p.budget[parseInt(idx)]=b; else p.budget.push(b);
-  saveStore(); closeModal('modal-budget'); renderBudget(p); showToast('Saved','success');
+  if (idx !== '') p.budget[parseInt(idx)] = b; else p.budget.push(b);
+  saveStore();
+  closeModal('modal-budget');
+  renderBudget(p);
+  showToast('Saved', 'success');
 }
 
 // EQUIPMENT
@@ -8021,9 +8140,11 @@ function toggleEquip(cat,i) {
   saveStore(); renderEquipment(p);
 }
 function removeEquipItem(cat,i) {
-  const p=currentProject();
-  p.equipment[cat].splice(i,1);
-  saveStore(); renderEquipment(p);
+  showConfirmDialog('Remove this equipment item?', 'Remove', () => {
+    const p=currentProject();
+    p.equipment[cat].splice(i,1);
+    saveStore(); renderEquipment(p);
+  });
 }
 function quickAddEquip(cat) {
   document.getElementById('equip-cat').value=cat;
@@ -8106,7 +8227,7 @@ function editLocation(i) {
   document.getElementById('loc-notes').value=l.notes||'';
   openModal('modal-location');
 }
-function removeLocation(i) { const p=currentProject(); p.locations.splice(i,1); saveStore(); renderLocations(p); }
+function removeLocation(i) { showConfirmDialog('Remove this location?', 'Remove', () => { const p=currentProject(); p.locations.splice(i,1); saveStore(); renderLocations(p); }); }
 function saveLocation() {
   const p=currentProject();
   const name=document.getElementById('loc-name').value.trim();
@@ -8316,7 +8437,7 @@ function renderScoutingList(p) {
   `).join('');
 }
 function addScoutingSheet() { const p=currentProject(); p.scoutingSheets.push({name:'',date:'',scoutedBy:''}); saveStore(); renderScoutingList(p); }
-function removeScoutingSheet(i) { const p=currentProject(); p.scoutingSheets.splice(i,1); saveStore(); renderScoutingList(p); }
+function removeScoutingSheet(i) { showConfirmDialog('Remove this scouting sheet?', 'Remove', () => { const p=currentProject(); p.scoutingSheets.splice(i,1); saveStore(); renderScoutingList(p); }); }
 function updateScouting(i,field,val) { const p=currentProject(); p.scoutingSheets[i][field]=val; saveStore(); }
 function toggleScoutingMinimize(i) { const p=currentProject(); p.scoutingSheets[i].minimized = !p.scoutingSheets[i].minimized; saveStore(); renderScoutingList(p); }
 
@@ -8343,7 +8464,7 @@ function saveInvite() {
   store.teamMembers.push({name,email,access:document.getElementById('inv-access').value,project:document.getElementById('inv-project').value});
   saveStore();closeModal('modal-invite');renderTeam();showToast('Member invited','success');
 }
-function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTeam();}
+function removeTeamMember(i){showConfirmDialog('Remove this team member?','Remove',()=>{store.teamMembers.splice(i,1);saveStore();renderTeam();});}
 
 // CONTACTS
 let contactTypeFilter = 'all';
@@ -9532,7 +9653,7 @@ function saveShot() {
   if(idx!=='') p.shots[parseInt(idx)]=s; else p.shots.push(s);
   saveStore(); closeModal('modal-shot'); renderShotList(p); showToast('Shot saved','success');
 }
-function removeShot(i) { const p=currentProject(); p.shots.splice(i,1); saveStore(); renderShotList(p); }
+function removeShot(i) { showConfirmDialog('Remove this shot?', 'Remove', () => { const p=currentProject(); p.shots.splice(i,1); saveStore(); renderShotList(p); }); }
 
 // ══════════════════════════════════════════
 // PROPS / WARDROBE
@@ -9590,9 +9711,11 @@ function savePropItem() {
   showToast('Saved','success');
 }
 function removePropItem(type,i) {
-  const p=currentProject(); p[type].splice(i,1); saveStore();
-  if(type==='props') renderPropTable('props','props-body',p);
-  else renderPropTable('wardrobe','wardrobe-body',p);
+  showConfirmDialog('Remove this item?', 'Remove', () => {
+    const p=currentProject(); p[type].splice(i,1); saveStore();
+    if(type==='props') renderPropTable('props','props-body',p);
+    else renderPropTable('wardrobe','wardrobe-body',p);
+  });
 }
 
 // WARDROBE FUNCTIONS
@@ -9659,8 +9782,10 @@ function saveWardrobeItem() {
   showToast('Saved','success');
 }
 function removeWardrobeItem(i) {
-  const p=currentProject(); p.wardrobe.splice(i,1); saveStore();
-  renderWardrobeTable(p);
+  showConfirmDialog('Remove this wardrobe item?', 'Remove', () => {
+    const p=currentProject(); p.wardrobe.splice(i,1); saveStore();
+    renderWardrobeTable(p);
+  });
 }
 
 // ══════════════════════════════════════════
@@ -9690,7 +9815,7 @@ function saveSoundEntry(){
   if(idx!=='')p.soundlog[parseInt(idx)]=s;else p.soundlog.push(s);
   saveStore();closeModal('modal-sound');renderSoundLog(p);showToast('Saved','success');
 }
-function removeSoundEntry(i){const p=currentProject();p.soundlog.splice(i,1);saveStore();renderSoundLog(p);}
+function removeSoundEntry(i){showConfirmDialog('Remove this sound log entry?','Remove',()=>{const p=currentProject();p.soundlog.splice(i,1);saveStore();renderSoundLog(p);});}
 
 // ══════════════════════════════════════════
 // RISK ASSESSMENT
@@ -9738,7 +9863,7 @@ function saveRiskRow(){
   if(idx!=='')p.risks[parseInt(idx)]=r;else p.risks.push(r);
   saveStore();closeModal('modal-risk');renderRiskAssessment(p);showToast('Saved','success');
 }
-function removeRiskRow(i){const p=currentProject();p.risks.splice(i,1);saveStore();renderRiskAssessment(p);}
+function removeRiskRow(i){showConfirmDialog('Remove this risk entry?','Remove',()=>{const p=currentProject();p.risks.splice(i,1);saveStore();renderRiskAssessment(p);});}
 
 // ══════════════════════════════════════════
 // RELEASE FORMS
@@ -9784,7 +9909,7 @@ function renderReleases(p) {
 }
 function addRelease(type){const p=currentProject();if(!p.releases)p.releases=[];p.releases.push({type,name:type==='talent'?'New Talent':'New Location',signed:false});saveStore();renderReleases(p);}
 function toggleSigned(i){const p=currentProject();p.releases[i].signed=!p.releases[i].signed;saveStore();renderReleases(p);}
-function removeRelease(i){const p=currentProject();p.releases.splice(i,1);saveStore();renderReleases(p);}
+function removeRelease(i){showConfirmDialog('Remove this release form?','Remove',()=>{const p=currentProject();p.releases.splice(i,1);saveStore();renderReleases(p);});}
 function updateRelease(i,field,val){const p=currentProject();p.releases[i][field]=val;if(field==='talentName'||field==='property')p.releases[i].name=val;saveStore();}
 
 // ══════════════════════════════════════════
@@ -9839,7 +9964,7 @@ function renderTechScouts(p) {
   `).join('');
 }
 function addTechScout(){const p=currentProject();if(!p.techScouts)p.techScouts=[];p.techScouts.push({name:'',date:'',checks:{}});saveStore();renderTechScouts(p);}
-function removeTechScout(i){const p=currentProject();p.techScouts.splice(i,1);saveStore();renderTechScouts(p);}
+function removeTechScout(i){showConfirmDialog('Remove this tech scout?','Remove',()=>{const p=currentProject();p.techScouts.splice(i,1);saveStore();renderTechScouts(p);});}
 function updateTechScout(i,field,val){const p=currentProject();p.techScouts[i][field]=val;saveStore();}
 function toggleTechCheck(si,key){const p=currentProject();if(!p.techScouts[si].checks)p.techScouts[si].checks={};p.techScouts[si].checks[key]=!p.techScouts[si].checks[key];saveStore();renderTechScouts(p);}
 function toggleTechScoutMinimize(i) { const p=currentProject(); p.techScouts[i].minimized = !p.techScouts[i].minimized; saveStore(); renderTechScouts(p); }
