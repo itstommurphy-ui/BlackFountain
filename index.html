@@ -179,18 +179,34 @@
     white-space: nowrap;
   }
   .project-item:hover { background: var(--surface2); color: var(--text); }
-  .project-item.active {
-    background: rgba(56,168,212,0.07);
-    color: var(--accent2);
-    border-color: rgba(56,168,212,0.12);
-  }
+  .project-item.active { border-color: transparent; }
+
+  .project-item.status-pre:hover  { color: #7dd0f5; }
+  .project-item.status-pre.active { background: rgba(56,168,212,0.07); color: #7dd0f5; border-color: rgba(56,168,212,0.12); }
+  .project-item.status-pre.active .project-dot { background: #7dd0f5; }
+
+  .project-item.status-prod:hover  { color: #f0cf70; }
+  .project-item.status-prod.active { background: rgba(212,170,44,0.07); color: #f0cf70; border-color: rgba(212,170,44,0.12); }
+  .project-item.status-prod.active .project-dot { background: #f0cf70; }
+
+  .project-item.status-post:hover  { color: #e08095; }
+  .project-item.status-post.active { background: rgba(196,86,110,0.07); color: #e08095; border-color: rgba(196,86,110,0.12); }
+  .project-item.status-post.active .project-dot { background: #e08095; }
+
+  .project-item.status-done:hover  { color: #60d090; }
+  .project-item.status-done.active { background: rgba(46,168,100,0.07); color: #60d090; border-color: rgba(46,168,100,0.12); }
+  .project-item.status-done.active .project-dot { background: #60d090; }
+
+  .project-item.status-released:hover  { color: #b88af0; }
+  .project-item.status-released.active { background: rgba(138,100,212,0.07); color: #b88af0; border-color: rgba(138,100,212,0.12); }
+  .project-item.status-released.active .project-dot { background: #b88af0; }
+
   .project-dot {
     width: 4px; height: 4px;
     border-radius: 50%;
     background: var(--text3);
     flex-shrink: 0;
   }
-  .project-item.active .project-dot { background: var(--accent2); }
 
   .sidebar-footer {
     margin-top: auto;
@@ -292,7 +308,7 @@
 
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 10px;
     margin-bottom: 22px;
     max-width: 100%;
@@ -305,7 +321,13 @@
     padding: 16px 18px 14px;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.12s;
   }
+  .stat-card:hover { border-color: var(--border); transform: translateY(-1px); }
+  .stat-card.active { border-color: rgba(255,255,255,0.18); background: var(--surface2); }
+  .stat-card.total-card { cursor: default; }
+  .stat-card.total-card:hover { transform: none; border-color: var(--border2); }
   .stat-card::before {
     content: '';
     position: absolute;
@@ -367,7 +389,11 @@
   .project-card.status-prod::before { background: var(--accent); }
   .project-card.status-prod::after { background: linear-gradient(180deg, var(--accent), transparent); }
   .project-card.status-post::before { background: var(--accent3); }
+  .project-card.status-post::after { background: linear-gradient(180deg, var(--accent3), transparent); }
   .project-card.status-done::before { background: var(--green); }
+  .project-card.status-done::after { background: linear-gradient(180deg, var(--green), transparent); }
+  .project-card.status-released::before { background: #b88af0; }
+  .project-card.status-released::after { background: linear-gradient(180deg, #b88af0, transparent); }
   .project-card:hover {
     border-color: var(--border);
     transform: translateY(-2px);
@@ -397,6 +423,38 @@
   .badge-prod { background: rgba(212,170,44,0.15); color: #f0cf70; }
   .badge-post { background: rgba(196,86,110,0.15); color: #e08095; }
   .badge-done { background: rgba(46,168,100,0.15); color: #60d090; }
+  .badge-released { background: rgba(138,100,212,0.15); color: #b88af0; }
+
+  .sidebar-status-group { font-size: 8px; font-family: var(--font-mono); letter-spacing: 2px; text-transform: uppercase; color: var(--text3); padding: 10px 10px 3px; opacity: 0.7; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; border-radius: 4px; margin: 0 2px; }
+  .sidebar-status-group:first-child { padding-top: 4px; }
+  .sidebar-status-group:hover { opacity: 1; color: var(--text2); }
+  .sidebar-status-group .sg-arrow { font-size: 8px; transition: transform 0.15s; opacity: 0.6; }
+  .sidebar-status-group.collapsed .sg-arrow { transform: rotate(-90deg); }
+
+  .proj-status-select {
+    -webkit-appearance: none;
+    appearance: none;
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 20px 3px 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background-repeat: no-repeat;
+    background-position: right 5px center;
+    background-size: 7px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    outline: none;
+  }
+  .proj-status-select.badge-pre { background-color: rgba(56,168,212,0.15); color: #7dd0f5; }
+  .proj-status-select.badge-prod { background-color: rgba(212,170,44,0.15); color: #f0cf70; }
+  .proj-status-select.badge-post { background-color: rgba(196,86,110,0.15); color: #e08095; }
+  .proj-status-select.badge-done { background-color: rgba(46,168,100,0.15); color: #60d090; }
+  .proj-status-select.badge-released { background-color: rgba(138,100,212,0.15); color: #b88af0; }
+  .proj-status-select option { background: var(--surface2); color: var(--text); }
 
   .project-card-meta { color: var(--text3); font-size: 11.5px; margin-bottom: 14px; line-height: 1.7; overflow: hidden; text-overflow: ellipsis; }
   .project-card-footer { display: flex; justify-content: space-between; align-items: center; }
@@ -518,6 +576,7 @@
     cursor: pointer;
     transition: all 0.14s;
     overflow: hidden;
+    position: relative;
   }
   .doc-card:hover {
     border-color: var(--border);
@@ -525,6 +584,32 @@
     transform: translateY(-1px);
     box-shadow: var(--shadow);
   }
+  .doc-card.ov-selected { border-color: var(--accent); background: rgba(56,168,212,0.06); }
+  .doc-card.ov-drag-over { border-color: var(--accent); background: rgba(56,168,212,0.1); transform: scale(1.03); }
+  .doc-card.ov-dragging { opacity: 0.35; transform: none; }
+  .ov-checkbox {
+    position: absolute; top: 7px; left: 7px;
+    width: 14px; height: 14px; cursor: pointer; z-index: 2;
+    opacity: 0; transition: opacity .12s;
+  }
+  .ov-remove-btn {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(220,60,60,0.12); border: none;
+    color: #e06060; cursor: pointer; font-size: 10px;
+    width: 18px; height: 18px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .12s; z-index: 2; padding: 0;
+  }
+  .doc-card:hover .ov-checkbox,
+  .doc-card:hover .ov-remove-btn,
+  .doc-card.ov-selected .ov-checkbox,
+  .doc-card.ov-selected .ov-remove-btn { opacity: 1; }
+  .picker-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 7px; cursor: pointer;
+    font-size: 12px; color: var(--text); transition: background .1s;
+  }
+  .picker-row:hover { background: var(--surface3, var(--surface)); }
   .doc-card-icon { font-size: 20px; margin-bottom: 8px; opacity: 0.85; }
   .doc-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .doc-card-sub { font-size: 11px; color: var(--text3); }
@@ -538,6 +623,22 @@
   }
   .doc-card-status.filled { color: var(--green); }
   .doc-card-status.empty { color: var(--text3); }
+
+  .layout-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    background: var(--surface);
+    margin-bottom: 3px;
+    cursor: grab;
+    user-select: none;
+    transition: border-color .1s, background .1s;
+  }
+  .layout-row.layout-hidden { opacity: 0.45; }
+  .layout-row.drag-over { border-color: var(--accent); background: rgba(56,168,212,0.08); }
+  .layout-drag-handle { color: var(--text3); font-size: 15px; cursor: grab; }
+  .layout-eye-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
 
   .new-doc-card {
     background: transparent;
@@ -1711,17 +1812,20 @@
       <div class="nav-item" onclick="showView('team')">
         <span class="icon">👥</span> Team
       </div>
-      <div class="nav-item" data-view="contacts" onclick="showContactsView('all')">
-        <span class="icon">📱</span> Contacts
+      <div class="nav-item" data-view="contacts" onclick="showContactsView('all')" style="justify-content:space-between">
+        <span><span class="icon">📱</span> Contacts</span>
+        <span class="sg-arrow" id="contacts-subnav-arrow" onclick="event.stopPropagation();toggleContactsSubNav()" style="font-size:9px;opacity:0.5;padding:2px 4px;transform:rotate(-90deg)">▾</span>
       </div>
-      <div class="nav-subitem" data-subview="crew" onclick="showContactsView('crew')">
-        <span class="icon" style="font-size:11px">🎬</span> Crew
-      </div>
-      <div class="nav-subitem" data-subview="talent" onclick="showContactsView('talent')">
-        <span class="icon" style="font-size:11px">⭐</span> Talent
-      </div>
-      <div class="nav-subitem" data-subview="locations" onclick="showContactsView('locations')">
-        <span class="icon" style="font-size:11px">📍</span> Location Contacts
+      <div id="contacts-subnav" style="display:none">
+        <div class="nav-subitem" data-subview="crew" onclick="showContactsView('crew')">
+          <span class="icon" style="font-size:11px">🎬</span> Crew
+        </div>
+        <div class="nav-subitem" data-subview="talent" onclick="showContactsView('talent')">
+          <span class="icon" style="font-size:11px">⭐</span> Talent
+        </div>
+        <div class="nav-subitem" data-subview="locations" onclick="showContactsView('locations')">
+          <span class="icon" style="font-size:11px">📍</span> Location Contacts
+        </div>
       </div>
       <div class="nav-item" onclick="showView('locations')">
         <span class="icon">📍</span> Locations
@@ -1767,10 +1871,12 @@
           <p>Your production pipeline at a glance</p>
         </div>
         <div class="stats-row">
-          <div class="stat-card"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
-          <div class="stat-card"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
-          <div class="stat-card"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:var(--accent2)">●</div></div>
-          <div class="stat-card"><div class="label">Post / Done</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
+          <div class="stat-card total-card"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
+          <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>
+          <div class="stat-card" onclick="setDashboardFilter('prod')"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
+          <div class="stat-card" onclick="setDashboardFilter('post')"><div class="label">Post-Production</div><div class="value" id="stat-post">0</div><div class="sub" style="color:#e08095">●</div></div>
+          <div class="stat-card" onclick="setDashboardFilter('done')"><div class="label">Complete</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
+          <div class="stat-card" onclick="setDashboardFilter('released')"><div class="label">Released</div><div class="value" id="stat-released">0</div><div class="sub" style="color:#b88af0">●</div></div>
         </div>
         <div class="projects-grid" id="projects-grid">
           <div class="new-project-card" onclick="openNewProjectModal()">
@@ -1789,7 +1895,13 @@
             <div class="project-header-meta" id="proj-meta"></div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            <span class="status-badge" id="proj-status-badge"></span>
+            <select class="proj-status-select" id="proj-status-select" onchange="changeProjectStatus(this.value)">
+              <option value="pre">PRE-PROD</option>
+              <option value="prod">PRODUCTION</option>
+              <option value="post">POST-PROD</option>
+              <option value="done">COMPLETE</option>
+              <option value="released">RELEASED</option>
+            </select>
             <button class="btn btn-sm" onclick="openEditProjectModal()">✎ Edit</button>
             <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()">✕</button>
           </div>
@@ -1811,6 +1923,8 @@
           <div class="section-tab" onclick="showSection('soundlog')">Sound Log</div>
           <div class="section-tab" onclick="showSection('riskassess')">Risk Assessment</div>
           <div class="section-tab" onclick="showSection('releases')">Release Forms</div>
+          <div class="section-tab" onclick="showSection('script')">Script</div>
+          <div class="section-tab" onclick="showSection('brief')">Project Brief</div>
         </div>
 
         <!-- SECTION: OVERVIEW -->
@@ -1828,6 +1942,10 @@
               <div class="label">Crew Members</div>
               <div class="value" id="ov-crew">0</div>
             </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px">
+            <h3 class="section-heading" style="margin:0">SECTIONS</h3>
+            <div id="ov-toolbar" style="display:flex;align-items:center;gap:8px;font-size:11px"></div>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
 
@@ -2125,6 +2243,33 @@
           <div id="releases-list"></div>
         </div>
 
+        <!-- SECTION: SCRIPT & DOCUMENTS -->
+        <div id="section-script" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <h3 class="section-heading" style="margin:0">SCRIPT &amp; DOCUMENTS</h3>
+            <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+              + Upload Document
+              <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.fdx,.fountain,.rtf" style="display:none" onchange="handleScriptUpload(this.files)">
+            </label>
+          </div>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 20px">Accepted formats: PDF · DOC · DOCX · TXT · FDX · Fountain · RTF</p>
+          <div id="script-files-list"></div>
+        </div>
+
+        <!-- SECTION: PROJECT BRIEF -->
+        <div id="section-brief" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <h3 class="section-heading" style="margin-bottom:20px">PROJECT BRIEF</h3>
+          <div id="brief-content"></div>
+        </div>
+
+        <!-- SECTION: CUSTOM (shared container for user-created sections) -->
+        <div id="section-custom" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div id="custom-section-content"></div>
+        </div>
+
       </div><!-- /view-project -->
 
       <!-- CONTACTS VIEW -->
@@ -2348,7 +2493,7 @@
             </div>
             <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Role(s)</label>
-              <input class="form-input-minimal" id="edit-contact-default-role" placeholder="e.g. Gaffer, Director of Photography">
+              <input class="form-input-minimal" id="edit-contact-default-role" placeholder="e.g. Gaffer, Director of Photography" list="roles-datalist">
             </div>
             <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Phone</label>
@@ -3582,6 +3727,7 @@ function updateBulkBars() {
 
 // ── Rename ───────────────────────────────────────────────────────────────────
 function openManageFile(id) {
+  refreshRolesDatalist();
   const file = (store.files || []).find(f => f.id === id);
   if (!file) return;
 
@@ -3672,6 +3818,7 @@ function mfAddPersonTag(name, existingRole) {
     const roleInput = document.createElement('input');
     roleInput.placeholder = 'role…';
     roleInput.value = existingRole || '';
+    roleInput.setAttribute('list', 'roles-datalist');
     roleInput.style.cssText = 'width:80px;font-size:10px;padding:2px 5px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
     roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
     roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
@@ -3925,6 +4072,7 @@ function handleFileUploadFromOverview(fileList) {
 
 function handleFileUpload(fileList, presetProjectId) {
   if (!fileList || fileList.length === 0) return;
+  refreshRolesDatalist();
   _pendingFiles = [];
 
   // Populate project selector
@@ -4106,6 +4254,7 @@ function uploadAddPerson(name, idx) {
   if (isNew) {
     const roleInput = document.createElement('input');
     roleInput.placeholder = 'role…';
+    roleInput.setAttribute('list', 'roles-datalist');
     roleInput.style.cssText = 'width:70px;font-size:10px;padding:1px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
     roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
     roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
@@ -4299,11 +4448,39 @@ function defaultProject(data) {
     breakdown: [],
     callsheets: [],
     schedule: [],
+    scripts: [],
+    brief: { template: null, fields: {}, removedKeys: [], customFields: [] },
+    customSections: [],
     createdAt: Date.now()
   };
 }
 
+let _activeSection = null;
+
+function relativeTime(ts) {
+  if (!ts) return null;
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)   return 'Just now';
+  if (mins < 60)  return mins + 'm ago';
+  const hours = Math.floor(diff / 3600000);
+  const d = new Date(ts);
+  const hhmm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (hours < 24) return 'Today ' + hhmm;
+  const days = Math.floor(diff / 86400000);
+  if (days === 1) return 'Yesterday ' + hhmm;
+  if (days < 7)   return days + ' days ago';
+  if (days < 30)  return Math.floor(days / 7) + 'w ago';
+  return d.toLocaleDateString();
+}
+
 function saveStore() {
+  // Record section activity for the active section
+  const p = currentProject();
+  if (p && _activeSection && _activeSection !== 'overview') {
+    if (!p.sectionActivity) p.sectionActivity = {};
+    p.sectionActivity[_activeSection] = Date.now();
+  }
   try { localStorage.setItem('filmforge_v1', JSON.stringify(store)); } catch(e) {}
   // flash save indicator
   const ind = document.getElementById('save-indicator');
@@ -4406,11 +4583,10 @@ function showProjectView(id) {
   document.getElementById('topbar-breadcrumb').textContent = `Black Fountain / ${p.title}`;
   document.getElementById('proj-title').textContent = p.title.toUpperCase();
 
-  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE'};
-  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done'};
-  const badge = document.getElementById('proj-status-badge');
-  badge.textContent = statusMap[p.status];
-  badge.className = 'status-badge ' + badgeClass[p.status];
+  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
+  const sel = document.getElementById('proj-status-select');
+  sel.value = p.status;
+  sel.className = 'proj-status-select ' + badgeClass[p.status];
 
   document.getElementById('proj-meta').innerHTML = `
     <span>🎬 ${p.director || '—'}</span>
@@ -4427,12 +4603,24 @@ function showProjectView(id) {
 }
 
 function showSection(name) {
+  _activeSection = name;
+  // Record section visit immediately (silently, no save-indicator flash)
+  if (name !== 'overview') {
+    const p = currentProject();
+    if (p) {
+      if (!p.sectionActivity) p.sectionActivity = {};
+      p.sectionActivity[name] = Date.now();
+      try { localStorage.setItem('filmforge_v1', JSON.stringify(store)); } catch(e) {}
+    }
+  }
   document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
-  const target = document.getElementById('section-' + name);
+  const sectionId = name.startsWith('custom_') ? 'section-custom' : 'section-' + name;
+  const target = document.getElementById(sectionId);
   if (!target) { console.warn('No section div for:', name); return; }
   target.style.display = 'block';
   document.querySelectorAll('.section-tab').forEach(t => {
-    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${name}'`));
+    const onclick = t.getAttribute('onclick') || '';
+    t.classList.toggle('active', onclick.includes(`'${name}'`));
   });
   renderSection(name);
 }
@@ -4440,18 +4628,37 @@ function showSection(name) {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
+let dashboardStatusFilter = null;
+
+function setDashboardFilter(status) {
+  dashboardStatusFilter = dashboardStatusFilter === status ? null : status;
+  renderDashboard();
+}
+
 function renderDashboard() {
   const { projects } = store;
   document.getElementById('stat-total').textContent = projects.length;
-  document.getElementById('stat-prod').textContent = projects.filter(p => p.status === 'prod').length;
   document.getElementById('stat-pre').textContent = projects.filter(p => p.status === 'pre').length;
-  document.getElementById('stat-done').textContent = projects.filter(p => p.status === 'post' || p.status === 'done').length;
+  document.getElementById('stat-prod').textContent = projects.filter(p => p.status === 'prod').length;
+  document.getElementById('stat-post').textContent = projects.filter(p => p.status === 'post').length;
+  document.getElementById('stat-done').textContent = projects.filter(p => p.status === 'done').length;
+  document.getElementById('stat-released').textContent = projects.filter(p => p.status === 'released').length;
+
+  // Highlight active filter card
+  ['pre','prod','post','done','released'].forEach(s => {
+    const el = document.getElementById('stat-' + s);
+    if (el) el.closest('.stat-card').classList.toggle('active', dashboardStatusFilter === s);
+  });
+
+  const visibleProjects = dashboardStatusFilter
+    ? projects.filter(p => p.status === dashboardStatusFilter)
+    : projects;
 
   const grid = document.getElementById('projects-grid');
-  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE'};
-  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done'};
+  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE',released:'RELEASED'};
+  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
 
-  grid.innerHTML = projects.map(p => `
+  grid.innerHTML = visibleProjects.map(p => `
     <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
       <div class="project-card-header">
         <div>
@@ -4483,14 +4690,42 @@ function renderDashboard() {
   renderSidebarProjects();
 }
 
+const collapsedStatusGroups = new Set();
+
+function toggleStatusGroup(status) {
+  if (collapsedStatusGroups.has(status)) collapsedStatusGroups.delete(status);
+  else collapsedStatusGroups.add(status);
+  renderSidebarProjects();
+}
+
 function renderSidebarProjects() {
   const el = document.getElementById('sidebar-projects');
-  el.innerHTML = store.projects.map(p => `
-    <div class="project-item${p.id === store.currentProjectId ? ' active' : ''}" data-id="${p.id}" onclick="showProjectView('${p.id}')">
-      <div class="project-dot"></div>
-      <span>${p.title}</span>
-    </div>
-  `).join('');
+  const groups = [
+    { status: 'pre',      label: 'Pre-Production' },
+    { status: 'prod',     label: 'Production' },
+    { status: 'post',     label: 'Post-Production' },
+    { status: 'done',     label: 'Complete' },
+    { status: 'released', label: 'Released' }
+  ];
+  let html = '';
+  groups.forEach(g => {
+    const projects = store.projects.filter(p => p.status === g.status);
+    if (!projects.length) return;
+    const collapsed = collapsedStatusGroups.has(g.status);
+    html += `<div class="sidebar-status-group${collapsed ? ' collapsed' : ''}" onclick="toggleStatusGroup('${g.status}')">
+      <span>${g.label} <span style="opacity:0.55;font-weight:400">(${projects.length})</span></span>
+      <span class="sg-arrow">▾</span>
+    </div>`;
+    if (!collapsed) {
+      html += projects.map(p => `
+        <div class="project-item status-${p.status}${p.id === store.currentProjectId ? ' active' : ''}" data-id="${p.id}" onclick="showProjectView('${p.id}')">
+          <div class="project-dot"></div>
+          <span>${p.title}</span>
+        </div>
+      `).join('');
+    }
+  });
+  el.innerHTML = html || '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No projects yet</div>';
 }
 
 // ══════════════════════════════════════════
@@ -4570,6 +4805,18 @@ function deleteCurrentProject() {
   showToast('Project deleted', 'info');
 }
 
+function changeProjectStatus(newStatus) {
+  const p = currentProject();
+  if (!p) return;
+  p.status = newStatus;
+  saveStore();
+  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
+  const sel = document.getElementById('proj-status-select');
+  sel.className = 'proj-status-select ' + badgeClass[newStatus];
+  renderSidebarProjects();
+  showToast('Status updated', 'success');
+}
+
 // ══════════════════════════════════════════
 // SECTION RENDERING
 // ══════════════════════════════════════════
@@ -4584,6 +4831,9 @@ function renderSection(name) {
   else if (name === 'soundlog') { if(!p.soundlog) p.soundlog=[]; renderSoundLog(p); }
   else if (name === 'riskassess') { if(!p.risks) p.risks=[]; renderRiskAssessment(p); }
   else if (name === 'releases') { if(!p.releases) p.releases=[]; renderReleases(p); }
+  else if (name === 'script') { if(!p.scripts) p.scripts=[]; renderScript(p); }
+  else if (name === 'brief') { if(!p.brief) p.brief={template:null,fields:{}}; renderBrief(p); }
+  else if (name.startsWith('custom_')) renderCustomSection(name);
   else if (name === 'breakdown') renderBreakdown(p);
   else if (name === 'callsheet') renderCallsheet(p);
   else if (name === 'schedule') renderSchedule(p);
@@ -4595,39 +4845,1035 @@ function renderSection(name) {
 }
 
 // OVERVIEW
-function renderOverview(p) {
-  document.getElementById('ov-shoot-days').textContent = p.callsheets.length || '—';
-  document.getElementById('ov-cast').textContent = p.cast.length + p.extras.length;
-  document.getElementById('ov-crew').textContent = p.unit.length;
+function getAllOverviewSections(p) {
+  const base = [
+    {name:'Budget',          icon:'💷',  count: p.budget.length + ' lines',                                           tab:'budget'},
+    {name:'Callsheet',       icon:'📋',  count: p.callsheets.length + ' days',                                        tab:'callsheet'},
+    {name:'Cast & Extras',   icon:'🎭',  count: (p.cast.length + p.extras.length) + ' people',                       tab:'cast'},
+    {name:'Equipment',       icon:'🎥',  count: Object.values(p.equipment).flat().length + ' items',                  tab:'equipment'},
+    {name:'Locations',       icon:'📍',  count: p.locations.length + ' locations',                                    tab:'locations'},
+    {name:'Project Brief',   icon:'🗒️', count: (p.brief&&p.brief.template) ? 'Template ' + p.brief.template : '0 fields', tab:'brief'},
+    {name:'Props',           icon:'🧳',  count: (p.props||[]).length + ' items',                                      tab:'props'},
+    {name:'Release Forms',   icon:'📝',  count: (p.releases||[]).length + ' forms',                                   tab:'releases'},
+    {name:'Risk Assessment', icon:'⚠️',  count: (p.risks||[]).length + ' hazards',                                    tab:'riskassess'},
+    {name:'Schedule',        icon:'🕐',  count: p.schedule.length + ' entries',                                       tab:'schedule'},
+    {name:'Script & Docs',   icon:'📜',  count: (p.scripts||[]).length + ' files',                                    tab:'script', desc:'PDF · DOC · TXT · FDX · RTF'},
+    {name:'Script Breakdown',icon:'📄',  count: p.breakdown.length + ' scenes',                                       tab:'breakdown'},
+    {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
+    {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
+    {name:'Unit List',       icon:'👥',  count: p.unit.length + ' crew',                                              tab:'unit'},
+    {name:'Wardrobe',        icon:'👗',  count: (p.wardrobe||[]).length + ' items',                                   tab:'wardrobe'},
+  ].sort((a,b) => a.name.localeCompare(b.name));
+  const custom = (p.customSections || []).map(cs => ({
+    name: cs.name, icon: cs.icon || '📌',
+    count: (() => { const n = (cs.note ? 1 : 0) + (cs.fields||[]).filter(f=>f.value).length + (cs.files||[]).length; return n + (n===1?' item':' items'); })(),
+    tab: 'custom_' + cs.id, desc: cs.desc || ''
+  }));
+  return [...base, ...custom];
+}
 
-  const sections = [
-    {name:'Budget', icon:'💷', count: p.budget.length + ' lines', tab:'budget'},
-    {name:'Callsheet', icon:'📋', count: p.callsheets.length + ' days', tab:'callsheet'},
-    {name:'Cast & Extras', icon:'🎭', count: (p.cast.length + p.extras.length) + ' people', tab:'cast'},
-    {name:'Equipment', icon:'🎥', count: Object.values(p.equipment).flat().length + ' items', tab:'equipment'},
-    {name:'Locations', icon:'📍', count: p.locations.length + ' locations', tab:'locations'},
-    {name:'Props', icon:'🧳', count: (p.props||[]).length + ' items', tab:'props'},
-    {name:'Release Forms', icon:'📝', count: (p.releases||[]).length + ' forms', tab:'releases'},
-    {name:'Risk Assessment', icon:'⚠️', count: (p.risks||[]).length + ' hazards', tab:'riskassess'},
-    {name:'Schedule', icon:'🕐', count: p.schedule.length + ' entries', tab:'schedule'},
-    {name:'Script Breakdown', icon:'📄', count: p.breakdown.length + ' scenes', tab:'breakdown'},
-    {name:'Shot List', icon:'🎬', count: (p.shots||[]).length + ' shots', tab:'shotlist'},
-    {name:'Sound Log', icon:'🎙️', count: (p.soundlog||[]).length + ' entries', tab:'soundlog'},
-    {name:'Unit List', icon:'👥', count: p.unit.length + ' crew', tab:'unit'},
-    {name:'Wardrobe', icon:'👗', count: (p.wardrobe||[]).length + ' items', tab:'wardrobe'},
-  ];
+function initOverviewLayout(p) {
+  if (!p.overviewLayout) {
+    p.overviewLayout = getAllOverviewSections(p).map(s => ({ tab: s.tab, visible: true }));
+  }
+}
 
-  document.getElementById('overview-docs').innerHTML = sections.map(s => `
+function renderOverviewDocs(p) {
+  const el = document.getElementById('overview-docs');
+  if (!el) return;
+  initOverviewLayout(p);
+  const sectionMap = {};
+  getAllOverviewSections(p).forEach(s => sectionMap[s.tab] = s);
+  const cards = p.overviewLayout
+    .filter(item => item.visible && sectionMap[item.tab])
+    .map(item => sectionMap[item.tab]);
+  el.innerHTML = cards.map(s => `
     <div class="doc-card" onclick="showSection('${s.tab}')">
       <div class="doc-card-icon">${s.icon}</div>
       <div class="doc-card-title">${s.name}</div>
+      ${s.desc ? `<div class="doc-card-sub">${s.desc}</div>` : ''}
       <div class="doc-card-status ${s.count.startsWith('0') ? 'empty' : 'filled'}">
         ${s.count.startsWith('0') ? '○ Empty' : '● ' + s.count}
       </div>
     </div>
   `).join('');
+}
 
+function renderOverview(p) {
+  document.getElementById('ov-shoot-days').textContent = p.callsheets.length || '—';
+  document.getElementById('ov-cast').textContent = p.cast.length + p.extras.length;
+  document.getElementById('ov-crew').textContent = p.unit.length;
+  renderOverviewDocs(p);
   renderOverviewFiles();
+}
+
+// OVERVIEW CARDS — inline drag/select/add
+let overviewSelectedCards = new Set();
+let _ovDragTab = null;
+let _ovDragging = false;
+let overviewSortMode = 'default';
+
+function setOverviewSort(mode) {
+  overviewSortMode = mode;
+  const p = currentProject();
+  if (p) renderOverviewDocs(p);
+}
+
+function renderOvToolbar() {
+  const el = document.getElementById('ov-toolbar');
+  if (!el) return;
+  const n = overviewSelectedCards.size;
+  if (n > 0) {
+    el.innerHTML = `
+      <span style="color:var(--text3)">${n} selected</span>
+      <button class="btn btn-sm btn-danger" onclick="removeSelectedOverviewCards()">Remove</button>
+      <button class="btn btn-sm" onclick="clearOverviewSelection()">Clear</button>`;
+  } else {
+    el.innerHTML = `<select class="form-select" style="font-size:11px;padding:3px 8px;height:28px" onchange="setOverviewSort(this.value)">
+      <option value="default" ${overviewSortMode==='default'?'selected':''}>Custom order</option>
+      <option value="az"      ${overviewSortMode==='az'     ?'selected':''}>A → Z</option>
+      <option value="za"      ${overviewSortMode==='za'     ?'selected':''}>Z → A</option>
+      <option value="recent"  ${overviewSortMode==='recent' ?'selected':''}>Recently opened</option>
+      <option value="filled"  ${overviewSortMode==='filled' ?'selected':''}>With content first</option>
+    </select>`;
+  }
+}
+
+function renderOverviewDocs(p) {
+  const el = document.getElementById('overview-docs');
+  if (!el) return;
+  initOverviewLayout(p);
+  const sectionMap = {};
+  getAllOverviewSections(p).forEach(s => sectionMap[s.tab] = s);
+  let cards = p.overviewLayout
+    .filter(item => item.visible && sectionMap[item.tab])
+    .map(item => sectionMap[item.tab]);
+
+  // Apply sort
+  const sa = p.sectionActivity || {};
+  if      (overviewSortMode === 'az')     cards = [...cards].sort((a,b) => a.name.localeCompare(b.name));
+  else if (overviewSortMode === 'za')     cards = [...cards].sort((a,b) => b.name.localeCompare(a.name));
+  else if (overviewSortMode === 'recent') cards = [...cards].sort((a,b) => (sa[b.tab]||0) - (sa[a.tab]||0));
+  else if (overviewSortMode === 'filled') cards = [...cards].sort((a,b) => {
+    const af = !a.count.startsWith('0'), bf = !b.count.startsWith('0');
+    return af === bf ? 0 : (af ? -1 : 1);
+  });
+
+  el.innerHTML = cards.map(s => {
+    const sel = overviewSelectedCards.has(s.tab);
+    const ts  = sa[s.tab] ? relativeTime(sa[s.tab]) : null;
+    return `
+      <div class="doc-card${sel ? ' ov-selected' : ''}" data-tab="${s.tab}"
+        draggable="true"
+        ondragstart="ovDragStart(event,'${s.tab}')"
+        ondragover="ovDragOver(event,'${s.tab}')"
+        ondrop="ovDrop(event,'${s.tab}')"
+        ondragend="ovDragEnd()"
+        ondragleave="ovDragLeave(event,this)"
+        onclick="ovCardClick(event,'${s.tab}')"
+      >
+        <input type="checkbox" class="ov-checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleOvCard('${s.tab}')">
+        <button class="ov-remove-btn" onclick="event.stopPropagation();hideOverviewCard('${s.tab}')" title="Remove">✕</button>
+        <div class="doc-card-icon">${s.icon}</div>
+        <div class="doc-card-title">${s.name}</div>
+        ${s.desc ? `<div class="doc-card-sub">${s.desc}</div>` : ''}
+        <div class="doc-card-status ${s.count.startsWith('0') ? 'empty' : 'filled'}">
+          ${s.count.startsWith('0') ? '○ Empty' : '● ' + s.count}
+        </div>
+        ${ts ? `<div style="font-size:9px;color:var(--text3);margin-top:5px;opacity:.7">↺ ${ts}</div>` : ''}
+      </div>`;
+  }).join('') + `
+    <div class="new-doc-card" onclick="openAddSectionPicker(this)">
+      <span style="font-size:22px">+</span>
+      <span style="font-size:11px;color:var(--text3)">Add Section</span>
+    </div>`;
+
+  renderOvToolbar();
+}
+
+function ovDragStart(event, tab) {
+  _ovDragTab = tab;
+  _ovDragging = true;
+  event.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => document.querySelector(`.doc-card[data-tab="${tab}"]`)?.classList.add('ov-dragging'), 0);
+}
+function ovDragOver(event, tab) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('ov-drag-over'));
+  if (tab !== _ovDragTab) document.querySelector(`.doc-card[data-tab="${tab}"]`)?.classList.add('ov-drag-over');
+}
+function ovDragLeave(event, el) {
+  if (!el.contains(event.relatedTarget)) el.classList.remove('ov-drag-over');
+}
+function ovDrop(event, targetTab) {
+  event.preventDefault();
+  document.querySelectorAll('.doc-card').forEach(c => { c.classList.remove('ov-drag-over','ov-dragging'); });
+  if (!_ovDragTab || _ovDragTab === targetTab) { _ovDragging = false; return; }
+  const p = currentProject();
+  if (!p) return;
+  const from = p.overviewLayout.findIndex(x => x.tab === _ovDragTab);
+  const to   = p.overviewLayout.findIndex(x => x.tab === targetTab);
+  if (from !== -1 && to !== -1) {
+    const [item] = p.overviewLayout.splice(from, 1);
+    p.overviewLayout.splice(to, 0, item);
+    saveStore();
+    renderOverviewDocs(p);
+  }
+  setTimeout(() => { _ovDragging = false; }, 60);
+}
+function ovDragEnd() {
+  document.querySelectorAll('.doc-card').forEach(c => { c.classList.remove('ov-drag-over','ov-dragging'); });
+  setTimeout(() => { _ovDragging = false; }, 60);
+}
+function ovCardClick(event, tab) {
+  if (_ovDragging) return;
+  if (overviewSelectedCards.size > 0) { toggleOvCard(tab); return; }
+  showSection(tab);
+}
+function toggleOvCard(tab) {
+  if (overviewSelectedCards.has(tab)) overviewSelectedCards.delete(tab);
+  else overviewSelectedCards.add(tab);
+  const p = currentProject();
+  if (p) renderOverviewDocs(p);
+}
+function clearOverviewSelection() {
+  overviewSelectedCards.clear();
+  const p = currentProject();
+  if (p) renderOverviewDocs(p);
+}
+function hideOverviewCard(tab) {
+  const p = currentProject();
+  if (!p) return;
+  initOverviewLayout(p);
+  const sectionMap = {};
+  getAllOverviewSections(p).forEach(s => sectionMap[s.tab] = s);
+  const section = sectionMap[tab];
+  const name = section ? section.name : tab;
+  showConfirmDialog(
+    `Hide <strong>${name}</strong> from the overview? Your data is kept — restore it anytime via + Add Section.`,
+    'Hide',
+    () => {
+      const item = p.overviewLayout.find(x => x.tab === tab);
+      if (item) item.visible = false;
+      overviewSelectedCards.delete(tab);
+      saveStore();
+      renderOverviewDocs(p);
+    }
+  );
+}
+function removeSelectedOverviewCards() {
+  const p = currentProject();
+  if (!p) return;
+  initOverviewLayout(p);
+  overviewSelectedCards.forEach(tab => {
+    const item = p.overviewLayout.find(x => x.tab === tab);
+    if (item) item.visible = false;
+  });
+  overviewSelectedCards.clear();
+  saveStore();
+  renderOverviewDocs(p);
+}
+
+// ADD SECTION PICKER
+function openAddSectionPicker(btn) {
+  document.getElementById('_ov-picker')?.remove();
+  const p = currentProject();
+  if (!p) return;
+  initOverviewLayout(p);
+  const allSections = getAllOverviewSections(p);
+  const sectionMap = {};
+  allSections.forEach(s => sectionMap[s.tab] = s);
+  const hiddenItems = p.overviewLayout.filter(item => !item.visible && sectionMap[item.tab]);
+
+  const rect = btn.getBoundingClientRect();
+  const picker = document.createElement('div');
+  picker.id = '_ov-picker';
+  picker.style.cssText = `position:fixed;top:${Math.min(rect.bottom+6, window.innerHeight-300)}px;left:${Math.min(rect.left, window.innerWidth-260)}px;width:250px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;z-index:9999;box-shadow:0 16px 40px rgba(0,0,0,0.45)`;
+
+  let html = '';
+  if (hiddenItems.length) {
+    html += `<div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;padding:0 4px">Restore hidden</div>`;
+    html += hiddenItems.map(item => {
+      const s = sectionMap[item.tab];
+      return `<div class="picker-row" onclick="showOverviewCard('${item.tab}')">
+        <span>${s.icon}</span><span style="flex:1">${s.name}</span><span style="font-size:10px;color:var(--accent)">+ Add</span>
+      </div>`;
+    }).join('');
+    html += `<hr style="border:none;border-top:1px solid var(--border2);margin:8px 0">`;
+  }
+  html += `<div class="picker-row" onclick="openCreateCustomSection()">✨ <span>Create custom section</span></div>`;
+
+  picker.innerHTML = html;
+  document.body.appendChild(picker);
+  setTimeout(() => {
+    document.addEventListener('click', function closePicker(e) {
+      if (!picker.contains(e.target) && e.target !== btn) { picker.remove(); document.removeEventListener('click', closePicker); }
+    });
+  }, 0);
+}
+
+function showOverviewCard(tab) {
+  const p = currentProject();
+  if (!p) return;
+  const item = p.overviewLayout.find(x => x.tab === tab);
+  if (item) item.visible = true;
+  saveStore();
+  renderOverviewDocs(p);
+  document.getElementById('_ov-picker')?.remove();
+}
+
+function openCreateCustomSection() {
+  document.getElementById('_ov-picker')?.remove();
+  const csId = '_create-cs';
+  const overlay = document.createElement('div');
+  overlay.id = csId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px 20px 18px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:13px;font-weight:700">Create Custom Section</span>
+        <button onclick="document.getElementById('${csId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Section name *</label>
+        <input id="_cs-name" class="form-input" placeholder="e.g. Production Notes" style="width:100%">
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div style="flex:0 0 70px">
+          <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Icon</label>
+          <input id="_cs-icon" class="form-input" placeholder="📌" style="width:100%;text-align:center">
+        </div>
+        <div style="flex:1">
+          <label style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Purpose (optional)</label>
+          <input id="_cs-desc" class="form-input" placeholder="e.g. Notes for production" style="width:100%">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-sm" onclick="document.getElementById('${csId}').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="saveCustomSection('${csId}')">Create</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  setTimeout(() => document.getElementById('_cs-name')?.focus(), 50);
+}
+
+function saveCustomSection(overlayId) {
+  const name = document.getElementById('_cs-name')?.value.trim();
+  if (!name) { showToast('Please enter a name', 'error'); return; }
+  const icon = document.getElementById('_cs-icon')?.value.trim() || '📌';
+  const desc = document.getElementById('_cs-desc')?.value.trim() || '';
+  const p = currentProject();
+  if (!p) return;
+  if (!p.customSections) p.customSections = [];
+  const id = makeId();
+  p.customSections.push({ id, name, icon, desc, note: '' });
+  initOverviewLayout(p);
+  p.overviewLayout.push({ tab: 'custom_' + id, visible: true });
+  saveStore();
+  document.getElementById(overlayId)?.remove();
+  renderOverviewDocs(p);
+  showToast('Section created', 'success');
+}
+
+// CUSTOM SECTIONS
+function renderCustomSection(tabName) {
+  const el = document.getElementById('custom-section-content');
+  if (!el) return;
+  const p = currentProject();
+  if (!p) return;
+  const id = tabName.replace('custom_', '');
+  const cs = (p.customSections || []).find(x => x.id === id);
+  if (!cs) { el.innerHTML = '<p style="color:var(--text3)">Section not found.</p>'; return; }
+  if (!cs.fields) cs.fields = [];
+  if (!cs.files)  cs.files  = [];
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">${cs.icon||'📌'}</span>
+        <h3 class="section-heading" style="margin:0">${cs.name.replace(/</g,'&lt;')}</h3>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="deleteCustomSection('${cs.id}')">Delete Section</button>
+    </div>
+    ${cs.desc ? `<p style="font-size:12px;color:var(--text3);margin:2px 0 18px">${cs.desc.replace(/</g,'&lt;')}</p>` : '<div style="margin-bottom:18px"></div>'}
+
+    <div style="margin-bottom:24px">
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</label>
+      <textarea class="form-input" rows="6" style="width:100%;resize:vertical;font-size:13px;line-height:1.7"
+        placeholder="Add notes, links, references, or any other content..."
+        onblur="saveCustomSectionNote('${cs.id}',this.value)">${(cs.note||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>`;
+
+  // Custom fields
+  html += cs.fields.map(f => `
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">${f.label.replace(/</g,'&lt;')}</label>
+        <button onclick="removeCustomSectionField('${cs.id}','${f.key}')" title="Remove field" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:0 2px">✕</button>
+      </div>
+      <textarea class="form-input" rows="4" style="width:100%;resize:vertical;font-size:13px;line-height:1.6"
+        placeholder="Enter ${f.label.toLowerCase().replace(/</g,'&lt;')}..."
+        onblur="saveCustomSectionField('${cs.id}','${f.key}',this.value)">${(f.value||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>`).join('');
+
+  html += `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:28px">
+      <input class="form-input form-input-sm" id="cs-field-${cs.id}" placeholder="New field label..." style="flex:1" onkeydown="if(event.key==='Enter')addCustomSectionField('${cs.id}')">
+      <button class="btn btn-sm btn-primary" onclick="addCustomSectionField('${cs.id}')">+ Add Field</button>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h4 style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:0">Files</h4>
+        <label class="btn btn-sm btn-primary" style="cursor:pointer;font-size:11px">
+          + Upload File
+          <input type="file" multiple style="display:none" onchange="handleCustomSectionUpload('${cs.id}',this.files)">
+        </label>
+      </div>`;
+
+  if (cs.files.length > 0) {
+    html += `<div class="table-container"><table class="data-table"><thead><tr><th>File</th><th>Label</th><th>Size</th><th></th></tr></thead><tbody>`;
+    html += cs.files.map(f => `
+      <tr>
+        <td style="cursor:pointer;color:var(--accent)" onclick="openCustomSectionFilePreview('${cs.id}','${f.id}')"><span style="margin-right:6px">${scriptFileIcon(f.type)}</span>${f.name.replace(/</g,'&lt;')}</td>
+        <td><input class="form-input form-input-sm" style="width:100%" value="${(f.label||'').replace(/"/g,'&quot;')}" placeholder="Label..." onchange="saveCustomSectionFileLabel('${cs.id}','${f.id}',this.value)"></td>
+        <td style="white-space:nowrap">${formatFileSize(f.size)}</td>
+        <td style="display:flex;gap:5px">
+          <button class="btn btn-sm" style="padding:2px 6px;font-size:10px" onclick="openCustomSectionFileRename('${cs.id}','${f.id}')" title="Rename">✏️</button>
+          <button class="btn btn-sm" onclick="shareCustomSectionFile('${cs.id}','${f.id}')" title="Share">↗</button>
+          <button class="btn btn-sm" onclick="downloadCustomSectionFile('${cs.id}','${f.id}')" title="Download">⬇</button>
+          <button class="btn btn-sm btn-danger" onclick="removeCustomSectionFile('${cs.id}','${f.id}')" title="Remove">🗑</button>
+        </td>
+      </tr>`).join('');
+    html += `</tbody></table></div>`;
+  } else {
+    html += `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border2);border-radius:var(--radius)">No files yet</div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function saveCustomSectionNote(id, val) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === id);
+  if (cs) { cs.note = val; saveStore(); }
+}
+function addCustomSectionField(csId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs) return;
+  if (!cs.fields) cs.fields = [];
+  const input = document.getElementById('cs-field-' + csId);
+  const label = input?.value.trim();
+  if (!label) return;
+  cs.fields.push({ key: makeId(), label, value: '' });
+  saveStore();
+  renderCustomSection('custom_' + csId);
+}
+function removeCustomSectionField(csId, key) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.fields) return;
+  cs.fields = cs.fields.filter(f => f.key !== key);
+  saveStore();
+  renderCustomSection('custom_' + csId);
+}
+function saveCustomSectionField(csId, key, val) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.fields) return;
+  const f = cs.fields.find(x => x.key === key);
+  if (f) { f.value = val; saveStore(); }
+}
+function handleCustomSectionUpload(csId, files) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs) return;
+  if (!cs.files) cs.files = [];
+  let loaded = 0;
+  const total = files.length;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      cs.files.push({ id: makeId(), name: file.name, label: '', dataUrl: e.target.result, size: file.size, type: file.type, uploadedAt: Date.now() });
+      loaded++;
+      if (loaded === total) { saveStore(); renderCustomSection('custom_' + csId); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function saveCustomSectionFileLabel(csId, fileId, val) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  if (f) { f.label = val; saveStore(); }
+}
+function downloadCustomSectionFile(csId, fileId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  if (!f) return;
+  const a = document.createElement('a'); a.href = f.dataUrl; a.download = f.name; a.click();
+}
+async function shareCustomSectionFile(csId, fileId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  if (!f) return;
+
+  if (navigator.canShare) {
+    try {
+      const res = await fetch(f.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], f.name, { type: f.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: f.name });
+        return;
+      }
+    } catch(e) { /* fall through */ }
+  }
+
+  const ovId = '_share-csf-' + fileId;
+  const fname = f.name;
+  const projTitle = p ? p.title : '';
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via FilmForge');
+  const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
+
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px 18px 18px;width:290px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700">Share Document</span>
+        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Download the file first, then attach via:</div>
+        <a href="mailto:?subject=${encodeURIComponent(fname)}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
+        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
+        <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
+        <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffilmforge.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+function removeCustomSectionFile(csId, fileId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  cs.files = cs.files.filter(x => x.id !== fileId);
+  saveStore();
+  renderCustomSection('custom_' + csId);
+}
+function openCustomSectionFileRename(csId, fileId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  if (!f) return;
+  const ovId = '_csrename-' + fileId;
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px 20px 18px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:700">Rename File</span>
+        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <input id="_csri-${fileId}" class="form-input" style="width:100%;margin-bottom:14px" value="${f.name.replace(/"/g,'&quot;')}">
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-sm" onclick="document.getElementById('${ovId}').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="applyCustomSectionFileRename('${csId}','${fileId}','${ovId}')">Rename</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  const inp = document.getElementById('_csri-' + fileId);
+  if (inp) { inp.focus(); inp.select(); inp.onkeydown = e => { if (e.key === 'Enter') applyCustomSectionFileRename(csId, fileId, ovId); }; }
+}
+function applyCustomSectionFileRename(csId, fileId, ovId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  const inp = document.getElementById('_csri-' + fileId);
+  const newName = inp?.value.trim();
+  if (f && newName) { f.name = newName; saveStore(); renderCustomSection('custom_' + csId); }
+  document.getElementById(ovId)?.remove();
+}
+function openCustomSectionFilePreview(csId, fileId) {
+  const p = currentProject();
+  if (!p || !p.customSections) return;
+  const cs = p.customSections.find(x => x.id === csId);
+  if (!cs || !cs.files) return;
+  const f = cs.files.find(x => x.id === fileId);
+  if (!f) return;
+  // Reuse script preview logic by temporarily mapping to script format
+  const pseudo = { id: fileId, name: f.name, type: f.type, dataUrl: f.dataUrl };
+  const p2 = currentProject();
+  if (!p2.scripts) p2.scripts = [];
+  const tmp = { ...pseudo };
+  // Build a one-off preview overlay directly
+  const ovId = '_csp_' + fileId;
+  const isPdf = f.type.includes('pdf'), isImg = f.type.startsWith('image/');
+  const isText = f.type.includes('text') || f.name.endsWith('.txt') || f.name.endsWith('.fountain');
+  let previewHtml = '';
+  if (isPdf) previewHtml = `<embed src="${f.dataUrl}" type="application/pdf" style="width:min(820px,90vw);height:80vh;border-radius:8px;border:none">`;
+  else if (isImg) previewHtml = `<img src="${f.dataUrl}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
+  else if (isText) {
+    let text = ''; try { text = decodeURIComponent(escape(atob(f.dataUrl.split(',')[1]))); } catch(e) { try { text = atob(f.dataUrl.split(',')[1]); } catch(e2) { text='(Cannot decode)'; } }
+    previewHtml = `<pre style="background:var(--surface);color:var(--text);padding:20px;border-radius:8px;overflow:auto;width:min(820px,90vw);max-height:80vh;font-size:12px;line-height:1.7;white-space:pre-wrap">${text.replace(/</g,'&lt;')}</pre>`;
+  } else previewHtml = `<div style="background:var(--surface2);padding:40px;border-radius:12px;text-align:center;color:var(--text3)"><div style="font-size:48px;margin-bottom:12px">${scriptFileIcon(f.type)}</div><p>Preview not available</p></div>`;
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;width:min(820px,90vw);margin-bottom:10px"><span style="color:#fff;font-size:13px;font-weight:600">${f.name.replace(/</g,'&lt;')}</span><button onclick="document.getElementById('${ovId}').remove()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;font-size:18px;border-radius:6px;padding:2px 8px;line-height:1.4">✕</button></div>${previewHtml}`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+function deleteCustomSection(id) {
+  const p = currentProject();
+  if (!p) return;
+  showConfirmDialog('Delete this custom section? This cannot be undone.', 'Delete', () => {
+    const tab = 'custom_' + id;
+    p.customSections = (p.customSections || []).filter(x => x.id !== id);
+    if (p.overviewLayout) p.overviewLayout = p.overviewLayout.filter(x => x.tab !== tab);
+    saveStore();
+    showSection('overview');
+    renderOverview(p);
+    showToast('Section deleted', 'success');
+  });
+}
+
+// SCRIPT & DOCUMENTS
+function handleScriptUpload(files) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.scripts) p.scripts = [];
+  let loaded = 0;
+  const total = files.length;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      p.scripts.push({
+        id: makeId(),
+        name: file.name,
+        label: '',
+        dataUrl: e.target.result,
+        size: file.size,
+        type: file.type,
+        uploadedAt: Date.now()
+      });
+      loaded++;
+      if (loaded === total) { saveStore(); renderScript(p); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderScript(p) {
+  const el = document.getElementById('script-files-list');
+  if (!el) return;
+  if (!p.scripts || !p.scripts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📜</div><h4>No documents yet</h4><p>Upload your script, sides, audition pieces or other documents</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-container">
+      <table class="data-table">
+        <thead><tr>
+          <th>File</th>
+          <th>Label / Notes</th>
+          <th>Size</th>
+          <th>Uploaded</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+          ${p.scripts.map(s => `
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span>${scriptFileIcon(s.type)}</span>
+                  <span class="script-filename" data-id="${s.id}" title="Click to preview" onclick="openScriptPreview('${s.id}')" style="cursor:pointer;color:var(--accent)">${s.name.replace(/</g,'&lt;')}</span>
+                  <button class="btn btn-sm" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();openScriptRename('${s.id}')" title="Rename">✏️</button>
+                </div>
+              </td>
+              <td><input class="form-input form-input-sm" style="width:100%" value="${(s.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. Draft 3, Sides for Scene 12..." onchange="updateScriptLabel('${s.id}',this.value)"></td>
+              <td style="white-space:nowrap">${formatFileSize(s.size)}</td>
+              <td style="white-space:nowrap">${new Date(s.uploadedAt).toLocaleDateString()}</td>
+              <td style="display:flex;gap:5px;flex-wrap:nowrap">
+                <button class="btn btn-sm" onclick="shareScriptFile('${s.id}')" title="Share">↗</button>
+                <button class="btn btn-sm" onclick="downloadScriptFile('${s.id}')" title="Download">⬇</button>
+                <button class="btn btn-sm btn-danger" onclick="removeScriptFile('${s.id}')" title="Remove">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function scriptFileIcon(type) {
+  if (!type) return '📄';
+  if (type.includes('pdf')) return '📕';
+  if (type.includes('word') || type.includes('openxmlformats') || type.includes('msword')) return '📘';
+  if (type.includes('text') || type.includes('fountain') || type.includes('rtf')) return '📝';
+  return '📄';
+}
+
+function updateScriptLabel(id, val) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  if (s) { s.label = val; saveStore(); }
+}
+
+function openScriptRename(id) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  if (!s) return;
+  const ovId = '_rename-' + id;
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px 20px 18px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:700">Rename File</span>
+        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <input id="_rename-input-${id}" class="form-input" style="width:100%;margin-bottom:14px" value="${s.name.replace(/"/g,'&quot;')}">
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-sm" onclick="document.getElementById('${ovId}').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="applyScriptRename('${id}','${ovId}')">Rename</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  const inp = document.getElementById('_rename-input-' + id);
+  if (inp) { inp.focus(); inp.select(); inp.onkeydown = e => { if (e.key === 'Enter') applyScriptRename(id, ovId); }; }
+}
+
+function applyScriptRename(id, ovId) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  const inp = document.getElementById('_rename-input-' + id);
+  const newName = inp?.value.trim();
+  if (s && newName) {
+    s.name = newName;
+    saveStore();
+    renderScript(p);
+  }
+  document.getElementById(ovId)?.remove();
+}
+
+function openScriptPreview(id) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  if (!s) return;
+
+  const ovId = '_sp_' + id;
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+
+  const isPdf  = s.type.includes('pdf');
+  const isImg  = s.type.startsWith('image/');
+  const isText = s.type.includes('text') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx');
+
+  let previewHtml = '';
+  if (isPdf) {
+    previewHtml = `<embed src="${s.dataUrl}" type="application/pdf" style="width:min(820px,90vw);height:80vh;border-radius:8px;border:none">`;
+  } else if (isImg) {
+    previewHtml = `<img src="${s.dataUrl}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
+  } else if (isText) {
+    let text = '';
+    try {
+      text = decodeURIComponent(escape(atob(s.dataUrl.split(',')[1])));
+    } catch(e) {
+      try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = '(Cannot decode file)'; }
+    }
+    previewHtml = `<pre style="background:var(--surface);color:var(--text);padding:20px;border-radius:8px;overflow:auto;width:min(820px,90vw);max-height:80vh;font-size:12px;line-height:1.7;white-space:pre-wrap;text-align:left">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+  } else {
+    previewHtml = `<div style="background:var(--surface2);padding:40px;border-radius:12px;text-align:center;color:var(--text3)"><div style="font-size:48px;margin-bottom:12px">${scriptFileIcon(s.type)}</div><p style="margin:0 0 16px;font-size:14px">Preview not available for this file type</p><button class="btn btn-primary" onclick="downloadScriptFile('${s.id}')">Download to open</button></div>`;
+  }
+
+  overlay.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;width:min(820px,90vw);margin-bottom:10px">
+      <span style="color:#fff;font-size:13px;font-weight:600">${s.name.replace(/</g,'&lt;')}</span>
+      <button onclick="document.getElementById('${ovId}').remove()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;font-size:18px;border-radius:6px;padding:2px 8px;line-height:1.4">✕</button>
+    </div>
+    ${previewHtml}`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+async function shareScriptFile(id) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  if (!s) return;
+
+  // Try Web Share API with file first (native on mobile/modern desktop)
+  if (navigator.canShare) {
+    try {
+      const res = await fetch(s.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], s.name, { type: s.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: s.name });
+        return;
+      }
+    } catch(e) { /* fall through to manual share */ }
+  }
+
+  // Fallback share modal
+  const ovId = '_share-' + id;
+  const fname = s.name;
+  const projTitle = p ? p.title : '';
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via FilmForge');
+  const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
+
+  const overlay = document.createElement('div');
+  overlay.id = ovId;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px 18px 18px;width:290px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700">Share Document</span>
+        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Download the file first, then attach via:</div>
+        <a href="mailto:?subject=${encodeURIComponent(fname)}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
+        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
+        <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
+        <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffilmforge.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+function downloadScriptFile(id) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  const s = p.scripts.find(x => x.id === id);
+  if (!s) return;
+  const a = document.createElement('a');
+  a.href = s.dataUrl;
+  a.download = s.name;
+  a.click();
+}
+
+function removeScriptFile(id) {
+  const p = currentProject();
+  if (!p || !p.scripts) return;
+  p.scripts = p.scripts.filter(x => x.id !== id);
+  saveStore();
+  renderScript(p);
+}
+
+// PROJECT BRIEF
+const BRIEF_TEMPLATES = [
+  {
+    id: 1,
+    name: 'Narrative / Feature',
+    fields: [
+      { key: 'intro',           label: 'Introduction and Vision' },
+      { key: 'plotSummary',     label: 'Plot Summary' },
+      { key: 'targetAudience',  label: 'Target Audience' },
+      { key: 'budget',          label: 'Budget and Distribution Plans' },
+      { key: 'timeline',        label: 'Timeline and Schedule' },
+      { key: 'productionTeam',  label: 'Production Team' },
+      { key: 'taskManagement',  label: 'Task Management' },
+    ]
+  },
+  {
+    id: 2,
+    name: 'Commercial / Client',
+    fields: [
+      { key: 'clientProfile',  label: 'Client Profile' },
+      { key: 'projectInfo',    label: 'Project Information' },
+      { key: 'creativeReq',    label: 'Creative Requirements' },
+      { key: 'logistics',      label: 'Logistics' },
+      { key: 'timelineBudget', label: 'Timeline and Budget' },
+    ]
+  },
+  {
+    id: 3,
+    name: 'Corporate / Branded',
+    fields: [
+      { key: 'purpose',        label: 'Project Purpose' },
+      { key: 'deliverables',   label: 'Deliverables / Outputs' },
+      { key: 'storyboard',     label: 'Storyboard & Script' },
+      { key: 'shootLocations', label: 'Shoot Locations' },
+      { key: 'timelineBudget', label: 'Timeline Budget' },
+      { key: 'objectives',     label: 'Objectives & Target Audience' },
+      { key: 'audio',          label: 'Audio & Branding' },
+      { key: 'distribution',   label: 'Distribution Channels' },
+      { key: 'reference',      label: 'Reference Videos' },
+    ]
+  },
+];
+
+function renderBrief(p) {
+  const el = document.getElementById('brief-content');
+  if (!el) return;
+  if (!p.brief) p.brief = { template: null, fields: {} };
+  if (!p.brief.removedKeys)   p.brief.removedKeys   = [];
+  if (!p.brief.customFields)  p.brief.customFields  = [];
+  const activeT = p.brief.template;
+
+  const hasRemoved = p.brief.removedKeys.length > 0;
+  let html = '';
+  if (hasRemoved) {
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:rgba(56,168,212,0.07);border:1px solid rgba(56,168,212,0.2);border-radius:8px">
+      <span style="font-size:12px;color:var(--accent);flex:1">${p.brief.removedKeys.length} field${p.brief.removedKeys.length!==1?'s':''} hidden</span>
+      <button class="btn btn-sm" onclick="restoreBriefFields()" style="color:var(--accent)">↺ Restore fields</button>
+    </div>`;
+  }
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+    ${BRIEF_TEMPLATES.map(t => `
+      <div onclick="selectBriefTemplate(${t.id})" style="
+        padding:14px 16px;border-radius:10px;cursor:pointer;
+        border:2px solid ${activeT === t.id ? 'var(--accent)' : 'var(--border)'};
+        background:${activeT === t.id ? 'rgba(56,168,212,0.07)' : 'var(--surface2)'};
+        transition:border-color .15s,background .15s
+      ">
+        <div style="font-size:12px;font-weight:600;color:${activeT === t.id ? 'var(--accent)' : 'var(--text)'};margin-bottom:4px">${t.name}</div>
+        <div style="font-size:10px;color:var(--text3)">${t.fields.length} fields</div>
+      </div>
+    `).join('')}
+  </div>`;
+
+  if (activeT) {
+    const tmpl = BRIEF_TEMPLATES.find(t => t.id === activeT);
+    if (tmpl) {
+      const visibleFields = tmpl.fields.filter(f => !p.brief.removedKeys.includes(f.key));
+      html += visibleFields.map(f => briefFieldHtml(f.key, f.label, p.brief.fields[f.key]||'', false)).join('');
+    }
+    // Custom fields
+    html += p.brief.customFields.map(f => briefFieldHtml(f.key, f.label, p.brief.fields[f.key]||'', true)).join('');
+    // Add field row
+    html += `
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center" id="brief-add-row">
+        <input class="form-input form-input-sm" id="brief-new-label" placeholder="New field label..." style="flex:1" onkeydown="if(event.key==='Enter')addBriefCustomField()">
+        <button class="btn btn-sm btn-primary" onclick="addBriefCustomField()">+ Add Field</button>
+      </div>`;
+  } else {
+    html += `<div class="empty-state" style="margin-top:12px"><div class="icon">🗒️</div><h4>Choose a template</h4><p>Select a template above to get started</p></div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function briefFieldHtml(key, label, value, isCustom) {
+  return `
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">${label.replace(/</g,'&lt;')}</label>
+        <button onclick="removeBriefField('${key}',${isCustom})" title="Remove field" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:0 2px">✕</button>
+      </div>
+      <textarea class="form-input" rows="4" style="width:100%;resize:vertical;font-size:13px;line-height:1.6"
+        placeholder="Enter ${label.toLowerCase()}..."
+        onblur="saveBriefField('${key}',this.value)">${value.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>`;
+}
+
+function removeBriefField(key, isCustom) {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  if (!p.brief.removedKeys)  p.brief.removedKeys  = [];
+  if (!p.brief.customFields) p.brief.customFields = [];
+  // Find label for confirm message
+  let label = key;
+  if (isCustom) {
+    label = (p.brief.customFields.find(f => f.key === key) || {}).label || key;
+  } else {
+    for (const t of BRIEF_TEMPLATES) {
+      const f = t.fields.find(x => x.key === key);
+      if (f) { label = f.label; break; }
+    }
+  }
+  const msg = isCustom
+    ? `Remove the "${label}" field? This cannot be undone.`
+    : `Hide the "${label}" field? Your text will be saved — you can restore it later via Restore fields.`;
+  showConfirmDialog(msg, isCustom ? 'Remove' : 'Hide', () => {
+    if (isCustom) {
+      p.brief.customFields = p.brief.customFields.filter(f => f.key !== key);
+    } else {
+      if (!p.brief.removedKeys.includes(key)) p.brief.removedKeys.push(key);
+    }
+    saveStore();
+    renderBrief(p);
+  });
+}
+
+function restoreBriefFields() {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  p.brief.removedKeys = [];
+  saveStore();
+  renderBrief(p);
+}
+
+function addBriefCustomField() {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  if (!p.brief.customFields) p.brief.customFields = [];
+  const input = document.getElementById('brief-new-label');
+  const label = input ? input.value.trim() : '';
+  if (!label) return;
+  const key = 'custom_' + makeId();
+  p.brief.customFields.push({ key, label });
+  saveStore();
+  renderBrief(p);
+}
+
+function selectBriefTemplate(id) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.brief) p.brief = { template: null, fields: {}, removedKeys: [], customFields: [] };
+  p.brief.template = id;
+  saveStore();
+  renderBrief(p);
+}
+
+function saveBriefField(key, val) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.brief) p.brief = { template: null, fields: {}, removedKeys: [], customFields: [] };
+  p.brief.fields[key] = val;
+  saveStore();
 }
 
 // BREAKDOWN
@@ -6335,7 +7581,17 @@ function removeTeamMember(i){store.teamMembers.splice(i,1);saveStore();renderTea
 let contactTypeFilter = 'all';
 let contactRoleFilter = 'all';
 let contactSubView = 'all';
-let _cachedContacts = []; // populated by renderContacts, used by editContact
+let contactsSubNavExpanded = false;
+let _cachedContacts = [];
+let _pendingFullRemovals = []; // populated by renderContacts, used by editContact
+
+function toggleContactsSubNav() {
+  contactsSubNavExpanded = !contactsSubNavExpanded;
+  const subnav = document.getElementById('contacts-subnav');
+  const arrow = document.getElementById('contacts-subnav-arrow');
+  if (subnav) subnav.style.display = contactsSubNavExpanded ? '' : 'none';
+  if (arrow) arrow.style.transform = contactsSubNavExpanded ? '' : 'rotate(-90deg)';
+}
 
 function setContactTypeFilter(type) {
   contactTypeFilter = type;
@@ -6514,9 +7770,11 @@ function renderContacts() {
   // Cache for use by editContact
   _cachedContacts = contacts;
 
-  // Build unique roles list for filter dropdown
+  // Build unique roles list — crew roles only, exclude cast character names
   const allRoles = new Set();
-  contacts.forEach(c => c.roles.forEach(r => { if (r) allRoles.add(r); }));
+  contacts
+    .filter(c => c.type !== 'cast')
+    .forEach(c => c.roles.forEach(r => { if (r && r !== 'Cast' && r !== 'Extra') allRoles.add(r); }));
   const uniqueRoles = Array.from(allRoles).sort();
 
   // Apply type filter
@@ -6953,13 +8211,31 @@ function addContactProjectField(projectId, role) {
   input.className = 'form-input contact-role-input';
   input.placeholder = 'Role (e.g. Director, Gaffer)';
   input.value = role || '';
+  input.setAttribute('list', 'roles-datalist');
 
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'btn btn-sm btn-danger';
   btn.style.flexShrink = '0';
   btn.textContent = '✕';
-  btn.addEventListener('click', () => row.remove());
+  btn.addEventListener('click', () => {
+    const contactName = document.getElementById('edit-contact-name-display')?.value?.trim();
+    const pid = sel.value;
+    const proj = pid ? store.projects.find(p => p.id === pid) : null;
+    const doRemove = () => {
+      if (contactName && pid) _pendingFullRemovals.push({ name: contactName, projectId: pid });
+      row.remove();
+    };
+    if (contactName && proj && contactAppearsElsewhere(contactName, pid)) {
+      showConfirmDialog(
+        `This will remove <strong>${contactName}</strong> from <strong>${proj.title}</strong> completely, including any callsheet, cast, or crew entries. Continue?`,
+        'Remove',
+        doRemove
+      );
+    } else {
+      doRemove();
+    }
+  });
 
   row.appendChild(sel);
   row.appendChild(input);
@@ -7088,6 +8364,7 @@ function confirmRemoveContact() {
 }
 
 function addNewContact() {
+  _pendingFullRemovals = [];
   // Clear all fields and open the edit modal for a brand-new contact
   document.getElementById('edit-contact-name').value = '';
   document.getElementById('edit-contact-name-display').value = '';
@@ -7104,6 +8381,8 @@ function addNewContact() {
 }
 
 function editContact(name) {
+  _pendingFullRemovals = [];
+  refreshRolesDatalist();
   // Use the cached contact data built by renderContacts (same aggregation as what's displayed)
   const cached = _cachedContacts.find(c => c.name.toLowerCase() === name.toLowerCase());
   let phone       = cached ? cached.phone       || '' : '';
@@ -7161,8 +8440,9 @@ function saveEditedContact() {
   const typeArr = [];
   if (document.getElementById('edit-contact-type-cast').checked) typeArr.push('cast');
   if (document.getElementById('edit-contact-type-crew').checked) typeArr.push('crew');
-  const type = typeArr.join(',');
   const defaultRole = document.getElementById('edit-contact-default-role').value.trim();
+  if (!typeArr.length && defaultRole) typeArr.push('crew');
+  const type = typeArr.join(',');
   const projectRoles = collectProjectRoles();
 
   if (!name) {
@@ -7259,10 +8539,53 @@ function saveEditedContact() {
     });
   });
 
+  // Process any confirmed full project removals
+  _pendingFullRemovals.forEach(({ name: rName, projectId }) => {
+    fullyRemoveFromProject(rName || name, projectId);
+  });
+  _pendingFullRemovals = [];
+
   saveStore();
   closeModal('modal-edit-contact');
   renderContacts();
   showToast('Contact updated', 'success');
+}
+
+function contactAppearsElsewhere(name, projectId) {
+  const p = store.projects.find(proj => proj.id === projectId);
+  if (!p) return false;
+  return isPersonStillInProject(p, name);
+}
+
+function fullyRemoveFromProject(name, projectId) {
+  const p = store.projects.find(proj => proj.id === projectId);
+  if (!p) return;
+  const key = name.toLowerCase();
+  p.contacts = (p.contacts || []).filter(c => (c.name || '').toLowerCase() !== key);
+  p.cast     = (p.cast     || []).filter(c => (c.name || '').toLowerCase() !== key);
+  p.extras   = (p.extras   || []).filter(c => (c.name || '').toLowerCase() !== key);
+  p.unit     = (p.unit     || []).filter(c => (c.name || '').toLowerCase() !== key);
+  (p.callsheets || []).forEach(cs => {
+    cs.castRows    = (cs.castRows    || []).filter(r => (r.actor || '').toLowerCase() !== key);
+    cs.customFields = (cs.customFields || []).filter(cf => (cf.value || '').toLowerCase() !== key);
+  });
+}
+
+function showConfirmDialog(message, confirmLabel, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:28px 24px 20px;max-width:400px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <p style="color:var(--text);font-size:13px;line-height:1.65;margin:0 0 22px">${message}</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm" id="_cdCancel">Cancel</button>
+        <button class="btn btn-sm btn-danger" id="_cdConfirm">${confirmLabel}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_cdCancel').onclick  = () => overlay.remove();
+  overlay.querySelector('#_cdConfirm').onclick = () => { overlay.remove(); onConfirm(); };
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 }
 
 // ══════════════════════════════════════════
@@ -8066,6 +9389,24 @@ function confirmWeatherLocation(candidates, originalQuery) {
 // ══════════════════════════════════════════
 loadStore();
 renderDashboard();
+
+// ── Role autocomplete ─────────────────────────────────────────────────────────
+function refreshRolesDatalist() {
+  const roles = new Set();
+  store.projects.forEach(p => {
+    (p.unit || []).forEach(r => { if (r.role) roles.add(r.role); });
+    (p.contacts || []).forEach(c => {
+      if (c.type === 'cast') return;
+      (c.roles || []).forEach(r => { if (r && r !== 'Cast' && r !== 'Extra') roles.add(r); });
+    });
+  });
+  (store.contacts || []).forEach(c => {
+    if (c.defaultRole) roles.add(c.defaultRole);
+  });
+  const dl = document.getElementById('roles-datalist');
+  if (dl) dl.innerHTML = Array.from(roles).sort().map(r => `<option value="${r}">`).join('');
+}
 </script>
+<datalist id="roles-datalist"></datalist>
 </body>
 </html>
