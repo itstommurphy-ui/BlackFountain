@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0d12">
+<meta name="description" content="Black Fountain - Production management for film and TV">
+<link rel="manifest" href="manifest.json">
 <title>Black Fountain — Production Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2191,6 +2194,7 @@
           <input type="text" id="global-search" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
           <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
         </div>
+        <button class="btn btn-sm" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</button>
         <button class="btn btn-sm" onclick="manualSave()">💾 Save</button>
         <button class="btn btn-sm" onclick="exportData()">⬇ Export</button>
         <button class="btn btn-sm btn-primary" onclick="openNewProjectModal()">+ New Project</button>
@@ -13178,5 +13182,39 @@ document.addEventListener('contextmenu', e => {
 
 <!-- Global context menu -->
 <div id="ctx-menu"></div>
+<script>
+// PWA Install Handler
+let deferredPrompt;
+const pwaInstallBtn = document.getElementById('pwa-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  pwaInstallBtn.style.display = 'inline-block';
+});
+
+function triggerPWAInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((result) => {
+      deferredPrompt = null;
+      pwaInstallBtn.style.display = 'none';
+    });
+  } else {
+    // Fallback - show message
+    pwaInstallBtn.textContent = 'Loading...';
+    setTimeout(() => pwaInstallBtn.textContent = '⬇ Install App', 1000);
+  }
+}
+
+// Register Service Worker for offline usage
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('Service Worker registered - app works offline!'))
+      .catch(err => console.log('Service Worker registration failed:', err));
+  });
+}
+</script>
 </body>
 </html>
