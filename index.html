@@ -3088,14 +3088,17 @@
             </div>
             <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Font Size</p>
             <div style="display:flex;gap:12px">
-              <button class="btn" id="font-small-btn" onclick="setFontSize('small')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:11px">Small</span>
+              <button class="btn" id="font-classic-btn" onclick="setFontSize('classic')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
+                <span style="font-size:11px">Classic</span>
               </button>
-              <button class="btn" id="font-medium-btn" onclick="setFontSize('medium')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:13px">Medium</span>
+              <button class="btn" id="font-bigger-btn" onclick="setFontSize('bigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
+                <span style="font-size:13px">Bigger</span>
               </button>
-              <button class="btn" id="font-large-btn" onclick="setFontSize('large')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:15px">Large</span>
+              <button class="btn" id="font-evenbigger-btn" onclick="setFontSize('evenbigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
+                <span style="font-size:15px">Even Bigger</span>
+              </button>
+              <button class="btn" id="font-huge-btn" onclick="setFontSize('huge')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
+                <span style="font-size:17px">Huge</span>
               </button>
             </div>
           </div>
@@ -4200,7 +4203,7 @@ function setFontSize(size) {
 }
 
 function applyFontSizeToAllElements(size) {
-  const scale = size === 'small' ? 0.8 : size === 'large' ? 1.3 : 1;
+  const scale = size === 'classic' ? 1 : size === 'bigger' ? 1.2 : size === 'evenbigger' ? 1.3 : size === 'huge' ? 1.5 : 1;
   const elements = document.querySelectorAll('*');
   elements.forEach(el => {
     const computedStyle = window.getComputedStyle(el);
@@ -4213,12 +4216,12 @@ function applyFontSizeToAllElements(size) {
     }
   });
   // Also update CSS variable for any rem-based elements
-  document.documentElement.style.setProperty('--font-scale', size === 'small' ? '0.8' : size === 'large' ? '1.3' : '1');
+  document.documentElement.style.setProperty('--font-scale', scale.toString());
 }
 
 function updateFontSizeButtons() {
-  const currentSize = localStorage.getItem('filmforge_font_size') || 'medium';
-  const sizes = ['small', 'medium', 'large'];
+  const currentSize = localStorage.getItem('filmforge_font_size') || 'classic';
+  const sizes = ['classic', 'bigger', 'evenbigger', 'huge'];
   sizes.forEach(size => {
     const btn = document.getElementById(`font-${size}-btn`);
     if (btn) {
@@ -4232,7 +4235,7 @@ function loadTheme() {
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   }
-  const fontSize = localStorage.getItem('filmforge_font_size') || 'medium';
+  const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
   document.documentElement.setAttribute('data-font-size', fontSize);
   // Apply font size to all elements on load
   setTimeout(() => applyFontSizeToAllElements(fontSize), 100);
