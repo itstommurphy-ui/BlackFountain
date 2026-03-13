@@ -887,6 +887,16 @@
     border-color: var(--accent);
     background: var(--accent-dim);
   }
+  /* Generic drop-zone highlight used on sections/panels */
+  .drop-zone { position: relative; }
+  .drop-zone.dragover::after {
+    content: '⬇ Drop files here';
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: var(--accent);
+    background: rgba(0,0,0,0.45); border-radius: 10px;
+    border: 2px dashed var(--accent); pointer-events: none; z-index: 10;
+    letter-spacing: .04em;
+  }
   .file-upload-icon {
     font-size: 36px;
     margin-bottom: 12px;
@@ -1850,6 +1860,10 @@
   .ctx-sep { height:1px; background:var(--border); margin:3px 5px; }
   .ctx-icon { font-size:13px; width:16px; text-align:center; flex-shrink:0; opacity:0.75; }
   [data-ctx] { cursor:context-menu; }
+
+  /* ===== EQUIPMENT / TECH SCOUT CHECKBOXES ===== */
+  .equip-check { width:16px; height:16px; border-radius:4px; border:2px solid var(--border2); background:var(--surface3); flex-shrink:0; cursor:pointer; transition:background .15s, border-color .15s; }
+  .equip-check.checked { background:var(--accent2); border-color:var(--accent2); background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 12 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 5l3.5 3.5L11 1' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:center; background-size:10px; }
 
   /* ===== UTILITY CLASSES ===== */
   /* Text colors */
@@ -3495,6 +3509,43 @@
     </div>
     <div class="form-actions">
       <button onclick="closeModal('modal-import-location')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE SCOUT FROM LOCATION DB -->
+<div class="modal-overlay" id="modal-create-scout">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 id="create-scout-modal-title">Create Scouting Sheet</h3>
+      <button class="modal-close" onclick="closeModal('modal-create-scout')">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Location: <strong id="create-scout-loc-display"></strong></p>
+      <input type="hidden" id="create-scout-loc-name">
+      <input type="hidden" id="create-scout-type">
+      <div class="form-group">
+        <label class="form-label">Add to project</label>
+        <select class="form-select" id="create-scout-project-select"></select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="confirmCreateScout()">Create &amp; Open</button>
+      <button class="btn" onclick="closeModal('modal-create-scout')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCOUT STATUS MODAL -->
+<div class="modal-overlay" id="modal-scout-status">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3>Scouting Info — <span id="scout-status-modal-name"></span></h3>
+      <button class="modal-close" onclick="closeModal('modal-scout-status')">✕</button>
+    </div>
+    <div style="padding:16px 20px" id="scout-status-modal-body"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-scout-status')">Close</button>
     </div>
   </div>
 </div>
@@ -5444,6 +5495,19 @@ function viewFile(id) {
   win.document.close();
 }
 
+// Reusable drag-and-drop helper — attach to any element
+function _makeDrop(el, fn) {
+  if (!el || el._dropAttached) return;
+  el._dropAttached = true;
+  el.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); });
+  el.addEventListener('drop', e => {
+    e.preventDefault(); e.stopPropagation();
+    el.classList.remove('dragover');
+    if (e.dataTransfer.files.length) fn(e.dataTransfer.files);
+  });
+}
+
 // File tab switching
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('file-tabs').addEventListener('click', function(e) {
@@ -5454,22 +5518,23 @@ document.addEventListener('DOMContentLoaded', function() {
       renderFiles();
     }
   });
-  
-  // Drag and drop
-  const uploadZone = document.getElementById('file-upload-zone');
-  uploadZone.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    this.classList.add('dragover');
-  });
-  uploadZone.addEventListener('dragleave', function(e) {
-    e.preventDefault();
-    this.classList.remove('dragover');
-  });
-  uploadZone.addEventListener('drop', function(e) {
-    e.preventDefault();
-    this.classList.remove('dragover');
-    handleFileUpload(e.dataTransfer.files);
-  });
+
+  // Main file upload zone (Files tab)
+  _makeDrop(document.getElementById('file-upload-zone'), handleFileUpload);
+
+  // Overview project files area
+  const ovFilesGrid = document.getElementById('overview-files-grid');
+  if (ovFilesGrid) {
+    ovFilesGrid.classList.add('drop-zone');
+    _makeDrop(ovFilesGrid, handleFileUploadFromOverview);
+  }
+
+  // Script & Docs section
+  const sectionScript = document.getElementById('section-script');
+  if (sectionScript) {
+    sectionScript.classList.add('drop-zone');
+    _makeDrop(sectionScript, handleScriptUpload);
+  }
 });
 
 const EQUIP_CATEGORIES = [
@@ -6424,7 +6489,7 @@ function renderCustomSection(tabName) {
       <button class="btn btn-sm btn-primary" onclick="addCustomSectionField('${cs.id}')">+ Add Field</button>
     </div>
 
-    <div>
+    <div id="cs-files-zone-${cs.id}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <h4 style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:0">Files</h4>
         <label class="btn btn-sm btn-primary" style="cursor:pointer;font-size:11px">
@@ -6453,6 +6518,12 @@ function renderCustomSection(tabName) {
   }
   html += `</div>`;
   el.innerHTML = html;
+  // Wire drag-and-drop onto the files zone
+  const csDropZone = document.getElementById(`cs-files-zone-${cs.id}`);
+  if (csDropZone) {
+    csDropZone.classList.add('drop-zone');
+    _makeDrop(csDropZone, files => handleCustomSectionUpload(cs.id, files));
+  }
 }
 
 function saveCustomSectionNote(id, val) {
@@ -7366,7 +7437,7 @@ function renderBreakdownImport(el, p) {
     </div>
     ${selectorHtml}
     <div style="max-width:560px;margin:0 auto">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:36px 28px;text-align:center;margin-bottom:16px">
+      <div id="bd-upload-card" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:36px 28px;text-align:center;margin-bottom:16px">
         <div style="font-size:52px;margin-bottom:14px">🎬</div>
         <h4 style="margin:0 0 8px;font-size:16px">Load Your Script</h4>
         <p style="color:var(--text3);font-size:13px;margin:0 0 24px;line-height:1.6">Paste or upload your script to begin tagging elements — cast, props, wardrobe, SFX and more — using the industry colour system. Tags auto-group into a per-scene breakdown report.</p>
@@ -7377,7 +7448,7 @@ function renderBreakdownImport(el, p) {
           </label>
           <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='block';this.style.display='none'">✏️ Paste Script</button>
         </div>
-        <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML) · .pdf</div>
+        <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML) · .pdf — or drag &amp; drop a file here</div>
       </div>
       <div id="bd-paste-wrap" style="display:none">
         <textarea id="bd-paste-input" class="form-textarea" rows="18" placeholder="Paste your script here…
@@ -7393,6 +7464,15 @@ Fountain and plain text both work." style="font-family:monospace;font-size:12px;
         </div>
       </div>
     </div>`;
+  // Wire drag-and-drop onto the upload card now that it's in the DOM
+  const bdCard = document.getElementById('bd-upload-card');
+  if (bdCard) {
+    bdCard.classList.add('drop-zone');
+    _makeDrop(bdCard, files => {
+      const fakeInput = { files };
+      loadBreakdownFile(fakeInput);
+    });
+  }
 }
 
 function renderBreakdownEditor(el, p) {
@@ -9767,7 +9847,7 @@ function renderProjectLocations(p) {
   } else {
     tbody.innerHTML = p.locations.map((l,i) => `
       <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.name||'')}">
-        <td><strong>${l.name}</strong></td>
+        <td style="white-space:nowrap"><strong>${l.name}</strong>${_scoutIconHtml(l.name||'')}</td>
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
         <td>${l.avail||'—'}</td>
@@ -10083,6 +10163,11 @@ let _activeTechScoutIdx = 0;
 let _scoutMinimized = false;
 let _techScoutMinimized = false;
 
+function _applySuitStyle(el) {
+  const m = {'Not Suitable':'var(--red)','Poor':'#e06c00','Fair':'#d4a017','Good':'var(--green)','Excellent':'#0088ff'};
+  el.style.cssText = m[el.value] ? `color:${m[el.value]};font-weight:600` : '';
+}
+
 function _scoutingSheetContent(s, i) {
   const suitOpts = ['','Not Suitable','Poor','Fair','Good','Excellent'];
   const suitColorMap = {'Not Suitable':'var(--red)','Poor':'#e06c00','Fair':'#d4a017','Good':'var(--green)','Excellent':'#0088ff'};
@@ -10103,7 +10188,7 @@ function _scoutingSheetContent(s, i) {
       ${panel(sectionHead('Site Info') + field('Address', ta('address',50)) + field('Contact Person', inp('contact'), 0))}
       ${panel(sectionHead('Evaluation') +
         `<div class="form-group" style="margin-bottom:8px"><label class="form-label">Overall Suitability</label>
-          <select class="form-select" style="${suitStyle}" onchange="updateScouting(${i},'suitability',this.value)">
+          <select class="form-select" style="${suitStyle}" onchange="updateScouting(${i},'suitability',this.value);_applySuitStyle(this)">
             ${suitOpts.map(o=>`<option value="${o}"${o===suit?' selected':''}>${o||'— select —'}</option>`).join('')}
           </select></div>` +
         field('General Notes', ta('info', 60), 0))}
@@ -10967,7 +11052,7 @@ function renderLocations() {
       }).join('');
       const ctxLocData = l.locIdx !== null ? `loc-global:${l.projectId}:${l.locIdx}` : '';
       const mainRow = `<tr ${ctxLocData ? `data-ctx="${ctxLocData}"` : ''} onclick="toggleLocationExpand('${lNameEsc}','${l.projectId}')">
-        <td style="font-weight:500;white-space:nowrap">${l.name} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
+        <td style="font-weight:500;white-space:nowrap">${l.name}${_scoutIconHtml(l.name)} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
         ${locVis('project')       ? `<td>${l.project}</td>` : ''}
         ${locVis('contact')       ? `<td>${contactCell}</td>` : ''}
         ${locVis('dateScouted')   ? `<td style="white-space:nowrap">${l.date || '—'}</td>` : ''}
@@ -12244,8 +12329,8 @@ function _techScoutContent(scout, si) {
       <div class="form-group" style="margin:0"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:8px 12px;background:var(--surface2);border-radius:6px">
-      <div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent2);border-radius:4px;transition:width .3s"></div></div>
-      <span style="font-size:12px;color:var(--text2);white-space:nowrap">${checksDone}/${checksTotal} checked (${pct}%)</span>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden"><div id="tech-progress-bar-${si}" style="width:${pct}%;height:100%;background:var(--accent2);border-radius:4px;transition:width .3s"></div></div>
+      <span id="tech-progress-label-${si}" style="font-size:12px;color:var(--text2);white-space:nowrap">${checksDone}/${checksTotal} checked (${pct}%)</span>
     </div>
     ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
       <div style="margin-bottom:16px">
@@ -12318,9 +12403,16 @@ function toggleTechCheck(si, key) {
   if (!p.techScouts[si].checks) p.techScouts[si].checks = {};
   p.techScouts[si].checks[key] = !p.techScouts[si].checks[key];
   saveStore();
-  // Just toggle the check visually without full re-render
   const checkEl = event.currentTarget.querySelector('.equip-check');
   if (checkEl) checkEl.classList.toggle('checked', p.techScouts[si].checks[key]);
+  // Update progress bar and counter
+  const checksTotal = Object.values(TECH_SCOUT_ITEMS).reduce((a,b) => a + b.length, 0);
+  const checksDone = Object.values(p.techScouts[si].checks).filter(Boolean).length;
+  const pct = checksTotal ? Math.round(checksDone / checksTotal * 100) : 0;
+  const bar = document.getElementById(`tech-progress-bar-${si}`);
+  const label = document.getElementById(`tech-progress-label-${si}`);
+  if (bar) bar.style.width = pct + '%';
+  if (label) label.textContent = `${checksDone}/${checksTotal} checked (${pct}%)`;
 }
 function openTechScoutForLocation(locName) {
   const p = currentProject();
@@ -13089,9 +13181,16 @@ document.addEventListener('contextmenu', e => {
     }
     case 'loc-global': {
       const pid = args[0], lidx = +args[1];
+      const _locObj = pid === '_global'
+        ? (store.locations||[])[lidx]
+        : (store.projects.find(p=>p.id===pid)?.locations||[])[lidx];
+      const _locName = _locObj?.name || '';
       items = [
         { label: 'Edit', icon: '✎', fn: () => editLocationGlobal(pid, lidx) },
         { label: 'Move / Copy', icon: '⇄', fn: () => openMoveLocation(pid, lidx) },
+        null,
+        { label: 'Create Scouting Sheet', icon: '🗺', fn: () => openCreateScoutModal(_locName, 'scout') },
+        { label: 'Create Tech Checklist', icon: '☑', fn: () => openCreateScoutModal(_locName, 'tech') },
         null,
         { label: 'Delete', icon: '🗑', danger: true, fn: () => deleteLocationGlobal(pid, lidx) }
       ]; break;
