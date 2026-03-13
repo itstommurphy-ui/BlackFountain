@@ -104,6 +104,18 @@
   [data-font-size="huge"]       #global-tip { zoom: 0.7407; }
   [data-font-size="double"]     #ctx-menu,
   [data-font-size="double"]     #global-tip { zoom: 0.5;    }
+
+  /* Breakdown auto-suggest modal — built via createElement with inline styles,
+     no .modal-overlay class, so needs its own counter-zoom rules.
+     The inner box has max-height:82vh inline, so override with !important. */
+  [data-font-size="bigger"]     #bd-suggest-modal         { zoom: 0.9091; }
+  [data-font-size="evenbigger"] #bd-suggest-modal         { zoom: 0.8333; }
+  [data-font-size="huge"]       #bd-suggest-modal         { zoom: 0.7407; }
+  [data-font-size="double"]     #bd-suggest-modal         { zoom: 0.5;    }
+  [data-font-size="bigger"]     #bd-suggest-modal > div   { zoom: 1.1;  max-height: 74.5vh !important; }
+  [data-font-size="evenbigger"] #bd-suggest-modal > div   { zoom: 1.2;  max-height: 68.3vh !important; }
+  [data-font-size="huge"]       #bd-suggest-modal > div   { zoom: 1.35; max-height: 60.7vh !important; }
+  [data-font-size="double"]     #bd-suggest-modal > div   { zoom: 2;    max-height: 41vh   !important; }
   body { font-size: 13.5px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100vw; }
@@ -211,6 +223,7 @@
     white-space: nowrap;
   }
   .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item:focus-visible { outline: 2px solid var(--accent2); outline-offset: -2px; }
   .nav-item.active {
     background: linear-gradient(90deg, rgba(212,170,44,0.12), rgba(212,170,44,0.04));
     color: var(--accent);
@@ -363,6 +376,16 @@
     margin-bottom: 16px;
   }
   .btn-back:hover { background: var(--surface3); border-color: var(--surface4); color: var(--text); }
+  .btn:focus-visible, .btn-back:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+
+  /* ── SKIP LINK ── */
+  .skip-link {
+    position: absolute; top: -100px; left: 16px; z-index: 9999;
+    padding: 8px 16px; background: var(--accent2); color: #0a0a10;
+    border-radius: var(--radius); font-weight: 600; font-size: 13px;
+    text-decoration: none; transition: top 0.1s;
+  }
+  .skip-link:focus { top: 16px; }
 
   /* ── CONTENT ── */
   #content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; }
@@ -481,12 +504,14 @@
   }
   
   .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .project-card-header > div { min-width: 0; }
   .project-card-title {
     font-family: var(--font-display);
     font-size: 22px;
     letter-spacing: 2px;
     color: var(--text);
     line-height: 1.05;
+    overflow-wrap: break-word;
   }
   .project-card-num { font-family: var(--font-mono); font-size: 9.5px; color: var(--text3); margin-bottom: 2px; letter-spacing: 1px; }
   .status-badge {
@@ -529,6 +554,7 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
     outline: none;
   }
+  .proj-status-select:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
   .proj-status-select.badge-pre { background-color: rgba(56,168,212,0.15); color: #7dd0f5; }
   .proj-status-select.badge-prod { background-color: rgba(212,170,44,0.15); color: #f0cf70; }
   .proj-status-select.badge-post { background-color: rgba(196,86,110,0.15); color: #e08095; }
@@ -601,9 +627,7 @@
     color: var(--text);
     line-height: 1;
     margin-bottom: 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
   .project-header-meta { display: flex; gap: 16px; color: var(--text3); font-size: 11px; flex-wrap: wrap; font-family: var(--font-mono); letter-spacing: 0.5px; overflow: hidden; }
   .project-header-meta span { display: flex; align-items: center; gap: 4px; }
@@ -1015,6 +1039,7 @@
     transition: all 0.12s;
   }
   .modal-close:hover { background: var(--surface3); color: var(--text2); }
+  .modal-close:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 
   /* ── FORMS ── */
   .form-group { margin-bottom: 14px; overflow: hidden; }
@@ -1040,9 +1065,10 @@
     transition: border-color 0.12s, box-shadow 0.12s;
     outline: none;
   }
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
+  .form-input:focus-visible, .form-select:focus-visible, .form-textarea:focus-visible {
     border-color: var(--accent2);
-    box-shadow: 0 0 0 2px rgba(56,168,212,0.08);
+    box-shadow: 0 0 0 3px rgba(56,168,212,0.4);
+    outline: none;
   }
   .form-input-sm {
     width: 100%;
@@ -1055,8 +1081,10 @@
     font-size: 12px;
     outline: none;
   }
-  .form-input-sm:focus {
+  .form-input-sm:focus-visible {
     border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(56,168,212,0.4);
+    outline: none;
   }
   .form-textarea-sm {
     width: 100%;
@@ -1072,8 +1100,10 @@
     line-height: 1.4;
     outline: none;
   }
-  .form-textarea-sm:focus {
+  .form-textarea-sm:focus-visible {
     border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(56,168,212,0.4);
+    outline: none;
   }
   .form-input-minimal {
     background: transparent;
@@ -1087,8 +1117,10 @@
     outline: none;
     transition: border-color 0.2s;
   }
-  .form-input-minimal:focus {
+  .form-input-minimal:focus-visible {
     border-bottom-color: var(--accent2);
+    box-shadow: 0 2px 0 0 var(--accent2);
+    outline: none;
   }
   .form-input-minimal::placeholder { color: var(--text3); }
   .form-input::placeholder { color: var(--text3); }
@@ -1307,7 +1339,8 @@
     background-repeat: no-repeat;
     background-position: 9px center;
   }
-  .search-input:focus { border-color: var(--accent2); }
+  .search-input:focus-visible { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(56,168,212,0.4); outline: none; }
+  #global-search:focus-visible { border-color: var(--accent2) !important; box-shadow: 0 0 0 3px rgba(56,168,212,0.4); outline: none; }
 
   /* ── CONFIRMED DOTS ── */
   .conf-dot {
@@ -2175,6 +2208,7 @@
 </style>
 </head>
 <body>
+<a href="#content" class="skip-link">Skip to main content</a>
 <div id="app">
   <!-- SIDEBAR -->
   <aside id="sidebar">
@@ -2239,7 +2273,7 @@
       <div class="topbar-right">
         <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
         <div style="position:relative;">
-          <input type="text" id="global-search" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
+          <input type="text" id="global-search" aria-label="Search projects and data" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
           <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
         </div>
         <button class="btn btn-sm" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</button>
@@ -4144,7 +4178,7 @@
 </div>
 
 <!-- TOAST -->
-<div id="toast" style="display:none"></div>
+<div id="toast" role="status" aria-live="polite" style="display:none"></div>
 
 <script>
 // ══════════════════════════════════════════
@@ -4362,6 +4396,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) {
     searchInput.addEventListener('input', e => performGlobalSearch(e.target.value));
   }
+  // WCAG: make nav items keyboard-accessible
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (!el.getAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'button');
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+  });
 });
 
 function populateFilesProjectFilter() {
@@ -11892,12 +11932,27 @@ function exportData() {
 function openModal(id) {
   const overlay = document.getElementById(id);
   if (!overlay) { console.log('overlay NOT FOUND'); return; }
+  // WCAG: inject ARIA roles and labels
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    const heading = modal.querySelector('h2, h3, [class*="modal-title"]');
+    if (heading) {
+      if (!heading.id) heading.id = id + '-title';
+      modal.setAttribute('aria-labelledby', heading.id);
+    }
+    modal.querySelectorAll('.modal-close').forEach(btn => {
+      if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', 'Close');
+    });
+  }
   overlay.classList.add('open');
   overlay.dataset.justOpened = Date.now();
-  // focus first input inside the modal after a short delay
+  // focus first focusable element inside the modal
   setTimeout(() => {
-    const first = overlay.querySelector('input:not([type=hidden]), textarea, select');
+    const first = overlay.querySelector('input:not([type=hidden]), textarea, select, button:not(.modal-close)');
     if (first) first.focus();
+    else { const close = overlay.querySelector('.modal-close'); if (close) close.focus(); }
   }, 60);
 }
 function closeModal(id) {
