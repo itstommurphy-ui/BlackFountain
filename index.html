@@ -533,6 +533,9 @@
   }
   .project-header-meta { display: flex; gap: 16px; color: var(--text3); font-size: 11px; flex-wrap: wrap; font-family: var(--font-mono); letter-spacing: 0.5px; overflow: hidden; }
   .project-header-meta span { display: flex; align-items: center; gap: 4px; }
+  .project-header-logline { font-size: 12px; color: var(--text2); font-style: italic; margin-top: 8px; line-height: 1.5; opacity: 0.85; cursor: pointer; }
+  .project-header-logline:hover { opacity: 1; color: var(--text); }
+  .project-header-logline.empty { color: var(--text3); font-size: 11px; opacity: 0.5; font-style: normal; font-family: var(--font-mono); }
 
   .section-tabs {
     display: flex;
@@ -1797,6 +1800,16 @@
     .cs-crew-grid { grid-template-columns: 1fr; }
     .cs-content { padding: 16px; }
   }
+
+  /* Context menu */
+  #ctx-menu { display:none; position:fixed; z-index:99999; background:var(--surface); border:1px solid var(--border2); border-radius:9px; box-shadow:0 8px 28px rgba(0,0,0,0.45); padding:4px; min-width:168px; max-width:240px; }
+  .ctx-item { padding:7px 13px; cursor:pointer; font-size:13px; color:var(--text); border-radius:5px; display:flex; align-items:center; gap:9px; white-space:nowrap; }
+  .ctx-item:hover { background:var(--surface2); }
+  .ctx-item.ctx-danger { color:var(--red); }
+  .ctx-item.ctx-danger:hover { background:rgba(220,60,60,0.1); }
+  .ctx-sep { height:1px; background:var(--border); margin:3px 5px; }
+  .ctx-icon { font-size:13px; width:16px; text-align:center; flex-shrink:0; opacity:0.75; }
+  [data-ctx] { cursor:context-menu; }
 </style>
 </head>
 <body>
@@ -1837,6 +1850,9 @@
       <div class="nav-item" onclick="showView('files')">
         <span class="icon">📁</span> Files
       </div>
+      <div class="nav-item" onclick="showView('settings')">
+        <span class="icon">⚙️</span> Settings
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -1875,7 +1891,7 @@
           <p>Your production pipeline at a glance</p>
         </div>
         <div class="stats-row">
-          <div class="stat-card total-card"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
+          <div class="stat-card total-card" onclick="dashboardStatusFilter=null;renderDashboard()" style="cursor:pointer"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
           <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>
           <div class="stat-card" onclick="setDashboardFilter('prod')"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
           <div class="stat-card" onclick="setDashboardFilter('post')"><div class="label">Post-Production</div><div class="value" id="stat-post">0</div><div class="sub" style="color:#e08095">●</div></div>
@@ -1894,20 +1910,27 @@
       <div class="view" id="view-project">
         <button class="btn-back" onclick="showView('dashboard')" style="margin-bottom:16px">← All Projects</button>
         <div class="project-header" id="project-header">
-          <div class="project-header-left">
+          <div class="project-header-left" style="flex:1;min-width:0">
             <h2 id="proj-title">PROJECT TITLE</h2>
             <div class="project-header-meta" id="proj-meta"></div>
+            <div class="project-header-logline empty" id="proj-logline" onclick="openStoryModal()" title="Edit logline / synopsis / outline">+ Add logline…</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <select class="proj-status-select" id="proj-status-select" onchange="changeProjectStatus(this.value)">
-              <option value="pre">PRE-PROD</option>
-              <option value="prod">PRODUCTION</option>
-              <option value="post">POST-PROD</option>
-              <option value="done">COMPLETE</option>
-              <option value="released">RELEASED</option>
-            </select>
-            <button class="btn btn-sm" onclick="openEditProjectModal()">✎ Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()">✕</button>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="proj-status-select" id="proj-status-select" onchange="changeProjectStatus(this.value)">
+                <option value="pre">PRE-PROD</option>
+                <option value="prod">PRODUCTION</option>
+                <option value="post">POST-PROD</option>
+                <option value="done">COMPLETE</option>
+                <option value="released">RELEASED</option>
+              </select>
+              <button class="btn btn-sm" onclick="openEditProjectModal()">✎ Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()">✕</button>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm btn-ghost" onclick="openStoryModal()" title="Logline / synopsis / outline" style="font-size:11px">📖 Story</button>
+              <button class="btn btn-sm btn-ghost" onclick="openProjectFiles()" title="Project files" style="font-size:11px">📁 Files</button>
+            </div>
           </div>
         </div>
 
@@ -1948,7 +1971,7 @@
             </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px">
-            <h3 class="section-heading" style="margin:0">SECTIONS</h3>
+            <h3 class="section-heading" style="margin:0">SECTIONS <span style="font-size:10px;font-weight:400;letter-spacing:0;color:var(--text3);text-transform:none">(cards can be dragged and rearranged)</span></h3>
             <div id="ov-toolbar" style="display:flex;align-items:center;gap:8px;font-size:11px"></div>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
@@ -2082,6 +2105,7 @@
             <h3 class="section-heading">LOCATIONS</h3>
             <div style="display:flex;gap:8px">
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
+              <button class="btn btn-sm" onclick="openImportLocationModal()" title="Import an existing location from the database">↓ Import</button>
               <button class="btn btn-sm" onclick="addScoutingSheet()">+ Scouting Sheet</button>
               <button class="btn btn-sm" onclick="addTechScout()">+ Tech Scout</button>
             </div>
@@ -2096,12 +2120,14 @@
               <tbody id="locations-body"></tbody>
             </table>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <h3 class="section-heading">SCOUTING SHEETS</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;margin-top:24px">
+            <h3 class="section-heading" style="margin:0">SCOUTING SHEETS</h3>
+            <button class="btn btn-primary btn-sm" onclick="addScoutingSheet()">+ New Sheet</button>
           </div>
           <div id="scouting-list"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 14px">
-            <h3 class="section-heading">TECH SCOUT CHECKLISTS</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 10px">
+            <h3 class="section-heading" style="margin:0">TECH SCOUT CHECKLISTS</h3>
+            <button class="btn btn-primary btn-sm" onclick="addTechScout()">+ New Checklist</button>
           </div>
           <div id="techscout-list"></div>
         </div>
@@ -2451,8 +2477,8 @@
       <div class="modal-overlay" id="modal-edit-contact">
         <div class="modal modal-lg" style="max-width:640px">
           <div class="modal-header">
-            <h3>Edit Contact</h3>
-            <button class="modal-close" onclick="closeModal('modal-edit-contact')">✕</button>
+            <h3 id="edit-contact-modal-title">Edit Contact</h3>
+            <button class="modal-close" onclick="closeEditContactModal()">✕</button>
           </div>
           <input type="hidden" id="edit-contact-name">
           <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0 24px">
@@ -2464,18 +2490,40 @@
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Type</label>
               <div style="display:flex;gap:20px">
                 <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text2)">
-                  <input type="checkbox" id="edit-contact-type-cast" style="width:14px;height:14px;accent-color:var(--accent2)">
+                  <input type="checkbox" id="edit-contact-type-cast" style="width:14px;height:14px;accent-color:var(--accent2)" onchange="ecToggleRoleSections()">
                   Cast / Talent
                 </label>
                 <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text2)">
-                  <input type="checkbox" id="edit-contact-type-crew" style="width:14px;height:14px;accent-color:var(--accent)">
+                  <input type="checkbox" id="edit-contact-type-crew" style="width:14px;height:14px;accent-color:var(--accent)" onchange="ecToggleRoleSections()">
                   Crew
                 </label>
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
-              <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Role(s)</label>
-              <input class="form-input-minimal" id="edit-contact-default-role" placeholder="e.g. Gaffer, Director of Photography" list="roles-datalist">
+            <!-- Cast Role(s) — visible when Cast / Talent is checked -->
+            <div id="ec-cast-roles-section" style="display:none">
+              <div style="display:grid;grid-template-columns:90px 1fr;gap:12px">
+                <label class="form-label" style="margin:0;font-weight:500;color:var(--accent2);padding-top:6px">Cast Role(s)</label>
+                <div>
+                  <div id="ec-cast-roles-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:4px"></div>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <input class="form-input-minimal" id="ec-cast-role-input" placeholder="e.g. Actor, Actress, Singer…" list="cast-roles-datalist" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();ecAddRole('cast');}">
+                    <button type="button" class="btn btn-sm" onclick="ecAddRole('cast')">+ Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Crew Role(s) — visible when Crew is checked -->
+            <div id="ec-crew-roles-section" style="display:none">
+              <div style="display:grid;grid-template-columns:90px 1fr;gap:12px">
+                <label class="form-label" style="margin:0;font-weight:500;color:var(--accent);padding-top:6px">Crew Role(s)</label>
+                <div>
+                  <div id="ec-crew-roles-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:4px"></div>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <input class="form-input-minimal" id="ec-crew-role-input" placeholder="e.g. Director of Photography, Gaffer…" list="roles-datalist" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();ecAddRole('crew');}">
+                    <button type="button" class="btn btn-sm" onclick="ecAddRole('crew')">+ Add</button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style="display:grid;grid-template-columns:90px 1fr;align-items:center;gap:12px">
               <label class="form-label" style="margin:0;font-weight:500;color:var(--text2)">Phone</label>
@@ -2498,8 +2546,33 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn" onclick="closeModal('modal-edit-contact')">Cancel</button>
+            <button class="btn" onclick="closeEditContactModal()">Cancel</button>
             <button class="btn btn-primary" onclick="saveEditedContact()">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCRIPT UPLOAD MODAL -->
+      <div class="modal-overlay" id="modal-script-upload">
+        <div class="modal" style="max-width:480px">
+          <div class="modal-header">
+            <h3>Upload Script</h3>
+            <button class="modal-close" onclick="closeModal('modal-script-upload')">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0 20px">
+            <div>
+              <label class="form-label">Name</label>
+              <input class="form-input" id="su-name" placeholder="Script name">
+            </div>
+            <div>
+              <label class="form-label">Version / Draft <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+              <input class="form-input" id="su-version" placeholder="e.g. v1, Draft 2, Shooting Script, Director's Copy">
+            </div>
+            <div id="su-breakdown-section"></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-script-upload')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmScriptUpload()">Upload</button>
           </div>
         </div>
       </div>
@@ -2681,6 +2754,36 @@
         </div>
       </div>
 
+      <!-- SETTINGS VIEW -->
+      <div class="view" id="view-settings">
+        <div class="page-header">
+          <h2>SETTINGS</h2>
+          <p>System configuration and data backup</p>
+        </div>
+        <div style="max-width:800px">
+          <div class="card" style="margin-bottom:20px">
+            <h3 style="margin-top:0">Data Backup</h3>
+            <p style="color:var(--text2);margin-bottom:16px">Export your entire project database as a JSON file. This allows you to restore your data if browser cache is cleared or if you want to transfer data to another device.</p>
+            <button class="btn btn-primary" onclick="exportStore()">
+              <span class="icon">📥</span> Export Data (JSON)
+            </button>
+          </div>
+          <div class="card" style="margin-bottom:20px">
+            <h3 style="margin-top:0">Import Data</h3>
+            <p style="color:var(--text2);margin-bottom:16px">Restore your project database from a previously exported JSON file. <strong>Warning:</strong> This will replace all current data.</p>
+            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
+            <button class="btn" onclick="document.getElementById('import-file-input').click()">
+              <span class="icon">📤</span> Import Data (JSON)
+            </button>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Storage Info</h3>
+            <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>filmforge_v1</code></p>
+            <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- TEAM VIEW -->
       <div class="view" id="view-team">
         <div class="page-header">
@@ -2709,6 +2812,32 @@
 
 <!-- ══ MODALS ══ -->
 
+<!-- STORY / LOGLINE MODAL -->
+<div class="modal-overlay" id="modal-story">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3>STORY</h3>
+      <button class="modal-close" onclick="closeModal('modal-story')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Logline <span style="font-weight:400;opacity:0.6;font-size:10px">— one or two sentences</span></label>
+      <textarea class="form-textarea" id="story-logline" rows="2" placeholder="A struggling musician discovers a mysterious guitar that grants wishes, but at a terrible price…" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Synopsis <span style="font-weight:400;opacity:0.6;font-size:10px">— short paragraph</span></label>
+      <textarea class="form-textarea" id="story-synopsis" rows="4" placeholder="Brief overview of the full story…" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Outline <span style="font-weight:400;opacity:0.6;font-size:10px">— treatment / detailed structure</span></label>
+      <textarea class="form-textarea" id="story-outline" rows="6" placeholder="Act-by-act or scene-by-scene outline…" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-story')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStory()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW / EDIT PROJECT -->
 <div class="modal-overlay" id="modal-project">
   <div class="modal">
@@ -2732,6 +2861,7 @@
           <option value="prod">Production</option>
           <option value="post">Post-Production</option>
           <option value="done">Complete</option>
+          <option value="released">Released</option>
         </select>
       </div>
     </div>
@@ -2991,6 +3121,24 @@
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-location')">Cancel</button>
       <button class="btn btn-primary" onclick="saveLocation()">Save Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT LOCATION FROM DATABASE -->
+<div class="modal-overlay" id="modal-import-location">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>Import Location</h3>
+      <button class="modal-close" onclick="closeModal('modal-import-location')">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <input class="form-input" id="import-loc-search" placeholder="Search locations..." oninput="renderImportLocationList()" style="margin-bottom:12px">
+      <div id="import-loc-list" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+      <p id="import-loc-empty" style="text-align:center;color:var(--text3);font-size:13px;padding:20px 0;display:none">No locations found</p>
+    </div>
+    <div class="form-actions">
+      <button onclick="closeModal('modal-import-location')">Close</button>
     </div>
   </div>
 </div>
@@ -3583,6 +3731,7 @@ function formatFileSize(bytes) {
 }
 
 let currentFileCategory = 'all';
+let _mfNewPersonCallback = null; // set when opening contact modal from file-tagging flow
 const selectedFileIds = new Set();
 
 // Normalise file → always read projectIds as array (migrates old single projectId)
@@ -3600,6 +3749,71 @@ function populateFilesProjectFilter() {
     store.projects.map(p =>
       `<option value="${p.id}" ${current === p.id ? 'selected' : ''}>${p.title || 'Untitled Project'}</option>`
     ).join('');
+}
+
+// ══════════════════════════════════════════
+// SETTINGS - EXPORT/IMPORT
+// ══════════════════════════════════════════
+function renderSettings() {
+  const statsEl = document.getElementById('storage-stats');
+  if (statsEl) {
+    const dataStr = JSON.stringify(store);
+    const bytes = new Blob([dataStr]).size;
+    const kb = (bytes / 1024).toFixed(2);
+    const mb = (bytes / (1024 * 1024)).toFixed(2);
+    statsEl.innerHTML = `
+      Projects: ${store.projects?.length || 0}<br>
+      Files: ${store.files?.length || 0}<br>
+      Contacts: ${store.contacts?.length || 0}<br>
+      Locations: ${store.locations?.length || 0}<br>
+      Team Members: ${store.teamMembers?.length || 0}<br>
+      Approximate size: ${kb} KB (${mb} MB)
+    `;
+  }
+}
+
+function exportStore() {
+  const dataStr = JSON.stringify(store, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `filmforge-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Data exported successfully', 'success');
+}
+
+function importStore(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.projects && !imported.files && !imported.contacts) {
+        showToast('Invalid backup file format', 'error');
+        return;
+      }
+      
+      if (!confirm('This will replace ALL current data with the imported backup. Are you sure you want to continue?')) {
+        return;
+      }
+      
+      store = { ...store, ...imported };
+      saveStore();
+      showToast('Data imported successfully - please refresh the page', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      showToast('Error parsing backup file: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 function renderFiles() {
@@ -3627,12 +3841,12 @@ function renderFiles() {
     return;
   }
 
-  grid.innerHTML = files.map(file => {
+  const _fileCard = (file) => {
     const pids = fileProjectIds(file);
     const cats = fileCategories(file);
     const projectBadge = projectFilter === 'all' && pids.length > 0
       ? `<div style="margin-top:4px;font-size:9px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-           ${pids.map(pid => store.projects[pid]?.title || '').filter(Boolean).join(', ')}
+           ${pids.map(pid => store.projects.find(p=>p.id===pid)?.title || '').filter(Boolean).join(', ')}
          </div>`
       : '';
     const catBadge = cats.map(c => `${FILE_CATEGORIES[c]?.icon || '📁'}`).join(' ');
@@ -3640,7 +3854,7 @@ function renderFiles() {
       ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
       : '';
     return `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','files')">
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','files')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
@@ -3658,7 +3872,99 @@ function renderFiles() {
       ${peopleTags}
       ${projectBadge}
     </div>`;
-  }).join('');
+  };
+
+  if (currentFileCategory === 'location') {
+    // Group by location name
+    const groups = {};
+    files.forEach(f => {
+      const loc = (f.location || '').trim();
+      if (!groups[loc]) groups[loc] = [];
+      groups[loc].push(f);
+    });
+    const keys = Object.keys(groups).sort((a, b) => {
+      if (!a) return 1; if (!b) return -1;
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+    const sectionHeading = label => `
+      <div style="grid-column:1/-1;padding:6px 0 10px;margin-top:8px;border-bottom:1px solid var(--border2)">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-family:var(--font-mono)">📍 ${label}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:8px">${groups[label === '— No location —' ? '' : label].length} file${groups[label === '— No location —' ? '' : label].length !== 1 ? 's' : ''}</span>
+      </div>`;
+    grid.innerHTML = keys.map(loc =>
+      sectionHeading(loc || '— No location —') + groups[loc].map(_fileCard).join('')
+    ).join('');
+
+  } else if (currentFileCategory === 'people') {
+    // Build role → { personName → [files] } mapping
+    const _getPersonRole = name => {
+      const lc = name.toLowerCase();
+      // Check global contacts
+      const gc = (store.contacts || []).find(c => c.name && c.name.toLowerCase() === lc);
+      if (gc) {
+        if (gc.castRoles && gc.castRoles.length) return gc.castRoles[0];
+        if (gc.crewRoles && gc.crewRoles.length) return gc.crewRoles[0];
+        if (gc.defaultRole) return gc.defaultRole;
+      }
+      // Check project contacts
+      for (const p of store.projects) {
+        const pc = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === lc);
+        if (pc) {
+          if (pc.castRoles && pc.castRoles.length) return pc.castRoles[0];
+          if (pc.crewRoles && pc.crewRoles.length) return pc.crewRoles[0];
+          if (pc.defaultRole) return pc.defaultRole;
+          if (pc.roles && pc.roles.length && pc.roles[0] !== 'Cast' && pc.roles[0] !== 'Extra' && pc.roles[0] !== 'Contact') return pc.roles[0];
+        }
+        // Check unit roster for crew roles
+        const ur = (p.unit || []).find(r => r.name && r.name.toLowerCase() === lc);
+        if (ur && ur.role) return ur.role;
+      }
+      return '';
+    };
+
+    const rolePeople = {}; // role → { personName → [files] }
+    files.forEach(f => {
+      (f.people || []).forEach(personName => {
+        const role = (_getPersonRole(personName) || '').trim() || '— No role —';
+        if (!rolePeople[role]) rolePeople[role] = {};
+        if (!rolePeople[role][personName]) rolePeople[role][personName] = [];
+        rolePeople[role][personName].push(f);
+      });
+    });
+
+    if (!Object.keys(rolePeople).length) {
+      grid.innerHTML = `<div class="file-empty" style="grid-column:1/-1"><div class="file-empty-icon">👥</div><div class="file-empty-text">No people tagged in these files</div></div>`;
+      updateBulkBars();
+      return;
+    }
+
+    const roles = Object.keys(rolePeople).sort((a, b) => {
+      if (a === '— No role —') return 1; if (b === '— No role —') return -1;
+      return a.localeCompare(b, undefined, { sensitivity: 'base' });
+    });
+    const _sn = n => { const p = (n || '').trim().split(/\s+/); return (p.length > 1 ? p[p.length - 1] : p[0]).toLowerCase(); };
+
+    let html = '';
+    roles.forEach(role => {
+      html += `<div style="grid-column:1/-1;padding:6px 0 10px;margin-top:8px;border-bottom:1px solid var(--border2)">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-family:var(--font-mono)">👤 ${role}</span>
+      </div>`;
+      const peopleInRole = rolePeople[role];
+      const personNames = Object.keys(peopleInRole).sort((a, b) => _sn(a).localeCompare(_sn(b), undefined, { sensitivity: 'base' }));
+      personNames.forEach(personName => {
+        const personFiles = peopleInRole[personName];
+        html += `<div style="grid-column:1/-1;padding:4px 0 6px;margin-top:4px;">
+          <span style="font-size:11px;font-weight:600;color:var(--text2);">${personName}</span>
+          <span style="font-size:10px;color:var(--text3);margin-left:8px">${personFiles.length} file${personFiles.length !== 1 ? 's' : ''}</span>
+        </div>`;
+        html += personFiles.map(_fileCard).join('');
+      });
+    });
+    grid.innerHTML = html;
+
+  } else {
+    grid.innerHTML = files.map(_fileCard).join('');
+  }
   updateBulkBars();
 }
 
@@ -3683,7 +3989,7 @@ function renderOverviewFiles() {
       ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
       : '';
     return `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" style="font-size:11px;">
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" style="font-size:11px;">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','overview')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
@@ -3853,6 +4159,12 @@ function mfAddPersonTag(name, existingRole) {
 
   const isNew = !getAllContactNames().some(n => n.toLowerCase() === name.toLowerCase());
 
+  // For brand-new people, open the full contact creation modal
+  if (isNew && !existingRole) {
+    addNewContactFromMf(name);
+    return;
+  }
+
   const tag = document.createElement('span');
   tag.dataset.mfperson = name;
   tag.dataset.role = existingRole || '';
@@ -3862,17 +4174,6 @@ function mfAddPersonTag(name, existingRole) {
   nameSpan.textContent = '👤 ' + name;
   tag.appendChild(nameSpan);
 
-  if (isNew || existingRole) {
-    const roleInput = document.createElement('input');
-    roleInput.placeholder = 'role…';
-    roleInput.value = existingRole || '';
-    roleInput.setAttribute('list', 'roles-datalist');
-    roleInput.style.cssText = 'width:80px;font-size:10px;padding:2px 5px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
-    roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
-    roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
-    tag.appendChild(roleInput);
-  }
-
   const removeBtn = document.createElement('span');
   removeBtn.style.cssText = 'cursor:pointer;color:var(--text3);';
   removeBtn.textContent = '✕';
@@ -3880,6 +4181,39 @@ function mfAddPersonTag(name, existingRole) {
   tag.appendChild(removeBtn);
 
   tagsEl.appendChild(tag);
+}
+
+// Directly add a person chip (used after creating via full modal — no "is new" re-check)
+function mfAddPersonTagDirect(name, role) {
+  name = (name || '').trim();
+  if (!name) return;
+  const tagsEl = document.getElementById('mf-people-tags');
+  if (!tagsEl) return;
+  if ([...tagsEl.querySelectorAll('[data-mfperson]')].some(t => t.dataset.mfperson.toLowerCase() === name.toLowerCase())) return;
+
+  const tag = document.createElement('span');
+  tag.dataset.mfperson = name;
+  tag.dataset.role = role || '';
+  tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;background:var(--surface3);border-radius:12px;color:var(--text2);';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = '👤 ' + name;
+  tag.appendChild(nameSpan);
+  const removeBtn = document.createElement('span');
+  removeBtn.style.cssText = 'cursor:pointer;color:var(--text3);';
+  removeBtn.textContent = '✕';
+  removeBtn.addEventListener('click', () => tag.remove());
+  tag.appendChild(removeBtn);
+  tagsEl.appendChild(tag);
+}
+
+function addNewContactFromMf(name) {
+  _mfNewPersonCallback = name; // signal saveEditedContact to return to file modal
+  addNewContact();
+  document.getElementById('edit-contact-name-display').value = name;
+  document.getElementById('edit-contact-name').value = '';
+  // Show the modal title as "Add Contact" context
+  const h3 = document.getElementById('edit-contact-modal-title');
+  if (h3) h3.textContent = 'Add Contact';
 }
 
 function mfPeopleSearch(input) {
@@ -4491,6 +4825,9 @@ function defaultProject(data) {
     company: data.company || '',
     genre: data.genre || '',
     notes: data.notes || '',
+    logline: data.logline || '',
+    synopsis: data.synopsis || '',
+    outline: data.outline || '',
     cast: [],
     extras: [],
     unit: [],
@@ -4600,7 +4937,7 @@ function showView(name) {
   if (navItem) navItem.classList.add('active');
   
   // Clear project highlighting for global views (not project-specific)
-  const globalViews = ['dashboard', 'team', 'contacts', 'locations', 'files'];
+  const globalViews = ['dashboard', 'team', 'contacts', 'locations', 'files', 'settings'];
   if (globalViews.includes(name)) {
     store.currentProjectId = null;
     renderSidebarProjects();
@@ -4628,6 +4965,10 @@ function showView(name) {
     document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Files';
     selectedFileIds.clear();
     renderFiles();
+  } else if (name === 'settings') {
+    document.getElementById('topbar-title').textContent = 'Settings';
+    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Settings';
+    renderSettings();
   }
   setTimeout(initTableScrollbars, 0);
 }
@@ -4655,6 +4996,14 @@ function showProjectView(id) {
     <span>🏢 ${p.company || '—'}</span>
     ${p.genre ? `<span>🎭 ${p.genre}</span>` : ''}
   `;
+  const ll = document.getElementById('proj-logline');
+  if (p.logline) {
+    ll.textContent = p.logline;
+    ll.classList.remove('empty');
+  } else {
+    ll.textContent = '+ Add logline…';
+    ll.classList.add('empty');
+  }
 
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
@@ -4710,6 +5059,8 @@ function renderDashboard() {
     const el = document.getElementById('stat-' + s);
     if (el) el.closest('.stat-card').classList.toggle('active', dashboardStatusFilter === s);
   });
+  const totalCard = document.getElementById('stat-total');
+  if (totalCard) totalCard.closest('.stat-card').classList.toggle('active', !dashboardStatusFilter);
 
   const visibleProjects = dashboardStatusFilter
     ? projects.filter(p => p.status === dashboardStatusFilter)
@@ -4802,6 +5153,42 @@ function openNewProjectModal() {
   });
   document.getElementById('proj-input-status').value = 'pre';
   openModal('modal-project');
+}
+
+function openProjectFiles() {
+  const p = currentProject();
+  showView('files');
+  if (p) {
+    const sel = document.getElementById('files-project-filter');
+    if (sel) { sel.value = p.id; renderFiles(); }
+  }
+}
+
+function openStoryModal() {
+  const p = currentProject();
+  if (!p) return;
+  document.getElementById('story-logline').value  = p.logline  || '';
+  document.getElementById('story-synopsis').value = p.synopsis || '';
+  document.getElementById('story-outline').value  = p.outline  || '';
+  openModal('modal-story');
+}
+
+function saveStory() {
+  const p = currentProject();
+  if (!p) return;
+  p.logline  = document.getElementById('story-logline').value.trim();
+  p.synopsis = document.getElementById('story-synopsis').value.trim();
+  p.outline  = document.getElementById('story-outline').value.trim();
+  saveStore();
+  closeModal('modal-story');
+  const ll = document.getElementById('proj-logline');
+  if (p.logline) {
+    ll.textContent = p.logline;
+    ll.classList.remove('empty');
+  } else {
+    ll.textContent = '+ Add logline…';
+    ll.classList.add('empty');
+  }
 }
 
 function openEditProjectModal() {
@@ -4979,7 +5366,7 @@ function renderSection(name) {
   else if (name === 'unit') renderUnit(p);
   else if (name === 'budget') renderBudget(p);
   else if (name === 'equipment') renderEquipment(p);
-  else if (name === 'locations') renderLocations(p);
+  else if (name === 'locations') renderProjectLocations(p);
   setTimeout(initTableScrollbars, 0);
 }
 
@@ -4997,7 +5384,7 @@ function getAllOverviewSections(p) {
     {name:'Risk Assessment', icon:'⚠️',  count: (p.risks||[]).length + ' hazards',                                    tab:'riskassess'},
     {name:'Schedule',        icon:'🕐',  count: p.schedule.length + ' entries',                                       tab:'schedule'},
     {name:'Script & Docs',   icon:'📜',  count: (p.scripts||[]).length + ' files',                                    tab:'script', desc:'PDF · DOC · TXT · FDX · RTF'},
-    {name:'Script Breakdown',icon:'📄',  count: (() => { const bd = p.scriptBreakdown; if (!bd?.rawText) return 'No script loaded'; const n = (bd.tags||[]).length; const sc = parseBreakdownScenes(bd.rawText).length; return sc + ' scene' + (sc!==1?'s':'') + ' · ' + n + ' tag' + (n!==1?'s':''); })(), tab:'breakdown'},
+    {name:'Script Breakdown',icon:'📄',  count: (() => { _migrateBreakdowns(p); const bds = p.scriptBreakdowns||[]; if (!bds.length) return 'No script loaded'; const bd = _getActiveBd(p); const n=(bd?.tags||[]).length; const sc=bd?.rawText?parseBreakdownScenes(bd.rawText).length:0; return bds.length + ' breakdown' + (bds.length!==1?'s':'') + ' · ' + sc + ' scene' + (sc!==1?'s':''); })(), tab:'breakdown'},
     {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
     {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
     {name:'Unit List',       icon:'👥',  count: p.unit.length + ' crew',                                              tab:'unit'},
@@ -5375,7 +5762,7 @@ function renderCustomSection(tabName) {
   if (cs.files.length > 0) {
     html += `<div class="table-container"><table class="data-table"><thead><tr><th>File</th><th>Label</th><th>Size</th><th></th></tr></thead><tbody>`;
     html += cs.files.map(f => `
-      <tr>
+      <tr data-ctx="custom-file:${cs.id}:${f.id}">
         <td style="cursor:pointer;color:var(--accent)" onclick="openCustomSectionFilePreview('${cs.id}','${f.id}')"><span style="margin-right:6px">${scriptFileIcon(f.type)}</span>${f.name.replace(/</g,'&lt;')}</td>
         <td><input class="form-input form-input-sm" style="width:100%" value="${(f.label||'').replace(/"/g,'&quot;')}" placeholder="Label..." onchange="saveCustomSectionFileLabel('${cs.id}','${f.id}',this.value)"></td>
         <td style="white-space:nowrap">${formatFileSize(f.size)}</td>
@@ -5611,29 +5998,180 @@ function deleteCustomSection(id) {
 }
 
 // SCRIPT & DOCUMENTS
+let _pendingScriptFile = null; // { file, dataUrl }
+let _pendingBdText = null;     // extracted text when uploading via breakdown section
+let _scriptUploadContext = 'script'; // 'script' or 'breakdown'
+
 function handleScriptUpload(files) {
   const p = currentProject();
-  if (!p) return;
+  if (!p || !files || !files.length) return;
+  // Process one file at a time via the naming modal; queue remainder
+  _scriptUploadQueue = Array.from(files);
+  _processNextScriptUpload();
+}
+
+let _scriptUploadQueue = [];
+
+function _processNextScriptUpload() {
+  const p = currentProject();
+  if (!p || !_scriptUploadQueue.length) return;
+  const file = _scriptUploadQueue.shift();
+  const reader = new FileReader();
+  reader.onload = e => {
+    _scriptUploadContext = 'script';
+    _pendingScriptFile = { file, dataUrl: e.target.result };
+    openScriptUploadModal(p, file, 'script');
+  };
+  reader.readAsDataURL(file);
+}
+
+function openScriptUploadModal(p, file, context = 'script') {
+  _scriptUploadContext = context;
+  const nameNoExt = file.name.replace(/\.[^.]+$/, '');
+  document.getElementById('su-name').value = nameNoExt;
+  document.getElementById('su-version').value = '';
+
+  const bdSection = document.getElementById('su-breakdown-section');
+
+  if (context === 'breakdown') {
+    // Uploading via breakdown section — no need to ask about importing to breakdown
+    bdSection.innerHTML = '';
+  } else {
+    _migrateBreakdowns(p);
+    const bds = p.scriptBreakdowns || [];
+    const existingScripts = (p.scripts || []).slice().sort((a, b) => b.uploadedAt - a.uploadedAt);
+
+    if (!bds.length) {
+      // No breakdowns yet — offer to auto-create one
+      bdSection.innerHTML = `
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2);padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+          <input type="checkbox" id="su-create-bd" checked style="width:14px;height:14px;accent-color:var(--accent)">
+          Also import into a new Script Breakdown
+        </label>`;
+    } else {
+      // Breakdowns exist — offer versioning + optional new breakdown
+      const scriptOpts = existingScripts.length
+        ? existingScripts.map(s => `<option value="${s.id}">${s.name}${s.label ? ' — ' + s.label : ''}</option>`).join('')
+        : '<option value="">— None —</option>';
+      bdSection.innerHTML = `
+        <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div style="padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border)">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2)">
+              <input type="checkbox" id="su-is-version" style="width:14px;height:14px;accent-color:var(--accent)" onchange="document.getElementById('su-version-row').style.display=this.checked?'block':'none'">
+              This is a new version of an existing script
+            </label>
+            <div id="su-version-row" style="display:none;margin-top:8px">
+              <label class="form-label" style="margin-bottom:4px">Which script?</label>
+              <select class="form-select" id="su-parent-script" style="font-size:12px">${scriptOpts}</select>
+            </div>
+          </div>
+          <div style="padding:10px 12px">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2)">
+              <input type="checkbox" id="su-create-bd" style="width:14px;height:14px;accent-color:var(--accent)">
+              Also import into a new Script Breakdown
+            </label>
+          </div>
+        </div>`;
+    }
+  }
+
+  openModal('modal-script-upload');
+}
+
+async function confirmScriptUpload() {
+  const p = currentProject();
+  if (!p || !_pendingScriptFile) return;
+
+  const name = document.getElementById('su-name').value.trim() || _pendingScriptFile.file.name;
+  const version = document.getElementById('su-version').value.trim();
+
+  // Always add to Script & Docs
   if (!p.scripts) p.scripts = [];
-  let loaded = 0;
-  const total = files.length;
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      p.scripts.push({
-        id: makeId(),
-        name: file.name,
-        label: '',
-        dataUrl: e.target.result,
-        size: file.size,
-        type: file.type,
-        uploadedAt: Date.now()
-      });
-      loaded++;
-      if (loaded === total) { saveStore(); renderScript(p); }
-    };
-    reader.readAsDataURL(file);
+  const scriptId = makeId();
+  p.scripts.unshift({
+    id: scriptId,
+    name,
+    label: version,
+    dataUrl: _pendingScriptFile.dataUrl,
+    size: _pendingScriptFile.file.size,
+    type: _pendingScriptFile.file.type,
+    uploadedAt: Date.now()
   });
+
+  if (_scriptUploadContext === 'breakdown') {
+    // Uploaded via breakdown — use pre-extracted text to create breakdown
+    if (_pendingBdText) {
+      _createBreakdown(p, name, version, _pendingBdText);
+    }
+    saveStore();
+    closeModal('modal-script-upload');
+    renderScript(p);
+    renderBreakdown(p);
+  } else {
+    // Uploaded via Script & Docs — optionally create a breakdown
+    const createBd = document.getElementById('su-create-bd')?.checked;
+    if (createBd) {
+      const file = _pendingScriptFile.file;
+      const fname = file.name.toLowerCase();
+      if (fname.endsWith('.pdf')) {
+        _extractTextForBreakdown(p, file, name, version);
+      } else {
+        const dataUrl = _pendingScriptFile.dataUrl;
+        let text = '';
+        try {
+          const b64 = dataUrl.split(',')[1];
+          text = decodeURIComponent(escape(atob(b64)));
+          if (fname.endsWith('.fdx')) {
+            const xml = new DOMParser().parseFromString(text, 'text/xml');
+            text = Array.from(xml.querySelectorAll('Paragraph'))
+              .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
+              .filter(s => s.trim()).join('\n');
+          }
+        } catch(e) { text = ''; }
+        if (text.trim()) _createBreakdown(p, name, version, text.trim());
+      }
+    }
+    saveStore();
+    closeModal('modal-script-upload');
+    renderScript(p);
+  }
+
+  _pendingScriptFile = null;
+  _pendingBdText = null;
+
+  // Process next file in queue if any
+  if (_scriptUploadQueue.length) _processNextScriptUpload();
+}
+
+async function _extractTextForBreakdown(p, file, name, version) {
+  try {
+    showToast('Reading PDF for breakdown…', 'info');
+    if (!window.pdfjsLib) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const ab = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: ab }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      let lastY = null, line = '';
+      for (const item of content.items) {
+        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) { text += line.trimEnd() + '\n'; line = ''; }
+        line += item.str; lastY = item.transform[5];
+      }
+      if (line.trim()) text += line.trimEnd() + '\n';
+      text += '\n';
+    }
+    if (text.trim()) { _createBreakdown(p, name, version, text.trim()); saveStore(); }
+  } catch(e) { showToast('Could not read PDF for breakdown: ' + e.message, 'error'); }
 }
 
 function renderScript(p) {
@@ -5643,19 +6181,21 @@ function renderScript(p) {
     el.innerHTML = `<div class="empty-state"><div class="icon">📜</div><h4>No documents yet</h4><p>Upload your script, sides, audition pieces or other documents</p></div>`;
     return;
   }
+  // Newest first
+  const sorted = [...p.scripts].sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
   el.innerHTML = `
     <div class="table-container">
       <table class="data-table">
         <thead><tr>
           <th>File</th>
-          <th>Label / Notes</th>
+          <th>Version / Notes</th>
           <th>Size</th>
           <th>Uploaded</th>
           <th></th>
         </tr></thead>
         <tbody>
-          ${p.scripts.map(s => `
-            <tr>
+          ${sorted.map(s => `
+            <tr data-ctx="script-file:${s.id}">
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
                   <span>${scriptFileIcon(s.type)}</span>
@@ -5665,7 +6205,7 @@ function renderScript(p) {
               </td>
               <td><input class="form-input form-input-sm" style="width:100%" value="${(s.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. Draft 3, Sides for Scene 12..." onchange="updateScriptLabel('${s.id}',this.value)"></td>
               <td style="white-space:nowrap">${formatFileSize(s.size)}</td>
-              <td style="white-space:nowrap">${new Date(s.uploadedAt).toLocaleDateString()}</td>
+              <td style="white-space:nowrap;font-size:11px">${new Date(s.uploadedAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'})}</td>
               <td style="display:flex;gap:5px;flex-wrap:nowrap">
                 <button class="btn btn-sm" onclick="shareScriptFile('${s.id}')" title="Share">↗</button>
                 <button class="btn btn-sm" onclick="downloadScriptFile('${s.id}')" title="Download">⬇</button>
@@ -6062,22 +6602,95 @@ let _bdActiveCategory = null;
 let _bdCtxFromScript = false;
 let _bdSuggestions = [];
 let _bdSuggestSelected = new Set();
+let _activeBreakdownId = null;
+
+// ── Multiple-breakdown helpers ─────────────────────────────────────────────
+function _migrateBreakdowns(p) {
+  if (!p || p.scriptBreakdowns) return;
+  p.scriptBreakdowns = [];
+  if (p.scriptBreakdown && p.scriptBreakdown.rawText) {
+    p.scriptBreakdowns.push({
+      id: makeId(), name: 'Version 1', version: '',
+      rawText: p.scriptBreakdown.rawText,
+      tags: p.scriptBreakdown.tags || [],
+      createdAt: Date.now()
+    });
+  }
+}
+
+function _getActiveBd(p) {
+  _migrateBreakdowns(p);
+  if (!p || !p.scriptBreakdowns || !p.scriptBreakdowns.length) return null;
+  const found = _activeBreakdownId && p.scriptBreakdowns.find(b => b.id === _activeBreakdownId);
+  return found || p.scriptBreakdowns[p.scriptBreakdowns.length - 1];
+}
+
+function _extractLocationFromHeading(heading) {
+  // Remove INT./EXT. prefix variations
+  let name = heading.replace(/^(INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.|INT\.|EXT\.)\s*/i, '').trim();
+  // Remove time-of-day suffix: " - DAY", " - NIGHT", " - CONTINUOUS", etc.
+  name = name.replace(/\s*[-–]\s*(DAY|NIGHT|DUSK|DAWN|CONTINUOUS|CONT[''.]?D?|LATER|MOMENTS LATER|MORNING|AFTERNOON|EVENING|EARLY MORNING|LATE NIGHT|GOLDEN HOUR|MAGIC HOUR|SUNRISE|SUNSET|MIDDAY|MIDNIGHT|PRE-DAWN|DUSK\/DAWN)$/i, '').trim();
+  return name;
+}
+
+function _autoImportBreakdownLocations(p, text) {
+  if (!text || !p) return 0;
+  const scenes = parseBreakdownScenes(text);
+  let added = 0;
+  for (const scene of scenes) {
+    if (scene.heading === 'Full Script') continue;
+    const name = _extractLocationFromHeading(scene.heading);
+    if (!name || name.length < 2) continue;
+    if (!(p.locations || []).some(l => l.name.toLowerCase() === name.toLowerCase())) {
+      if (!p.locations) p.locations = [];
+      p.locations.push({ name, suit: 'possible', contacted: 'no', avail: '', rules: '', cost: '', costPeriod: '', access: '', recce: 'no', light: '', power: '', problems: '', decision: '', notes: '' });
+      added++;
+    }
+  }
+  return added;
+}
+
+function _createBreakdown(p, name, version, rawText) {
+  _migrateBreakdowns(p);
+  const bd = { id: makeId(), name: name || 'New Breakdown', version: version || '', rawText: rawText || '', tags: [], createdAt: Date.now() };
+  p.scriptBreakdowns.push(bd);
+  _activeBreakdownId = bd.id;
+  if (rawText) {
+    const added = _autoImportBreakdownLocations(p, rawText);
+    if (added > 0) setTimeout(() => showToast(`${added} location${added !== 1 ? 's' : ''} auto-imported from script headings`, 'success'), 400);
+  }
+  return bd;
+}
+
+function _selectBreakdown(id) {
+  _activeBreakdownId = id;
+  const p = currentProject();
+  if (p) renderBreakdown(p);
+}
 
 function renderBreakdown(p) {
   const el = document.getElementById('section-breakdown');
   if (!el) return;
   if (!p) { el.innerHTML = `<div class="empty-state"><div class="icon">📄</div><h4>No project selected</h4></div>`; return; }
-  if (!p.scriptBreakdown) p.scriptBreakdown = { rawText: '', tags: [] };
-  if (!p.scriptBreakdown.rawText) renderBreakdownImport(el, p);
+  _migrateBreakdowns(p);
+  const bd = _getActiveBd(p);
+  if (!bd || !bd.rawText) renderBreakdownImport(el, p);
   else renderBreakdownEditor(el, p);
 }
 
 function renderBreakdownImport(el, p) {
+  const hasBds = p.scriptBreakdowns && p.scriptBreakdowns.length > 0;
+  const selectorHtml = hasBds ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      ${p.scriptBreakdowns.map(b => `<button class="btn btn-sm${_getActiveBd(p)?.id === b.id ? ' btn-primary' : ''}" onclick="_selectBreakdown('${b.id}')">${b.name}${b.version ? ' <span style=\'opacity:0.6;font-size:10px\'>('+b.version+')</span>' : ''}</button>`).join('')}
+      <button class="btn btn-sm" onclick="_selectBreakdown(null);renderBreakdown(currentProject())">+ New Breakdown</button>
+    </div>` : '';
   el.innerHTML = `
     <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${hasBds?'8px':'20px'}">
       <h3 class="section-heading">SCRIPT BREAKDOWN</h3>
     </div>
+    ${selectorHtml}
     <div style="max-width:560px;margin:0 auto">
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:36px 28px;text-align:center;margin-bottom:16px">
         <div style="font-size:52px;margin-bottom:14px">🎬</div>
@@ -6086,11 +6699,11 @@ function renderBreakdownImport(el, p) {
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
           <label class="btn btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
             📂 Upload File
-            <input type="file" accept=".txt,.fountain,.fdx" style="display:none" onchange="loadBreakdownFile(this)">
+            <input type="file" accept=".txt,.fountain,.fdx,.pdf" style="display:none" onchange="loadBreakdownFile(this)">
           </label>
           <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='block';this.style.display='none'">✏️ Paste Script</button>
         </div>
-        <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML)</div>
+        <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML) · .pdf</div>
       </div>
       <div id="bd-paste-wrap" style="display:none">
         <textarea id="bd-paste-input" class="form-textarea" rows="18" placeholder="Paste your script here…
@@ -6110,13 +6723,25 @@ Fountain and plain text both work." style="font-family:monospace;font-size:12px;
 
 function renderBreakdownEditor(el, p) {
   _bdActiveCategory = null;
-  const bd = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
   const text = bd.rawText;
   const tags = bd.tags || [];
   const scenes = parseBreakdownScenes(text);
 
+  const bds = p.scriptBreakdowns || [];
+  const selectorHtml = bds.length > 1 ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      ${bds.map(b => `<button class="btn btn-sm${b.id === bd.id ? ' btn-primary' : ''}" onclick="_selectBreakdown('${b.id}')" title="${b.version||''}">${b.name}${b.version ? ' <span style=\'opacity:0.6;font-size:10px\'>('+b.version+')</span>' : ''}</button>`).join('')}
+      <button class="btn btn-sm" onclick="_activeBreakdownId=null;renderBreakdownImport(document.getElementById('section-breakdown'),currentProject())">+ New</button>
+    </div>` : (bds.length === 1 ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--text2)">${bd.name}${bd.version ? ' <span style=\'opacity:0.6;font-weight:400\'>('+bd.version+')</span>' : ''}</span>
+      <button class="btn btn-sm" onclick="_activeBreakdownId=null;renderBreakdownImport(document.getElementById('section-breakdown'),currentProject())">+ New Breakdown</button>
+    </div>` : '');
+
   el.innerHTML = `
     <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+    ${selectorHtml}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div>
         <h3 class="section-heading" style="margin:0 0 2px">SCRIPT BREAKDOWN</h3>
@@ -6219,7 +6844,8 @@ function buildBreakdownHtml(text, tags) {
 }
 
 function renderBreakdownReport(p, scenes) {
-  const bd = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd) return '';
   const text = bd.rawText;
   const tags = bd.tags || [];
   if (!scenes) scenes = parseBreakdownScenes(text);
@@ -6370,10 +6996,11 @@ function onBdTagClick(el, event) {
 
 function showTagPickMenu(ids, x, y) {
   const p = currentProject();
-  if (!p?.scriptBreakdown) return;
+  const bd = _getActiveBd(p);
+  if (!bd) return;
   const pop = getBdPopover();
   pop.style.flexDirection = 'column';
-  const tagItems = ids.map(id => p.scriptBreakdown.tags.find(t => t.id === id)).filter(Boolean);
+  const tagItems = ids.map(id => bd.tags.find(t => t.id === id)).filter(Boolean);
   pop.innerHTML = `<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px">Which tag?</div>
     ${tagItems.map(tag => {
       const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
@@ -6385,8 +7012,9 @@ function showTagPickMenu(ids, x, y) {
 
 function showTagActionMenu(tagId, x, y, fromScript) {
   const p = currentProject();
-  if (!p?.scriptBreakdown) return;
-  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
   if (!tag) { hideBdPopover(); return; }
   const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
   if (fromScript !== undefined) _bdCtxFromScript = !!fromScript;
@@ -6405,8 +7033,9 @@ function showTagActionMenu(tagId, x, y, fromScript) {
 
 function showTagCategoryPicker(tagId, action) {
   const p = currentProject();
-  if (!p?.scriptBreakdown) return;
-  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
   if (!tag) { hideBdPopover(); return; }
   const cats = BREAKDOWN_CATEGORIES.filter(c => c.id !== tag.category);
   const pop = getBdPopover();
@@ -6424,13 +7053,14 @@ function showTagCategoryPicker(tagId, action) {
 
 function executeTagAction(tagId, action, toCategory) {
   const p = currentProject();
-  if (!p?.scriptBreakdown) return;
-  const tag = p.scriptBreakdown.tags.find(t => t.id === tagId);
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
   if (!tag) { hideBdPopover(); return; }
   if (action === 'move') {
     tag.category = toCategory;
   } else if (action === 'add') {
-    p.scriptBreakdown.tags.push({ id: makeId(), category: toCategory, start: tag.start, end: tag.end });
+    bd.tags.push({ id: makeId(), category: toCategory, start: tag.start, end: tag.end });
   }
   hideBdPopover();
   saveStore();
@@ -6440,11 +7070,11 @@ function executeTagAction(tagId, action, toCategory) {
 function applyBreakdownTag(category) {
   if (!_bdPendingSelection) return;
   const p = currentProject();
-  if (!p) return;
-  if (!p.scriptBreakdown) p.scriptBreakdown = { rawText: '', tags: [] };
+  const bd = _getActiveBd(p);
+  if (!bd) return;
   const { start, end } = _bdPendingSelection;
-  if (!p.scriptBreakdown.tags) p.scriptBreakdown.tags = [];
-  p.scriptBreakdown.tags.push({ id: makeId(), category, start, end });
+  if (!bd.tags) bd.tags = [];
+  bd.tags.push({ id: makeId(), category, start, end });
   window.getSelection()?.removeAllRanges();
   hideBdPopover();
   saveStore();
@@ -6455,15 +7085,17 @@ function removeBreakdownTag(tagId) {
   hideBdPopover();
   showConfirmDialog('Remove this tag?', 'Remove', () => {
     const p = currentProject();
-    if (!p?.scriptBreakdown) return;
-    p.scriptBreakdown.tags = p.scriptBreakdown.tags.filter(t => t.id !== tagId);
+    const bd = _getActiveBd(p);
+    if (!bd) return;
+    bd.tags = bd.tags.filter(t => t.id !== tagId);
     saveStore();
     updateBreakdownView(p);
   });
 }
 
 function updateBreakdownView(p) {
-  const bd = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd) return;
   const scenes = parseBreakdownScenes(bd.rawText);
   const sv = document.getElementById('bd-script-view');
   if (sv) { const st = sv.scrollTop; sv.innerHTML = buildBreakdownHtml(bd.rawText, bd.tags||[]); sv.scrollTop = st; }
@@ -6473,27 +7105,80 @@ function updateBreakdownView(p) {
   if (counter) counter.textContent = `${scenes.length} scene${scenes.length!==1?'s':''} · ${(bd.tags||[]).length} tag${(bd.tags||[]).length!==1?'s':''}`;
 }
 
-function loadBreakdownFile(input) {
+async function loadBreakdownFile(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    let text = ev.target.result;
-    if (file.name.endsWith('.fdx')) {
-      try {
-        const xml = new DOMParser().parseFromString(text, 'text/xml');
-        text = Array.from(xml.querySelectorAll('Paragraph')).map(par =>
-          Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join('')
-        ).filter(s => s.trim()).join('\n');
-      } catch(e) { /* use raw text */ }
+  const p = currentProject();
+  if (!p) return;
+
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    showToast('Reading PDF…', 'info');
+    try {
+      if (!window.pdfjsLib) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Failed to load PDF.js'));
+          document.head.appendChild(s);
+        });
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        let lastY = null;
+        let line = '';
+        for (const item of content.items) {
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+            text += line.trimEnd() + '\n';
+            line = '';
+          }
+          line += item.str;
+          lastY = item.transform[5];
+        }
+        if (line.trim()) text += line.trimEnd() + '\n';
+        text += '\n';
+      }
+      _pendingBdText = text.trim();
+      // Also read as dataUrl for storage in Script & Docs
+      const dataUrl = await new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result);
+        r.readAsDataURL(file);
+      });
+      _pendingScriptFile = { file, dataUrl };
+      openScriptUploadModal(p, file, 'breakdown');
+    } catch (e) {
+      showToast('Could not read PDF: ' + e.message, 'error');
     }
-    const p = currentProject();
-    if (!p) return;
-    p.scriptBreakdown = { rawText: text.trim(), tags: [] };
-    saveStore();
-    renderBreakdown(p);
-  };
-  reader.readAsText(file);
+    return;
+  }
+
+  // Non-PDF: read as dataUrl, decode text
+  const dataUrl = await new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.readAsDataURL(file);
+  });
+  let text = '';
+  try {
+    const b64 = dataUrl.split(',')[1];
+    text = decodeURIComponent(escape(atob(b64)));
+    if (file.name.toLowerCase().endsWith('.fdx')) {
+      const xml = new DOMParser().parseFromString(text, 'text/xml');
+      text = Array.from(xml.querySelectorAll('Paragraph'))
+        .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
+        .filter(s => s.trim()).join('\n');
+    }
+  } catch(e) { text = ''; }
+  _pendingBdText = text.trim();
+  _pendingScriptFile = { file, dataUrl };
+  openScriptUploadModal(p, file, 'breakdown');
 }
 
 function loadBreakdownPastedText() {
@@ -6501,7 +7186,7 @@ function loadBreakdownPastedText() {
   if (!ta?.value.trim()) { showToast('Please paste some script text first', 'error'); return; }
   const p = currentProject();
   if (!p) return;
-  p.scriptBreakdown = { rawText: ta.value.trim(), tags: [] };
+  _createBreakdown(p, 'Pasted Script', '', ta.value.trim());
   saveStore();
   renderBreakdown(p);
 }
@@ -6509,18 +7194,21 @@ function loadBreakdownPastedText() {
 function clearBreakdownTags() {
   showConfirmDialog('Clear all tags? This cannot be undone.', 'Clear Tags', () => {
     const p = currentProject();
-    if (!p) return;
-    p.scriptBreakdown.tags = [];
+    const bd = _getActiveBd(p);
+    if (!bd) return;
+    bd.tags = [];
     saveStore();
     renderBreakdown(p);
   });
 }
 
 function clearBreakdownScript() {
-  showConfirmDialog('Delete the script and all tags? This cannot be undone.', 'Delete', () => {
+  showConfirmDialog('Delete this breakdown and all tags? This cannot be undone.', 'Delete', () => {
     const p = currentProject();
-    if (!p) return;
-    p.scriptBreakdown = { rawText: '', tags: [] };
+    const bd = _getActiveBd(p);
+    if (!p || !bd) return;
+    p.scriptBreakdowns = (p.scriptBreakdowns || []).filter(b => b.id !== bd.id);
+    _activeBreakdownId = null;
     saveStore();
     renderBreakdown(p);
   });
@@ -6528,8 +7216,9 @@ function clearBreakdownScript() {
 
 function viewBreakdownReport() {
   const p = currentProject();
-  if (!p?.scriptBreakdown?.rawText) return;
-  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
@@ -6588,8 +7277,9 @@ function viewBreakdownReport() {
 
 function exportBreakdownReport() {
   const p = currentProject();
-  if (!p?.scriptBreakdown?.rawText) return;
-  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
   const lines = [
     'SCRIPT BREAKDOWN REPORT',
@@ -6619,8 +7309,9 @@ function exportBreakdownReport() {
 
 function printBreakdownReport() {
   const p = currentProject();
-  if (!p?.scriptBreakdown?.rawText) return;
-  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
@@ -6718,6 +7409,38 @@ function detectBreakdownSuggestions(text, existingTags) {
     'BLACK','WHITE','COLOR','COLOUR','SCREEN','TITLES','END TITLES',
     'MUSIC','SOUND','LATER','MOMENTS LATER','TITLE','CARD','TITLE CARD',
     'OLD','NEW','CUT','JUMP','FADE','END','THE END','AND',
+    // Camera shot types
+    'WIDE','CLOSE','CLOSE UP','CLOSE-UP','WIDE ANGLE',
+    'EXTREME CLOSE UP','EXTREME CLOSE-UP','EXTREME CLOSEUP',
+    'MEDIUM SHOT','MID SHOT','MEDIUM CLOSE UP','MEDIUM WIDE','MEDIUM',
+    'TWO SHOT','2 SHOT','TWO-SHOT',
+    'LOW ANGLE','HIGH ANGLE','DUTCH ANGLE','DUTCH TILT',
+    'BIRD\'S EYE','BIRD\'S EYE VIEW','WORM\'S EYE','WORM\'S EYE VIEW',
+    'OVER THE SHOULDER','OTS','ECU','MCU','BCU','CU','WS','MS',
+    // Camera movement
+    'TRACKING SHOT','DOLLY SHOT','DOLLY','DOLLY IN','DOLLY OUT',
+    'PAN','PAN LEFT','PAN RIGHT','TILT','TILT UP','TILT DOWN',
+    'ZOOM','ZOOM IN','ZOOM OUT','CRANE SHOT','CRANE',
+    'STEADICAM','GIMBAL','HANDHELD','HAND HELD','HANDHELD SHOT',
+    'WHIP PAN','RACK FOCUS','PUSH IN','PULL BACK','PULL OUT',
+    'TRACKING','DOLLY PUSH','BOOM UP','BOOM DOWN',
+    // Frame descriptions
+    'AERIAL','AERIAL SHOT','OVERHEAD','OVERHEAD SHOT',
+    'ESTABLISHING','ESTABLISHING SHOT',
+    'INSERT','INSERT SHOT','CUTAWAY','CUTAWAY SHOT','REACTION SHOT',
+    'POV','POV SHOT','POINT OF VIEW',
+    // General camera/direction terms
+    'ANGLE','SHOT','FRAME','LENS','CAMERA',
+    'FOREGROUND','BACKGROUND','MIDGROUND',
+    'ON','OFF','BACK','SIDE','FRONT',
+    // Script format / direction terms
+    'SUPER','LOWER THIRD','INTERCUT','QUICK CUTS','MONTAGE',
+    'FREEZE FRAME','SLOW MOTION','SLOW MO','SLO MO','SLO-MO',
+    'TIME LAPSE','TIMELAPSE','FAST MOTION',
+    'B ROLL','B-ROLL','PICKUP','PICKUP SHOT',
+    'FLASHBACK','FLASH CUT','SERIES OF SHOTS',
+    // Sound / SFX direction
+    'SFX','VFX','MOS','PLAYBACK',
   ]);
   // Group-indicator words → Extras rather than Cast
   const groupWords = new Set(['ARTISTS','PEOPLE','CROWD','GROUP','OFFICERS','SOLDIERS','GUARDS','EXTRAS','AUDIENCE','SPECTATORS','MEMBERS','STUDENTS','WORKERS','PATRONS','GUESTS','BYSTANDERS','PEDESTRIANS','ONLOOKERS']);
@@ -6837,8 +7560,9 @@ function detectBreakdownSuggestions(text, existingTags) {
 
 function showBdSuggestPanel() {
   const p = currentProject();
-  if (!p?.scriptBreakdown?.rawText) return;
-  const { rawText: text, tags = [] } = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const { rawText: text, tags = [] } = bd;
 
   const all = detectBreakdownSuggestions(text, tags);
   _bdSuggestions = all;
@@ -6949,7 +7673,8 @@ function applySelectedBdSuggestions() {
   if (!p) return;
   const toApply = _bdSuggestions.filter(s => _bdSuggestSelected.has(s.id));
   if (!toApply.length) { closeBdSuggestModal(); return; }
-  const bd = p.scriptBreakdown;
+  const bd = _getActiveBd(p);
+  if (!bd) { closeBdSuggestModal(); return; }
   if (!bd.tags) bd.tags = [];
   for (const s of toApply) {
     bd.tags.push({ id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end });
@@ -7986,7 +8711,7 @@ function renderSchedule(p) {
     return;
   }
   tbody.innerHTML = p.schedule.map((s,i) => `
-    <tr>
+    <tr data-ctx="schedule:${i}">
       <td>${s.time||'—'}</td><td>${s.scene||'—'}</td><td>${s.shot||'—'}</td>
       <td><span class="tag">${s.type||'—'}</span></td>
       <td>${s.desc||'—'}</td><td>${s.cast||'—'}</td>
@@ -8027,7 +8752,7 @@ function renderPersonnelTable(list, tbodyId, type) {
     return;
   }
   tbody.innerHTML = list.map((m,i) => `
-    <tr>
+    <tr data-ctx="personnel:${type}:${i}">
       <td><strong>${m.name}</strong></td>
       <td>${m.role||'—'}</td>
       <td>${m.number||'—'}</td>
@@ -8165,7 +8890,7 @@ function renderBudgetSection(lines, sectionId, sectionLabel, sectionClass, addFn
       const lineAct = (b.actual !== '' && b.actual != null) ? parseFloat(b.actual)||0 : null;
       const lineVar = lineAct !== null ? lineAct - lineEst : null;
       const varClass = lineVar === null ? 'variance-zero' : lineVar > 0 ? 'variance-pos' : lineVar < 0 ? 'variance-neg' : 'variance-zero';
-      return `<tr>
+      return `<tr data-ctx="budget:${i}">
         <td><span class="dept-pill" style="${deptPillStyle(b.dept||'Other')}">${(b.dept||'Other').replace(/</g,'&lt;')}</span></td>
         <td style="color:var(--text)">${(b.desc||'—').replace(/</g,'&lt;')}</td>
         <td class="num">${b.rate ? fmtMoney(b.rate) : '—'}</td>
@@ -8359,7 +9084,7 @@ function resetEquipChecks() {
 }
 
 // LOCATIONS
-function renderLocations(p) {
+function renderProjectLocations(p) {
   const tbody = document.getElementById('locations-body');
   const suitMap = {suitable:'loc-suitable',possible:'loc-possible',unsuitable:'loc-unsuitable'};
   const suitLabel = {suitable:'Suitable',possible:'Possibly Suitable',unsuitable:'Unsuitable'};
@@ -8367,7 +9092,7 @@ function renderLocations(p) {
     tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
   } else {
     tbody.innerHTML = p.locations.map((l,i) => `
-      <tr>
+      <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.name||'')}">
         <td><strong>${l.name}</strong></td>
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
@@ -8384,6 +9109,7 @@ function renderLocations(p) {
     `).join('');
   }
   renderScoutingList(p);
+  renderTechScouts(p);
 }
 function addLocation() {
   document.getElementById('loc-edit-idx').value='';
@@ -8399,6 +9125,72 @@ function addLocation() {
     if (inp && window.attachLocAuto) window.attachLocAuto(inp);
   }, 80);
 }
+function openImportLocationModal() {
+  document.getElementById('import-loc-search').value = '';
+  renderImportLocationList();
+  openModal('modal-import-location');
+}
+
+function renderImportLocationList() {
+  const p = currentProject();
+  if (!p) return;
+  const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
+  const existing = new Set((p.locations || []).map(l => l.name.toLowerCase()));
+
+  // Gather all locations from other projects + global store
+  const candidates = [];
+  store.projects.forEach(proj => {
+    if (proj.id === p.id) return;
+    (proj.locations || []).forEach(l => {
+      if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+        candidates.push({ ...l, _from: proj.title });
+      }
+    });
+  });
+  (store.locations || []).forEach(l => {
+    if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+      candidates.push({ ...l, _from: 'Global database' });
+    }
+  });
+
+  const filtered = q ? candidates.filter(l => l.name.toLowerCase().includes(q)) : candidates;
+  const list = document.getElementById('import-loc-list');
+  const empty = document.getElementById('import-loc-empty');
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = filtered.map(l => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
+      <div>
+        <strong style="font-size:13px">${l.name.replace(/</g,'&lt;')}</strong>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
+        ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="importLocationEntry(${JSON.stringify(l).replace(/"/g,'&quot;')})">Import</button>
+    </div>
+  `).join('');
+}
+
+function importLocationEntry(l) {
+  const p = currentProject();
+  if (!p) return;
+  const { _from, ...locationData } = l;
+  if (!p.locations) p.locations = [];
+  if (p.locations.some(x => x.name.toLowerCase() === locationData.name.toLowerCase())) {
+    showToast(`"${locationData.name}" is already in this project's locations`, 'info');
+    return;
+  }
+  p.locations.push(locationData);
+  saveStore();
+  renderProjectLocations(p);
+  renderImportLocationList(); // refresh to remove imported item
+  showToast(`"${locationData.name}" imported`, 'success');
+}
+
 function editLocation(i) {
   const l=currentProject().locations[i];
   document.getElementById('loc-edit-idx').value=i;
@@ -8418,7 +9210,24 @@ function editLocation(i) {
   document.getElementById('loc-notes').value=l.notes||'';
   openModal('modal-location');
 }
-function removeLocation(i) { showConfirmDialog('Remove this location?', 'Remove', () => { const p=currentProject(); p.locations.splice(i,1); saveStore(); renderLocations(p); }); }
+function removeLocation(i) {
+  showConfirmDialog('Remove this location from the project? It will be kept in the global Locations database.', 'Remove from Project', () => {
+    const p = currentProject();
+    const loc = p.locations[i];
+    // Preserve in global database (store.locations) if not already there
+    if (loc && loc.name) {
+      if (!store.locations) store.locations = [];
+      const alreadyGlobal = store.locations.some(l => l.name && l.name.toLowerCase() === loc.name.toLowerCase());
+      if (!alreadyGlobal) {
+        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, name, contactName, contactPhone, contactEmail } = loc;
+        store.locations.push({ name, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
+      }
+    }
+    p.locations.splice(i, 1);
+    saveStore();
+    renderProjectLocations(p);
+  });
+}
 function saveLocation() {
   const p=currentProject();
   const name=document.getElementById('loc-name').value.trim();
@@ -8441,7 +9250,7 @@ function saveLocation() {
   };
   const idx=document.getElementById('loc-edit-idx').value;
   if(idx!=='') p.locations[parseInt(idx)]=l; else p.locations.push(l);
-  saveStore(); closeModal('modal-location'); renderLocations(p); showToast('Location saved','success');
+  saveStore(); closeModal('modal-location'); renderProjectLocations(p); showToast('Location saved','success');
 }
 
 function addLocationGlobal() {
@@ -8595,42 +9404,129 @@ function saveLocationGlobal() {
 }
 
 // SCOUTING SHEETS
-function renderScoutingList(p) {
-  const el=document.getElementById('scouting-list');
-  if(!p.scoutingSheets||!p.scoutingSheets.length){el.innerHTML='<p style="color:var(--text3);font-size:13px">No scouting sheets yet.</p>';return;}
-  el.innerHTML=p.scoutingSheets.map((s,i)=>`
-    <div class="breakdown-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <strong>${s.name||'Untitled Location'}</strong>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" onclick="toggleScoutingMinimize(${i})">${s.minimized ? '✚ Expand' : '▼ Minimize'}</button>
-          <button class="btn btn-sm btn-danger" onclick="removeScoutingSheet(${i})">✕</button>
-        </div>
+let _activeScoutIdx = 0;
+let _activeTechScoutIdx = 0;
+let _scoutMinimized = false;
+let _techScoutMinimized = false;
+
+function _scoutingSheetContent(s, i) {
+  const suitOpts = ['','Not Suitable','Poor','Fair','Good','Excellent'];
+  const suitColorMap = {'Not Suitable':'var(--red)','Poor':'#e06c00','Fair':'#d4a017','Good':'var(--green)','Excellent':'#0088ff'};
+  const suit = s.suitability || '';
+  const suitStyle = suitColorMap[suit] ? `color:${suitColorMap[suit]};font-weight:600` : '';
+  const sectionHead = (label, color) => `<div style="font-family:var(--font-display);font-size:11px;letter-spacing:1.5px;color:${color||'var(--accent2)'};margin-bottom:10px;text-transform:uppercase">${label}</div>`;
+  const panel = (content) => `<div style="background:var(--surface2);border-radius:8px;padding:12px">${content}</div>`;
+  const field = (label, input, mb) => `<div class="form-group" style="margin-bottom:${mb||'8'}px"><label class="form-label">${label}</label>${input}</div>`;
+  const ta = (key, minH) => `<textarea class="form-textarea" style="min-height:${minH||50}px" onchange="updateScouting(${i},'${key}',this.value)">${s[key]||''}</textarea>`;
+  const inp = (key, extra) => `<input class="form-input" value="${(s[key]||'').replace(/"/g,'&quot;')}" ${extra||''} onchange="updateScouting(${i},'${key}',this.value)">`;
+  return `
+    <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:10px;margin-bottom:14px;align-items:end">
+      ${field('Location Name', `<input class="form-input" value="${(s.name||'').replace(/"/g,'&quot;')}" onchange="updateScouting(${i},'name',this.value);renderScoutingTabs(currentProject())">`, 0)}
+      ${field('Date of Visit', `<input class="form-input" type="date" value="${s.date||''}" onchange="updateScouting(${i},'date',this.value)">`, 0)}
+      ${field('Scouted By', inp('scoutedBy'), 0)}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      ${panel(sectionHead('Site Info') + field('Address', ta('address',50)) + field('Contact Person', inp('contact'), 0))}
+      ${panel(sectionHead('Evaluation') +
+        `<div class="form-group" style="margin-bottom:8px"><label class="form-label">Overall Suitability</label>
+          <select class="form-select" style="${suitStyle}" onchange="updateScouting(${i},'suitability',this.value)">
+            ${suitOpts.map(o=>`<option value="${o}"${o===suit?' selected':''}>${o||'— select —'}</option>`).join('')}
+          </select></div>` +
+        field('General Notes', ta('info', 60), 0))}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      ${panel(sectionHead('Technical') + field('Lighting Conditions', ta('lighting')) + field('Sound Considerations', ta('sound')) + field('Power & Electrical', ta('power'), 0))}
+      ${panel(sectionHead('Production') + field('Accessibility', ta('accessibility')) + field('Permissions / Legal', ta('permissions')) + field('Logistics', ta('logistics'), 0))}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="background:rgba(0,180,100,.06);border:1px solid rgba(0,180,100,.2);border-radius:8px;padding:12px">
+        ${sectionHead('Pros','var(--green)')}
+        <textarea class="form-textarea" style="min-height:70px;background:transparent;border-color:rgba(0,180,100,.25)" onchange="updateScouting(${i},'pros',this.value)">${s.pros||''}</textarea>
       </div>
-      <div style="display: ${s.minimized ? 'none' : 'block'};">
-        <div class="form-row"><div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${s.name||''}" onchange="updateScouting(${i},'name',this.value)"></div><div class="form-group"><label class="form-label">Date of Visit</label><input class="form-input" type="date" value="${s.date||''}" onchange="updateScouting(${i},'date',this.value)"></div></div>
-        <div class="form-group"><label class="form-label">Scouted By</label><input class="form-input" value="${s.scoutedBy||''}" onchange="updateScouting(${i},'scoutedBy',this.value)"></div>
-        <div class="form-group"><label class="form-label">General Information</label><textarea class="form-textarea" onchange="updateScouting(${i},'info',this.value)">${s.info||''}</textarea></div>
-        <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'address',this.value)">${s.address||''}</textarea></div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" value="${s.contact||''}" onchange="updateScouting(${i},'contact',this.value)"></div>
-          <div class="form-group"><label class="form-label">Overall Suitability</label><input class="form-input" value="${s.suitability||''}" onchange="updateScouting(${i},'suitability',this.value)"></div>
-        </div>
-        <div class="form-group"><label class="form-label">Accessibility</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'accessibility',this.value)">${s.accessibility||''}</textarea></div>
-        <div class="form-group"><label class="form-label">Lighting Conditions</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'lighting',this.value)">${s.lighting||''}</textarea></div>
-        <div class="form-group"><label class="form-label">Sound Considerations</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'sound',this.value)">${s.sound||''}</textarea></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Power & Electrical</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'power',this.value)">${s.power||''}</textarea></div><div class="form-group"><label class="form-label">Set Dressing Notes</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'setDressing',this.value)">${s.setDressing||''}</textarea></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Permissions / Legal</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'permissions',this.value)">${s.permissions||''}</textarea></div><div class="form-group"><label class="form-label">Production Logistics</label><textarea class="form-textarea" style="min-height:60px" onchange="updateScouting(${i},'logistics',this.value)">${s.logistics||''}</textarea></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Pros</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'pros',this.value)">${s.pros||''}</textarea></div><div class="form-group"><label class="form-label">Cons</label><textarea class="form-textarea" style="min-height:80px" onchange="updateScouting(${i},'cons',this.value)">${s.cons||''}</textarea></div></div>
-        <div class="form-group"><label class="form-label">Networking Notes (credits etc.)</label><textarea class="form-textarea" onchange="updateScouting(${i},'networking',this.value)">${s.networking||''}</textarea></div>
+      <div style="background:rgba(220,50,50,.06);border:1px solid rgba(220,50,50,.2);border-radius:8px;padding:12px">
+        ${sectionHead('Cons','var(--red)')}
+        <textarea class="form-textarea" style="min-height:70px;background:transparent;border-color:rgba(220,50,50,.25)" onchange="updateScouting(${i},'cons',this.value)">${s.cons||''}</textarea>
       </div>
     </div>
-  `).join('');
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      ${field('Set Dressing Notes', ta('setDressing', 55))}
+      ${field('Networking Notes', ta('networking', 55))}
+    </div>
+    <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      <button class="btn btn-sm btn-primary" onclick="_scoutMinimized=true;renderScoutingList(currentProject())" title="Auto-saves on every change">✓ Save &amp; Collapse</button>
+      <button class="btn btn-sm btn-ghost" onclick="_printScoutingSheet(${i})">⎙ Print</button>
+      <button class="btn btn-sm btn-ghost" onclick="_downloadScoutingSheet(${i})">⬇ Export HTML</button>
+    </div>`;
 }
-function addScoutingSheet() { const p=currentProject(); p.scoutingSheets.push({name:'',date:'',scoutedBy:''}); saveStore(); renderScoutingList(p); }
-function removeScoutingSheet(i) { showConfirmDialog('Remove this scouting sheet?', 'Remove', () => { const p=currentProject(); p.scoutingSheets.splice(i,1); saveStore(); renderScoutingList(p); }); }
-function updateScouting(i,field,val) { const p=currentProject(); p.scoutingSheets[i][field]=val; saveStore(); }
-function toggleScoutingMinimize(i) { const p=currentProject(); p.scoutingSheets[i].minimized = !p.scoutingSheets[i].minimized; saveStore(); renderScoutingList(p); }
+
+function renderScoutingTabs(p) {
+  const tabBar = document.getElementById('scouting-tabs');
+  if (tabBar) tabBar.innerHTML = _scoutingTabsHtml(p);
+}
+
+function _scoutingTabsHtml(p) {
+  const sheets = p.scoutingSheets || [];
+  const tabs = sheets.map((s, i) =>
+    `<button class="btn btn-sm${i === _activeScoutIdx ? ' btn-primary' : ''}" onclick="_selectScoutingSheet(${i})">${(s.name||'Sheet '+(i+1)).slice(0,22)}</button>`
+  ).join('');
+  const delBtn = sheets.length > 0 ? `<button class="btn btn-sm btn-ghost btn-danger" onclick="removeScoutingSheet(${_activeScoutIdx})" title="Delete this sheet" style="margin-left:4px">🗑</button>` : '';
+  const minBtn = sheets.length > 0 ? `<button class="btn btn-sm btn-ghost" onclick="_scoutMinimized=!_scoutMinimized;renderScoutingList(currentProject())" style="margin-left:auto" title="${_scoutMinimized?'Expand':'Collapse'}">${_scoutMinimized ? '▸ Expand' : '▾ Collapse'}</button>` : '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%">${tabs}${delBtn}${minBtn}</div>`;
+}
+
+function renderScoutingList(p) {
+  const el = document.getElementById('scouting-list');
+  if (!el) return;
+  if (!p.scoutingSheets || !p.scoutingSheets.length) {
+    el.innerHTML = `<p style="color:var(--text3);font-size:13px;padding:8px 0">No scouting sheets yet — click "+ New Sheet" to add one.</p>`;
+    return;
+  }
+  _activeScoutIdx = Math.min(_activeScoutIdx, p.scoutingSheets.length - 1);
+  const s = p.scoutingSheets[_activeScoutIdx];
+  el.innerHTML = `
+    <div id="scouting-tabs" style="margin-bottom:${_scoutMinimized ? 4 : 14}px">${_scoutingTabsHtml(p)}</div>
+    ${_scoutMinimized ? '' : `<div class="breakdown-card" style="margin-bottom:0">${_scoutingSheetContent(s, _activeScoutIdx)}</div>`}`;
+}
+
+function _selectScoutingSheet(i) {
+  _activeScoutIdx = i;
+  renderScoutingList(currentProject());
+  document.getElementById('scouting-list')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function addScoutingSheet() {
+  const p = currentProject();
+  if (!p.scoutingSheets) p.scoutingSheets = [];
+  p.scoutingSheets.push({ name: '', date: '', scoutedBy: '' });
+  _activeScoutIdx = p.scoutingSheets.length - 1;
+  saveStore();
+  renderScoutingList(p);
+}
+function removeScoutingSheet(i) {
+  showConfirmDialog('Remove this scouting sheet?', 'Remove', () => {
+    const p = currentProject();
+    p.scoutingSheets.splice(i, 1);
+    _activeScoutIdx = Math.max(0, i - 1);
+    saveStore();
+    renderScoutingList(p);
+  });
+}
+function updateScouting(i, field, val) { const p = currentProject(); p.scoutingSheets[i][field] = val; saveStore(); }
+function openScoutingSheetForLocation(locName) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.scoutingSheets) p.scoutingSheets = [];
+  // Find sheet matching location name, or create one
+  let idx = p.scoutingSheets.findIndex(s => s.name && s.name.toLowerCase() === locName.toLowerCase());
+  if (idx === -1) {
+    p.scoutingSheets.push({ name: locName, date: '', scoutedBy: '' });
+    idx = p.scoutingSheets.length - 1;
+    saveStore();
+  }
+  _activeScoutIdx = idx;
+  renderScoutingList(p);
+  setTimeout(() => document.getElementById('scouting-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
 
 // TEAM
 function renderTeam() {
@@ -8771,7 +9667,7 @@ function renderContacts() {
       if (c.name) {
         const key = c.name.toLowerCase();
         if (!contactsMap[key]) {
-          contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '' };
+          contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '', castRoles: c.castRoles || [], crewRoles: c.crewRoles || [] };
         }
         if (!contactsMap[key].projects.includes(p.title)) {
           contactsMap[key].projects.push(p.title);
@@ -8785,6 +9681,8 @@ function renderContacts() {
         if (c.socials) contactsMap[key].socials = c.socials;
         if (c.type && !contactsMap[key].type) contactsMap[key].type = c.type;
         if (c.defaultRole && !contactsMap[key].defaultRole) contactsMap[key].defaultRole = c.defaultRole;
+        if (c.castRoles && c.castRoles.length && !contactsMap[key].castRoles.length) contactsMap[key].castRoles = c.castRoles;
+        if (c.crewRoles && c.crewRoles.length && !contactsMap[key].crewRoles.length) contactsMap[key].crewRoles = c.crewRoles;
       }
     });
 
@@ -8877,13 +9775,15 @@ function renderContacts() {
     if (!c.name) return;
     const key = c.name.toLowerCase();
     if (!contactsMap[key]) {
-      contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '' };
+      contactsMap[key] = { name: c.name, roles: [], projects: [], projectIds: [], phone: c.phone || '', email: c.email || '', socials: c.socials || '', type: c.type || '', defaultRole: c.defaultRole || '', castRoles: c.castRoles || [], crewRoles: c.crewRoles || [] };
     } else {
       if (c.phone) contactsMap[key].phone = c.phone;
       if (c.email) contactsMap[key].email = c.email;
       if (c.socials) contactsMap[key].socials = c.socials;
       if (c.type) contactsMap[key].type = mergeContactType(contactsMap[key].type, c.type);
       if (c.defaultRole && !contactsMap[key].defaultRole) contactsMap[key].defaultRole = c.defaultRole;
+      if (c.castRoles && c.castRoles.length && !contactsMap[key].castRoles.length) contactsMap[key].castRoles = c.castRoles;
+      if (c.crewRoles && c.crewRoles.length && !contactsMap[key].crewRoles.length) contactsMap[key].crewRoles = c.crewRoles;
     }
   });
 
@@ -8893,6 +9793,8 @@ function renderContacts() {
     role: c.roles.join(', '),
     roles: c.roles,
     defaultRole: c.defaultRole || '',
+    castRoles: c.castRoles || [],
+    crewRoles: c.crewRoles || [],
     projects: c.projects.join(', '),
     projectIds: c.projectIds,
     projectId: c.projectIds[0] || null,
@@ -9090,13 +9992,13 @@ function renderContacts() {
 
   el.innerHTML += `<div class="table-container"><table class="data-table contacts-table"><thead><tr>
     <th style="${thStyle}" onclick="setContactSort('name')">Name${sortIcon('name')}</th>
-    ${vis('type') ? `<th>Type${colHideBtn('type')}</th>` : ''}
-    ${vis('role') ? `<th>Role / Dept${colHideBtn('role')}</th>` : ''}
-    ${vis('projects') ? `<th>Projects${colHideBtn('projects')}</th>` : ''}
-    ${vis('phone') ? `<th>Phone${colHideBtn('phone')}</th>` : ''}
-    ${vis('email') ? `<th>Email${colHideBtn('email')}</th>` : ''}
-    ${vis('socials') ? `<th>Socials${colHideBtn('socials')}</th>` : ''}
-    ${vis('photos') ? `<th style="${thStyle}" onclick="setContactSort('photos')">Photos${sortIcon('photos')}${colHideBtn('photos')}</th>` : ''}
+    ${vis('type') ? `<th data-ctx="col-contact:type">Type${colHideBtn('type')}</th>` : ''}
+    ${vis('role') ? `<th data-ctx="col-contact:role">Role / Dept${colHideBtn('role')}</th>` : ''}
+    ${vis('projects') ? `<th data-ctx="col-contact:projects">Projects${colHideBtn('projects')}</th>` : ''}
+    ${vis('phone') ? `<th data-ctx="col-contact:phone">Phone${colHideBtn('phone')}</th>` : ''}
+    ${vis('email') ? `<th data-ctx="col-contact:email">Email${colHideBtn('email')}</th>` : ''}
+    ${vis('socials') ? `<th data-ctx="col-contact:socials">Socials${colHideBtn('socials')}</th>` : ''}
+    ${vis('photos') ? `<th style="${thStyle}" data-ctx="col-contact:photos" onclick="setContactSort('photos')">Photos${sortIcon('photos')}${colHideBtn('photos')}</th>` : ''}
     ${custHeaders}<th></th></tr></thead><tbody>` +
     filteredContacts.map((c, i) => {
       const photos = getFilesForPerson(c.name);
@@ -9118,7 +10020,7 @@ function renderContacts() {
           return `<td onclick="event.stopPropagation();openContactTextEdit(this,'${cNameEsc}','${col.id}')" style="cursor:text;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${text?'var(--text)':'var(--text3)'}"${text ? ` data-tip="${text.replace(/"/g,'&quot;')}"` : ''}>${text ? text.replace(/</g,'&lt;') : '<span style="opacity:0.35">—</span>'}</td>`;
         }
       }).join('');
-      const mainRow = `<tr onclick="toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">
+      const mainRow = `<tr data-ctx="contact:${encodeURIComponent(c.name)}" onclick="toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">
         <td style="font-weight:500;white-space:nowrap" title="${c.name}">
           ${c.name}
           <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editContact('${c.name.replace(/'/g, "\\'")}')" style="padding:2px 6px;margin-left:4px;opacity:0.6" title="Edit contact">✎</button>
@@ -9349,15 +10251,15 @@ function renderLocations() {
 
   el.innerHTML += `<div class="table-container"><table class="data-table locations-table"><thead><tr>
     <th style="${locThStyle}" onclick="setLocationSort('name')">Location${sortIcon('name', locationSort)}</th>
-    ${locVis('project')       ? `<th style="${locThStyle}" onclick="setLocationSort('project')">Project${sortIcon('project', locationSort)}${locColHideBtn('project')}</th>` : ''}
-    ${locVis('contact')       ? `<th>Contact${locColHideBtn('contact')}</th>` : ''}
-    ${locVis('dateScouted')   ? `<th>Date Scouted${locColHideBtn('dateScouted')}</th>` : ''}
-    ${locVis('suitability')   ? `<th>Suitability${locColHideBtn('suitability')}</th>` : ''}
-    ${locVis('cost')          ? `<th>Cost <span title="Cost accurate as of date scouted" style="cursor:help;opacity:0.6">ⓘ</span>${locColHideBtn('cost')}</th>` : ''}
-    ${locVis('accessibility') ? `<th>Accessibility${locColHideBtn('accessibility')}</th>` : ''}
-    ${locVis('status')        ? `<th>Status${locColHideBtn('status')}</th>` : ''}
-    ${locVis('notes')         ? `<th>Notes${locColHideBtn('notes')}</th>` : ''}
-    ${locVis('photos')        ? `<th style="${locThStyle}" onclick="setLocationSort('photos')">Photos${sortIcon('photos', locationSort)}${locColHideBtn('photos')}</th>` : ''}
+    ${locVis('project')       ? `<th style="${locThStyle}" data-ctx="col-location:project" onclick="setLocationSort('project')">Project${sortIcon('project', locationSort)}${locColHideBtn('project')}</th>` : ''}
+    ${locVis('contact')       ? `<th data-ctx="col-location:contact">Contact${locColHideBtn('contact')}</th>` : ''}
+    ${locVis('dateScouted')   ? `<th data-ctx="col-location:dateScouted">Date Scouted${locColHideBtn('dateScouted')}</th>` : ''}
+    ${locVis('suitability')   ? `<th data-ctx="col-location:suitability">Suitability${locColHideBtn('suitability')}</th>` : ''}
+    ${locVis('cost')          ? `<th data-ctx="col-location:cost">Cost <span title="Cost accurate as of date scouted" style="cursor:help;opacity:0.6">ⓘ</span>${locColHideBtn('cost')}</th>` : ''}
+    ${locVis('accessibility') ? `<th data-ctx="col-location:accessibility">Accessibility${locColHideBtn('accessibility')}</th>` : ''}
+    ${locVis('status')        ? `<th data-ctx="col-location:status">Status${locColHideBtn('status')}</th>` : ''}
+    ${locVis('notes')         ? `<th data-ctx="col-location:notes">Notes${locColHideBtn('notes')}</th>` : ''}
+    ${locVis('photos')        ? `<th style="${locThStyle}" data-ctx="col-location:photos" onclick="setLocationSort('photos')">Photos${sortIcon('photos', locationSort)}${locColHideBtn('photos')}</th>` : ''}
     ${locCustHeaders}<th></th>
   </tr></thead><tbody>` +
     filteredLocations.map((l) => {
@@ -9389,7 +10291,8 @@ function renderLocations() {
           return `<td onclick="event.stopPropagation();openLocationTextEdit(this,'${lNameEsc}','${col.id}')" style="cursor:text;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${text?'var(--text)':'var(--text3)'}"${text ? ` data-tip="${text.replace(/"/g,'&quot;')}"` : ''}>${text ? text.replace(/</g,'&lt;') : '<span style="opacity:0.35">—</span>'}</td>`;
         }
       }).join('');
-      const mainRow = `<tr onclick="toggleLocationExpand('${lNameEsc}','${l.projectId}')">
+      const ctxLocData = l.locIdx !== null ? `loc-global:${l.projectId}:${l.locIdx}` : '';
+      const mainRow = `<tr ${ctxLocData ? `data-ctx="${ctxLocData}"` : ''} onclick="toggleLocationExpand('${lNameEsc}','${l.projectId}')">
         <td style="font-weight:500;white-space:nowrap">${l.name} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
         ${locVis('project')       ? `<td>${l.project}</td>` : ''}
         ${locVis('contact')       ? `<td>${contactCell}</td>` : ''}
@@ -9484,7 +10387,7 @@ function addContactProjectField(projectId, role) {
   input.className = 'form-input contact-role-input';
   input.placeholder = 'Role (e.g. Director, Gaffer)';
   input.value = role || '';
-  input.setAttribute('list', 'roles-datalist');
+  input.setAttribute('list', 'all-roles-datalist');
 
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -9898,14 +10801,16 @@ function openContactTextEdit(cell, name, colId) {
 
 function addNewContact() {
   _pendingFullRemovals = [];
+  refreshRolesDatalist();
   // Clear all fields and open the edit modal for a brand-new contact
   document.getElementById('edit-contact-name').value = '';
   document.getElementById('edit-contact-name-display').value = '';
-  document.getElementById('edit-contact-default-role').value = '';
   document.getElementById('edit-contact-phone').value = '';
   document.getElementById('edit-contact-email').value = '';
   document.getElementById('edit-contact-type-cast').checked = false;
   document.getElementById('edit-contact-type-crew').checked = false;
+  ecClearRoles();
+  ecToggleRoleSections();
   const socialsContainer = document.getElementById('edit-contact-socials-container');
   socialsContainer.innerHTML = '';
   addSocialField('edit-contact-socials-container', 'instagram', '');
@@ -9941,25 +10846,74 @@ function editContact(name) {
     addSocialField('edit-contact-socials-container', 'instagram', '');
   }
 
-  // Populate project-role associations — one row per role (manual contacts only)
+  // Populate project-role associations — all projects (manual + auto-detected)
   const projectsContainer = document.getElementById('edit-contact-projects-container');
   projectsContainer.innerHTML = '';
-  store.projects.forEach(p => {
-    const contact = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+  const shownProjects = new Set();
+  const projectIds = cached ? cached.projectIds || [] : [];
+  projectIds.forEach(pid => {
+    if (shownProjects.has(pid)) return;
+    shownProjects.add(pid);
+    const p = store.projects.find(pr => pr.id === pid);
+    if (!p) return;
+    const nameLc = name.toLowerCase();
+    const contact = (p.contacts || []).find(c => c.name && c.name.toLowerCase() === nameLc);
     if (contact && contact.manual) {
+      // One row per explicitly-assigned role
       const roles = contact.roles && contact.roles.length ? contact.roles : ['Contact'];
       roles.forEach(r => addContactProjectField(p.id, r));
+    } else {
+      // Auto-detected: derive best role from unit/cast/callsheet
+      let role = '';
+      if (contact && contact.roles && contact.roles.length) {
+        role = contact.roles.find(r => r && r !== 'Contact') || contact.roles[0];
+      }
+      if (!role) {
+        const ur = (p.unit || []).find(r => r.name && r.name.toLowerCase() === nameLc);
+        if (ur) role = ur.role || 'Crew';
+      }
+      if (!role && (p.cast || []).some(r => r.name && r.name.toLowerCase() === nameLc)) role = 'Cast';
+      if (!role && (p.extras || []).some(r => r.name && r.name.toLowerCase() === nameLc)) role = 'Extra';
+      if (!role) {
+        for (const cs of (p.callsheets || [])) {
+          if ((cs.castRows || []).some(r => r.actor && r.actor.toLowerCase() === nameLc)) { role = 'Cast'; break; }
+          const cf = (cs.customFields || []).find(f => f.value && f.value.toLowerCase() === nameLc);
+          if (cf) { role = cf.label || 'Crew'; break; }
+        }
+      }
+      addContactProjectField(p.id, role || 'Crew');
     }
   });
 
   document.getElementById('edit-contact-name').value = name;
   document.getElementById('edit-contact-name-display').value = name;
-  document.getElementById('edit-contact-default-role').value = defaultRole;
   document.getElementById('edit-contact-phone').value = phone;
   document.getElementById('edit-contact-email').value = email;
   const typeArr = (type || '').split(',').map(t => t.trim());
   document.getElementById('edit-contact-type-cast').checked = typeArr.includes('cast');
   document.getElementById('edit-contact-type-crew').checked = typeArr.includes('crew');
+
+  // Populate cast/crew role chips
+  ecClearRoles();
+  let storedCastRoles = cached?.castRoles || [];
+  let storedCrewRoles = cached?.crewRoles || [];
+  // Backward compat: if no new arrays but has defaultRole, assign to appropriate type
+  if (!storedCastRoles.length && !storedCrewRoles.length && defaultRole) {
+    if (typeArr.includes('cast') && !typeArr.includes('crew')) {
+      storedCastRoles = defaultRole.split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      storedCrewRoles = defaultRole.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  storedCastRoles.forEach(r => {
+    document.getElementById('ec-cast-role-input').value = r;
+    ecAddRole('cast');
+  });
+  storedCrewRoles.forEach(r => {
+    document.getElementById('ec-crew-role-input').value = r;
+    ecAddRole('crew');
+  });
+  ecToggleRoleSections();
   openModal('modal-edit-contact');
 }
 
@@ -9973,8 +10927,11 @@ function saveEditedContact() {
   const typeArr = [];
   if (document.getElementById('edit-contact-type-cast').checked) typeArr.push('cast');
   if (document.getElementById('edit-contact-type-crew').checked) typeArr.push('crew');
-  const defaultRole = document.getElementById('edit-contact-default-role').value.trim();
-  if (!typeArr.length && defaultRole) typeArr.push('crew');
+  const castRoles = ecGetRoles('cast');
+  const crewRoles = ecGetRoles('crew');
+  const defaultRole = [...castRoles, ...crewRoles].join(', ');
+  if (!typeArr.length && castRoles.length) typeArr.push('cast');
+  else if (!typeArr.length && crewRoles.length) typeArr.push('crew');
   const type = typeArr.join(',');
   const projectRoles = collectProjectRoles();
 
@@ -10001,10 +10958,10 @@ function saveEditedContact() {
     if (rolesForProject) {
       // Explicitly assigned roles for this project
       if (contactIdx >= 0) {
-        p.contacts[contactIdx] = { ...p.contacts[contactIdx], name, phone, email, socials, type, defaultRole, roles: rolesForProject, manual: true };
+        p.contacts[contactIdx] = { ...p.contacts[contactIdx], name, phone, email, socials, type, defaultRole, castRoles, crewRoles, roles: rolesForProject, manual: true };
       } else {
         if (!p.contacts) p.contacts = [];
-        p.contacts.push({ name, roles: rolesForProject, phone, email, socials, type, defaultRole, manual: true });
+        p.contacts.push({ name, roles: rolesForProject, phone, email, socials, type, defaultRole, castRoles, crewRoles, manual: true });
       }
     } else if (contactIdx >= 0) {
       if (p.contacts[contactIdx].manual) {
@@ -10017,6 +10974,8 @@ function saveEditedContact() {
         p.contacts[contactIdx].email = email;
         p.contacts[contactIdx].socials = socials;
         p.contacts[contactIdx].type = type;
+        p.contacts[contactIdx].castRoles = castRoles;
+        p.contacts[contactIdx].crewRoles = crewRoles;
       }
     }
   });
@@ -10027,13 +10986,13 @@ function saveEditedContact() {
   if (Object.keys(rolesByProject).length === 0) {
     // No project assignments — persist in global contacts
     if (globalIdx >= 0) {
-      store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole };
+      store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole, castRoles, crewRoles };
     } else {
-      store.contacts.push({ name, phone, email, socials, type, defaultRole });
+      store.contacts.push({ name, phone, email, socials, type, defaultRole, castRoles, crewRoles });
     }
   } else if (globalIdx >= 0) {
     // Was global, now has project links — update info and keep in global too (for info sync)
-    store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole };
+    store.contacts[globalIdx] = { ...store.contacts[globalIdx], name, phone, email, socials, type, defaultRole, castRoles, crewRoles };
   }
 
   // Also update callsheet and personnel data (match on old name to handle renames)
@@ -10079,6 +11038,23 @@ function saveEditedContact() {
   _pendingFullRemovals = [];
 
   saveStore();
+
+  // If we came from the file-tagging modal, add the person tag and return to that modal
+  if (_mfNewPersonCallback !== null) {
+    const savedName = document.getElementById('edit-contact-name-display').value.trim() || _mfNewPersonCallback;
+    const cbName = _mfNewPersonCallback;
+    _mfNewPersonCallback = null;
+    closeModal('modal-edit-contact');
+    // Restore modal title
+    const h3 = document.getElementById('edit-contact-modal-title');
+    if (h3) h3.textContent = 'Edit Contact';
+    // Add the person tag (with role from the saved contact)
+    const allRoles = [...castRoles, ...crewRoles];
+    mfAddPersonTagDirect(savedName || cbName, allRoles[0] || '');
+    showToast('Contact created', 'success');
+    return;
+  }
+
   closeModal('modal-edit-contact');
   renderContacts();
   showToast('Contact updated', 'success');
@@ -10175,6 +11151,7 @@ const MODAL_SAVE = {
   'modal-risk':         () => saveRiskRow(),
   'modal-add-cast':     () => saveAddCast(),
   'modal-customfield':  () => saveCSCustomField(),
+  'modal-story':                 () => saveStory(),
   'modal-contact-columns':       () => saveContactColumns(),
   'modal-location-columns':      () => saveLocationColumns(),
   'modal-edit-contact':          () => saveEditedContact(),
@@ -10230,7 +11207,7 @@ function renderShotList(p) {
     tbody.innerHTML = p.shots.map((s,i) => {
       const t = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
       totalMins += t;
-      return `<tr>
+      return `<tr data-ctx="shot:${i}">
         <td>${s.scene||'—'}</td><td>${s.setup||'—'}</td><td>${s.num||'—'}</td>
         <td><span class="tag">${s.type||'—'}</span></td>
         <td>${s.movement||'—'}</td><td>${s.location||'—'}</td>
@@ -10312,7 +11289,7 @@ function renderPropTable(type, tbodyId, p) {
     return;
   }
   tbody.innerHTML = list.map((item,i) => `
-    <tr>
+    <tr data-ctx="prop:${type}:${i}">
       <td><strong>${item.name}</strong></td>
       <td>${item.qty||1}</td>
       <td>${item.chars||'—'}</td>
@@ -10373,7 +11350,7 @@ function renderWardrobeTable(p) {
     return;
   }
   tbody.innerHTML = list.map((item,i) => `
-    <tr>
+    <tr data-ctx="wardrobe:${i}">
       <td><strong>${item.name}</strong></td>
       <td>${item.chars||'—'}</td>
       <td>${item.scenes||'—'}</td>
@@ -10441,7 +11418,7 @@ function renderSoundLog(p) {
   const tbody=document.getElementById('soundlog-body');
   if(!p.soundlog||!p.soundlog.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state" style="padding:20px"><div class="icon">🎙️</div><h4>No entries yet</h4></div></td></tr>`;return;}
   tbody.innerHTML=p.soundlog.map((s,i)=>`
-    <tr>
+    <tr data-ctx="sound:${i}">
       <td>${s.scene||'—'}</td><td>${s.shot||'—'}</td><td>${s.take||'—'}</td>
       <td>${s.comments||'—'}</td><td>${s.track1||'—'}</td>
       <td>${s.lav||'—'}</td><td>${s.additional||'—'}</td>
@@ -10477,7 +11454,7 @@ function renderRiskAssessment(p) {
   if(!p.risks||!p.risks.length){tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state" style="padding:20px"><div class="icon">⚠️</div><h4>No hazards identified yet</h4></div></td></tr>`;return;}
   const rfColor=(n)=>{if(n<=2)return 'var(--green)';if(n<=3)return 'var(--orange)';return 'var(--red)';};
   tbody.innerHTML=p.risks.map((r,i)=>`
-    <tr>
+    <tr data-ctx="risk:${i}">
       <td><strong>${r.hazard||'—'}</strong></td>
       <td>${r.who||'—'}</td>
       <td><span style="color:${rfColor(r.factor)};font-weight:700;font-family:var(--font-mono)">${r.factor||'—'}</span></td>
@@ -10551,7 +11528,6 @@ function renderReleases(p) {
       </div>
     `).join('');
   }
-  renderTechScouts(p);
 }
 function addRelease(type){const p=currentProject();if(!p.releases)p.releases=[];p.releases.push({type,name:type==='talent'?'New Talent':'New Location',signed:false});saveStore();renderReleases(p);}
 function toggleSigned(i){const p=currentProject();p.releases[i].signed=!p.releases[i].signed;saveStore();renderReleases(p);}
@@ -10572,48 +11548,339 @@ const TECH_SCOUT_ITEMS = {
   'Contracts': ['Contract Signed: Has the location owner signed a location release?','Insurance/Liability: Does your production insurance cover this location?','Contingency Plans: Are there clauses for date changes in the contract?'],
 };
 
-function renderTechScouts(p) {
-  const el=document.getElementById('techscout-list');
-  if(!p.techScouts||!p.techScouts.length){el.innerHTML=`<p style="color:var(--text3);font-size:13px">No tech scout checklists yet.</p>`;return;}
-  el.innerHTML=p.techScouts.map((scout,si)=>`
-    <div class="breakdown-card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <strong>${scout.name||'Tech Scout'}</strong>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" onclick="toggleTechScoutMinimize(${si})">${scout.minimized ? '✚ Expand' : '▼ Minimize'}</button>
-          <button class="btn btn-sm btn-danger" onclick="removeTechScout(${si})">✕</button>
-        </div>
-      </div>
-      <div style="display: ${scout.minimized ? 'none' : 'block'};">
-        <div class="form-row" style="margin-bottom:14px">
-          <div class="form-group"><label class="form-label">Location Name</label><input class="form-input" value="${scout.name||''}" onchange="updateTechScout(${si},'name',this.value)"></div>
-          <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
-        </div>
-        ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
-          <div style="margin-bottom:16px">
-            <div style="font-family:var(--font-display);font-size:16px;letter-spacing:1px;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${cat}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${items.map((item,ii)=>{
-                const key=cat+'_'+ii;
-                const checked=(scout.checks||{})[key];
-                return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border-radius:6px;cursor:pointer" onclick="toggleTechCheck(${si},'${key}')">
-                  <div class="equip-check${checked?' checked':''}" style="margin-top:1px;flex-shrink:0"></div>
-                  <span style="font-size:12px;color:var(--text2);line-height:1.4">${item}</span>
-                </div>`;
-              }).join('')}
-            </div>
-            <div class="form-group" style="margin-top:8px"><label class="form-label">Notes — ${cat}</label><textarea class="form-textarea" style="min-height:50px" onchange="updateTechScout(${si},'notes_${cat}',this.value)">${(scout['notes_'+cat])||''}</textarea></div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+function _techScoutTabsHtml(p) {
+  const scouts = p.techScouts || [];
+  const tabs = scouts.map((s, i) =>
+    `<button class="btn btn-sm${i === _activeTechScoutIdx ? ' btn-primary' : ''}" onclick="_selectTechScout(${i})">${(s.name||'Scout '+(i+1)).slice(0,22)}</button>`
+  ).join('');
+  const delBtn = scouts.length > 0 ? `<button class="btn btn-sm btn-ghost btn-danger" onclick="removeTechScout(${_activeTechScoutIdx})" title="Delete this checklist" style="margin-left:4px">🗑</button>` : '';
+  const minBtn = scouts.length > 0 ? `<button class="btn btn-sm btn-ghost" onclick="_techScoutMinimized=!_techScoutMinimized;renderTechScouts(currentProject())" style="margin-left:auto" title="${_techScoutMinimized?'Expand':'Collapse'}">${_techScoutMinimized ? '▸ Expand' : '▾ Collapse'}</button>` : '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%">${tabs}${delBtn}${minBtn}</div>`;
 }
-function addTechScout(){const p=currentProject();if(!p.techScouts)p.techScouts=[];p.techScouts.push({name:'',date:'',checks:{}});saveStore();renderTechScouts(p);}
-function removeTechScout(i){showConfirmDialog('Remove this tech scout?','Remove',()=>{const p=currentProject();p.techScouts.splice(i,1);saveStore();renderTechScouts(p);});}
-function updateTechScout(i,field,val){const p=currentProject();p.techScouts[i][field]=val;saveStore();}
-function toggleTechCheck(si,key){const p=currentProject();if(!p.techScouts[si].checks)p.techScouts[si].checks={};p.techScouts[si].checks[key]=!p.techScouts[si].checks[key];saveStore();renderTechScouts(p);}
-function toggleTechScoutMinimize(i) { const p=currentProject(); p.techScouts[i].minimized = !p.techScouts[i].minimized; saveStore(); renderTechScouts(p); }
+
+function _techScoutContent(scout, si) {
+  const checksDone = Object.values(scout.checks || {}).filter(Boolean).length;
+  const checksTotal = Object.values(TECH_SCOUT_ITEMS).reduce((a,b) => a + b.length, 0);
+  const pct = checksTotal ? Math.round(checksDone / checksTotal * 100) : 0;
+  return `
+    <div style="display:grid;grid-template-columns:1fr 160px;gap:10px;margin-bottom:16px;align-items:end">
+      <div class="form-group" style="margin:0"><label class="form-label">Location Name</label><input class="form-input" value="${(scout.name||'').replace(/"/g,'&quot;')}" onchange="updateTechScout(${si},'name',this.value);renderTechScoutTabs(currentProject())"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Date</label><input class="form-input" type="date" value="${scout.date||''}" onchange="updateTechScout(${si},'date',this.value)"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+      <div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent2);border-radius:4px;transition:width .3s"></div></div>
+      <span style="font-size:12px;color:var(--text2);white-space:nowrap">${checksDone}/${checksTotal} checked (${pct}%)</span>
+    </div>
+    ${Object.entries(TECH_SCOUT_ITEMS).map(([cat,items])=>`
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--font-display);font-size:14px;letter-spacing:1px;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${cat}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${items.map((item,ii)=>{
+            const key=cat+'_'+ii;
+            const checked=(scout.checks||{})[key];
+            return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border-radius:6px;cursor:pointer${checked?';border-left:2px solid var(--accent2)':''}" onclick="toggleTechCheck(${si},'${key}')">
+              <div class="equip-check${checked?' checked':''}" style="margin-top:1px;flex-shrink:0"></div>
+              <span style="font-size:12px;color:var(--text2);line-height:1.4">${item}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="form-group" style="margin-top:8px"><label class="form-label">Notes — ${cat}</label><textarea class="form-textarea" style="min-height:50px" onchange="updateTechScout(${si},'notes_${cat}',this.value)">${(scout['notes_'+cat])||''}</textarea></div>
+      </div>
+    `).join('')}
+    <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      <button class="btn btn-sm btn-primary" onclick="_techScoutMinimized=true;renderTechScouts(currentProject())" title="Auto-saves on every change">✓ Save &amp; Collapse</button>
+      <button class="btn btn-sm btn-ghost" onclick="_printTechScout(${si})">⎙ Print</button>
+      <button class="btn btn-sm btn-ghost" onclick="_downloadTechScout(${si})">⬇ Export HTML</button>
+    </div>`;
+}
+
+function renderTechScoutTabs(p) {
+  const tabBar = document.getElementById('techscout-tabs');
+  if (tabBar) tabBar.innerHTML = _techScoutTabsHtml(p);
+}
+
+function renderTechScouts(p) {
+  const el = document.getElementById('techscout-list');
+  if (!el) return;
+  if (!p.techScouts || !p.techScouts.length) {
+    el.innerHTML = `<p style="color:var(--text3);font-size:13px;padding:8px 0">No tech scout checklists yet — click "+ New Checklist" to add one.</p>`;
+    return;
+  }
+  _activeTechScoutIdx = Math.min(_activeTechScoutIdx, p.techScouts.length - 1);
+  const scout = p.techScouts[_activeTechScoutIdx];
+  el.innerHTML = `
+    <div id="techscout-tabs" style="margin-bottom:${_techScoutMinimized ? 4 : 14}px">${_techScoutTabsHtml(p)}</div>
+    ${_techScoutMinimized ? '' : `<div class="breakdown-card" style="margin-bottom:0">${_techScoutContent(scout, _activeTechScoutIdx)}</div>`}`;
+}
+
+function _selectTechScout(i) {
+  _activeTechScoutIdx = i;
+  renderTechScouts(currentProject());
+  document.getElementById('techscout-list')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function addTechScout() {
+  const p = currentProject();
+  if (!p.techScouts) p.techScouts = [];
+  p.techScouts.push({ name: '', date: '', checks: {} });
+  _activeTechScoutIdx = p.techScouts.length - 1;
+  saveStore();
+  renderTechScouts(p);
+}
+function removeTechScout(i) {
+  showConfirmDialog('Remove this tech scout checklist?', 'Remove', () => {
+    const p = currentProject();
+    p.techScouts.splice(i, 1);
+    _activeTechScoutIdx = Math.max(0, i - 1);
+    saveStore();
+    renderTechScouts(p);
+  });
+}
+function updateTechScout(i, field, val) { const p = currentProject(); p.techScouts[i][field] = val; saveStore(); }
+function toggleTechCheck(si, key) {
+  const p = currentProject();
+  if (!p.techScouts[si].checks) p.techScouts[si].checks = {};
+  p.techScouts[si].checks[key] = !p.techScouts[si].checks[key];
+  saveStore();
+  // Just toggle the check visually without full re-render
+  const checkEl = event.currentTarget.querySelector('.equip-check');
+  if (checkEl) checkEl.classList.toggle('checked', p.techScouts[si].checks[key]);
+}
+function openTechScoutForLocation(locName) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.techScouts) p.techScouts = [];
+  let idx = p.techScouts.findIndex(s => s.name && s.name.toLowerCase() === locName.toLowerCase());
+  if (idx === -1) {
+    p.techScouts.push({ name: locName, date: '', checks: {} });
+    idx = p.techScouts.length - 1;
+    saveStore();
+  }
+  _activeTechScoutIdx = idx;
+  renderTechScouts(p);
+  setTimeout(() => document.getElementById('techscout-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+// ── SCOUTING INTERCONNECT HELPERS ────────────────────────────────────────────
+
+function _getScoutStatus(locName) {
+  const key = locName.toLowerCase();
+  const sheets = [], techSheets = [];
+  store.projects.forEach(p => {
+    (p.scoutingSheets || []).forEach((s, idx) => {
+      if (s.name?.toLowerCase() === key)
+        sheets.push({ projectTitle: p.title, projectId: p.id, idx, date: s.date, suitability: s.suitability });
+    });
+    (p.techScouts || []).forEach((s, idx) => {
+      if (s.name?.toLowerCase() === key) {
+        const done = Object.values(s.checks || {}).filter(Boolean).length;
+        const total = Object.values(TECH_SCOUT_ITEMS).reduce((a,b) => a + b.length, 0);
+        techSheets.push({ projectTitle: p.title, projectId: p.id, idx, date: s.date, done, total });
+      }
+    });
+  });
+  return { sheets, techSheets };
+}
+
+function _scoutIconHtml(locName) {
+  const st = _getScoutStatus(locName);
+  const total = st.sheets.length + st.techSheets.length;
+  if (!total) return '';
+  const safe = locName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return `<button class="btn btn-sm" onclick="event.stopPropagation();openScoutStatusModal('${safe}')" style="margin-left:6px;padding:1px 7px;font-size:11px;line-height:1.6;background:rgba(0,120,220,.15);border-color:rgba(0,120,220,.3);color:#60aaff;vertical-align:middle" title="Scouting data available — click to view">🗺 ${total}</button>`;
+}
+
+function openScoutStatusModal(locName) {
+  const st = _getScoutStatus(locName);
+  document.getElementById('scout-status-modal-name').textContent = locName;
+  const suitColorMap = {'Not Suitable':'var(--red)','Poor':'#e06c00','Fair':'#d4a017','Good':'var(--green)','Excellent':'#0088ff'};
+  const body = document.getElementById('scout-status-modal-body');
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+      <strong>${locName}</strong>: ${st.sheets.length} scouting sheet${st.sheets.length!==1?'s':''}, ${st.techSheets.length} tech checklist${st.techSheets.length!==1?'s':''}.
+    </p>
+    ${st.sheets.length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-family:var(--font-display);font-size:11px;letter-spacing:1.5px;color:var(--accent2);margin-bottom:8px">SCOUTING SHEETS</div>
+        ${st.sheets.map(s => `
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border-radius:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">${s.projectTitle}</div>
+              ${s.date ? `<div style="font-size:11px;color:var(--text3)">${s.date}</div>` : ''}
+            </div>
+            ${s.suitability ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface3);color:${suitColorMap[s.suitability]||'var(--text2)'}">${s.suitability}</span>` : ''}
+            <button class="btn btn-sm btn-primary" onclick="closeModal('modal-scout-status');navigateToScoutSheet('${s.projectId}',${s.idx})">View →</button>
+          </div>`).join('')}
+      </div>` : ''}
+    ${st.techSheets.length ? `
+      <div>
+        <div style="font-family:var(--font-display);font-size:11px;letter-spacing:1.5px;color:var(--accent2);margin-bottom:8px">TECH CHECKLISTS</div>
+        ${st.techSheets.map(s => `
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border-radius:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">${s.projectTitle}</div>
+              ${s.date ? `<div style="font-size:11px;color:var(--text3)">${s.date}</div>` : ''}
+            </div>
+            <span style="font-size:11px;color:var(--text2)">${s.done}/${s.total}</span>
+            <button class="btn btn-sm btn-primary" onclick="closeModal('modal-scout-status');navigateToTechScout('${s.projectId}',${s.idx})">View →</button>
+          </div>`).join('')}
+      </div>` : ''}`;
+  openModal('modal-scout-status');
+}
+
+function navigateToScoutSheet(projectId, idx) {
+  showProjectView(projectId);
+  _activeScoutIdx = idx;
+  _scoutMinimized = false;
+  showSection('locations');
+  setTimeout(() => document.getElementById('scouting-list')?.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
+}
+
+function navigateToTechScout(projectId, idx) {
+  showProjectView(projectId);
+  _activeTechScoutIdx = idx;
+  _techScoutMinimized = false;
+  showSection('locations');
+  setTimeout(() => document.getElementById('techscout-list')?.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
+}
+
+function openCreateScoutModal(locName, type) {
+  document.getElementById('create-scout-loc-name').value = locName;
+  document.getElementById('create-scout-type').value = type;
+  document.getElementById('create-scout-modal-title').textContent = type === 'scout' ? 'Create Scouting Sheet' : 'Create Tech Checklist';
+  document.getElementById('create-scout-loc-display').textContent = locName;
+  const sel = document.getElementById('create-scout-project-select');
+  if (!store.projects.length) { showToast('No projects found', 'info'); return; }
+  sel.innerHTML = store.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+  openModal('modal-create-scout');
+}
+
+function confirmCreateScout() {
+  const locName = document.getElementById('create-scout-loc-name').value;
+  const type = document.getElementById('create-scout-type').value;
+  const projectId = document.getElementById('create-scout-project-select').value;
+  const p = store.projects.find(pr => pr.id === projectId);
+  if (!p) return;
+  closeModal('modal-create-scout');
+  if (type === 'scout') {
+    if (!p.scoutingSheets) p.scoutingSheets = [];
+    let idx = p.scoutingSheets.findIndex(s => s.name?.toLowerCase() === locName.toLowerCase());
+    if (idx === -1) { p.scoutingSheets.push({ name: locName, date: '', scoutedBy: '' }); idx = p.scoutingSheets.length - 1; saveStore(); }
+    navigateToScoutSheet(projectId, idx);
+  } else {
+    if (!p.techScouts) p.techScouts = [];
+    let idx = p.techScouts.findIndex(s => s.name?.toLowerCase() === locName.toLowerCase());
+    if (idx === -1) { p.techScouts.push({ name: locName, date: '', checks: {} }); idx = p.techScouts.length - 1; saveStore(); }
+    navigateToTechScout(projectId, idx);
+  }
+  showToast(`Opened for "${locName}" in ${p.title}`, 'success');
+}
+
+// ── PRINT / DOWNLOAD ──────────────────────────────────────────────────────────
+
+function _scoutPrintStyles() {
+  return `body{font-family:Georgia,serif;color:#111;background:#fff;max-width:900px;margin:0 auto;padding:24px}
+    h1{font-size:22px;margin-bottom:4px}h2{font-size:14px;font-weight:normal;color:#555;margin-bottom:20px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .panel{border:1px solid #ccc;border-radius:6px;padding:12px}
+    .panel-head{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif}
+    .field{margin-bottom:10px}.label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-family:sans-serif;margin-bottom:2px}
+    .value{font-size:13px;line-height:1.5;min-height:20px;border-bottom:1px solid #eee;padding-bottom:4px}
+    .pros{border-left:3px solid #2a8;padding-left:8px}.cons{border-left:3px solid #c44;padding-left:8px}
+    .suit{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:bold}
+    @media print{body{padding:0}button{display:none}}`;
+}
+
+function _scoutHtmlDoc(s, projectTitle) {
+  const f = (label, val) => `<div class="field"><div class="label">${label}</div><div class="value">${val||''}</div></div>`;
+  const suitColor = {'Excellent':'#0088ff','Good':'#2a8a50','Fair':'#b8860b','Poor':'#c04a00','Not Suitable':'#c03030'};
+  const suitStyle = suitColor[s.suitability] ? `color:${suitColor[s.suitability]}` : '';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Scouting Sheet — ${s.name||'Location'}</title>
+    <style>${_scoutPrintStyles()}</style></head><body>
+    <h1>Scouting Sheet — ${s.name||'Location'}</h1>
+    <h2>${projectTitle || ''} ${s.date ? '| '+s.date : ''} ${s.scoutedBy ? '| Scouted by '+s.scoutedBy : ''}</h2>
+    <div class="grid">
+      <div class="panel"><div class="panel-head">Site Info</div>${f('Address',s.address)}${f('Contact Person',s.contact)}</div>
+      <div class="panel"><div class="panel-head">Evaluation</div>
+        <div class="field"><div class="label">Overall Suitability</div><div class="value"><span class="suit" style="${suitStyle}">${s.suitability||'—'}</span></div></div>
+        ${f('General Notes',s.info)}</div>
+    </div>
+    <div class="grid">
+      <div class="panel"><div class="panel-head">Technical</div>${f('Lighting',s.lighting)}${f('Sound',s.sound)}${f('Power & Electrical',s.power)}</div>
+      <div class="panel"><div class="panel-head">Production</div>${f('Accessibility',s.accessibility)}${f('Permissions / Legal',s.permissions)}${f('Logistics',s.logistics)}</div>
+    </div>
+    <div class="grid">
+      <div class="panel pros"><div class="panel-head">Pros</div><div class="value">${s.pros||''}</div></div>
+      <div class="panel cons"><div class="panel-head">Cons</div><div class="value">${s.cons||''}</div></div>
+    </div>
+    <div class="grid">
+      <div class="panel"><div class="panel-head">Set Dressing Notes</div><div class="value">${s.setDressing||''}</div></div>
+      <div class="panel"><div class="panel-head">Networking Notes</div><div class="value">${s.networking||''}</div></div>
+    </div>
+    </body></html>`;
+}
+
+function _printScoutingSheet(i) {
+  const p = currentProject(); if (!p) return;
+  const s = p.scoutingSheets[i]; if (!s) return;
+  const w = window.open('', '_blank');
+  w.document.write(_scoutHtmlDoc(s, p.title));
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+function _downloadScoutingSheet(i) {
+  const p = currentProject(); if (!p) return;
+  const s = p.scoutingSheets[i]; if (!s) return;
+  const html = _scoutHtmlDoc(s, p.title);
+  const a = document.createElement('a');
+  a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  a.download = `scouting-sheet-${(s.name||'location').replace(/\s+/g,'-').toLowerCase()}.html`;
+  a.click();
+}
+
+function _techScoutHtmlDoc(scout, projectTitle) {
+  const checksTotal = Object.values(TECH_SCOUT_ITEMS).reduce((a,b) => a + b.length, 0);
+  const checksDone = Object.values(scout.checks || {}).filter(Boolean).length;
+  const cats = Object.entries(TECH_SCOUT_ITEMS).map(([cat, items]) => {
+    const rows = items.map((item, ii) => {
+      const key = cat+'_'+ii;
+      const checked = (scout.checks||{})[key];
+      return `<tr><td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #eee">${checked ? '☑' : '☐'} ${item}</td></tr>`;
+    }).join('');
+    const notes = (scout['notes_'+cat]) || '';
+    return `<h3 style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#555;border-bottom:2px solid #ccc;padding-bottom:4px;margin-top:20px">${cat}</h3>
+      <table style="width:100%;border-collapse:collapse">${rows}</table>
+      ${notes ? `<div style="margin-top:6px;font-size:12px;color:#444;padding:6px 8px;background:#f9f9f9;border-radius:4px"><em>Notes: ${notes}</em></div>` : ''}`;
+  }).join('');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tech Scout — ${scout.name||'Location'}</title>
+    <style>body{font-family:sans-serif;color:#111;max-width:900px;margin:0 auto;padding:24px}
+    h1{font-size:20px}h2{font-weight:normal;color:#555;font-size:13px;margin-bottom:16px}
+    @media print{body{padding:0}button{display:none}}</style></head><body>
+    <h1>Tech Scout Checklist — ${scout.name||'Location'}</h1>
+    <h2>${projectTitle||''} ${scout.date ? '| '+scout.date : ''} &nbsp;|&nbsp; ${checksDone}/${checksTotal} items checked</h2>
+    ${cats}
+    </body></html>`;
+}
+
+function _printTechScout(i) {
+  const p = currentProject(); if (!p) return;
+  const s = p.techScouts[i]; if (!s) return;
+  const w = window.open('', '_blank');
+  w.document.write(_techScoutHtmlDoc(s, p.title));
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+function _downloadTechScout(i) {
+  const p = currentProject(); if (!p) return;
+  const s = p.techScouts[i]; if (!s) return;
+  const html = _techScoutHtmlDoc(s, p.title);
+  const a = document.createElement('a');
+  a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  a.download = `tech-scout-${(s.name||'location').replace(/\s+/g,'-').toLowerCase()}.html`;
+  a.click();
+}
 
 // ── LOCATION AUTOCOMPLETE (Nominatim / OpenStreetMap) ──────────────────────
 // Attach to any input with data-loc-auto attribute
@@ -10952,23 +12219,291 @@ function confirmWeatherLocation(candidates, originalQuery) {
 loadStore();
 renderDashboard();
 
+// ── Contact modal role sections ───────────────────────────────────────────────
+function ecToggleRoleSections() {
+  const isCast = document.getElementById('edit-contact-type-cast').checked;
+  const isCrew = document.getElementById('edit-contact-type-crew').checked;
+  document.getElementById('ec-cast-roles-section').style.display = isCast ? 'block' : 'none';
+  document.getElementById('ec-crew-roles-section').style.display = isCrew ? 'block' : 'none';
+}
+
+function ecAddRole(type) {
+  const inputId = type === 'cast' ? 'ec-cast-role-input' : 'ec-crew-role-input';
+  const tagsId  = type === 'cast' ? 'ec-cast-roles-tags'  : 'ec-crew-roles-tags';
+  const input = document.getElementById(inputId);
+  const val = (input.value || '').trim();
+  if (!val) return;
+  const container = document.getElementById(tagsId);
+  const existing = [...container.querySelectorAll('[data-role]')].map(t => t.dataset.role.toLowerCase());
+  if (existing.includes(val.toLowerCase())) { input.value = ''; return; }
+  const chip = document.createElement('span');
+  chip.dataset.role = val;
+  chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;background:var(--surface3);border-radius:12px;color:var(--text2);margin-bottom:2px;';
+  chip.innerHTML = `${val} <span style="cursor:pointer;color:var(--text3);font-size:10px;" onclick="this.closest('[data-role]').remove()">✕</span>`;
+  container.appendChild(chip);
+  input.value = '';
+  input.focus();
+}
+
+function ecClearRoles() {
+  const c = document.getElementById('ec-cast-roles-tags');
+  const r = document.getElementById('ec-crew-roles-tags');
+  if (c) c.innerHTML = '';
+  if (r) r.innerHTML = '';
+  const ci = document.getElementById('ec-cast-role-input');
+  const ri = document.getElementById('ec-crew-role-input');
+  if (ci) ci.value = '';
+  if (ri) ri.value = '';
+}
+
+function closeEditContactModal() {
+  _mfNewPersonCallback = null;
+  document.getElementById('edit-contact-modal-title').textContent = 'Edit Contact';
+  closeModal('modal-edit-contact');
+}
+
+function ecGetRoles(type) {
+  const tagsId = type === 'cast' ? 'ec-cast-roles-tags' : 'ec-crew-roles-tags';
+  return [...(document.getElementById(tagsId)?.querySelectorAll('[data-role]') || [])].map(t => t.dataset.role).filter(Boolean);
+}
+
 // ── Role autocomplete ─────────────────────────────────────────────────────────
 function refreshRolesDatalist() {
   const roles = new Set();
   store.projects.forEach(p => {
     (p.unit || []).forEach(r => { if (r.role) roles.add(r.role); });
     (p.contacts || []).forEach(c => {
-      if (c.type === 'cast') return;
+      if ((c.type || '').includes('cast') && !(c.type || '').includes('crew')) return;
+      (c.crewRoles || []).forEach(r => { if (r) roles.add(r); });
       (c.roles || []).forEach(r => { if (r && r !== 'Cast' && r !== 'Extra') roles.add(r); });
     });
   });
   (store.contacts || []).forEach(c => {
-    if (c.defaultRole) roles.add(c.defaultRole);
+    if ((c.type || '').includes('cast') && !(c.type || '').includes('crew')) return;
+    (c.crewRoles || []).forEach(r => { if (r) roles.add(r); });
+    if (c.defaultRole && !(c.type || '').includes('cast')) roles.add(c.defaultRole);
   });
   const dl = document.getElementById('roles-datalist');
   if (dl) dl.innerHTML = Array.from(roles).sort().map(r => `<option value="${r}">`).join('');
+
+  // all-roles-datalist = crew roles + static cast roles (used in project-level role field)
+  const castDefaults = ['Actor','Actress','Lead Actor','Lead Actress','Supporting Actor','Supporting Actress','Voice Actor','Singer','Vocalist','Musician','Dancer','Performer','Entertainer','Comedian','Clown','Mime','Artist','Stunt Double','Stand-In','Extra','Multi-Role'];
+  const allRoles = new Set([...roles, ...castDefaults]);
+  const dlAll = document.getElementById('all-roles-datalist');
+  if (dlAll) dlAll.innerHTML = Array.from(allRoles).sort().map(r => `<option value="${r}">`).join('');
 }
+
+// ══════════════════════════════════════════
+// CONTEXT MENU
+// ══════════════════════════════════════════
+let _ctxFns = [];
+
+function _ctxRun(i) {
+  _ctxFns[i]?.();
+  document.getElementById('ctx-menu').style.display = 'none';
+}
+
+function showContextMenu(e, items) {
+  e.preventDefault();
+  e.stopPropagation();
+  _ctxFns = [];
+  let fi = 0;
+  const menu = document.getElementById('ctx-menu');
+  menu.innerHTML = items.map(item => {
+    if (!item) return '<div class="ctx-sep"></div>';
+    const i = fi++;
+    _ctxFns.push(item.fn);
+    const danger = item.danger ? ' ctx-danger' : '';
+    return `<div class="ctx-item${danger}" onclick="_ctxRun(${i})"><span class="ctx-icon">${item.icon||''}</span><span>${item.label}</span></div>`;
+  }).join('');
+  const rows = items.length;
+  const menuH = rows * 32 + 12;
+  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const y = Math.min(e.clientY, window.innerHeight - menuH - 4);
+  menu.style.left = Math.max(4, x) + 'px';
+  menu.style.top = Math.max(4, y) + 'px';
+  menu.style.display = 'block';
+}
+
+document.addEventListener('click', () => {
+  const m = document.getElementById('ctx-menu');
+  if (m) m.style.display = 'none';
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { const m = document.getElementById('ctx-menu'); if (m) m.style.display = 'none'; }
+});
+document.addEventListener('contextmenu', e => {
+  const el = e.target.closest('[data-ctx]');
+  if (!el) return;
+  e.preventDefault();
+  const ctx = el.dataset.ctx;
+  const sep = ctx.indexOf(':');
+  const type = sep >= 0 ? ctx.slice(0, sep) : ctx;
+  const rawArgs = sep >= 0 ? ctx.slice(sep + 1) : '';
+  const args = rawArgs.split(':');
+  let items = [];
+
+  switch (type) {
+    case 'personnel':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editPersonnel(args[0], +args[1]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removePersonnel(args[0], +args[1]) }
+      ]; break;
+    case 'schedule':
+      items = [
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeScheduleRow(+args[0]) }
+      ]; break;
+    case 'budget':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editBudgetLine(+args[0]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeBudgetLine(+args[0]) }
+      ]; break;
+    case 'proj-loc': {
+      const locIdx = +args[0];
+      const locName = decodeURIComponent(args[1] || '');
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editLocation(locIdx) },
+        null,
+        { label: 'Open Scouting Sheet', icon: '🗺', fn: () => openScoutingSheetForLocation(locName) },
+        { label: 'Open Tech Scout Checklist', icon: '☑', fn: () => openTechScoutForLocation(locName) },
+        null,
+        { label: 'Remove from Project', icon: '🗑', danger: true, fn: () => removeLocation(locIdx) }
+      ]; break;
+    }
+    case 'shot':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editShot(+args[0]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeShot(+args[0]) }
+      ]; break;
+    case 'prop':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editPropItem(args[0], +args[1]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removePropItem(args[0], +args[1]) }
+      ]; break;
+    case 'wardrobe':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editWardrobeItem(+args[0]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeWardrobeItem(+args[0]) }
+      ]; break;
+    case 'sound':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editSoundEntry(+args[0]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeSoundEntry(+args[0]) }
+      ]; break;
+    case 'risk':
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editRiskRow(+args[0]) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeRiskRow(+args[0]) }
+      ]; break;
+    case 'contact': {
+      const cname = decodeURIComponent(rawArgs);
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editContact(cname) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => removeContact(cname) }
+      ]; break;
+    }
+    case 'loc-global': {
+      const pid = args[0], lidx = +args[1];
+      items = [
+        { label: 'Edit', icon: '✎', fn: () => editLocationGlobal(pid, lidx) },
+        { label: 'Move / Copy', icon: '⇄', fn: () => openMoveLocation(pid, lidx) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => deleteLocationGlobal(pid, lidx) }
+      ]; break;
+    }
+    case 'col-contact': {
+      const colId = args[0];
+      items = [
+        { label: 'Hide Column', icon: '👁', fn: () => toggleContactColVisibility(colId) },
+        null,
+        { label: 'Manage Columns', icon: '⚙', fn: () => openContactColumnsModal() }
+      ]; break;
+    }
+    case 'col-location': {
+      const colId = args[0];
+      items = [
+        { label: 'Hide Column', icon: '👁', fn: () => toggleLocationColVisibility(colId) },
+        null,
+        { label: 'Manage Columns', icon: '⚙', fn: () => openLocationColumnsModal() }
+      ]; break;
+    }
+    case 'file-card': {
+      const fid = args[0];
+      items = [
+        { label: 'Rename', icon: '✏️', fn: () => openManageFile(fid) },
+        { label: 'Move to Project', icon: '🔀', fn: () => openMoveFile([fid], null) },
+        { label: 'Download', icon: '⬇', fn: () => downloadFile(fid) },
+        null,
+        { label: 'Delete', icon: '🗑', danger: true, fn: () => openRemoveFiles([fid], null) }
+      ]; break;
+    }
+    case 'script-file': {
+      const sid = args[0];
+      items = [
+        { label: 'Rename', icon: '✏️', fn: () => openScriptRename(sid) },
+        { label: 'Share', icon: '↗', fn: () => shareScriptFile(sid) },
+        { label: 'Download', icon: '⬇', fn: () => downloadScriptFile(sid) },
+        null,
+        { label: 'Remove', icon: '🗑', danger: true, fn: () => removeScriptFile(sid) }
+      ]; break;
+    }
+    case 'custom-file': {
+      const csId = args[0], fId = args[1];
+      items = [
+        { label: 'Rename', icon: '✏️', fn: () => openCustomSectionFileRename(csId, fId) },
+        { label: 'Share', icon: '↗', fn: () => shareCustomSectionFile(csId, fId) },
+        { label: 'Download', icon: '⬇', fn: () => downloadCustomSectionFile(csId, fId) },
+        null,
+        { label: 'Remove', icon: '🗑', danger: true, fn: () => removeCustomSectionFile(csId, fId) }
+      ]; break;
+    }
+  }
+  if (items.length) showContextMenu(e, items);
+});
 </script>
 <datalist id="roles-datalist"></datalist>
+<datalist id="all-roles-datalist"></datalist>
+<datalist id="cast-roles-datalist">
+  <option value="Actor">
+  <option value="Actress">
+  <option value="Lead Actor">
+  <option value="Lead Actress">
+  <option value="Supporting Actor">
+  <option value="Supporting Actress">
+  <option value="Voice Actor">
+  <option value="Narrator">
+  <option value="Presenter">
+  <option value="Host">
+  <option value="Singer">
+  <option value="Vocalist">
+  <option value="Musician">
+  <option value="Band">
+  <option value="Dancer">
+  <option value="Performer">
+  <option value="Entertainer">
+  <option value="Comedian">
+  <option value="Stand-Up Comedian">
+  <option value="Comic Relief">
+  <option value="Clown">
+  <option value="Mime">
+  <option value="Sketch Artist">
+  <option value="Artist">
+  <option value="Choreographer">
+  <option value="Stunt Double">
+  <option value="Stand-In">
+  <option value="Extra">
+  <option value="Multi-Role">
+</datalist>
+
+<!-- Global context menu -->
+<div id="ctx-menu"></div>
 </body>
 </html>
