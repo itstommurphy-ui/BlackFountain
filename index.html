@@ -2784,7 +2784,7 @@
           <div class="card" style="border:2px solid #ff4444;margin-top:20px">
             <h3 style="margin-top:0;color:#ff4444">Danger Zone</h3>
             <p style="color:var(--text2);margin-bottom:16px">Permanently delete all data from this browser. This action cannot be undone.</p>
-            <button class="btn" style="background:#ff4444;color:white;border:none" onclick="clearAllData()">
+            <button class="btn" style="background:#ff4444;color:white;border:none" onclick="openClearDataModal()">
               <span class="icon">🗑️</span> Clear All Data
             </button>
           </div>
@@ -3593,6 +3593,26 @@
   </div>
 </div>
 
+<!-- CLEAR ALL DATA MODAL -->
+<div class="modal-overlay" id="modal-clear-data" onclick="if(event.target === this) closeModal('modal-clear-data')">
+  <div class="modal" style="max-width:450px;">
+    <div class="modal-header">
+      <h3 style="color:#ff4444">DELETE ALL DATA</h3>
+      <button class="modal-close" onclick="closeModal('modal-clear-data')">✕</button>
+    </div>
+    <p style="margin:16px 0;color:var(--text2);font-size:14px;">⚠️ <strong>WARNING:</strong> This will PERMANENTLY DELETE all your projects, contacts, locations, files, and settings.</p>
+    <p style="margin:16px 0;color:var(--text2);font-size:14px;">This action cannot be undone. Consider exporting your data first.</p>
+    <div style="margin:16px 0">
+      <label style="display:block;margin-bottom:8px;font-size:13px">Type <code style="background:var(--surface2);padding:2px 6px;border-radius:3px">DELETE ALL DATA</code> to confirm:</label>
+      <input type="text" id="clear-data-confirm" class="form-input" placeholder="Type confirmation..." autocomplete="off">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-clear-data')">Cancel</button>
+      <button class="btn" style="background:#ff4444;color:white;border:none" onclick="confirmClearAllData()">Delete Everything</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD CUSTOM FIELD MODAL -->
 <div class="modal-overlay" id="modal-customfield">
   <div class="modal">
@@ -3843,6 +3863,26 @@ function clearAllData() {
     return;
   }
   
+  localStorage.removeItem('filmforge_v1');
+  showToast('All data cleared - reloading...', 'success');
+  setTimeout(() => location.reload(), 1500);
+}
+
+function openClearDataModal() {
+  document.getElementById('clear-data-confirm').value = '';
+  openModal('modal-clear-data');
+}
+
+function confirmClearAllData() {
+  const confirmText = 'DELETE ALL DATA';
+  const userInput = document.getElementById('clear-data-confirm').value;
+  
+  if (userInput !== confirmText) {
+    showToast('Confirmation did not match - data NOT deleted', 'error');
+    return;
+  }
+  
+  closeModal('modal-clear-data');
   localStorage.removeItem('filmforge_v1');
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
