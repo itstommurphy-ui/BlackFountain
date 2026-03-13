@@ -35,6 +35,12 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100vw; }
+  * { scrollbar-width: thin; scrollbar-color: var(--text3) var(--surface2); }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: var(--surface2); }
+  *::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 99px; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+  *::-webkit-scrollbar-corner { background: var(--surface2); }
   
   html, body {
     overflow-x: hidden;
@@ -261,7 +267,7 @@
     letter-spacing: 0.2px;
   }
   .btn-primary:hover { background: #f5cc50; border-color: #f5cc50; }
-  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
   .btn-ghost { background: transparent; border-color: transparent; color: var(--text3); }
   .btn-ghost:hover { background: var(--surface2); border-color: var(--border); color: var(--text2); }
   .btn-danger { border-color: transparent; color: var(--red); background: transparent; }
@@ -1153,7 +1159,40 @@
     overflow-y: hidden;
     box-shadow: var(--shadow);
     max-width: 100%;
+    position: relative;
+    scrollbar-width: none;
   }
+  .table-container::-webkit-scrollbar { display: none; }
+  .tc-scrollbar-track {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 6px;
+    background: var(--surface2); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  .table-container:hover .tc-scrollbar-track { opacity: 1; pointer-events: auto; }
+  .tc-scrollbar-thumb {
+    position: absolute; top: 1px; height: 4px;
+    background: var(--text3); border-radius: 99px;
+    cursor: grab; transition: background 0.15s; min-width: 30px;
+  }
+  .tc-scrollbar-thumb:hover, .tc-scrollbar-thumb.dragging { background: var(--text2); cursor: grabbing; }
+  .tc-nav { display:none;justify-content:flex-end;gap:5px;margin-top:5px; }
+  .tc-nav.tc-nav-vis { display:flex; }
+  .tc-nav-btn { width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:17px;user-select:none;transition:background 0.1s,opacity 0.15s;opacity:0;pointer-events:none; }
+  .tc-nav-btn.tc-btn-vis { opacity:1;pointer-events:auto; }
+  .tc-nav-btn:hover { background:var(--surface4);color:var(--text); }
+  .col-hide-btn { display:inline-flex;align-items:center;opacity:0;margin-left:4px;cursor:pointer;transition:opacity 0.15s;vertical-align:middle;color:var(--text3); }
+  th:hover .col-hide-btn { opacity:0.5; }
+  .col-hide-btn:hover { opacity:1 !important;color:var(--text2); }
+
+  /* Sticky first column for contacts + locations tables */
+  .contacts-table th:first-child,.locations-table th:first-child { position:sticky;left:0;z-index:3;background:var(--surface2); }
+  .contacts-table td:first-child,.locations-table td:first-child { position:sticky;left:0;z-index:1;background:var(--surface); }
+  .contacts-table tbody tr:nth-child(even) td:first-child,.locations-table tbody tr:nth-child(even) td:first-child { background:var(--surface) !important; }
+  .contacts-table tbody tr:hover td:first-child,.locations-table tbody tr:hover td:first-child { background:var(--surface3) !important; }
+  .contacts-table tr.expand-row td:first-child,.locations-table tr.expand-row td:first-child { background:var(--surface2) !important; }
+
+  /* Hover tooltip */
+  #global-tip { position:fixed;z-index:9999;background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--text);max-width:300px;white-space:pre-wrap;line-height:1.5;box-shadow:var(--shadow);pointer-events:none;display:none;word-break:break-word; }
   .table-toolbar {
     padding: 10px 14px;
     display: flex;
@@ -2497,6 +2536,67 @@
         </div>
       </div>
 
+      <!-- CONTACT COLUMNS MODAL -->
+      <div class="modal-overlay" id="modal-contact-columns">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header">
+            <h3>COLUMNS</h3>
+            <button class="modal-close" onclick="closeModal('modal-contact-columns')">✕</button>
+          </div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:6px">Restore hidden columns</div>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Hover any column header and click the eye icon to hide it. Re-check here to restore.</p>
+          <div id="contact-builtin-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-bottom:20px;"></div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px">Custom columns</div>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 12px">Add private columns — ratings, notes, whatever you need.</p>
+          <div id="contact-columns-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;min-height:20px;"></div>
+          <button class="btn btn-sm" onclick="addContactColumnRow()">+ Add Column</button>
+          <div class="form-actions" style="margin-top:20px">
+            <button class="btn" onclick="closeModal('modal-contact-columns')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveContactColumns()">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVE/COPY LOCATION DATA MODAL -->
+      <div class="modal-overlay" id="modal-move-location">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>MOVE / COPY LOCATION DATA</h3>
+            <button class="modal-close" onclick="closeModal('modal-move-location')">✕</button>
+          </div>
+          <p style="font-size:13px;color:var(--text2);margin:0 0 6px">Copying all details from:</p>
+          <p style="font-size:14px;font-weight:600;color:var(--text);margin:0 0 16px" id="mml-source-name"></p>
+          <label class="form-label">Copy details to</label>
+          <select class="form-select" id="mml-target" style="margin-bottom:20px"></select>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-move-location')">Cancel</button>
+            <button class="btn" onclick="doLocationTransfer(false)" title="Duplicate details to target, keeping source intact">Copy</button>
+            <button class="btn btn-primary" onclick="doLocationTransfer(true)" title="Copy details to target and clear them from source">Move</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCATION COLUMNS MODAL -->
+      <div class="modal-overlay" id="modal-location-columns">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header">
+            <h3>LOCATION COLUMNS</h3>
+            <button class="modal-close" onclick="closeModal('modal-location-columns')">✕</button>
+          </div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:6px">Restore hidden columns</div>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Hover any column header and click the eye icon to hide it. Re-check here to restore.</p>
+          <div id="location-builtin-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-bottom:20px;"></div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px">Custom columns</div>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 12px">Add private columns — ratings, notes, whatever you need.</p>
+          <div id="location-columns-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;min-height:20px;"></div>
+          <button class="btn btn-sm" onclick="addLocationColumnRow()">+ Add Column</button>
+          <div class="form-actions" style="margin-top:20px">
+            <button class="btn" onclick="closeModal('modal-location-columns')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveLocationColumns()">Save</button>
+          </div>
+        </div>
+      </div>
+
       <!-- REMOVE CALLSHEET ROW MODAL -->
       <div class="modal-overlay" id="modal-remove-csrow">
         <div class="modal" style="max-width:400px">
@@ -3428,7 +3528,13 @@ let store = {
   currentProjectId: null,
   files: [],
   contacts: [],
-  locations: []
+  locations: [],
+  contactColumns: [],
+  contactCustomData: {},
+  contactHiddenCols: [],
+  locationHiddenCols: [],
+  locationColumns: [],
+  locationCustomData: {}
 };
 
 const FILE_CATEGORIES = {
@@ -4453,6 +4559,12 @@ function loadStore() {
       if (!store.files) store.files = [];
       if (!store.contacts) store.contacts = [];
       if (!store.locations) store.locations = [];
+      if (!store.contactColumns) store.contactColumns = [];
+      if (!store.contactCustomData) store.contactCustomData = {};
+      if (!store.contactHiddenCols) store.contactHiddenCols = [];
+      if (!store.locationHiddenCols) store.locationHiddenCols = [];
+      if (!store.locationColumns) store.locationColumns = [];
+      if (!store.locationCustomData) store.locationCustomData = {};
       // Migrate: convert legacy integer projectIds (array indices) to project UUID strings
       store.files.forEach(f => {
         if (f.projectIds) {
@@ -4517,6 +4629,7 @@ function showView(name) {
     selectedFileIds.clear();
     renderFiles();
   }
+  setTimeout(initTableScrollbars, 0);
 }
 
 function showProjectView(id) {
@@ -4768,6 +4881,83 @@ function changeProjectStatus(newStatus) {
 // ══════════════════════════════════════════
 // SECTION RENDERING
 // ══════════════════════════════════════════
+// ── Custom table scrollbars ───────────────────────────────────────────────────
+function initTableScrollbars() {
+  document.querySelectorAll('.table-container').forEach(el => {
+    if (el.dataset.sbInit) return; // already initialised this exact element
+    el.dataset.sbInit = '1';
+
+    const track = document.createElement('div');
+    track.className = 'tc-scrollbar-track';
+    const thumb = document.createElement('div');
+    thumb.className = 'tc-scrollbar-thumb';
+    track.appendChild(thumb);
+    el.appendChild(track);
+
+    const nav = document.createElement('div');
+    nav.className = 'tc-nav';
+    const btnL = document.createElement('div');
+    btnL.className = 'tc-nav-btn';
+    btnL.innerHTML = '&#8249;';
+    const btnR = document.createElement('div');
+    btnR.className = 'tc-nav-btn';
+    btnR.innerHTML = '&#8250;';
+    nav.appendChild(btnL);
+    nav.appendChild(btnR);
+    el.insertAdjacentElement('afterend', nav);
+    btnL.addEventListener('click', () => el.scrollBy({ left: -300, behavior: 'smooth' }));
+    btnR.addEventListener('click', () => el.scrollBy({ left:  300, behavior: 'smooth' }));
+
+    let dragging = false, dragStartX = 0, dragStartScroll = 0;
+
+    const update = () => {
+      const scrollable = el.scrollWidth - el.clientWidth;
+      if (scrollable <= 0) { track.style.display = 'none'; nav.classList.remove('tc-nav-vis'); return; }
+      track.style.display = '';
+      nav.classList.add('tc-nav-vis');
+      const ratio = el.clientWidth / el.scrollWidth;
+      const tw = Math.max(ratio * el.clientWidth, 30);
+      const tx = (el.scrollLeft / scrollable) * (el.clientWidth - tw);
+      thumb.style.width = tw + 'px';
+      thumb.style.left  = tx + 'px';
+      btnL.classList.toggle('tc-btn-vis', el.scrollLeft > 1);
+      btnR.classList.toggle('tc-btn-vis', el.scrollLeft < scrollable - 1);
+    };
+
+    el.addEventListener('scroll', update);
+    new ResizeObserver(update).observe(el);
+    update();
+
+    thumb.addEventListener('mousedown', e => {
+      dragging = true;
+      dragStartX = e.clientX;
+      dragStartScroll = el.scrollLeft;
+      thumb.classList.add('dragging');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const scrollable = el.scrollWidth - el.clientWidth;
+      const trackW = el.clientWidth - thumb.offsetWidth;
+      el.scrollLeft = dragStartScroll + (e.clientX - dragStartX) * (scrollable / trackW);
+    });
+    document.addEventListener('mouseup', () => {
+      if (dragging) { dragging = false; thumb.classList.remove('dragging'); }
+    });
+  });
+  initTruncationTooltips();
+}
+
+function initTruncationTooltips() {
+  document.querySelectorAll('.data-table td').forEach(td => {
+    if (td.dataset.tip) return; // already has a manually-set tooltip
+    if (td.querySelector('button, input, select, textarea, .photos-badge, .tag, a, svg')) return;
+    const text = td.textContent.trim();
+    if (!text || text === '—') return;
+    if (td.scrollWidth > td.clientWidth + 1) td.dataset.tip = text;
+  });
+}
+
 function renderSection(name) {
   const p = currentProject();
   if (!p) return;
@@ -4790,6 +4980,7 @@ function renderSection(name) {
   else if (name === 'budget') renderBudget(p);
   else if (name === 'equipment') renderEquipment(p);
   else if (name === 'locations') renderLocations(p);
+  setTimeout(initTableScrollbars, 0);
 }
 
 // OVERVIEW
@@ -8473,6 +8664,61 @@ let contactSubView = 'all';
 let contactsSubNavExpanded = false;
 let _cachedContacts = [];
 let _pendingFullRemovals = []; // populated by renderContacts, used by editContact
+const CONTACT_BUILTIN_COLS = [
+  { id: 'type',     label: 'Type' },
+  { id: 'role',     label: 'Role / Dept' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'phone',    label: 'Phone' },
+  { id: 'email',    label: 'Email' },
+  { id: 'socials',  label: 'Socials' },
+  { id: 'photos',   label: 'Photos' },
+];
+const LOCATION_BUILTIN_COLS = [
+  { id: 'project',       label: 'Project' },
+  { id: 'contact',       label: 'Contact' },
+  { id: 'dateScouted',   label: 'Date Scouted' },
+  { id: 'suitability',   label: 'Suitability' },
+  { id: 'cost',          label: 'Cost' },
+  { id: 'accessibility', label: 'Accessibility' },
+  { id: 'status',        label: 'Status' },
+  { id: 'notes',         label: 'Notes' },
+  { id: 'photos',        label: 'Photos' },
+];
+let contactSort = { col: 'name', dir: 'asc' };
+let locationSort = { col: 'name', dir: 'asc' };
+let contactSearch = '';
+let locationSearch = '';
+let _refocusContactSearch = false;
+let _refocusLocationSearch = false;
+
+function setContactSort(col) {
+  if (contactSort.col === col && col === 'name') {
+    const cycle = ['asc', 'desc', 'surname-asc', 'surname-desc'];
+    contactSort.dir = cycle[(cycle.indexOf(contactSort.dir) + 1) % cycle.length];
+  } else if (contactSort.col === col) {
+    contactSort.dir = contactSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    contactSort.col = col;
+    contactSort.dir = col === 'name' ? 'asc' : 'desc';
+  }
+  renderContacts();
+}
+
+function sortIcon(col, st) {
+  st = st || contactSort;
+  if (st.col !== col) return '<span style="opacity:0.3;font-size:10px;margin-left:3px">⇅</span>';
+  const d = st.dir;
+  const arrow = (d === 'asc' || d === 'surname-asc') ? '↑' : '↓';
+  const sn = (d === 'surname-asc' || d === 'surname-desc')
+    ? '<sup style="font-size:8px;opacity:0.7">Sn</sup>' : '';
+  return `<span style="font-size:10px;margin-left:3px" title="${sn ? 'Sorted by surname' : ''}">${arrow}${sn}</span>`;
+}
+
+function setLocationSort(col) {
+  if (locationSort.col === col) locationSort.dir = locationSort.dir === 'asc' ? 'desc' : 'asc';
+  else { locationSort.col = col; locationSort.dir = 'asc'; }
+  renderLocations();
+}
 
 function toggleContactsSubNav() {
   contactsSubNavExpanded = !contactsSubNavExpanded;
@@ -8683,6 +8929,34 @@ function renderContacts() {
     filteredContacts = filteredContacts.filter(c => c.projectIds.includes(filterProject));
   }
 
+  // Apply search
+  if (contactSearch.trim()) {
+    const q = contactSearch.trim().toLowerCase();
+    filteredContacts = filteredContacts.filter(c => c.name.toLowerCase().includes(q));
+  }
+
+  // Apply sort
+  const _surname = n => { const p = (n || '').trim().split(/\s+/); return (p.length > 1 ? p[p.length - 1] : p[0]).toLowerCase(); };
+  const _sortAsc = contactSort.dir === 'asc' || contactSort.dir === 'surname-asc';
+  filteredContacts = [...filteredContacts].sort((a, b) => {
+    let av, bv;
+    if (contactSort.col === 'name') {
+      if (contactSort.dir === 'surname-asc' || contactSort.dir === 'surname-desc') {
+        av = _surname(a.name); bv = _surname(b.name);
+      } else {
+        av = a.name.toLowerCase(); bv = b.name.toLowerCase();
+      }
+    } else if (contactSort.col === 'photos') {
+      av = getFilesForPerson(a.name).length; bv = getFilesForPerson(b.name).length;
+    } else {
+      av = parseInt((store.contactCustomData[a.name.toLowerCase()] || {})[contactSort.col]) || 0;
+      bv = parseInt((store.contactCustomData[b.name.toLowerCase()] || {})[contactSort.col]) || 0;
+    }
+    if (av < bv) return _sortAsc ? -1 : 1;
+    if (av > bv) return _sortAsc ? 1 : -1;
+    return 0;
+  });
+
   // Location Contacts sub-view — show only that section
   if (contactSubView === 'locations') {
     el.innerHTML = '';
@@ -8705,6 +8979,8 @@ function renderContacts() {
 
   el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
     ${typeButtons}
+    <input class="form-input" placeholder="Search contacts…" value="${contactSearch.replace(/"/g,'&quot;')}"
+      oninput="contactSearch=this.value;_refocusContactSearch=true;renderContacts()" style="max-width:200px;font-size:12px;">
     <select id="contacts-role-filter" onchange="renderContacts()" class="form-select" style="max-width:200px">
       <option value="all" ${contactRoleFilter === 'all' ? 'selected' : ''}>All Roles / Depts</option>
       ${uniqueRoles.map(r => `<option value="${r}" ${contactRoleFilter === r ? 'selected' : ''}>${r}</option>`).join('')}
@@ -8715,10 +8991,16 @@ function renderContacts() {
       ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
     </select>
     <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${filteredContacts.length} contact${filteredContacts.length !== 1 ? 's' : ''}</span>
+    <button class="btn btn-sm" onclick="openContactColumnsModal()" style="margin-left:auto" title="Manage custom columns">⊕ Columns${(store.contactColumns||[]).length ? ` <span style="opacity:0.6">(${store.contactColumns.length})</span>` : ''}</button>
   </div>`;
 
   if (!filteredContacts.length) {
     el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📱</div><h3>No contacts</h3><p style="color:var(--text2);margin-top:8px">No contacts match the current filters</p></div>';
+    if (_refocusContactSearch) {
+      _refocusContactSearch = false;
+      const inp = el.querySelector('input[placeholder="Search contacts…"]');
+      if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    }
     return;
   }
 
@@ -8795,35 +9077,76 @@ function renderContacts() {
     return '<span style="color:var(--text3);font-size:11px">—</span>';
   }
 
-  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr><th>Name</th><th>Type</th><th>Role / Dept</th><th>Projects</th><th>Phone</th><th>Email</th><th>Socials</th><th>Photos</th><th></th></tr></thead><tbody>` +
+  const custCols = store.contactColumns || [];
+  const hidden = store.contactHiddenCols || [];
+  const vis = id => !hidden.includes(id);
+  const thStyle = 'cursor:pointer;user-select:none;white-space:nowrap';
+  const custHeaders = custCols.map(col =>
+    col.type === 'stars'
+      ? `<th style="${thStyle}" onclick="setContactSort('${col.id}')">${col.label}${sortIcon(col.id)}</th>`
+      : `<th>${col.label}</th>`
+  ).join('');
+  const totalCols = 2 + CONTACT_BUILTIN_COLS.filter(c => vis(c.id)).length + custCols.length;
+
+  el.innerHTML += `<div class="table-container"><table class="data-table contacts-table"><thead><tr>
+    <th style="${thStyle}" onclick="setContactSort('name')">Name${sortIcon('name')}</th>
+    ${vis('type') ? `<th>Type${colHideBtn('type')}</th>` : ''}
+    ${vis('role') ? `<th>Role / Dept${colHideBtn('role')}</th>` : ''}
+    ${vis('projects') ? `<th>Projects${colHideBtn('projects')}</th>` : ''}
+    ${vis('phone') ? `<th>Phone${colHideBtn('phone')}</th>` : ''}
+    ${vis('email') ? `<th>Email${colHideBtn('email')}</th>` : ''}
+    ${vis('socials') ? `<th>Socials${colHideBtn('socials')}</th>` : ''}
+    ${vis('photos') ? `<th style="${thStyle}" onclick="setContactSort('photos')">Photos${sortIcon('photos')}${colHideBtn('photos')}</th>` : ''}
+    ${custHeaders}<th></th></tr></thead><tbody>` +
     filteredContacts.map((c, i) => {
       const photos = getFilesForPerson(c.name);
       const isExpanded = expandedContacts.has(c.name.toLowerCase());
       const photosBadge = photos.length
         ? `<span class="photos-badge" onclick="event.stopPropagation();toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">📷 ${photos.length}</span>`
         : '<span style="color:var(--text3);font-size:11px;">—</span>';
+      const cNameEsc = c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const customCells = custCols.map(col => {
+        const val = (store.contactCustomData[c.name.toLowerCase()] || {})[col.id];
+        if (col.type === 'stars') {
+          const rating = parseInt(val) || 0;
+          const stars = [1,2,3,4,5].map(n =>
+            `<span onclick="event.stopPropagation();setContactRating('${cNameEsc}','${col.id}',${n === rating ? 0 : n})" style="cursor:pointer;font-size:15px;color:${n <= rating ? 'var(--accent)' : 'var(--border2)'}">★</span>`
+          ).join('');
+          return `<td style="white-space:nowrap">${stars}</td>`;
+        } else {
+          const text = val || '';
+          return `<td onclick="event.stopPropagation();openContactTextEdit(this,'${cNameEsc}','${col.id}')" style="cursor:text;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${text?'var(--text)':'var(--text3)'}"${text ? ` data-tip="${text.replace(/"/g,'&quot;')}"` : ''}>${text ? text.replace(/</g,'&lt;') : '<span style="opacity:0.35">—</span>'}</td>`;
+        }
+      }).join('');
       const mainRow = `<tr onclick="toggleContactExpand('${c.name.replace(/'/g, "\\'")}')">
         <td style="font-weight:500;white-space:nowrap" title="${c.name}">
           ${c.name}
           <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editContact('${c.name.replace(/'/g, "\\'")}')" style="padding:2px 6px;margin-left:4px;opacity:0.6" title="Edit contact">✎</button>
           ${photos.length ? (isExpanded ? '▾' : '▸') : ''}
         </td>
-        <td>${getTypeBadge(c.type)}</td>
-        <td title="${c.role || c.defaultRole}">${c.role ? `<span class="tag">${c.role}</span>` : (c.defaultRole ? `<span class="tag" style="opacity:0.7" title="General role">${c.defaultRole}</span>` : '—')}</td>
-        <td title="${c.projects}">${c.projects || '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
-        <td title="${c.phone || ''}">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent2)">${c.phone}</a>` : '—'}</td>
-        <td title="${c.email || ''}">${c.email ? `<a href="mailto:${c.email}" style="color:var(--accent2)">${c.email}</a>` : '—'}</td>
-        <td title="${c.socials || ''}">${renderSocialLinks(c.socials)}</td>
-        <td>${photosBadge}</td>
+        ${vis('type') ? `<td>${getTypeBadge(c.type)}</td>` : ''}
+        ${vis('role') ? `<td title="${c.role || c.defaultRole}">${c.role ? `<span class="tag">${c.role}</span>` : (c.defaultRole ? `<span class="tag" style="opacity:0.7" title="General role">${c.defaultRole}</span>` : '—')}</td>` : ''}
+        ${vis('projects') ? `<td title="${c.projects}">${c.projects || '<span style="color:var(--text3);font-size:11px">—</span>'}</td>` : ''}
+        ${vis('phone') ? `<td title="${c.phone || ''}">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--accent2)">${c.phone}</a>` : '—'}</td>` : ''}
+        ${vis('email') ? `<td title="${c.email || ''}">${c.email ? `<a href="mailto:${c.email}" style="color:var(--accent2)">${c.email}</a>` : '—'}</td>` : ''}
+        ${vis('socials') ? `<td title="${c.socials || ''}">${renderSocialLinks(c.socials)}</td>` : ''}
+        ${vis('photos') ? `<td>${photosBadge}</td>` : ''}
+        ${customCells}
         <td style="white-space:nowrap">
           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeContact('${c.name.replace(/'/g, "\\'")}')">✕</button>
         </td>
       </tr>`;
-      return mainRow + (isExpanded ? photoStripContactHTML(photos, c.name, 9) : '');
+      return mainRow + (isExpanded ? photoStripContactHTML(photos, c.name, totalCols) : '');
     }).join('') +
     '</tbody></table></div>';
 
   if (contactSubView === 'all') renderLocationContactsSection(el);
+  setTimeout(initTableScrollbars, 0);
+  if (_refocusContactSearch) {
+    _refocusContactSearch = false;
+    const inp = el.querySelector('input[placeholder="Search contacts…"]');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
 }
 
 function renderLocationContactsSection(el) {
@@ -8945,29 +9268,56 @@ function renderLocations() {
 
   let locations = Object.values(locationsMap);
 
-  // Sort by project then name
+  // Sort
   locations.sort((a, b) => {
-    if (a.project !== b.project) return a.project.localeCompare(b.project);
-    return a.name.localeCompare(b.name);
+    const asc = locationSort.dir === 'asc';
+    let av, bv;
+    if (locationSort.col === 'name') {
+      av = a.name; bv = b.name;
+    } else if (locationSort.col === 'project') {
+      av = a.project; bv = b.project;
+    } else if (locationSort.col === 'photos') {
+      av = getFilesForLocation(a.name).length; bv = getFilesForLocation(b.name).length;
+      return asc ? av - bv : bv - av;
+    } else {
+      av = a[locationSort.col] || ''; bv = b[locationSort.col] || '';
+    }
+    return (asc ? 1 : -1) * av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
   });
 
-  // Filter
-  const filteredLocations = filterProject === 'all'
+  // Filter by project
+  let filteredLocations = filterProject === 'all'
     ? locations
     : locations.filter(l => l.projectId === filterProject);
 
+  // Filter by search
+  const locSearchEl = document.getElementById('locations-search');
+  if (locSearchEl) locationSearch = locSearchEl.value;
+  if (locationSearch.trim()) {
+    const q = locationSearch.trim().toLowerCase();
+    filteredLocations = filteredLocations.filter(l => l.name.toLowerCase().includes(q));
+  }
+
   // Filter bar
   el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
+    <input class="form-input" id="locations-search" placeholder="Search locations…" value="${locationSearch.replace(/"/g,'&quot;')}"
+      oninput="locationSearch=this.value;_refocusLocationSearch=true;renderLocations()" style="max-width:200px;font-size:12px;">
     <select id="locations-filter" onchange="renderLocations()" class="form-select" style="max-width:280px">
       <option value="all" ${filterProject === 'all' ? 'selected' : ''}>All Locations</option>
       ${store.projects.map(p => `<option value="${p.id}" ${filterProject === p.id ? 'selected' : ''}>${p.title}</option>`).join('')}
       ${(store.locations || []).length ? `<option value="_global" ${filterProject === '_global' ? 'selected' : ''}>— Unlinked —</option>` : ''}
     </select>
     <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${filteredLocations.length} location${filteredLocations.length !== 1 ? 's' : ''}</span>
+    <button class="btn btn-sm" onclick="openLocationColumnsModal()" style="margin-left:auto" title="Manage columns">⊕ Columns${(store.locationColumns||[]).length ? ` <span style="opacity:0.6">(${store.locationColumns.length})</span>` : ''}</button>
   </div>`;
 
   if (!filteredLocations.length) {
     el.innerHTML += '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No locations yet</h3><p style="color:var(--text2);margin-top:8px">Add locations to projects to see them here</p></div>';
+    if (_refocusLocationSearch) {
+      _refocusLocationSearch = false;
+      const inp = el.querySelector('input[placeholder="Search locations…"]');
+      if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    }
     return;
   }
 
@@ -8986,49 +9336,83 @@ function renderLocations() {
     return '<span class="tag" style="color:var(--text3)">TBD</span>';
   }
 
-  el.innerHTML += `<div class="table-container"><table class="data-table"><thead><tr>
-    <th>Location</th>
-    <th>Project</th>
-    <th>Contact</th>
-    <th>Date Scouted</th>
-    <th>Suitability</th>
-    <th>Cost <span title="Cost accurate as of date scouted" style="cursor:help;opacity:0.6">ⓘ</span></th>
-    <th>Accessibility</th>
-    <th>Status</th>
-    <th>Notes</th>
-    <th>Photos</th>
-    <th></th>
+  const locCustCols = store.locationColumns || [];
+  const locHidden = store.locationHiddenCols || [];
+  const locVis = id => !locHidden.includes(id);
+  const locThStyle = 'cursor:pointer;user-select:none;white-space:nowrap';
+  const locCustHeaders = locCustCols.map(col =>
+    col.type === 'stars'
+      ? `<th style="${locThStyle}" onclick="setLocationSort('${col.id}')">${col.label}${sortIcon(col.id, locationSort)}</th>`
+      : `<th>${col.label}</th>`
+  ).join('');
+  const totalLocCols = 2 + LOCATION_BUILTIN_COLS.filter(c => locVis(c.id)).length + locCustCols.length;
+
+  el.innerHTML += `<div class="table-container"><table class="data-table locations-table"><thead><tr>
+    <th style="${locThStyle}" onclick="setLocationSort('name')">Location${sortIcon('name', locationSort)}</th>
+    ${locVis('project')       ? `<th style="${locThStyle}" onclick="setLocationSort('project')">Project${sortIcon('project', locationSort)}${locColHideBtn('project')}</th>` : ''}
+    ${locVis('contact')       ? `<th>Contact${locColHideBtn('contact')}</th>` : ''}
+    ${locVis('dateScouted')   ? `<th>Date Scouted${locColHideBtn('dateScouted')}</th>` : ''}
+    ${locVis('suitability')   ? `<th>Suitability${locColHideBtn('suitability')}</th>` : ''}
+    ${locVis('cost')          ? `<th>Cost <span title="Cost accurate as of date scouted" style="cursor:help;opacity:0.6">ⓘ</span>${locColHideBtn('cost')}</th>` : ''}
+    ${locVis('accessibility') ? `<th>Accessibility${locColHideBtn('accessibility')}</th>` : ''}
+    ${locVis('status')        ? `<th>Status${locColHideBtn('status')}</th>` : ''}
+    ${locVis('notes')         ? `<th>Notes${locColHideBtn('notes')}</th>` : ''}
+    ${locVis('photos')        ? `<th style="${locThStyle}" onclick="setLocationSort('photos')">Photos${sortIcon('photos', locationSort)}${locColHideBtn('photos')}</th>` : ''}
+    ${locCustHeaders}<th></th>
   </tr></thead><tbody>` +
     filteredLocations.map((l) => {
       const photos = getFilesForLocation(l.name);
       const key = l.name + '|' + l.projectId;
       const isExpanded = expandedLocations.has(key);
+      const lNameEsc = l.name.replace(/'/g, "\\'");
       const photosBadge = photos.length
-        ? `<span class="photos-badge" onclick="event.stopPropagation();toggleLocationExpand('${l.name.replace(/'/g,"\\'")}','${l.projectId}')">📷 ${photos.length}</span>`
+        ? `<span class="photos-badge" onclick="event.stopPropagation();toggleLocationExpand('${lNameEsc}','${l.projectId}')">📷 ${photos.length}</span>`
         : '<span style="color:var(--text3);font-size:11px;">—</span>';
       const editBtn = l.locIdx !== null
         ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editLocationGlobal('${l.projectId}',${l.locIdx})" title="Edit location">✎</button>
-           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLocationGlobal('${l.projectId}',${l.locIdx})" title="Delete location" style="padding:2px 6px">🗑</button>`
+           <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openMoveLocation('${l.projectId}',${l.locIdx})" title="Move / copy details to another location" style="font-size:13px">⇄</button>
+           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLocationGlobal('${l.projectId}',${l.locIdx})" title="Delete location">🗑</button>`
         : '';
       const contactCell = l.contactName
         ? `<span style="font-size:12px">${l.contactName}${l.contactPhone ? `<br><a href="tel:${l.contactPhone}" style="color:var(--accent2);font-size:11px">${l.contactPhone}</a>` : ''}${l.contactEmail ? `<br><a href="mailto:${l.contactEmail}" style="color:var(--accent2);font-size:11px">${l.contactEmail}</a>` : ''}</span>`
         : '<span style="color:var(--text3);font-size:11px">—</span>';
-      const mainRow = `<tr onclick="toggleLocationExpand('${l.name.replace(/'/g,"\\'")}','${l.projectId}')">
-        <td style="font-weight:500">${l.name} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
-        <td>${l.project}</td>
-        <td>${contactCell}</td>
-        <td style="white-space:nowrap">${l.date || '—'}</td>
-        <td>${getSuitabilityBadge(l.suitability)}</td>
-        <td style="white-space:nowrap">${l.cost || '—'}</td>
-        <td>${l.accessibility || '—'}</td>
-        <td>${getDecisionBadge(l.decision)}</td>
-        <td style="max-width:180px">${l.notes ? (l.notes.length > 60 ? l.notes.substring(0,60)+'…' : l.notes) : '—'}</td>
-        <td>${photosBadge}</td>
+      const locCustomCells = locCustCols.map(col => {
+        const val = (store.locationCustomData[l.name.toLowerCase()] || {})[col.id];
+        if (col.type === 'stars') {
+          const rating = parseInt(val) || 0;
+          const stars = [1,2,3,4,5].map(n =>
+            `<span onclick="event.stopPropagation();setLocationRating('${lNameEsc}','${col.id}',${n === rating ? 0 : n})" style="cursor:pointer;font-size:15px;color:${n <= rating ? 'var(--accent)' : 'var(--border2)'}">★</span>`
+          ).join('');
+          return `<td style="white-space:nowrap">${stars}</td>`;
+        } else {
+          const text = val || '';
+          return `<td onclick="event.stopPropagation();openLocationTextEdit(this,'${lNameEsc}','${col.id}')" style="cursor:text;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${text?'var(--text)':'var(--text3)'}"${text ? ` data-tip="${text.replace(/"/g,'&quot;')}"` : ''}>${text ? text.replace(/</g,'&lt;') : '<span style="opacity:0.35">—</span>'}</td>`;
+        }
+      }).join('');
+      const mainRow = `<tr onclick="toggleLocationExpand('${lNameEsc}','${l.projectId}')">
+        <td style="font-weight:500;white-space:nowrap">${l.name} ${photos.length ? (isExpanded ? '▾' : '▸') : ''}</td>
+        ${locVis('project')       ? `<td>${l.project}</td>` : ''}
+        ${locVis('contact')       ? `<td>${contactCell}</td>` : ''}
+        ${locVis('dateScouted')   ? `<td style="white-space:nowrap">${l.date || '—'}</td>` : ''}
+        ${locVis('suitability')   ? `<td>${getSuitabilityBadge(l.suitability)}</td>` : ''}
+        ${locVis('cost')          ? `<td style="white-space:nowrap">${l.cost || '—'}</td>` : ''}
+        ${locVis('accessibility') ? `<td>${l.accessibility || '—'}</td>` : ''}
+        ${locVis('status')        ? `<td>${getDecisionBadge(l.decision)}</td>` : ''}
+        ${locVis('notes')         ? `<td style="max-width:180px"${l.notes ? ` data-tip="${l.notes.replace(/"/g,'&quot;')}"` : ''}>${l.notes ? (l.notes.length > 60 ? l.notes.substring(0,60)+'…' : l.notes) : '—'}</td>` : ''}
+        ${locVis('photos')        ? `<td>${photosBadge}</td>` : ''}
+        ${locCustomCells}
         <td style="white-space:nowrap">${editBtn}</td>
       </tr>`;
-      return mainRow + (isExpanded ? photoStripHTML(photos, 10) : '');
+      return mainRow + (isExpanded ? photoStripHTML(photos, totalLocCols) : '');
     }).join('') +
     '</tbody></table></div>';
+
+  setTimeout(initTableScrollbars, 0);
+  if (_refocusLocationSearch) {
+    _refocusLocationSearch = false;
+    const inp = el.querySelector('input[placeholder="Search locations…"]');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
 }
 
 function showLocationDetails(locationName, projectId) {
@@ -9250,6 +9634,266 @@ function confirmRemoveContact() {
   saveStore();
   renderContacts();
   showToast('Contact removed', 'success');
+}
+
+// ── Contact custom columns ────────────────────────────────────────────────────
+let _pendingContactColumns = [];
+
+function openContactColumnsModal() {
+  _pendingContactColumns = JSON.parse(JSON.stringify(store.contactColumns || []));
+  renderContactColumnsList();
+  renderBuiltinColsVisibility();
+  openModal('modal-contact-columns');
+}
+
+function renderBuiltinColsVisibility() {
+  const el = document.getElementById('contact-builtin-cols');
+  if (!el) return;
+  const hidden = store.contactHiddenCols || [];
+  el.innerHTML = CONTACT_BUILTIN_COLS.map(col => `
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;padding:3px 0">
+      <input type="checkbox" ${!hidden.includes(col.id) ? 'checked' : ''} onchange="toggleContactColVisibility('${col.id}')">
+      ${col.label}
+    </label>`).join('');
+}
+
+function colHideBtn(colId) {
+  return `<span class="col-hide-btn" onclick="event.stopPropagation();toggleContactColVisibility('${colId}')" title="Hide column"><svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4C2.5 1.5 4 .5 6 .5S9.5 1.5 11 4C9.5 6.5 8 7.5 6 7.5S2.5 6.5 1 4z"/><circle cx="6" cy="4" r="1.8"/></svg></span>`;
+}
+
+function locColHideBtn(colId) {
+  return `<span class="col-hide-btn" onclick="event.stopPropagation();toggleLocationColVisibility('${colId}')" title="Hide column"><svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4C2.5 1.5 4 .5 6 .5S9.5 1.5 11 4C9.5 6.5 8 7.5 6 7.5S2.5 6.5 1 4z"/><circle cx="6" cy="4" r="1.8"/></svg></span>`;
+}
+
+function toggleContactColVisibility(colId) {
+  if (!store.contactHiddenCols) store.contactHiddenCols = [];
+  const idx = store.contactHiddenCols.indexOf(colId);
+  if (idx >= 0) store.contactHiddenCols.splice(idx, 1);
+  else store.contactHiddenCols.push(colId);
+  saveStore();
+  renderContacts();
+}
+
+function renderContactColumnsList() {
+  const el = document.getElementById('contact-columns-list');
+  if (!_pendingContactColumns.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">No columns yet — add one below</div>';
+    return;
+  }
+  el.innerHTML = _pendingContactColumns.map((col, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;">
+      <input class="form-input" value="${col.label.replace(/"/g,'&quot;')}" oninput="_pendingContactColumns[${i}].label=this.value" style="flex:1;font-size:12px;">
+      <select class="form-select" onchange="_pendingContactColumns[${i}].type=this.value" style="width:100px;font-size:12px;">
+        <option value="stars" ${col.type==='stars'?'selected':''}>★ Stars</option>
+        <option value="text" ${col.type==='text'?'selected':''}>✏ Text</option>
+      </select>
+      <button class="btn btn-sm btn-ghost btn-danger" onclick="removeContactColumnRow(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addContactColumnRow() {
+  _pendingContactColumns.push({ id: makeId(), label: 'New Column', type: 'text' });
+  renderContactColumnsList();
+}
+
+function removeContactColumnRow(i) {
+  _pendingContactColumns.splice(i, 1);
+  renderContactColumnsList();
+}
+
+function saveContactColumns() {
+  store.contactColumns = _pendingContactColumns.filter(c => c.label.trim());
+  saveStore();
+  closeModal('modal-contact-columns');
+  renderContacts();
+}
+
+// ── Location columns ──────────────────────────────────────────────────────────
+// ── Move/copy location data ───────────────────────────────────────────────────
+let _mmlSource = null; // { projectId, locIdx }
+
+function _getLocationObj(projectId, locIdx) {
+  if (projectId === '_global') return (store.locations || [])[locIdx];
+  return ((store.projects.find(p => p.id === projectId) || {}).locations || [])[locIdx];
+}
+
+function _allLocationTargets(excludeProjectId, excludeLocIdx) {
+  const targets = [];
+  store.projects.forEach(p => {
+    (p.locations || []).forEach((l, i) => {
+      if (l.name && !(p.id === excludeProjectId && i === excludeLocIdx))
+        targets.push({ label: `${l.name} (${p.title})`, projectId: p.id, locIdx: i });
+    });
+  });
+  (store.locations || []).forEach((l, i) => {
+    if (l.name && !('_global' === excludeProjectId && i === excludeLocIdx))
+      targets.push({ label: `${l.name} (Unlinked)`, projectId: '_global', locIdx: i });
+  });
+  return targets;
+}
+
+function openMoveLocation(projectId, locIdx) {
+  const src = _getLocationObj(projectId, locIdx);
+  if (!src) return;
+  _mmlSource = { projectId, locIdx };
+  document.getElementById('mml-source-name').textContent = src.name || 'Unnamed';
+  const targets = _allLocationTargets(projectId, locIdx);
+  if (!targets.length) { showToast('No other locations to transfer to', 'info'); return; }
+  document.getElementById('mml-target').innerHTML = targets.map((t, i) =>
+    `<option value="${i}">${t.label}</option>`).join('');
+  document.getElementById('mml-target').dataset.targets = JSON.stringify(targets);
+  openModal('modal-move-location');
+}
+
+const LOC_DATA_FIELDS = ['date','suit','cost','costPeriod','access','decision','notes','rules','contactName','contactPhone','contactEmail','suitability','info'];
+
+function doLocationTransfer(andClear) {
+  if (!_mmlSource) return;
+  const src = _getLocationObj(_mmlSource.projectId, _mmlSource.locIdx);
+  if (!src) return;
+  const targets = JSON.parse(document.getElementById('mml-target').dataset.targets || '[]');
+  const tidx = parseInt(document.getElementById('mml-target').value);
+  const t = targets[tidx];
+  if (!t) return;
+  const dst = _getLocationObj(t.projectId, t.locIdx);
+  if (!dst) return;
+  LOC_DATA_FIELDS.forEach(f => { if (src[f] !== undefined) dst[f] = src[f]; });
+  if (andClear) LOC_DATA_FIELDS.forEach(f => { delete src[f]; });
+  saveStore();
+  closeModal('modal-move-location');
+  renderLocations();
+  showToast(andClear ? 'Location data moved ✓' : 'Location data copied ✓', 'success');
+}
+
+let _pendingLocationColumns = [];
+
+function openLocationColumnsModal() {
+  _pendingLocationColumns = JSON.parse(JSON.stringify(store.locationColumns || []));
+  renderLocationColumnsList();
+  renderBuiltinLocColsVisibility();
+  openModal('modal-location-columns');
+}
+
+function renderBuiltinLocColsVisibility() {
+  const el = document.getElementById('location-builtin-cols');
+  if (!el) return;
+  const hidden = store.locationHiddenCols || [];
+  el.innerHTML = LOCATION_BUILTIN_COLS.map(col => `
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;padding:3px 0">
+      <input type="checkbox" ${!hidden.includes(col.id) ? 'checked' : ''} onchange="toggleLocationColVisibility('${col.id}')">
+      ${col.label}
+    </label>`).join('');
+}
+
+function toggleLocationColVisibility(colId) {
+  if (!store.locationHiddenCols) store.locationHiddenCols = [];
+  const idx = store.locationHiddenCols.indexOf(colId);
+  if (idx >= 0) store.locationHiddenCols.splice(idx, 1);
+  else store.locationHiddenCols.push(colId);
+  saveStore();
+  renderLocations();
+}
+
+function renderLocationColumnsList() {
+  const el = document.getElementById('location-columns-list');
+  if (!_pendingLocationColumns.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">No columns yet — add one below</div>';
+    return;
+  }
+  el.innerHTML = _pendingLocationColumns.map((col, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;">
+      <input class="form-input" value="${col.label.replace(/"/g,'&quot;')}" oninput="_pendingLocationColumns[${i}].label=this.value" style="flex:1;font-size:12px;">
+      <select class="form-select" onchange="_pendingLocationColumns[${i}].type=this.value" style="width:100px;font-size:12px;">
+        <option value="stars" ${col.type==='stars'?'selected':''}>★ Stars</option>
+        <option value="text" ${col.type==='text'?'selected':''}>✏ Text</option>
+      </select>
+      <button class="btn btn-sm btn-ghost btn-danger" onclick="removeLocationColumnRow(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addLocationColumnRow() {
+  _pendingLocationColumns.push({ id: makeId(), label: 'New Column', type: 'text' });
+  renderLocationColumnsList();
+}
+
+function removeLocationColumnRow(i) {
+  _pendingLocationColumns.splice(i, 1);
+  renderLocationColumnsList();
+}
+
+function saveLocationColumns() {
+  store.locationColumns = _pendingLocationColumns.filter(c => c.label.trim());
+  saveStore();
+  closeModal('modal-location-columns');
+  renderLocations();
+}
+
+function setLocationRating(name, colId, value) {
+  if (!store.locationCustomData) store.locationCustomData = {};
+  const key = name.toLowerCase();
+  if (!store.locationCustomData[key]) store.locationCustomData[key] = {};
+  store.locationCustomData[key][colId] = value;
+  saveStore();
+  renderLocations();
+}
+
+function openLocationTextEdit(cell, name, colId) {
+  const current = (store.locationCustomData?.[name.toLowerCase()] || {})[colId] || '';
+  const textarea = document.createElement('textarea');
+  textarea.className = 'form-textarea';
+  textarea.value = current;
+  textarea.style.cssText = 'width:100%;min-height:60px;font-size:12px;resize:vertical;';
+  cell.innerHTML = '';
+  cell.appendChild(textarea);
+  textarea.focus();
+  const save = () => {
+    if (!store.locationCustomData) store.locationCustomData = {};
+    const key = name.toLowerCase();
+    if (!store.locationCustomData[key]) store.locationCustomData[key] = {};
+    store.locationCustomData[key][colId] = textarea.value.trim();
+    saveStore();
+    renderLocations();
+  };
+  textarea.addEventListener('blur', save);
+  textarea.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { cell.textContent = current; }
+  });
+}
+
+function setContactRating(name, colId, value) {
+  if (!store.contactCustomData) store.contactCustomData = {};
+  const key = name.toLowerCase();
+  if (!store.contactCustomData[key]) store.contactCustomData[key] = {};
+  store.contactCustomData[key][colId] = value;
+  saveStore();
+  renderContacts();
+}
+
+function openContactTextEdit(cell, name, colId) {
+  const current = (store.contactCustomData?.[name.toLowerCase()] || {})[colId] || '';
+  const textarea = document.createElement('textarea');
+  textarea.value = current;
+  textarea.style.cssText = 'width:160px;min-width:120px;font-size:11px;background:var(--surface);border:1px solid var(--accent);border-radius:3px;padding:4px 6px;color:var(--text);resize:none;height:56px;outline:none;';
+  textarea.onclick = e => e.stopPropagation();
+  const save = () => {
+    if (!store.contactCustomData) store.contactCustomData = {};
+    const key = name.toLowerCase();
+    if (!store.contactCustomData[key]) store.contactCustomData[key] = {};
+    store.contactCustomData[key][colId] = textarea.value.trim();
+    saveStore();
+    renderContacts();
+  };
+  textarea.onblur = save;
+  textarea.onkeydown = e => {
+    if (e.key === 'Escape') { e.stopPropagation(); renderContacts(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); textarea.blur(); }
+  };
+  cell.innerHTML = '';
+  cell.style.padding = '4px';
+  cell.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
 }
 
 function addNewContact() {
@@ -9531,6 +10175,8 @@ const MODAL_SAVE = {
   'modal-risk':         () => saveRiskRow(),
   'modal-add-cast':     () => saveAddCast(),
   'modal-customfield':  () => saveCSCustomField(),
+  'modal-contact-columns':       () => saveContactColumns(),
+  'modal-location-columns':      () => saveLocationColumns(),
   'modal-edit-contact':          () => saveEditedContact(),
   'modal-edit-location-global': () => saveLocationGlobal(),
   'modal-manage-file':          () => confirmManageFile(),
@@ -10280,6 +10926,29 @@ function confirmWeatherLocation(candidates, originalQuery) {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+(function initTooltip() {
+  const tip = document.createElement('div');
+  tip.id = 'global-tip';
+  document.body.appendChild(tip);
+  let current = null;
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tip]');
+    if (!el) return;
+    current = el;
+    tip.textContent = el.dataset.tip;
+    tip.style.display = 'block';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!current) return;
+    const x = e.clientX + 14, y = e.clientY - 44;
+    tip.style.left = Math.min(x, window.innerWidth - 316) + 'px';
+    tip.style.top = Math.max(y, 8) + 'px';
+  });
+  document.addEventListener('mouseout', e => {
+    if (current && !current.contains(e.relatedTarget)) { current = null; tip.style.display = 'none'; }
+  });
+})();
+
 loadStore();
 renderDashboard();
 
