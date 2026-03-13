@@ -3761,11 +3761,22 @@ function renderSettings() {
     const bytes = new Blob([dataStr]).size;
     const kb = (bytes / 1024).toFixed(2);
     const mb = (bytes / (1024 * 1024)).toFixed(2);
+    
+    // Count all contacts (global + per-project)
+    const globalContacts = store.contacts?.length || 0;
+    const projectContacts = (store.projects || []).reduce((sum, p) => sum + (p.contacts?.length || 0), 0);
+    const totalContacts = globalContacts + projectContacts;
+    
+    // Count all locations (global + per-project)
+    const globalLocations = store.locations?.length || 0;
+    const projectLocations = (store.projects || []).reduce((sum, p) => sum + (p.locations?.length || 0), 0);
+    const totalLocations = globalLocations + projectLocations;
+    
     statsEl.innerHTML = `
       Projects: ${store.projects?.length || 0}<br>
       Files: ${store.files?.length || 0}<br>
-      Contacts: ${store.contacts?.length || 0}<br>
-      Locations: ${store.locations?.length || 0}<br>
+      Contacts: ${totalContacts} (${globalContacts} global + ${projectContacts} in projects)<br>
+      Locations: ${totalLocations} (${globalLocations} global + ${projectLocations} in projects)<br>
       Team Members: ${store.teamMembers?.length || 0}<br>
       Approximate size: ${kb} KB (${mb} MB)
     `;
