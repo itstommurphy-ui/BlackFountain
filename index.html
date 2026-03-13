@@ -2781,6 +2781,13 @@
             <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>filmforge_v1</code></p>
             <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
           </div>
+          <div class="card" style="border:2px solid #ff4444;margin-top:20px">
+            <h3 style="margin-top:0;color:#ff4444">Danger Zone</h3>
+            <p style="color:var(--text2);margin-bottom:16px">Permanently delete all data from this browser. This action cannot be undone.</p>
+            <button class="btn" style="background:#ff4444;color:white;border:none" onclick="clearAllData()">
+              <span class="icon">🗑️</span> Clear All Data
+            </button>
+          </div>
         </div>
       </div>
 
@@ -3825,6 +3832,20 @@ function importStore(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+function clearAllData() {
+  const confirmText = 'DELETE ALL DATA';
+  const userInput = prompt('⚠️ WARNING: This will PERMANENTLY DELETE all your projects, contacts, locations, files, and settings. This action cannot be undone.\n\nTo confirm, type: ' + confirmText);
+  
+  if (userInput !== confirmText) {
+    if (userInput) showToast('Confirmation did not match - data NOT deleted', 'error');
+    return;
+  }
+  
+  localStorage.removeItem('filmforge_v1');
+  showToast('All data cleared - reloading...', 'success');
+  setTimeout(() => location.reload(), 1500);
 }
 
 function renderFiles() {
