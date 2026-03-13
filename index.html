@@ -3613,6 +3613,22 @@
   </div>
 </div>
 
+<!-- IMPORT DATA MODAL -->
+<div class="modal-overlay" id="modal-import-data" onclick="if(event.target === this) closeModal('modal-import-data')">
+  <div class="modal" style="max-width:450px;">
+    <div class="modal-header">
+      <h3>IMPORT DATA</h3>
+      <button class="modal-close" onclick="closeModal('modal-import-data')">✕</button>
+    </div>
+    <p style="margin:16px 0;color:var(--text2);font-size:14px;">⚠️ <strong>WARNING:</strong> This will replace ALL current data with the imported backup.</p>
+    <p style="margin:16px 0;color:var(--text2);font-size:14px;">Consider exporting your current data first if you want to keep it.</p>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-import-data')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmImportStore()">Import Anyway</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD CUSTOM FIELD MODAL -->
 <div class="modal-overlay" id="modal-customfield">
   <div class="modal">
@@ -3838,20 +3854,29 @@ function importStore(input) {
         return;
       }
       
-      if (!confirm('This will replace ALL current data with the imported backup. Are you sure you want to continue?')) {
-        return;
-      }
-      
-      store = { ...store, ...imported };
-      saveStore();
-      showToast('Data imported successfully - please refresh the page', 'success');
-      setTimeout(() => location.reload(), 1500);
+      // Store the parsed data and open confirmation modal
+      window._importedData = imported;
+      openModal('modal-import-data');
     } catch (err) {
       showToast('Error parsing backup file: ' + err.message, 'error');
     }
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+function confirmImportStore() {
+  const imported = window._importedData;
+  if (!imported) {
+    closeModal('modal-import-data');
+    return;
+  }
+  
+  store = { ...store, ...imported };
+  saveStore();
+  closeModal('modal-import-data');
+  showToast('Data imported successfully - please refresh the page', 'success');
+  setTimeout(() => location.reload(), 1500);
 }
 
 function clearAllData() {
