@@ -68,10 +68,42 @@
   [data-theme="light"] ::-webkit-scrollbar-corner { background: var(--surface2); }
   [data-theme="light"] #topbar { background: var(--topbar-bg); }
   
-  /* Font size scales */
-  [data-font-size="small"] { --font-scale: 0.85; }
-  [data-font-size="medium"] { --font-scale: 1; }
-  [data-font-size="large"] { --font-scale: 1.15; }
+  /* Font size scales — applied as zoom on <html> so all px values scale uniformly */
+  [data-font-size="bigger"]     { zoom: 1.1; }
+  [data-font-size="evenbigger"] { zoom: 1.2; }
+  [data-font-size="huge"]       { zoom: 1.35; }
+  [data-font-size="double"]     { zoom: 2; }
+
+  /*
+   * Modal + context-menu zoom correction.
+   *
+   * When html is zoomed, position:fixed overlays render at N× the viewport size
+   * (only the top-left 1/N² is visible), so the modal's flex-center lands off-screen.
+   *
+   * Fix: counter-zoom the overlay backdrop back to 1× so it covers exactly the
+   * real viewport, then re-zoom just the .modal box so its text/UI is still scaled.
+   * Halve max-height proportionally because the re-zoom doubles rendered height.
+   */
+  [data-font-size="bigger"]     .modal-overlay { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .modal-overlay { zoom: 0.8333; }
+  [data-font-size="huge"]       .modal-overlay { zoom: 0.7407; }
+  [data-font-size="double"]     .modal-overlay { zoom: 0.5;    }
+
+  [data-font-size="bigger"]     .modal-overlay .modal { zoom: 1.1;  max-height: 82vh; }
+  [data-font-size="evenbigger"] .modal-overlay .modal { zoom: 1.2;  max-height: 75vh; }
+  [data-font-size="huge"]       .modal-overlay .modal { zoom: 1.35; max-height: 67vh; }
+  [data-font-size="double"]     .modal-overlay .modal { zoom: 2;    max-height: 45vh; }
+
+  /* Context menu and tooltip are also position:fixed — counter-zoom them fully
+     (they use JS-computed pixel positions so they don't need re-zooming) */
+  [data-font-size="bigger"]     #ctx-menu,
+  [data-font-size="bigger"]     #global-tip { zoom: 0.9091; }
+  [data-font-size="evenbigger"] #ctx-menu,
+  [data-font-size="evenbigger"] #global-tip { zoom: 0.8333; }
+  [data-font-size="huge"]       #ctx-menu,
+  [data-font-size="huge"]       #global-tip { zoom: 0.7407; }
+  [data-font-size="double"]     #ctx-menu,
+  [data-font-size="double"]     #global-tip { zoom: 0.5;    }
   body { font-size: 13.5px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100vw; }
@@ -269,18 +301,20 @@
     background: var(--topbar-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border2);
-    padding: 0 24px;
-    height: 50px;
+    padding: 6px 24px;
+    min-height: 50px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
     position: sticky;
     top: 0;
     z-index: 10;
   }
   .topbar-title { font-size: 12.5px; font-weight: 600; color: var(--text); letter-spacing: 0.3px; }
   .topbar-breadcrumb { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; letter-spacing: 0.5px; }
-  .topbar-right { display: flex; gap: 7px; align-items: center; }
+  .topbar-right { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 
   /* ── BUTTONS ── */
   .btn {
@@ -3122,6 +3156,9 @@
               <button class="btn" id="font-huge-btn" onclick="setFontSize('huge')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
                 <span style="font-size:17px">Huge</span>
               </button>
+              <button class="btn" id="font-double-btn" onclick="setFontSize('double')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
+                <span style="font-size:19px">2× <span style="font-size:10px;opacity:0.6">WCAG</span></span>
+              </button>
             </div>
           </div>
           <div class="card" style="margin-bottom:20px">
@@ -4397,55 +4434,30 @@ function setTheme(theme) {
 }
 
 function setFontSize(size) {
-  // Font size options disabled - keeping buttons for UI only
-  // Site remains at default size
-  return;
-  // Original code preserved below for reference
-  // localStorage.setItem('filmforge_font_size', size);
-  // document.documentElement.setAttribute('data-font-size', size);
-  // updateFontSizeButtons();
-  // applyFontSizeToAllElements(size);
-  // showToast(`Font size set to ${size}`, 'success');
-}
-
-function applyFontSizeToAllElements(size) {
-  const scale = size === 'classic' ? 1 : size === 'bigger' ? 1.2 : size === 'evenbigger' ? 1.3 : size === 'huge' ? 1.5 : 1;
-  const elements = document.querySelectorAll('*');
-  elements.forEach(el => {
-    const computedStyle = window.getComputedStyle(el);
-    const fontSize = computedStyle.fontSize;
-    if (fontSize && fontSize !== '0px' && fontSize !== '') {
-      const numSize = parseFloat(fontSize);
-      if (numSize > 0 && numSize < 100) { // Reasonable bounds
-        el.style.fontSize = (numSize * scale) + 'px';
-      }
-    }
-  });
-  // Also update CSS variable for any rem-based elements
-  document.documentElement.style.setProperty('--font-scale', scale.toString());
+  localStorage.setItem('filmforge_font_size', size);
+  const html = document.documentElement;
+  // Remove any previous font-size attribute then set new one
+  html.removeAttribute('data-font-size');
+  if (size !== 'classic') html.setAttribute('data-font-size', size);
+  updateFontSizeButtons();
 }
 
 function updateFontSizeButtons() {
   const currentSize = localStorage.getItem('filmforge_font_size') || 'classic';
-  const sizes = ['classic', 'bigger', 'evenbigger', 'huge'];
-  sizes.forEach(size => {
+  ['classic', 'bigger', 'evenbigger', 'huge', 'double'].forEach(size => {
     const btn = document.getElementById(`font-${size}-btn`);
-    if (btn) {
-      btn.style.cssText = 'flex:1;padding:10px 16px' + (currentSize === size ? ';border-color:var(--accent) !important;background:var(--accent-dim) !important' : ';border-color:var(--border) !important');
-    }
+    if (!btn) return;
+    const active = currentSize === size;
+    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    btn.style.background  = active ? 'var(--accent-dim)' : 'var(--surface2)';
   });
 }
 
 function loadTheme() {
   const theme = localStorage.getItem('filmforge_theme') || 'dark';
-  if (theme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }
-  // Font size loading disabled - site remains at default size
-  // const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
-  // document.documentElement.setAttribute('data-font-size', fontSize);
-  // Apply font size to all elements on load
-  // setTimeout(() => applyFontSizeToAllElements(fontSize), 100);
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
+  if (fontSize !== 'classic') document.documentElement.setAttribute('data-font-size', fontSize);
 }
 
 function exportStore() {
