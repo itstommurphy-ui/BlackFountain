@@ -4195,7 +4195,23 @@ function setFontSize(size) {
   localStorage.setItem('filmforge_font_size', size);
   document.documentElement.setAttribute('data-font-size', size);
   updateFontSizeButtons();
+  applyFontSizeToAllElements(size);
   showToast(`Font size set to ${size}`, 'success');
+}
+
+function applyFontSizeToAllElements(size) {
+  const scale = size === 'small' ? 0.85 : size === 'large' ? 1.15 : 1;
+  const elements = document.querySelectorAll('*');
+  elements.forEach(el => {
+    const style = window.getComputedStyle(el);
+    const fontSize = style.getPropertyValue('font-size');
+    if (fontSize && fontSize !== '0px') {
+      const numSize = parseFloat(fontSize);
+      if (numSize > 0) {
+        el.style.fontSize = (numSize * scale) + 'px';
+      }
+    }
+  });
 }
 
 function updateFontSizeButtons() {
@@ -4216,6 +4232,8 @@ function loadTheme() {
   }
   const fontSize = localStorage.getItem('filmforge_font_size') || 'medium';
   document.documentElement.setAttribute('data-font-size', fontSize);
+  // Apply font size to all elements on load
+  setTimeout(() => applyFontSizeToAllElements(fontSize), 100);
 }
 
 function exportStore() {
