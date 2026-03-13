@@ -51,7 +51,7 @@
     --accent3: #a84860;
     --text: #1a1a20;
     --text2: #484850;
-    --text3: #808088;
+    --text3: #6a6a78;
     --green: #248a50;
     --orange: #b87030;
     --red: #a83838;
@@ -4098,7 +4098,7 @@ function getFileCategory(filename) {
 
 function getFileIcon(file) {
   if (file.data && file.data.startsWith('data:image')) {
-    return `<img src="${file.data}" alt="${file.name}">`;
+    return `<img src="${file.data}" alt="${file.altText || file.name}">`;
   }
   const ext = (file.name || '').split('.').pop().toLowerCase();
   if (ext === 'pdf') return '📄';
@@ -4195,11 +4195,15 @@ function setTheme(theme) {
 }
 
 function setFontSize(size) {
-  localStorage.setItem('filmforge_font_size', size);
-  document.documentElement.setAttribute('data-font-size', size);
-  updateFontSizeButtons();
-  applyFontSizeToAllElements(size);
-  showToast(`Font size set to ${size}`, 'success');
+  // Font size options disabled - keeping buttons for UI only
+  // Site remains at default size
+  return;
+  // Original code preserved below for reference
+  // localStorage.setItem('filmforge_font_size', size);
+  // document.documentElement.setAttribute('data-font-size', size);
+  // updateFontSizeButtons();
+  // applyFontSizeToAllElements(size);
+  // showToast(`Font size set to ${size}`, 'success');
 }
 
 function applyFontSizeToAllElements(size) {
@@ -4235,10 +4239,11 @@ function loadTheme() {
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   }
-  const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
-  document.documentElement.setAttribute('data-font-size', fontSize);
+  // Font size loading disabled - site remains at default size
+  // const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
+  // document.documentElement.setAttribute('data-font-size', fontSize);
   // Apply font size to all elements on load
-  setTimeout(() => applyFontSizeToAllElements(fontSize), 100);
+  // setTimeout(() => applyFontSizeToAllElements(fontSize), 100);
 }
 
 function exportStore() {
@@ -5047,6 +5052,10 @@ function handleFileUpload(fileList, presetProjectId) {
       <div>
         <label class="form-label">Description / Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
         <input class="form-input" data-idx="${idx}" data-field="description" placeholder="e.g. Final draft, Location scout photos…" style="font-size:12px;">
+      </div>
+      <div data-alt-section-${idx} style="display:${isImage?'block':'none'};margin-top:10px;">
+        <label class="form-label">Alt Text <span style="color:var(--text3);font-weight:400">(for accessibility)</span></label>
+        <input class="form-input" data-idx="${idx}" data-field="altText" placeholder="Describe the image for screen readers" style="font-size:12px;">
       </div>`;
     container.appendChild(row);
 
@@ -5182,6 +5191,7 @@ function confirmFileUpload() {
     if (!pending.dataUrl) return;
     const nameEl = container.querySelector(`[data-idx="${idx}"][data-field="name"]`);
     const descEl = container.querySelector(`[data-idx="${idx}"][data-field="description"]`);
+    const altTextEl = container.querySelector(`[data-idx="${idx}"][data-field="altText"]`);
     const ext = pending.file.name.split('.').pop().toLowerCase();
     const displayName = (nameEl?.value.trim() || pending.file.name) + (nameEl?.value.includes('.') ? '' : '.' + ext);
 
@@ -5241,6 +5251,7 @@ function confirmFileUpload() {
       people,
       location,
       description: descEl?.value.trim() || '',
+      altText: altTextEl?.value.trim() || '',
       type: pending.file.type,
       size: pending.file.size,
       data: pending.dataUrl,
@@ -5273,7 +5284,7 @@ function viewFile(id) {
   const win = window.open();
   const ext = file.name.split('.').pop().toLowerCase();
   if (file.data.startsWith('data:image')) {
-    win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${file.data}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
+    win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${file.data}" alt="${file.altText || file.name}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
   } else if (ext === 'pdf') {
     win.document.write(`<!DOCTYPE html><html><head><title>${file.name}</title><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;overflow:hidden;}iframe{width:100%;height:100%;border:none;}</style></head><body><iframe src="${file.data}"></iframe></body></html>`);
   } else {
@@ -6483,7 +6494,7 @@ function openCustomSectionFilePreview(csId, fileId) {
   const isText = f.type.includes('text') || f.name.endsWith('.txt') || f.name.endsWith('.fountain');
   let previewHtml = '';
   if (isPdf) previewHtml = `<embed src="${f.dataUrl}" type="application/pdf" style="width:min(820px,90vw);height:80vh;border-radius:8px;border:none">`;
-  else if (isImg) previewHtml = `<img src="${f.dataUrl}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
+  else if (isImg) previewHtml = `<img src="${f.dataUrl}" alt="${f.altText || f.name}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
   else if (isText) {
     let text = ''; try { text = decodeURIComponent(escape(atob(f.dataUrl.split(',')[1]))); } catch(e) { try { text = atob(f.dataUrl.split(',')[1]); } catch(e2) { text='(Cannot decode)'; } }
     previewHtml = `<pre style="background:var(--surface);color:var(--text);padding:20px;border-radius:8px;overflow:auto;width:min(820px,90vw);max-height:80vh;font-size:12px;line-height:1.7;white-space:pre-wrap">${text.replace(/</g,'&lt;')}</pre>`;
@@ -6805,7 +6816,7 @@ function openScriptPreview(id) {
   if (isPdf) {
     previewHtml = `<embed src="${s.dataUrl}" type="application/pdf" style="width:min(820px,90vw);height:80vh;border-radius:8px;border:none">`;
   } else if (isImg) {
-    previewHtml = `<img src="${s.dataUrl}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
+    previewHtml = `<img src="${s.dataUrl}" alt="${s.altText || s.name}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
   } else if (isText) {
     let text = '';
     try {
@@ -10851,7 +10862,7 @@ function getFilesForLocation(locationName) {
 
 function expandThumbHTML(f) {
   const preview = f.data && f.data.startsWith('data:image')
-    ? `<img src="${f.data}">`
+    ? `<img src="${f.data}" alt="${f.altText || f.name}">`
     : `<span>${FILE_CATEGORIES[fileCategories(f)[0]]?.icon || '📁'}</span>`;
   return `<div class="expand-photo-thumb" title="${f.name}" onclick="viewFile('${f.id}')">
     ${preview}
