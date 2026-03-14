@@ -2203,8 +2203,150 @@
   .leading-16 { line-height: 1.6; }
   .leading-17 { line-height: 1.7; }
 
+  /* ── SCRIPT EDITOR ── */
+  .script-editor-overlay {
+    position: fixed; inset: 0; background: #0c0c12; z-index: 9999;
+    display: flex; flex-direction: column;
+  }
+  [data-font-size="bigger"]     .script-editor-overlay { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .script-editor-overlay { zoom: 0.8333; }
+  [data-font-size="huge"]       .script-editor-overlay { zoom: 0.7407; }
+  [data-font-size="double"]     .script-editor-overlay { zoom: 0.5;    }
+  .script-editor-topbar {
+    display: flex; align-items: center; gap: 10px; padding: 8px 16px;
+    background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .script-editor-title { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+  .script-editor-sub   { font-size: 11px; color: var(--text3); white-space: nowrap; }
+  .script-editor-badge {
+    font-size: 10px; color: var(--text3); background: var(--surface3);
+    padding: 2px 7px; border-radius: 3px; letter-spacing: .5px; white-space: nowrap;
+  }
+  .script-editor-status { font-size: 11px; white-space: nowrap; min-width: 80px; text-align: right; }
+  .script-editor-body { flex: 1; overflow: hidden; display: flex; }
+  .script-editor-nav { width: 190px; flex-shrink: 0; overflow-y: auto; background: #080810; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .script-editor-nav-header { padding: 8px 12px 6px; font-size: 10px; color: var(--text3); letter-spacing: .5px; text-transform: uppercase; border-bottom: 1px solid var(--border2); flex-shrink: 0; }
+  .script-editor-main { flex: 1; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 40px 24px; background: #13131d; }
+  .script-editor-page {
+    background: #f7f6f0; border-radius: 1px; position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 16px 56px rgba(0,0,0,0.55);
+    width: 100%; max-width: 800px; min-height: 1056px; flex-shrink: 0;
+    padding: 72px 80px 96px 108px; box-sizing: border-box;
+  }
+  .se-page-break { position: absolute; left: 0; right: 0; height: 32px; background: #13131d; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .se-ta-wrap { position: relative; width: 100%; }
+  .se-render-layer {
+    position: absolute; top: 0; left: 0; right: 0; pointer-events: none;
+    font-family: 'Courier New', Courier, monospace; font-size: 13.5px; line-height: 1.9;
+    color: #1a1820; white-space: pre-wrap; word-break: break-word;
+    padding: 0; box-sizing: border-box; z-index: 1;
+  }
+  .se-scene-line { font-weight: 700; }
+  .se-mk { opacity: 0.3; }
+  .se-nav-item { display: flex; align-items: flex-start; gap: 5px; padding: 5px 10px 5px 12px; cursor: pointer; font-size: 11px; color: var(--text2); line-height: 1.35; }
+  .se-nav-item:hover { background: var(--surface2); color: var(--text); }
+  .se-nav-item.se-nav-active { background: rgba(56,168,212,0.12); color: var(--accent2); }
+  .se-nav-num { font-size: 9px; color: var(--text3); flex-shrink: 0; min-width: 20px; padding-top: 2px; }
+  .se-nav-empty { padding: 12px; font-size: 11px; color: var(--text3); font-style: italic; }
+  .script-editor-ta {
+    width: 100%; min-height: 840px;
+    resize: none; outline: none; border: none; overflow-y: hidden;
+    background: transparent; color: transparent;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13.5px; line-height: 1.9; padding: 0;
+    box-sizing: border-box; caret-color: #1a1820;
+    tab-size: 4;
+  }
+  .script-editor-ta:focus { outline: none; }
+  .script-editor-ta::selection { background: rgba(56,168,212,0.3); }
+  .se-tod-drop { position: fixed; z-index: 10001; background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; min-width: 160px; }
+  .se-tod-item { padding: 6px 14px; cursor: pointer; font-size: 12px; font-family: 'Courier New', monospace; color: var(--text2); white-space: nowrap; }
+  .se-tod-item:hover, .se-tod-item.active { background: var(--accent2); color: #0a0a10; }
+  .script-editor-footer {
+    padding: 4px 16px; flex-shrink: 0;
+    background: var(--surface2); border-top: 1px solid var(--border2);
+    font-size: 11px; color: var(--text3);
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+
   /* Font size scaling - must be last to override */
   body { font-size: calc(13.5px * var(--font-scale, 1)) !important; }
+
+  /* ── PRODUCTION PLAN ── */
+  .plan-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .plan-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden;
+  }
+  .plan-section-header {
+    display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+    background: var(--surface2); cursor: pointer; user-select: none;
+  }
+  .plan-section-header:hover { background: var(--surface3); }
+  .plan-color-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 2px 8px 2px 3px;
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color .15s, background .15s;
+    font-size: 10px; color: var(--text3); letter-spacing: .3px; line-height: 1;
+    user-select: none;
+  }
+  .plan-color-btn:hover { border-color: var(--border); background: var(--surface4); color: var(--text2); }
+  .plan-color-dot {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;
+    padding: 0; cursor: pointer; background: transparent; flex-shrink: 0;
+    transition: border-color .15s, transform .15s;
+  }
+  .plan-color-dot:hover { border-color: rgba(255,255,255,0.8); transform: scale(1.15); }
+  .plan-color-dot::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; overflow: hidden; }
+  .plan-color-dot::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .plan-section-title-input {
+    background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--font-display);
+    font-size: 13px; letter-spacing: 1.5px; flex: 1; cursor: text; min-width: 0;
+  }
+  .plan-section-title-input:focus { background: var(--surface); border-radius: 3px; padding: 1px 5px; }
+  .plan-section-meta { color: var(--text3); font-size: 11px; white-space: nowrap; }
+  .plan-section-body { padding: 6px 16px 14px; }
+  .plan-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0; border-bottom: 1px solid var(--border2);
+  }
+  .plan-item:last-of-type { border-bottom: none; }
+  .plan-item-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 2px solid var(--border2); background: var(--surface3);
+    flex-shrink: 0; cursor: pointer;
+    transition: background .15s, border-color .15s;
+    background-repeat: no-repeat; background-position: center; background-size: 11px;
+  }
+  .plan-item-check.checked {
+    background-color: var(--accent); border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%230a0a10' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  }
+  .plan-item-text {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 13px; font-family: var(--font-body);
+    transition: color .15s; min-width: 0;
+  }
+  .plan-item-text.done { color: var(--text3); text-decoration: line-through; }
+  .plan-item-text:focus-visible { background: var(--surface2); border-radius: 3px; padding: 1px 5px; outline: none; }
+  .plan-item-del {
+    background: transparent; border: none; color: var(--text3);
+    cursor: pointer; font-size: 12px; opacity: 0; padding: 2px 6px;
+    transition: opacity .1s, color .1s; flex-shrink: 0;
+  }
+  .plan-item:hover .plan-item-del { opacity: 1; }
+  .plan-item-del:hover { color: var(--red); }
+  .plan-add-row { display: flex; gap: 8px; align-items: center; padding-top: 8px; margin-top: 2px; }
+  .plan-new-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 5px 10px;
+    color: var(--text); font-size: 12px; font-family: var(--font-body); outline: none;
+  }
+  .plan-new-input:focus-visible { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(56,168,212,0.4); outline: none; }
 </style>
 </head>
 <body>
@@ -2353,6 +2495,7 @@
           <div class="section-tab" onclick="showSection('releases')">Release Forms</div>
           <div class="section-tab" onclick="showSection('script')">Script</div>
           <div class="section-tab" onclick="showSection('brief')">Project Brief</div>
+          <div class="section-tab" onclick="showSection('plan')">Production Plan</div>
         </div>
 
         <!-- SECTION: OVERVIEW -->
@@ -2652,12 +2795,15 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h3 class="section-heading" style="margin:0">SCRIPT &amp; DOCUMENTS</h3>
-            <label class="btn btn-sm btn-primary" style="cursor:pointer;">
-              + Upload Document
-              <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.fdx,.fountain,.rtf" style="display:none" onchange="handleScriptUpload(this.files)">
-            </label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-sm" onclick="newScriptEditor()" title="Write a new script directly in the browser">✏ New Script</button>
+              <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+                + Upload Document
+                <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.fdx,.fountain,.rtf" style="display:none" onchange="handleScriptUpload(this.files)">
+              </label>
+            </div>
           </div>
-          <p style="font-size:11px;color:var(--text3);margin:0 0 20px">Accepted formats: PDF · DOC · DOCX · TXT · FDX · Fountain · RTF</p>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 20px">Accepted formats: PDF · DOC · DOCX · TXT · FDX · Fountain · RTF &nbsp;·&nbsp; TXT &amp; Fountain scripts can be edited directly in the browser</p>
           <div id="script-files-list"></div>
         </div>
 
@@ -2666,6 +2812,12 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <h3 class="section-heading" style="margin-bottom:20px">PROJECT BRIEF</h3>
           <div id="brief-content"></div>
+        </div>
+
+        <!-- SECTION: PRODUCTION PLAN -->
+        <div id="section-plan" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div id="plan-content"></div>
         </div>
 
         <!-- SECTION: CUSTOM (shared container for user-created sections) -->
@@ -5663,7 +5815,14 @@ function saveStore() {
     if (!p.sectionActivity) p.sectionActivity = {};
     p.sectionActivity[_activeSection] = Date.now();
   }
-  try { localStorage.setItem('filmforge_v1', JSON.stringify(store)); } catch(e) {}
+  try { 
+    localStorage.setItem('filmforge_v1', JSON.stringify(store)); 
+    // Backup with timestamp for recovery
+    localStorage.setItem('filmforge_backup_' + Date.now(), JSON.stringify(store));
+    // Keep only last 5 backups
+    const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('filmforge_backup_'));
+    backupKeys.sort().slice(0, -5).forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
   // flash save indicator
   const ind = document.getElementById('save-indicator');
   if (ind) {
@@ -5676,6 +5835,40 @@ function saveStore() {
 function manualSave() {
   saveStore();
   showToast('Project saved ✓', 'success');
+}
+
+// ══════════════════════════════════════════
+// AUTOSAVE SYSTEM
+// ══════════════════════════════════════════
+let _autoSaveTimer = null;
+let _lastAutoSave = 0;
+
+function initAutoSave() {
+  // Auto-save every 30 seconds
+  _autoSaveTimer = setInterval(() => {
+    const now = Date.now();
+    if (now - _lastAutoSave > 30000) { // 30 seconds
+      saveStore();
+      _lastAutoSave = now;
+    }
+  }, 10000); // Check every 10 seconds
+  
+  // Save on page unload
+  window.addEventListener('beforeunload', () => {
+    saveStore();
+  });
+  
+  // Save when tab becomes hidden (user switches tabs)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      saveStore();
+    }
+  });
+}
+
+function triggerAutoSave() {
+  _lastAutoSave = Date.now();
+  saveStore();
 }
 
 function loadStore() {
@@ -6136,6 +6329,261 @@ function initTruncationTooltips() {
   });
 }
 
+// ══════════════════════════════════════════
+// PRODUCTION PLAN
+// ══════════════════════════════════════════
+function getDefaultProductionPlan() {
+  const tpl = [
+    { title: 'DEVELOPMENT', color: '#5bc0eb', items: [
+      'Write / acquire script', 'Secure rights or option agreement',
+      'Develop concept & pitch', 'Prepare pitch deck',
+      'Estimate production budget', 'Identify key creatives', 'Attach director'
+    ]},
+    { title: 'FINANCING & LEGAL', color: '#e6bc3c', items: [
+      'Form production company / LLC', 'Open production bank account',
+      'Financing plan confirmed', 'Investment agreements signed',
+      'Production legal counsel retained', 'Chain of title cleared'
+    ]},
+    { title: 'PRE-PRODUCTION', color: '#60d090', items: [
+      'Full budget locked', 'Principal cast confirmed',
+      'Director of Photography hired', 'Production Designer hired',
+      'Key crew filled (1st AD, Sound, Editor)',
+      'Location scouting complete', 'Location permits obtained',
+      'Shooting schedule locked', 'Storyboards & shot lists completed',
+      'Equipment list finalised', 'Costume & wardrobe design approved',
+      'Production design approved', 'Composer & music plan confirmed',
+      'Insurance obtained', 'Safety & risk assessments completed',
+      'Call sheet system in place'
+    ]},
+    { title: 'PRODUCTION', color: '#e06c00', items: [
+      'First day of principal photography', 'Daily progress reports issued',
+      'All principal scenes completed', 'Pick-up shots completed', 'Production wrap'
+    ]},
+    { title: 'POST-PRODUCTION', color: '#b88af0', items: [
+      'Footage logged and synced', 'Rough cut assembled',
+      "Director's cut delivered", 'Picture lock achieved',
+      'Visual effects completed', 'Colour grade completed',
+      'Sound design completed', 'Music score recorded & mixed',
+      'Final mix completed', 'Subtitles & accessibility captions',
+      'Legal clearances obtained', 'E&O insurance acquired',
+      'DCP / digital master created'
+    ]},
+    { title: 'MARKETING & RELEASE', color: '#e08095', items: [
+      'Trailer cut', 'Poster & key art finalised', 'Press kit assembled',
+      'Social media channels set up', 'Festival strategy planned',
+      'Festival submissions sent', 'Distributor / sales agent approached',
+      'Distribution deal signed', 'Press screenings held',
+      'Social media campaign launched', 'Release day', 'Post-release review'
+    ]}
+  ];
+  return { sections: tpl.map(s => ({
+    id: makeId(), title: s.title, color: s.color, collapsed: false,
+    items: s.items.map(text => ({ id: makeId(), text, checked: false }))
+  }))};
+}
+
+function _planEsc(v) { return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function _planItemHtml(sectionId, item) {
+  const esc = _planEsc;
+  return `<div class="plan-item" id="plan-item-${item.id}">
+    <div class="plan-item-check${item.checked?' checked':''}" onclick="togglePlanItem('${sectionId}','${item.id}')"></div>
+    <input class="plan-item-text${item.checked?' done':''}" value="${esc(item.text)}"
+      onblur="editPlanItem('${sectionId}','${item.id}',this.value)"
+      onkeydown="if(event.key==='Enter')this.blur()">
+    <button class="plan-item-del" onclick="deletePlanItem('${sectionId}','${item.id}')" title="Delete item">✕</button>
+  </div>`;
+}
+
+function _planSectionHtml(section) {
+  const done = section.items.filter(i=>i.checked).length;
+  const total = section.items.length;
+  const esc = _planEsc;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const body = section.collapsed ? '' : `
+    <div class="plan-section-body">
+      ${section.items.map(item => _planItemHtml(section.id, item)).join('')}
+      <div class="plan-add-row">
+        <input class="plan-new-input" placeholder="Add item…"
+          onkeydown="if(event.key==='Enter'&&this.value.trim()){addPlanItem('${section.id}',this.value.trim());this.value=''}">
+        <button class="btn btn-sm" onclick="const i=this.previousSibling;if(i.value.trim()){addPlanItem('${section.id}',i.value.trim());i.value=''}">+ Add</button>
+      </div>
+    </div>`;
+  return `<div class="plan-section" id="plan-sec-${section.id}">
+    <div class="plan-section-header" onclick="togglePlanSection('${section.id}')">
+      <label class="plan-color-btn" onclick="event.stopPropagation()" title="Change section colour">
+        <input type="color" class="plan-color-dot" value="${section.color}"
+          oninput="editPlanSectionColor('${section.id}',this.value)">
+        <span>colour</span>
+      </label>
+      <input class="plan-section-title-input" value="${esc(section.title)}"
+        onclick="event.stopPropagation()"
+        onblur="editPlanSectionTitle('${section.id}',this.value)"
+        onkeydown="if(event.key==='Enter')this.blur()">
+      <span class="plan-section-meta">${done}/${total}${total ? ' · ' + pct + '%' : ''}</span>
+      <button class="btn btn-sm btn-ghost" style="padding:2px 7px;font-size:11px;margin-left:4px"
+        onclick="event.stopPropagation();deletePlanSection('${section.id}')" title="Remove section">✕</button>
+      <span style="color:var(--text3);font-size:11px;pointer-events:none">${section.collapsed?'▸':'▾'}</span>
+    </div>${body}
+  </div>`;
+}
+
+function renderProductionPlan(p) {
+  if (!p.productionPlan || !p.productionPlan.sections) p.productionPlan = getDefaultProductionPlan();
+  const plan = p.productionPlan;
+  const total = plan.sections.reduce((a,s)=>a+s.items.length, 0);
+  const done  = plan.sections.reduce((a,s)=>a+s.items.filter(i=>i.checked).length, 0);
+  const pct   = total ? Math.round(done/total*100) : 0;
+  const hasTpl = !!store.productionPlanTemplate;
+  document.getElementById('plan-content').innerHTML = `
+    <div class="plan-toolbar">
+      <h3 class="section-heading">PRODUCTION PLAN</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="saveProductionPlanTemplate()">💾 Save as Template</button>
+        <button class="btn btn-sm" onclick="loadProductionPlanTemplate()" ${hasTpl?'':'disabled title="No saved template yet"'}>📥 Load Template</button>
+        <button class="btn btn-sm btn-ghost" onclick="resetProductionPlan()">↺ Reset Default</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <div style="flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+        <div id="plan-progress-fill" style="height:100%;background:var(--accent);border-radius:4px;transition:width .3s;width:${pct}%"></div>
+      </div>
+      <div id="plan-progress-label" style="font-size:12px;color:var(--text3);white-space:nowrap">${done}/${total} complete (${pct}%)</div>
+    </div>
+    <div id="plan-sections-wrap">${plan.sections.map(s=>_planSectionHtml(s)).join('')}</div>
+    <button class="btn btn-sm" style="margin-top:10px" onclick="addPlanSection()">+ Add Section</button>`;
+}
+
+function _getPlanSection(p, sid) {
+  return p.productionPlan && p.productionPlan.sections.find(s=>s.id===sid);
+}
+function _updatePlanProgress(p) {
+  const plan = p.productionPlan;
+  const total = plan.sections.reduce((a,s)=>a+s.items.length, 0);
+  const done  = plan.sections.reduce((a,s)=>a+s.items.filter(i=>i.checked).length, 0);
+  const pct   = total ? Math.round(done/total*100) : 0;
+  const fill  = document.getElementById('plan-progress-fill');
+  const label = document.getElementById('plan-progress-label');
+  if (fill)  fill.style.width = pct + '%';
+  if (label) label.textContent = `${done}/${total} complete (${pct}%)`;
+  plan.sections.forEach(s => {
+    const meta = document.querySelector(`#plan-sec-${s.id} .plan-section-meta`);
+    if (!meta) return;
+    const d = s.items.filter(i=>i.checked).length, t = s.items.length;
+    meta.textContent = `${d}/${t}${t ? ' · ' + Math.round(d/t*100) + '%' : ''}`;
+  });
+}
+
+function togglePlanItem(sectionId, itemId) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  const item = s.items.find(i=>i.id===itemId); if (!item) return;
+  item.checked = !item.checked; saveStore();
+  const el = document.getElementById('plan-item-' + itemId);
+  if (el) {
+    el.querySelector('.plan-item-check').classList.toggle('checked', item.checked);
+    el.querySelector('.plan-item-text').classList.toggle('done', item.checked);
+  }
+  _updatePlanProgress(p);
+}
+function editPlanItem(sectionId, itemId, val) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  const item = s.items.find(i=>i.id===itemId); if (!item) return;
+  item.text = val; saveStore();
+}
+function deletePlanItem(sectionId, itemId) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  s.items = s.items.filter(i=>i.id!==itemId); saveStore();
+  const el = document.getElementById('plan-item-' + itemId);
+  if (el) el.remove();
+  _updatePlanProgress(p);
+}
+function addPlanItem(sectionId, text) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  const item = { id: makeId(), text, checked: false };
+  s.items.push(item); saveStore();
+  const addRow = document.querySelector(`#plan-sec-${sectionId} .plan-add-row`);
+  if (addRow) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _planItemHtml(sectionId, item);
+    addRow.parentNode.insertBefore(tmp.firstElementChild, addRow);
+  }
+  _updatePlanProgress(p);
+}
+function togglePlanSection(sectionId) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  s.collapsed = !s.collapsed; saveStore();
+  const el = document.getElementById('plan-sec-' + sectionId);
+  if (el) { const tmp = document.createElement('div'); tmp.innerHTML = _planSectionHtml(s); el.replaceWith(tmp.firstElementChild); }
+}
+function editPlanSectionTitle(sectionId, val) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  s.title = val; saveStore();
+}
+function editPlanSectionColor(sectionId, val) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId); if (!s) return;
+  s.color = val; saveStore();
+}
+function deletePlanSection(sectionId) {
+  const p = currentProject(); if (!p) return;
+  const s = _getPlanSection(p, sectionId);
+  showConfirmDialog(`Remove section "${s ? s.title : ''}"? All items in it will be lost.`, 'Remove Section', () => {
+    p.productionPlan.sections = p.productionPlan.sections.filter(s=>s.id!==sectionId);
+    saveStore();
+    const el = document.getElementById('plan-sec-' + sectionId);
+    if (el) el.remove();
+    _updatePlanProgress(p);
+  });
+}
+function addPlanSection() {
+  const p = currentProject(); if (!p) return;
+  const COLORS = ['#5bc0eb','#e6bc3c','#60d090','#e06c00','#b88af0','#e08095'];
+  const section = {
+    id: makeId(), collapsed: false, color: COLORS[p.productionPlan.sections.length % COLORS.length],
+    title: 'NEW SECTION', items: []
+  };
+  p.productionPlan.sections.push(section); saveStore();
+  const wrap = document.getElementById('plan-sections-wrap');
+  if (wrap) { const tmp = document.createElement('div'); tmp.innerHTML = _planSectionHtml(section); wrap.appendChild(tmp.firstElementChild); }
+  setTimeout(() => { const inp = document.querySelector(`#plan-sec-${section.id} .plan-section-title-input`); if (inp) { inp.select(); inp.focus(); } }, 50);
+}
+function saveProductionPlanTemplate() {
+  const p = currentProject(); if (!p || !p.productionPlan) return;
+  store.productionPlanTemplate = JSON.parse(JSON.stringify(p.productionPlan));
+  saveStore();
+  showToast('Plan saved as template — load it in any future project', 'success');
+  // Re-enable Load Template button if it was disabled
+  const btn = document.querySelector('#plan-content .btn[onclick*="loadProductionPlanTemplate"]');
+  if (btn) btn.removeAttribute('disabled');
+}
+function loadProductionPlanTemplate() {
+  const p = currentProject(); if (!p) return;
+  if (!store.productionPlanTemplate) { showToast('No saved template yet — save one first', 'info'); return; }
+  showConfirmDialog('Load your saved template? The current plan will be replaced.', 'Load Template', () => {
+    const tpl = JSON.parse(JSON.stringify(store.productionPlanTemplate));
+    tpl.sections.forEach(s => {
+      s.id = makeId();
+      s.items.forEach(i => { i.id = makeId(); i.checked = false; });
+    });
+    p.productionPlan = tpl; saveStore();
+    renderProductionPlan(p);
+    showToast('Template loaded', 'success');
+  }, { title: 'Load Template', btnClass: 'btn-primary' });
+}
+function resetProductionPlan() {
+  const p = currentProject(); if (!p) return;
+  showConfirmDialog('Reset to the built-in default plan? The current plan will be replaced.', 'Reset', () => {
+    p.productionPlan = getDefaultProductionPlan(); saveStore();
+    renderProductionPlan(p);
+    showToast('Reset to default', 'success');
+  }, { title: 'Reset to Default' });
+}
+
 function renderSection(name) {
   const p = currentProject();
   if (!p) return;
@@ -6149,6 +6597,7 @@ function renderSection(name) {
   else if (name === 'releases') { if(!p.releases) p.releases=[]; renderReleases(p); }
   else if (name === 'script') { if(!p.scripts) p.scripts=[]; renderScript(p); }
   else if (name === 'brief') { if(!p.brief) p.brief={template:null,fields:{}}; renderBrief(p); }
+  else if (name === 'plan') { if(!p.productionPlan) p.productionPlan = getDefaultProductionPlan(); renderProductionPlan(p); }
   else if (name.startsWith('custom_')) renderCustomSection(name);
   else if (name === 'breakdown') renderBreakdown(p);
   else if (name === 'callsheet') renderCallsheet(p);
@@ -6179,6 +6628,7 @@ function getAllOverviewSections(p) {
     {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
     {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
     {name:'Unit List',       icon:'👥',  count: p.unit.length + ' crew',                                              tab:'unit'},
+    {name:'Production Plan', icon:'✅',  count: (() => { if(!p.productionPlan) return '0 tasks'; const t=p.productionPlan.sections.reduce((a,s)=>a+s.items.length,0), d=p.productionPlan.sections.reduce((a,s)=>a+s.items.filter(i=>i.checked).length,0); return `${d}/${t} complete`; })(), tab:'plan'},
     {name:'Wardrobe',        icon:'👗',  count: (p.wardrobe||[]).length + ' items',                                   tab:'wardrobe'},
   ].sort((a,b) => a.name.localeCompare(b.name));
   const custom = (p.customSections || []).map(cs => ({
@@ -6918,13 +7368,18 @@ async function confirmScriptUpload() {
         try {
           const b64 = dataUrl.split(',')[1];
           text = decodeURIComponent(escape(atob(b64)));
-          if (fname.endsWith('.fdx')) {
+        } catch(e) { try { text = atob(dataUrl.split(',')[1]); } catch(e2) {} }
+        if (fname.endsWith('.fdx')) {
+          try {
             const xml = new DOMParser().parseFromString(text, 'text/xml');
-            text = Array.from(xml.querySelectorAll('Paragraph'))
+            const extracted = Array.from(xml.querySelectorAll('Paragraph'))
               .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
               .filter(s => s.trim()).join('\n');
-          }
-        } catch(e) { text = ''; }
+            if (extracted.trim()) text = extracted;
+          } catch(e) {}
+        } else {
+          text = _stripFountainMarkup(text);
+        }
         if (text.trim()) _createBreakdown(p, name, version, text.trim());
       }
     }
@@ -6987,11 +7442,15 @@ function renderScript(p) {
           <th>File</th>
           <th>Version / Notes</th>
           <th>Size</th>
-          <th>Uploaded</th>
+          <th>Last Modified</th>
           <th></th>
         </tr></thead>
         <tbody>
-          ${sorted.map(s => `
+          ${sorted.map(s => {
+            const editable = _isScriptEditable(s);
+            const ts = s.editedAt || s.uploadedAt;
+            const tsLabel = s.editedAt ? 'Edited ' : 'Uploaded ';
+            return `
             <tr data-ctx="script-file:${s.id}">
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
@@ -7002,14 +7461,15 @@ function renderScript(p) {
               </td>
               <td><input class="form-input form-input-sm" style="width:100%" value="${(s.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. Draft 3, Sides for Scene 12..." onchange="updateScriptLabel('${s.id}',this.value)"></td>
               <td style="white-space:nowrap">${formatFileSize(s.size)}</td>
-              <td style="white-space:nowrap;font-size:11px">${new Date(s.uploadedAt).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'})}</td>
+              <td style="white-space:nowrap;font-size:11px">${tsLabel}${new Date(ts).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'})}</td>
               <td style="display:flex;gap:5px;flex-wrap:nowrap">
+                ${editable ? `<button class="btn btn-sm btn-primary" onclick="openScriptEditor('${s.id}')" title="Edit in browser">✏ Edit</button>` : ''}
                 <button class="btn btn-sm" onclick="shareScriptFile('${s.id}')" title="Share">↗</button>
                 <button class="btn btn-sm" onclick="downloadScriptFile('${s.id}')" title="Download">⬇</button>
                 <button class="btn btn-sm btn-danger" onclick="removeScriptFile('${s.id}')" title="Remove">🗑</button>
               </td>
-            </tr>
-          `).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>`;
@@ -7021,6 +7481,565 @@ function scriptFileIcon(type) {
   if (type.includes('word') || type.includes('openxmlformats') || type.includes('msword')) return '📘';
   if (type.includes('text') || type.includes('fountain') || type.includes('rtf')) return '📝';
   return '📄';
+}
+
+// ── SCRIPT EDITOR ──
+let _seId = null, _seDirty = false, _seTodIdx = -1, _seTodMode = 'tod';
+const SE_CHAR_INDENT = '                         '; // 25 spaces ≈ character (centred on page)
+const SE_DIAL_INDENT = '          ';               // 10 spaces ≈ dialogue indent
+
+function _isScriptEditable(s) {
+  const ext = (s.name || '').toLowerCase().split('.').pop();
+  return ['txt', 'fountain', 'rtf', 'fdx', 'md'].includes(ext) || (s.type || '').startsWith('text/');
+}
+
+function _decodeScriptText(s) {
+  try { return decodeURIComponent(escape(atob(s.dataUrl.split(',')[1]))); }
+  catch(e) { try { return atob(s.dataUrl.split(',')[1]); } catch(e2) { return ''; } }
+}
+
+function newScriptEditor() {
+  const p = currentProject(); if (!p) return;
+  if (!p.scripts) p.scripts = [];
+  const blank = { id: makeId(), name: 'Untitled Script.fountain', label: 'Draft 1',
+    dataUrl: 'data:text/plain;base64,' + btoa(''), size: 0,
+    type: 'text/plain', uploadedAt: Date.now() };
+  p.scripts.unshift(blank); saveStore();
+  renderScript(p);
+  openScriptEditor(blank.id);
+}
+
+function openScriptEditor(id) {
+  const p = currentProject(); if (!p) return;
+  const s = p.scripts.find(x => x.id === id); if (!s) return;
+  if (!_isScriptEditable(s)) { showToast('This file type cannot be edited in the browser — download it to edit externally', 'info'); return; }
+  const text = _decodeScriptText(s);
+  _seId = id; _seDirty = false;
+
+  const ext  = s.name.toLowerCase().split('.').pop();
+  const badge = ext === 'fountain' ? 'Fountain' : ext === 'fdx' ? 'Final Draft XML' : ext.toUpperCase();
+  const isFdx = ext === 'fdx';
+  const fdxNote = isFdx ? `<div style="background:rgba(212,170,44,0.12);border:1px solid rgba(212,170,44,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--accent);margin:0 0 12px;box-sizing:border-box">⚠ Editing raw Final Draft XML — save will preserve FDX structure. For full formatting control use Final Draft.</div>` : '';
+  const PAGE_LINES = 34;
+  const ELEMENT_LABELS = { scene: 'Scene Heading', character: 'Character', dialogue: 'Dialogue', parenthetical: 'Parenthetical', transition: 'Transition', action: 'Action', empty: '' };
+  const ELEMENT_COLORS = { scene: 'var(--accent2)', character: 'var(--green)', dialogue: 'var(--text2)', transition: 'var(--orange)', parenthetical: 'var(--text3)', action: 'var(--text3)', empty: 'var(--text3)' };
+
+  const ov = document.createElement('div');
+  ov.id = '_scriptEditor'; ov.className = 'script-editor-overlay';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+  ov.setAttribute('aria-label', `Editing ${s.name}`);
+  ov.innerHTML = `
+    <div class="script-editor-topbar">
+      <button class="btn btn-sm btn-ghost" onclick="_scriptEditorClose()" aria-label="Close editor">✕ Close</button>
+      <div style="flex:1;min-width:0">
+        <div class="script-editor-title">${s.name.replace(/</g,'&lt;')}</div>
+        ${s.label ? `<div class="script-editor-sub">${s.label.replace(/</g,'&lt;')}</div>` : ''}
+      </div>
+      <span class="script-editor-badge">${badge}</span>
+      <span class="script-editor-status" id="_seStatus" style="color:var(--text3)"></span>
+      <button class="btn btn-sm btn-primary" onclick="_scriptEditorSave()" id="_seSaveBtn">💾 Save</button>
+    </div>
+    <div class="script-editor-body">
+      <nav class="script-editor-nav" aria-label="Scene navigator">
+        <div class="script-editor-nav-header">Scenes</div>
+        <div id="_seNav"><div class="se-nav-empty">No scenes yet</div></div>
+      </nav>
+      <div class="script-editor-main">
+        <div class="script-editor-page">
+          <div id="_seBreaks" style="position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:3"></div>
+          ${fdxNote}<div class="se-ta-wrap">
+            <div id="_seRender" class="se-render-layer" aria-hidden="true"></div>
+            <textarea id="_seTextarea" class="script-editor-ta"
+              aria-label="Script editor — ${s.name.replace(/"/g,'&quot;')}"
+              spellcheck="true" autocomplete="off" autocorrect="on" autocapitalize="sentences"
+              style="position:relative;z-index:2"
+            >${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="script-editor-footer">
+      <span id="_seStats">Counting…</span>
+      <span id="_seElement"></span>
+      <span id="_seCursor">Ln 1, Col 1</span>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const ta = document.getElementById('_seTextarea');
+  ta.focus(); ta.setSelectionRange(0, 0);
+
+  function markDirty() {
+    _seDirty = true;
+    const stEl = document.getElementById('_seStatus');
+    if (stEl) { stEl.textContent = '● Unsaved'; stEl.style.color = 'var(--orange)'; }
+  }
+  function updateStats() {
+    const v = ta.value;
+    const words = v.trim() ? v.trim().split(/\s+/).length : 0;
+    const totalLines = v.split('\n').length;
+    const pages = Math.max(1, Math.ceil(totalLines / PAGE_LINES));
+    document.getElementById('_seStats').textContent =
+      `${words.toLocaleString()} words · ${totalLines.toLocaleString()} lines · ~${pages} pg`;
+  }
+  function updateCursor() {
+    const before = ta.value.substring(0, ta.selectionStart);
+    const allLines = ta.value.split('\n');
+    const lineNum = before.split('\n').length - 1;
+    document.getElementById('_seCursor').textContent = `Ln ${lineNum + 1}, Col ${(before.split('\n').pop().length) + 1}`;
+    let elType = _seDetectElement(allLines[lineNum] || '');
+    // Detect dialogue: look back at preceding non-empty line
+    if (elType === 'action') {
+      for (let i = lineNum - 1; i >= Math.max(0, lineNum - 6); i--) {
+        const pl = (allLines[i] || '').trim(); if (!pl) continue;
+        const pt = _seDetectElement(pl);
+        if (pt === 'character' || pt === 'parenthetical') elType = 'dialogue';
+        break;
+      }
+    }
+    const elEl = document.getElementById('_seElement');
+    if (elEl) { elEl.textContent = ELEMENT_LABELS[elType] || ''; elEl.style.color = ELEMENT_COLORS[elType] || 'var(--text3)'; }
+    _seUpdateNav(ta);
+  }
+  function autoExpand() {
+    ta.style.height = '1px';
+    ta.style.height = Math.max(840, ta.scrollHeight) + 'px';
+    _seRenderUpdate(ta);
+  }
+  updateStats(); updateCursor(); autoExpand(); _seUpdatePageBreaks(ta);
+
+  ta.addEventListener('input', () => {
+    markDirty();
+    // Auto-uppercase: scene heading lines AND indented character lines
+    const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
+    const isScene = /^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)\s/i.test(lt);
+    const isCharLine = /^ {20,}\S/.test(lt);
+    if ((isScene || isCharLine) && lt !== lt.toUpperCase()) {
+      const ss = ta.selectionStart, se = ta.selectionEnd;
+      ta.value = ta.value.substring(0, lineStart) + lt.toUpperCase() + ta.value.substring(lineEnd);
+      ta.setSelectionRange(ss, se);
+    }
+    autoExpand();
+    _seUpdateAutocomplete(ta);
+    _seUpdatePageBreaks(ta);
+    updateStats(); updateCursor();
+  });
+  ta.addEventListener('click', updateCursor);
+  ta.addEventListener('keyup', e => { if (e.key !== 'Tab') updateCursor(); });
+  ta.addEventListener('keydown', e => {
+    // Time-of-day dropdown navigation
+    const dd = document.getElementById('_seTodDrop');
+    if (dd) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); _seTodHighlight(Math.min(_seTodIdx + 1, dd.children.length - 1)); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); _seTodHighlight(Math.max(_seTodIdx - 1, 0)); return; }
+      if (e.key === 'Escape') { _seHideTod(); return; }
+      if ((e.key === 'Tab' || e.key === 'Enter') && (_seTodIdx >= 0 || dd.children.length > 0)) {
+        const item = _seTodIdx >= 0 ? dd.children[_seTodIdx].textContent : dd.children[0].textContent;
+        e.preventDefault(); _seTodAccept(item); return;
+      }
+    }
+
+    if (e.key === ' ') {
+      // Auto-uppercase INT./EXT. prefix when user types the space after the period
+      const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
+      const cursorOff = ta.selectionStart - lineStart;
+      const lineToHere = lt.substring(0, cursorOff);
+      if (/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.)$/i.test(lineToHere)) {
+        e.preventDefault();
+        const newLine = lineToHere.toUpperCase() + ' ' + lt.substring(cursorOff);
+        ta.value = ta.value.substring(0, lineStart) + newLine + ta.value.substring(lineEnd);
+        ta.setSelectionRange(lineStart + lineToHere.length + 1, lineStart + lineToHere.length + 1);
+        markDirty(); updateStats(); updateCursor(); return;
+      }
+    }
+
+    // SE_CHAR_INDENT / SE_DIAL_INDENT are module-level constants
+
+    // Backspace on empty indented line (char mode, no name) → collapse to action
+    if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && ta.selectionStart === ta.selectionEnd) {
+      const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
+      if (/^ +$/.test(lt) && lt.length >= 20) {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, lineStart) + ta.value.substring(lineEnd);
+        ta.setSelectionRange(lineStart, lineStart);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+    }
+
+    // Shift+Enter = plain newline (no auto-formatting)
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      const pos = ta.selectionStart;
+      ta.value = ta.value.substring(0, pos) + '\n' + ta.value.substring(pos);
+      ta.setSelectionRange(pos + 1, pos + 1);
+      autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+    }
+
+    if (e.key === 'Enter') {
+      const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
+      const cursor = ta.selectionStart;
+      const allLines = ta.value.split('\n');
+      const lineNum = ta.value.substring(0, lineStart).split('\n').length - 1;
+      let elType = _seDetectElement(lt);
+      // Resolve dialogue context
+      if (elType === 'action') {
+        for (let i = lineNum - 1; i >= Math.max(0, lineNum - 6); i--) {
+          const pl = (allLines[i] || '').trim(); if (!pl) continue;
+          const pt = _seDetectElement(pl);
+          if (pt === 'character' || pt === 'parenthetical') elType = 'dialogue';
+          break;
+        }
+      }
+
+      // Empty indented line (char or dialogue indent) → collapse to action
+      if (/^ +$/.test(lt) && lt.length >= SE_DIAL_INDENT.length) {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, lineStart) + ta.value.substring(lineEnd);
+        ta.setSelectionRange(lineStart, lineStart);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+      // Scene heading → action (plain newline, left-aligned)
+      if (elType === 'scene') {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, cursor) + '\n' + ta.value.substring(cursor);
+        ta.setSelectionRange(cursor + 1, cursor + 1);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+      // Action (with content) → blank line + character (centred)
+      if (elType === 'action') {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, cursor) + '\n\n' + SE_CHAR_INDENT + ta.value.substring(cursor);
+        ta.setSelectionRange(cursor + 2 + SE_CHAR_INDENT.length, cursor + 2 + SE_CHAR_INDENT.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+      // Empty plain line → plain newline (no assumption)
+      if (elType === 'empty') {
+        // let browser handle normally
+      }
+      // Character → dialogue (indented)
+      if (elType === 'character') {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, cursor) + '\n' + SE_DIAL_INDENT + ta.value.substring(cursor);
+        ta.setSelectionRange(cursor + 1 + SE_DIAL_INDENT.length, cursor + 1 + SE_DIAL_INDENT.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+      // Parenthetical → dialogue (insert after full line, indented)
+      if (elType === 'parenthetical') {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, lineEnd) + '\n' + SE_DIAL_INDENT + ta.value.substring(lineEnd);
+        ta.setSelectionRange(lineEnd + 1 + SE_DIAL_INDENT.length, lineEnd + 1 + SE_DIAL_INDENT.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+      // Dialogue → blank line + character (centred)
+      if (elType === 'dialogue') {
+        e.preventDefault();
+        ta.value = ta.value.substring(0, cursor) + '\n\n' + SE_CHAR_INDENT + ta.value.substring(cursor);
+        ta.setSelectionRange(cursor + 2 + SE_CHAR_INDENT.length, cursor + 2 + SE_CHAR_INDENT.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
+      }
+    }
+
+    if (e.key === 'Tab') {
+      // Tab on empty line after character → insert parenthetical ()
+      const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
+      if (!lt.trim()) {
+        const allLines = ta.value.split('\n');
+        const lineNum = ta.value.substring(0, lineStart).split('\n').length - 1;
+        for (let i = lineNum - 1; i >= Math.max(0, lineNum - 5); i--) {
+          const pl = (allLines[i] || '').trim(); if (!pl) continue;
+          if (_seDetectElement(pl) === 'character') {
+            e.preventDefault();
+            ta.value = ta.value.substring(0, lineStart) + '()' + ta.value.substring(lineEnd);
+            ta.setSelectionRange(lineStart + 1, lineStart + 1);
+            markDirty(); updateStats(); updateCursor(); return;
+          }
+          break;
+        }
+      }
+      e.preventDefault();
+      _seTabCycle(ta, e.shiftKey);
+      markDirty(); updateStats(); updateCursor(); return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); _seWrapMarkup(ta, '**'); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'i') { e.preventDefault(); _seWrapMarkup(ta, '*'); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'u') { e.preventDefault(); _seWrapMarkup(ta, '_'); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); _scriptEditorSave(); }
+  });
+}
+
+function _seGetCurLine(ta) {
+  const val = ta.value, start = ta.selectionStart;
+  const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+  const le = val.indexOf('\n', start);
+  const lineEnd = le === -1 ? val.length : le;
+  return { lineStart, lineEnd, text: val.substring(lineStart, lineEnd) };
+}
+
+function _seDetectElement(line) {
+  const t = line.trim();
+  if (!t) return 'empty';
+  const sp = line.length - line.trimStart().length;
+  if (/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)[ \t]/i.test(t)) return 'scene';
+  if (/^(FADE (IN|OUT|TO):|CUT TO:|DISSOLVE TO:|SMASH CUT TO:|MATCH CUT TO:)/i.test(t)) return 'transition';
+  if (/^\(.*\)\s*$/.test(t)) return 'parenthetical';
+  // Properly-indented character name (≥20 spaces, all-caps)
+  if (sp >= 20 && /^[A-Z][A-Z0-9 '\-\.]*$/.test(t) && t.length < 50) return 'character';
+  // Dialogue (8–19 spaces of indent)
+  if (sp >= 8 && sp < 20) return 'dialogue';
+  // Legacy / manually typed character name (no indent, all-caps)
+  if (/^[A-Z][A-Z0-9 '\-\.]*$/.test(t) && t.length < 50 && !/[a-z]/.test(t)) return 'character';
+  return 'action';
+}
+
+function _seTabCycle(ta, shiftKey) {
+  const { lineStart, lineEnd, text } = _seGetCurLine(ta);
+  const trim = text.trim();
+  const curType = _seDetectElement(text);
+  let newText;
+  if (!shiftKey) {
+    if (curType === 'scene') {
+      newText = trim.replace(/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)\s*/i, '');
+    } else if (curType === 'character') {
+      newText = 'INT. ' + (trim || 'LOCATION - DAY');
+    } else {
+      newText = SE_CHAR_INDENT + trim.toUpperCase();
+    }
+  } else {
+    if (curType === 'character') {
+      newText = trim.charAt(0).toUpperCase() + trim.slice(1).toLowerCase();
+    } else if (curType === 'scene') {
+      newText = trim.replace(/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)\s*/i, '').toUpperCase();
+    } else {
+      newText = 'INT. ' + trim.toUpperCase();
+    }
+  }
+  const before = ta.value.substring(0, lineStart);
+  const after = ta.value.substring(lineEnd);
+  const cursorOff = ta.selectionStart - lineStart;
+  ta.value = before + newText + after;
+  const newPos = lineStart + Math.min(cursorOff, newText.length);
+  ta.setSelectionRange(newPos, newPos);
+}
+
+function _seUpdateNav(ta) {
+  const nav = document.getElementById('_seNav');
+  if (!nav) return;
+  const lines = ta.value.split('\n');
+  const scenes = [];
+  lines.forEach((ln, idx) => {
+    if (/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)[ \t]/i.test(ln.trim())) scenes.push({ line: idx, text: ln.trim() });
+  });
+  if (!scenes.length) { nav.innerHTML = '<div class="se-nav-empty">No scenes yet</div>'; return; }
+  const cursorLine = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
+  let activeIdx = -1;
+  for (let i = scenes.length - 1; i >= 0; i--) { if (scenes[i].line <= cursorLine) { activeIdx = i; break; } }
+  nav.innerHTML = scenes.map((sc, i) =>
+    `<div class="se-nav-item${i === activeIdx ? ' se-nav-active' : ''}" onclick="_seJumpToLine(${sc.line})" title="${sc.text.replace(/"/g,'&quot;')}"><span class="se-nav-num">${i + 1}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${sc.text.replace(/</g,'&lt;')}</span></div>`
+  ).join('');
+}
+
+function _seJumpToLine(lineIdx) {
+  const ta = document.getElementById('_seTextarea'); if (!ta) return;
+  const lines = ta.value.split('\n');
+  let pos = 0;
+  for (let i = 0; i < lineIdx && i < lines.length; i++) pos += lines[i].length + 1;
+  ta.focus(); ta.setSelectionRange(pos, pos);
+  const lh = parseFloat(getComputedStyle(ta).lineHeight) || 26;
+  const main = document.querySelector('.script-editor-main');
+  if (main) main.scrollTop = Math.max(0, lineIdx * lh + 72 - main.clientHeight / 2);
+  _seUpdateNav(ta);
+}
+
+const SE_TOD = ['AFTERNOON','CONTINUOUS','CONTINUOUS (LATER)','DAWN','DAY','DUSK',
+  'EVENING','FLASHBACK','INTERCUT WITH','LATER','MIDDAY','MOMENTS LATER',
+  'MORNING','NIGHT','SAME TIME','SUNRISE','SUNSET'];
+
+function _seCaretPos(ta) {
+  const taRect = ta.getBoundingClientRect();
+  const cs = getComputedStyle(ta);
+  const div = document.createElement('div');
+  div.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;top:${taRect.top}px;left:${taRect.left}px;width:${ta.clientWidth}px;font:${cs.font};line-height:${cs.lineHeight};padding:${cs.padding};box-sizing:${cs.boxSizing};white-space:pre-wrap;word-wrap:break-word;overflow:hidden`;
+  div.textContent = ta.value.substring(0, ta.selectionStart);
+  const span = document.createElement('span'); span.textContent = '\u200b';
+  div.appendChild(span); document.body.appendChild(div);
+  const sr = span.getBoundingClientRect(); document.body.removeChild(div);
+  return { x: sr.left, y: sr.top - ta.scrollTop };
+}
+
+function _seTodPrefix(ta) {
+  const { lineStart, text } = _seGetCurLine(ta);
+  const lineToHere = text.substring(0, ta.selectionStart - lineStart);
+  const m = lineToHere.match(/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)\s+.+\s+-\s+(\w*)$/i);
+  return m ? m[2].toUpperCase() : null;
+}
+
+function _seHideTod() {
+  document.getElementById('_seTodDrop')?.remove();
+  _seTodIdx = -1;
+}
+
+function _seTodHighlight(idx) {
+  const dd = document.getElementById('_seTodDrop'); if (!dd) return;
+  _seTodIdx = idx;
+  Array.from(dd.children).forEach((el, i) => el.classList.toggle('active', i === idx));
+}
+
+function _seTodAccept(item) {
+  const ta = document.getElementById('_seTextarea'); if (!ta) return;
+  const { lineStart, lineEnd, text } = _seGetCurLine(ta);
+  if (_seTodMode === 'char') {
+    // Replace whole trimmed line with the selected character name, preserving indent
+    const indent = text.match(/^( *)/)[1];
+    ta.value = ta.value.substring(0, lineStart) + indent + item + ta.value.substring(lineEnd);
+    ta.setSelectionRange(lineStart + indent.length + item.length, lineStart + indent.length + item.length);
+  } else {
+    const lineToHere = text.substring(0, ta.selectionStart - lineStart);
+    const m = lineToHere.match(/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)\s+.+\s+-\s+(\w*)$/i);
+    if (!m) { _seHideTod(); return; }
+    const partial = m[2];
+    const insertStart = ta.selectionStart - partial.length;
+    ta.value = ta.value.substring(0, insertStart) + item + ta.value.substring(ta.selectionStart);
+    ta.setSelectionRange(insertStart + item.length, insertStart + item.length);
+  }
+  _seHideTod();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  ta.focus();
+}
+
+function _seShowTod(items, ta) {
+  document.getElementById('_seTodDrop')?.remove();
+  _seTodIdx = -1;
+  const lh = parseFloat(getComputedStyle(ta).lineHeight) || 26;
+  const pos = _seCaretPos(ta);
+  const dd = document.createElement('div');
+  dd.id = '_seTodDrop'; dd.className = 'se-tod-drop';
+  dd.style.left = pos.x + 'px'; dd.style.top = (pos.y + lh) + 'px';
+  items.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'se-tod-item'; row.textContent = item;
+    row.onmouseenter = () => _seTodHighlight(i);
+    row.onmousedown = e => { e.preventDefault(); _seTodAccept(item); };
+    dd.appendChild(row);
+  });
+  document.body.appendChild(dd);
+  const dr = dd.getBoundingClientRect();
+  if (dr.right > window.innerWidth - 8) dd.style.left = (window.innerWidth - dr.width - 8) + 'px';
+  if (dr.bottom > window.innerHeight - 8) dd.style.top = (pos.y - dr.height) + 'px';
+}
+
+function _seGetCharNames(ta) {
+  const names = new Set();
+  ta.value.split('\n').forEach(line => {
+    if (/^ {20,}\S/.test(line) && _seDetectElement(line) === 'character') names.add(line.trim());
+  });
+  return Array.from(names).sort();
+}
+
+function _seCharPrefix(ta) {
+  const { lineStart, text } = _seGetCurLine(ta);
+  if (!/^ {20,}/.test(text)) return null; // must be character-indented (≥20 spaces)
+  const lineToHere = text.substring(0, ta.selectionStart - lineStart);
+  const trimmed = lineToHere.trim();
+  return trimmed.length >= 1 ? trimmed.toUpperCase() : null;
+}
+
+function _seUpdateAutocomplete(ta) {
+  // TOD suggestions: after "INT. LOC - X"
+  const todPrefix = _seTodPrefix(ta);
+  if (todPrefix) {
+    const matches = SE_TOD.filter(t => t.startsWith(todPrefix));
+    if (matches.length && !(matches.length === 1 && matches[0] === todPrefix)) {
+      _seTodMode = 'tod'; _seShowTod(matches, ta); return;
+    }
+  }
+  // Character name suggestions: on indented (character) lines
+  const charPrefix = _seCharPrefix(ta);
+  if (charPrefix) {
+    const matches = _seGetCharNames(ta).filter(n => n.startsWith(charPrefix) && n !== charPrefix);
+    if (matches.length) { _seTodMode = 'char'; _seShowTod(matches, ta); return; }
+  }
+  _seHideTod();
+}
+
+function _seUpdatePageBreaks(ta) {
+  const overlay = document.getElementById('_seBreaks'); if (!overlay) return;
+  const lh = parseFloat(getComputedStyle(ta).lineHeight) || 25.65;
+  const CONTENT_H = 888; // page height (1056) minus top pad (72) and bottom pad (96)
+  const PAGE_TOP_PAD = 72;
+  const LINES_PER_PAGE = Math.max(10, Math.floor(CONTENT_H / lh));
+  const pageH = LINES_PER_PAGE * lh;
+  const totalLines = ta.value.split('\n').length;
+  const numBreaks = Math.floor(totalLines / LINES_PER_PAGE);
+  let html = '';
+  for (let i = 1; i <= numBreaks; i++) {
+    const top = PAGE_TOP_PAD + i * pageH - 16; // center 32px bar at boundary
+    html += `<div class="se-page-break" style="top:${top.toFixed(0)}px"><span style="font-size:9px;color:rgba(255,255,255,0.22);font-family:sans-serif;letter-spacing:1px">${i} / ${i + 1}</span></div>`;
+  }
+  overlay.innerHTML = html;
+}
+
+function _seEsc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function _seRenderUpdate(ta) {
+  const el = document.getElementById('_seRender'); if (!el) return;
+  const lines = ta.value.split('\n');
+  el.innerHTML = lines.map(line => {
+    const type = _seDetectElement(line);
+    let html = _seEsc(line)
+      // bold: **text**
+      .replace(/\*\*(.+?)\*\*/g, '<span class="se-mk">**</span><strong>$1</strong><span class="se-mk">**</span>')
+      // italic: *text* (not double-asterisk)
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span class="se-mk">*</span><em>$1</em><span class="se-mk">*</span>')
+      // underline: _text_
+      .replace(/_(.+?)_/g, '<span class="se-mk">_</span><span style="text-decoration:underline">$1</span><span class="se-mk">_</span>');
+    if (type === 'scene') return `<div class="se-scene-line">${html || '\u200b'}</div>`;
+    return `<div>${html || '\u200b'}</div>`;
+  }).join('');
+}
+
+function _seWrapMarkup(ta, marker) {
+  const ss = ta.selectionStart, se = ta.selectionEnd;
+  const v = ta.value;
+  if (ss === se) {
+    // No selection — insert empty markers, place cursor between them
+    ta.value = v.substring(0, ss) + marker + marker + v.substring(ss);
+    ta.setSelectionRange(ss + marker.length, ss + marker.length);
+  } else {
+    const wrapped = marker + v.substring(ss, se) + marker;
+    ta.value = v.substring(0, ss) + wrapped + v.substring(se);
+    ta.setSelectionRange(ss, ss + wrapped.length);
+  }
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  ta.focus();
+}
+
+function _scriptEditorSave() {
+  const p = currentProject(); if (!p) return;
+  const s = p.scripts.find(x => x.id === _seId); if (!s) return;
+  const ta = document.getElementById('_seTextarea'); if (!ta) return;
+  const text = ta.value;
+  try { s.dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(text))); }
+  catch(e) { s.dataUrl = 'data:text/plain;base64,' + btoa(text); }
+  s.size = new Blob([text]).size;
+  s.editedAt = Date.now();
+  saveStore(); renderScript(p);
+  _seDirty = false;
+  const el = document.getElementById('_seStatus');
+  if (el) { el.textContent = '✓ Saved'; el.style.color = 'var(--green)'; }
+}
+
+function _scriptEditorClose() {
+  _seHideTod();
+  if (_seDirty) {
+    showConfirmDialog('You have unsaved changes. Close without saving?', 'Close', () => {
+      document.getElementById('_scriptEditor')?.remove();
+      _seId = null; _seDirty = false;
+    });
+    return;
+  }
+  document.getElementById('_scriptEditor')?.remove();
+  _seId = null;
 }
 
 function updateScriptLabel(id, val) {
@@ -7498,7 +8517,8 @@ function renderBreakdownImport(el, p) {
             📂 Upload File
             <input type="file" accept=".txt,.fountain,.fdx,.pdf" style="display:none" onchange="loadBreakdownFile(this)">
           </label>
-          <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='block';this.style.display='none'">✏️ Paste Script</button>
+          <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='block';document.getElementById('bd-import-wrap').style.display='none';this.style.display='none'">✏️ Paste Script</button>
+          <button class="btn" onclick="showBdScriptImporter()">📚 From Scripts &amp; Docs</button>
         </div>
         <div style="font-size:11px;color:var(--text3)">.txt · .fountain · .fdx (Final Draft XML) · .pdf — or drag &amp; drop a file here</div>
       </div>
@@ -7515,6 +8535,7 @@ Fountain and plain text both work." style="font-family:monospace;font-size:12px;
           <button class="btn" onclick="document.getElementById('bd-paste-wrap').style.display='none'">Cancel</button>
         </div>
       </div>
+      <div id="bd-import-wrap" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:0"></div>
     </div>`;
   // Wire drag-and-drop onto the upload card now that it's in the DOM
   const bdCard = document.getElementById('bd-upload-card');
@@ -7525,6 +8546,128 @@ Fountain and plain text both work." style="font-family:monospace;font-size:12px;
       loadBreakdownFile(fakeInput);
     });
   }
+}
+
+function _stripFountainMarkup(text) {
+  // Remove boneyard block comments /* ... */
+  text = text.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove inline [[notes]]
+  text = text.replace(/\[\[[\s\S]*?\]\]/g, '');
+  return text.split('\n').map(line => {
+    // Strip bold+italic, bold, italic, underline formatting marks
+    let l = line
+      .replace(/\*{3}(.+?)\*{3}/g, '$1')
+      .replace(/\*{2}(.+?)\*{2}/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/_(.+?)_/g, '$1');
+    // Forced scene heading: strip leading dot (e.g. ".INT. BAR - DAY")
+    if (/^\.[A-Z]/.test(l)) l = l.slice(1);
+    // Centered text: "> text <"
+    l = l.replace(/^>\s*/, '').replace(/\s*<$/, '');
+    return l;
+  }).join('\n');
+}
+
+function showBdScriptImporter() {
+  const p = currentProject(); if (!p) return;
+  const wrap = document.getElementById('bd-import-wrap');
+  if (!wrap) return;
+  // Toggle off if already open
+  if (wrap.style.display === 'block') { wrap.style.display = 'none'; return; }
+  document.getElementById('bd-paste-wrap').style.display = 'none';
+
+  const scripts = (p.scripts || []).slice().sort((a,b) => (b.uploadedAt||0)-(a.uploadedAt||0));
+  if (!scripts.length) {
+    wrap.innerHTML = `
+      <p style="color:var(--text3);font-size:13px;text-align:center;margin:12px 0">No files in Scripts &amp; Documents yet.</p>
+      <p style="color:var(--text3);font-size:12px;text-align:center;margin:0 0 12px">Upload or write a script there first, then come back to import it.</p>
+      <div style="text-align:center"><button class="btn btn-sm" onclick="document.getElementById('bd-import-wrap').style.display='none'">Close</button></div>`;
+    wrap.style.display = 'block';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-weight:500">SELECT A SCRIPT TO IMPORT</div>
+    ${scripts.map(s => {
+      const ext = s.name.toLowerCase().split('.').pop();
+      const unsupported = ['doc','docx'].includes(ext);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface3);margin-bottom:6px;border:1px solid var(--border2);${unsupported?'opacity:0.5':'cursor:pointer'}"
+        ${unsupported ? '' : `onclick="importBreakdownFromScript('${s.id}')"`}>
+        <span style="font-size:18px">${scriptFileIcon(s.type)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name.replace(/</g,'&lt;')}</div>
+          ${s.label ? `<div style="font-size:11px;color:var(--text3)">${s.label.replace(/</g,'&lt;')}</div>` : ''}
+        </div>
+        <span style="font-size:10px;padding:2px 6px;background:var(--surface);border-radius:3px;color:var(--text3);flex-shrink:0">${ext.toUpperCase()}</span>
+        <span style="font-size:11px;flex-shrink:0;${unsupported?'color:var(--text3)':'color:var(--accent2)'}">${unsupported ? 'Not supported' : 'Import →'}</span>
+      </div>`;
+    }).join('')}
+    ${scripts.some(s => ['doc','docx'].includes(s.name.toLowerCase().split('.').pop())) ?
+      `<p style="font-size:11px;color:var(--text3);margin:8px 0 4px">Word documents (.doc/.docx) cannot be read in the browser — re-save as .txt or .fountain to import.</p>` : ''}
+    <button class="btn btn-sm" style="margin-top:6px" onclick="document.getElementById('bd-import-wrap').style.display='none'">Cancel</button>`;
+  wrap.style.display = 'block';
+}
+
+async function importBreakdownFromScript(scriptId) {
+  const p = currentProject(); if (!p) return;
+  const s = p.scripts.find(x => x.id === scriptId); if (!s) return;
+  document.getElementById('bd-import-wrap').style.display = 'none';
+
+  const name    = s.name.replace(/\.[^.]+$/, ''); // strip extension
+  const version = s.label || '';
+  const ext     = s.name.toLowerCase().split('.').pop();
+
+  // PDF: convert stored dataUrl back to a File object then reuse existing extractor
+  if (ext === 'pdf' || s.type.includes('pdf')) {
+    showToast('Reading PDF for breakdown…', 'info');
+    try {
+      const res  = await fetch(s.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], s.name, { type: s.type || 'application/pdf' });
+      await _extractTextForBreakdown(p, file, name, version);
+      renderBreakdown(p);
+    } catch(e) {
+      showToast('Could not read PDF: ' + e.message, 'error');
+    }
+    return;
+  }
+
+  // Text-based formats: decode base64
+  let text = '';
+  try {
+    const b64 = s.dataUrl.split(',')[1];
+    text = decodeURIComponent(escape(atob(b64)));
+  } catch(e) {
+    try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = ''; }
+  }
+
+  if (!text.trim()) { showToast('Could not extract text from this file', 'error'); return; }
+
+  // FDX detection: check extension OR detect FinalDraft XML structure
+  // (stored name may not have .fdx if user renamed it in the upload modal)
+  let isFdx = ext === 'fdx';
+  if (!isFdx) {
+    try { if (new DOMParser().parseFromString(text, 'text/xml').querySelector('FinalDraft')) isFdx = true; }
+    catch(e) {}
+  }
+  if (isFdx) {
+    try {
+      const xml = new DOMParser().parseFromString(text, 'text/xml');
+      const extracted = Array.from(xml.querySelectorAll('Paragraph'))
+        .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
+        .filter(t => t.trim()).join('\n');
+      if (extracted.trim()) text = extracted;
+    } catch(e) { /* fall through to raw text */ }
+  } else {
+    // Strip Fountain formatting marks for .fountain / .txt / .rtf
+    text = _stripFountainMarkup(text);
+  }
+
+  if (!text.trim()) { showToast('Could not extract text from this file', 'error'); return; }
+  _createBreakdown(p, name, version, text.trim());
+  saveStore();
+  renderBreakdown(p);
+  showToast(`Imported "${name}" into breakdown`, 'success');
 }
 
 function renderBreakdownEditor(el, p) {
@@ -7975,13 +9118,18 @@ async function loadBreakdownFile(input) {
   try {
     const b64 = dataUrl.split(',')[1];
     text = decodeURIComponent(escape(atob(b64)));
-    if (file.name.toLowerCase().endsWith('.fdx')) {
+  } catch(e) { try { text = atob(dataUrl.split(',')[1]); } catch(e2) { text = ''; } }
+  if (file.name.toLowerCase().endsWith('.fdx')) {
+    try {
       const xml = new DOMParser().parseFromString(text, 'text/xml');
-      text = Array.from(xml.querySelectorAll('Paragraph'))
+      const extracted = Array.from(xml.querySelectorAll('Paragraph'))
         .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
         .filter(s => s.trim()).join('\n');
-    }
-  } catch(e) { text = ''; }
+      if (extracted.trim()) text = extracted;
+    } catch(e) {}
+  } else {
+    text = _stripFountainMarkup(text);
+  }
   _pendingBdText = text.trim();
   _pendingScriptFile = { file, dataUrl };
   openScriptUploadModal(p, file, 'breakdown');
@@ -7992,7 +9140,7 @@ function loadBreakdownPastedText() {
   if (!ta?.value.trim()) { showToast('Please paste some script text first', 'error'); return; }
   const p = currentProject();
   if (!p) return;
-  _createBreakdown(p, 'Pasted Script', '', ta.value.trim());
+  _createBreakdown(p, 'Pasted Script', '', _stripFountainMarkup(ta.value.trim()));
   saveStore();
   renderBreakdown(p);
 }
@@ -11893,21 +13041,39 @@ function fullyRemoveFromProject(name, projectId) {
   });
 }
 
-function showConfirmDialog(message, confirmLabel, onConfirm) {
+function showConfirmDialog(message, confirmLabel, onConfirm, opts = {}) {
+  const triggerEl = document.activeElement;
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.className = 'modal-overlay open';
   overlay.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:28px 24px 20px;max-width:400px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
-      <p style="color:var(--text);font-size:13px;line-height:1.65;margin:0 0 22px">${message}</p>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="_cdTitle" style="max-width:400px">
+      <div class="modal-header">
+        <h3 id="_cdTitle">${opts.title || confirmLabel}</h3>
+        <button class="modal-close" aria-label="Close" id="_cdClose">✕</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;line-height:1.65;margin:4px 0 0">${message}</p>
+      <div class="form-actions">
         <button class="btn btn-sm" id="_cdCancel">Cancel</button>
-        <button class="btn btn-sm btn-danger" id="_cdConfirm">${confirmLabel}</button>
+        <button class="btn btn-sm ${opts.btnClass||'btn-danger'}" id="_cdConfirm">${confirmLabel}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector('#_cdCancel').onclick  = () => overlay.remove();
-  overlay.querySelector('#_cdConfirm').onclick = () => { overlay.remove(); onConfirm(); };
-  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  const close = () => { overlay.remove(); if (triggerEl) triggerEl.focus(); };
+  overlay.querySelector('#_cdClose').onclick  = close;
+  overlay.querySelector('#_cdCancel').onclick = close;
+  overlay.querySelector('#_cdConfirm').onclick = () => { close(); onConfirm(); };
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+    if (e.key === 'Tab') {
+      const els = [...overlay.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')];
+      const first = els[0], last = els[els.length-1];
+      if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      }
+    }
+  });
+  setTimeout(() => { const c = overlay.querySelector('#_cdCancel'); if (c) c.focus(); }, 50);
 }
 
 // ══════════════════════════════════════════
@@ -13053,6 +14219,7 @@ function confirmWeatherLocation(candidates, originalQuery) {
 
 loadTheme();
 loadStore();
+initAutoSave();
 renderDashboard();
 
 // ── Contact modal role sections ───────────────────────────────────────────────
