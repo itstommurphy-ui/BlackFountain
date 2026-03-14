@@ -3364,7 +3364,7 @@
           </div>
           <div class="card">
             <h3 style="margin-top:0">Storage Info</h3>
-            <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>filmforge_v1</code></p>
+            <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>blackfountain_v1</code></p>
             <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
           </div>
           <div class="card" style="border:2px solid #ff4444;margin-top:20px">
@@ -4603,7 +4603,7 @@ function renderSettings() {
 }
 
 function updateThemeButtons() {
-  const currentTheme = localStorage.getItem('filmforge_theme') || 'dark';
+  const currentTheme = localStorage.getItem('blackfountain_theme') || 'dark';
   const darkBtn = document.getElementById('theme-dark-btn');
   const lightBtn = document.getElementById('theme-light-btn');
   if (darkBtn && lightBtn) {
@@ -4615,7 +4615,7 @@ function updateThemeButtons() {
 }
 
 function setTheme(theme) {
-  localStorage.setItem('filmforge_theme', theme);
+  localStorage.setItem('blackfountain_theme', theme);
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   } else {
@@ -4626,7 +4626,7 @@ function setTheme(theme) {
 }
 
 function setFontSize(size) {
-  localStorage.setItem('filmforge_font_size', size);
+  localStorage.setItem('blackfountain_font_size', size);
   const html = document.documentElement;
   // Remove any previous font-size attribute then set new one
   html.removeAttribute('data-font-size');
@@ -4635,7 +4635,7 @@ function setFontSize(size) {
 }
 
 function updateFontSizeButtons() {
-  const currentSize = localStorage.getItem('filmforge_font_size') || 'classic';
+  const currentSize = localStorage.getItem('blackfountain_font_size') || 'classic';
   ['classic', 'bigger', 'evenbigger', 'huge', 'double'].forEach(size => {
     const btn = document.getElementById(`font-${size}-btn`);
     if (!btn) return;
@@ -4646,9 +4646,9 @@ function updateFontSizeButtons() {
 }
 
 function loadTheme() {
-  const theme = localStorage.getItem('filmforge_theme') || 'dark';
+  const theme = localStorage.getItem('blackfountain_theme') || 'dark';
   if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
-  const fontSize = localStorage.getItem('filmforge_font_size') || 'classic';
+  const fontSize = localStorage.getItem('blackfountain_font_size') || 'classic';
   if (fontSize !== 'classic') document.documentElement.setAttribute('data-font-size', fontSize);
 }
 
@@ -4714,7 +4714,7 @@ function clearAllData() {
     return;
   }
   
-  localStorage.removeItem('filmforge_v1');
+  localStorage.removeItem('blackfountain_v1');
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
@@ -4734,7 +4734,7 @@ function confirmClearAllData() {
   }
   
   closeModal('modal-clear-data');
-  localStorage.removeItem('filmforge_v1');
+  localStorage.removeItem('blackfountain_v1');
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
@@ -5816,7 +5816,7 @@ function saveStore() {
     p.sectionActivity[_activeSection] = Date.now();
   }
   try { 
-    localStorage.setItem('filmforge_v1', JSON.stringify(store)); 
+    localStorage.setItem('blackfountain_v1', JSON.stringify(store)); 
     // Backup with timestamp for recovery
     localStorage.setItem('blackfountain_backup_' + Date.now(), JSON.stringify(store));
     // Keep only last 5 backups
@@ -5873,7 +5873,7 @@ function triggerAutoSave() {
 
 function loadStore() {
   try {
-    const raw = localStorage.getItem('filmforge_v1');
+    const raw = localStorage.getItem('blackfountain_v1');
     if (raw) {
       const loaded = JSON.parse(raw);
       store = { ...store, ...loaded };
@@ -6004,7 +6004,7 @@ function showSection(name) {
     if (p) {
       if (!p.sectionActivity) p.sectionActivity = {};
       p.sectionActivity[name] = Date.now();
-      try { localStorage.setItem('filmforge_v1', JSON.stringify(store)); } catch(e) {}
+      try { localStorage.setItem('blackfountain_v1', JSON.stringify(store)); } catch(e) {}
     }
   }
   document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
