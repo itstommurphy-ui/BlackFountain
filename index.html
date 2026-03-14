@@ -4725,15 +4725,13 @@ function clearAllData() {
   keysToRemove.forEach(k => localStorage.removeItem(k));
   
   // Also try unregistering service worker for fresh start
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     navigator.serviceWorker.getRegistrations().then(regs => {
       regs.forEach(reg => reg.unregister());
     });
   }
   
-  showToast('All data cleared', 'success');
-  // Force hard reload with cache bypass
-  setTimeout(() => window.location.href = window.location.pathname + '?t=' + Date.now(), 500);
+  showToast('All data cleared - please refresh the page manually', 'success');
 }
 
 function openClearDataModal() {
@@ -4763,15 +4761,13 @@ function confirmClearAllData() {
   keysToRemove.forEach(k => localStorage.removeItem(k));
   
   // Also try unregistering service worker for fresh start
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     navigator.serviceWorker.getRegistrations().then(regs => {
       regs.forEach(reg => reg.unregister());
     });
   }
   
-  showToast('All data cleared', 'success');
-  // Force hard reload with cache bypass
-  setTimeout(() => window.location.href = window.location.pathname + '?t=' + Date.now(), 500);
+  showToast('All data cleared - please refresh the page manually', 'success');
 }
 
 function renderFiles() {
