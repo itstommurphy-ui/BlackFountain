@@ -4732,7 +4732,8 @@ function clearAllData() {
   }
   
   showToast('All data cleared', 'success');
-  setTimeout(() => location.reload(), 1500);
+  // Force hard reload with cache bypass
+  setTimeout(() => window.location.href = window.location.pathname + '?t=' + Date.now(), 500);
 }
 
 function openClearDataModal() {
@@ -4769,7 +4770,8 @@ function confirmClearAllData() {
   }
   
   showToast('All data cleared', 'success');
-  setTimeout(() => location.reload(), 1500);
+  // Force hard reload with cache bypass
+  setTimeout(() => window.location.href = window.location.pathname + '?t=' + Date.now(), 500);
 }
 
 function renderFiles() {
