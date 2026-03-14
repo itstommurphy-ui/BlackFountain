@@ -4715,6 +4715,9 @@ function clearAllData() {
   }
   
   localStorage.removeItem('blackfountain_v1');
+  localStorage.removeItem('filmforge_v1'); // also clear legacy key
+  localStorage.removeItem('filmforge_theme');
+  localStorage.removeItem('filmforge_font_size');
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
@@ -4735,6 +4738,9 @@ function confirmClearAllData() {
   
   closeModal('modal-clear-data');
   localStorage.removeItem('blackfountain_v1');
+  localStorage.removeItem('filmforge_v1'); // also clear legacy key
+  localStorage.removeItem('filmforge_theme');
+  localStorage.removeItem('filmforge_font_size');
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
