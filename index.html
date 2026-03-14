@@ -4724,7 +4724,14 @@ function clearAllData() {
   }
   keysToRemove.forEach(k => localStorage.removeItem(k));
   
-  showToast('All data cleared - reloading...', 'success');
+  // Also try unregistering service worker for fresh start
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    });
+  }
+  
+  showToast('All data cleared', 'success');
   setTimeout(() => location.reload(), 1500);
 }
 
@@ -4754,7 +4761,14 @@ function confirmClearAllData() {
   }
   keysToRemove.forEach(k => localStorage.removeItem(k));
   
-  showToast('All data cleared - reloading...', 'success');
+  // Also try unregistering service worker for fresh start
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    });
+  }
+  
+  showToast('All data cleared', 'success');
   setTimeout(() => location.reload(), 1500);
 }
 
