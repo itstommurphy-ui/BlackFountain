@@ -4714,10 +4714,16 @@ function clearAllData() {
     return;
   }
   
-  localStorage.removeItem('blackfountain_v1');
-  localStorage.removeItem('filmforge_v1'); // also clear legacy key
-  localStorage.removeItem('filmforge_theme');
-  localStorage.removeItem('filmforge_font_size');
+  // Clear all Black Fountain related keys
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.includes('blackfountain') || key.includes('filmforge'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
@@ -4737,10 +4743,17 @@ function confirmClearAllData() {
   }
   
   closeModal('modal-clear-data');
-  localStorage.removeItem('blackfountain_v1');
-  localStorage.removeItem('filmforge_v1'); // also clear legacy key
-  localStorage.removeItem('filmforge_theme');
-  localStorage.removeItem('filmforge_font_size');
+  
+  // Clear all Black Fountain related keys
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.includes('blackfountain') || key.includes('filmforge'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  
   showToast('All data cleared - reloading...', 'success');
   setTimeout(() => location.reload(), 1500);
 }
