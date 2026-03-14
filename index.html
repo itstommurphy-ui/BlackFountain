@@ -4758,7 +4758,13 @@ function confirmClearAllData() {
       keysToRemove.push(key);
     }
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach(k => { 
+    localStorage.removeItem(k); 
+    console.log('Removed:', k);
+  });
+  
+  // Also clear session storage
+  sessionStorage.clear();
   
   // Also try unregistering service worker for fresh start
   if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
@@ -4767,7 +4773,10 @@ function confirmClearAllData() {
     });
   }
   
-  showToast('All data cleared - please refresh the page manually', 'success');
+  // Reset store in memory
+  store = { projects: [], teamMembers: [], currentProjectId: null, files: [], contacts: [], locations: [] };
+  
+  showToast('All data cleared - please refresh the page', 'success');
 }
 
 function renderFiles() {
