@@ -4659,7 +4659,7 @@ function exportStore() {
   const a = document.createElement('a');
   const date = new Date().toISOString().split('T')[0];
   a.href = url;
-  a.download = `filmforge-backup-${date}.json`;
+  a.download = `blackfountain-backup-${date}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -5818,9 +5818,9 @@ function saveStore() {
   try { 
     localStorage.setItem('filmforge_v1', JSON.stringify(store)); 
     // Backup with timestamp for recovery
-    localStorage.setItem('filmforge_backup_' + Date.now(), JSON.stringify(store));
+    localStorage.setItem('blackfountain_backup_' + Date.now(), JSON.stringify(store));
     // Keep only last 5 backups
-    const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('filmforge_backup_'));
+    const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('blackfountain_backup_'));
     backupKeys.sort().slice(0, -5).forEach(k => localStorage.removeItem(k));
   } catch(e) {}
   // flash save indicator
@@ -7144,7 +7144,7 @@ async function shareCustomSectionFile(csId, fileId) {
         <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
         <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
-        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffilmforge.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fblackfountain.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -8175,7 +8175,7 @@ async function shareScriptFile(id) {
         <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
         <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
-        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffilmforge.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fblackfountain.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -13087,7 +13087,7 @@ function exportData() {
   const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`filmforge_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download=`blackfountain_backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   showToast('Data exported','success');
 }
