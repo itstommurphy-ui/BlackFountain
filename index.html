@@ -7124,7 +7124,7 @@ async function shareCustomSectionFile(csId, fileId) {
   const ovId = '_share-csf-' + fileId;
   const fname = f.name;
   const projTitle = p ? p.title : '';
-  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via FilmForge');
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via Black Fountain');
   const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
 
   const overlay = document.createElement('div');
@@ -8155,7 +8155,7 @@ async function shareScriptFile(id) {
   const ovId = '_share-' + id;
   const fname = s.name;
   const projTitle = p ? p.title : '';
-  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via FilmForge');
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via Black Fountain');
   const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
 
   const overlay = document.createElement('div');
