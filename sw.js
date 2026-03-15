@@ -1,9 +1,29 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v2';
+const CACHE_NAME = 'blackfountain-v9';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/css/base.css',
+  '/css/views.css',
+  '/js/store.js',
+  '/js/search.js',
+  '/js/settings.js',
+  '/js/views/nav.js',
+  '/js/views/dashboard.js',
+  '/js/views/production-plan.js',
+  '/js/views/email.js',
+  '/js/views/script.js',
+  '/js/views/breakdown.js',
+  '/js/views/callsheet.js',
+  '/js/views/schedule.js',
+  '/js/views/budget.js',
+  '/js/views/locations.js',
+  '/js/views/moodboard.js',
+  '/js/views/callsheet-html.js',
+  '/js/views/shotlist.js',
+  '/js/views/risk.js',
+  '/js/init.js',
 ];
 
 // Install event - cache resources
@@ -41,21 +61,21 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        
+
         return fetch(event.request).then(response => {
           // Don't cache non-successful responses
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-          
+
           // Clone the response
           const responseToCache = response.clone();
-          
+
           caches.open(CACHE_NAME)
             .then(cache => {
               cache.put(event.request, responseToCache);
             });
-          
+
           return response;
         });
       })

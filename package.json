@@ -1,0 +1,16 @@
+{
+  "name": "filmforge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "dev:python": "python3 -m http.server 3000",
+    "lint": "eslint js/**/*.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0"
+  }
+}
