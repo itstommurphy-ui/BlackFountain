@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FilmForge Screenplay</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #2b2b2b; font-family: 'Courier New', monospace; display: flex; flex-direction: column; height: 100vh; }
+
+  #toolbar {
+    background: #1a1a1a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #444;
+  }
+  #toolbar button {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+  #toolbar button:hover { background: #444; color: #fff; }
+  #toolbar select {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  #toolbar .sep { width: 1px; height: 24px; background: #555; margin: 0 4px; }
+  #toolbar label { color: #aaa; font-size: 12px; }
+
+  #pages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .page {
+    background: #fff;
+    width: 816px; /* 8.5in at 96dpi */
+    min-height: 1056px; /* 11in at 96dpi */
+    height: 1056px;
+    overflow: hidden;
+    padding: 96px 96px 96px 122px; /* 1in top/right/bottom, ~1.27in left */
+    font-size: 12pt;
+    line-height: 1;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    color: #000;
+  }
+
+  #script-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .page-break-ruler {
+    width: 816px;
+    border: none;
+    border-top: 2px dashed #aaa;
+    margin: 0;
+    position: relative;
+  }
+
+  /* Title Page */
+  #title-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+  }
+  #title-page .title-block { margin-top: 200px; }
+  #title-page [contenteditable] {
+    outline: none;
+    min-width: 200px;
+    display: inline-block;
+  }
+  #title-page [contenteditable]:focus { border-bottom: 1px dashed #aaa; }
+  #tp-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 12px; }
+  #tp-by { font-size: 12pt; display: block; margin-bottom: 6px; }
+  #tp-author { font-size: 12pt; display: block; margin-bottom: 60px; }
+  #tp-contact { font-size: 12pt; position: absolute; bottom: 96px; left: 122px; text-align: left; }
+
+  /* Script Lines */
+  .script-area { outline: none; }
+
+  .line {
+    display: block;
+    outline: none;
+    min-height: 1em;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.0;
+    margin-bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
+    color: #000;
+    caret-color: #000;
+  }
+
+  /* Line type styles */
+  .line[data-type="scene"] {
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+  }
+  .line[data-type="action"] {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+  }
+  .line[data-type="character"] {
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 0;
+    margin-left: 222px;
+    width: calc(100% - 222px);
+  }
+  .line[data-type="dialogue"] {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 111px;
+    width: calc(100% - 222px);
+  }
+  .line[data-type="parenthetical"] {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 148px;
+    width: calc(100% - 296px);
+  }
+  .line[data-type="transition"] {
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+    text-align: right;
+  }
+
+  /* Modal */
+  #modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: #2b2b2b;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 24px;
+    color: #ccc;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    max-width: 400px;
+    width: 90%;
+  }
+  #modal h3 { margin-bottom: 16px; color: #fff; }
+  #modal p { margin-bottom: 8px; line-height: 1.6; }
+  #modal kbd {
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 11px;
+  }
+  #modal button { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button onclick="showPage('title')">Title Page</button>
+  <button onclick="showPage('script')">Script</button>
+  <div class="sep"></div>
+  <label>Type:</label>
+  <select id="line-type-select" onchange="setLineType(this.value)">
+    <option value="scene">Scene Heading</option>
+    <option value="action" selected>Action</option>
+    <option value="character">Character</option>
+    <option value="dialogue">Dialogue</option>
+    <option value="parenthetical">Parenthetical</option>
+    <option value="transition">Transition</option>
+  </select>
+  <div class="sep"></div>
+  <button onclick="fmt('bold')"><b>B</b></button>
+  <button onclick="fmt('italic')"><i>I</i></button>
+  <button onclick="fmt('underline')"><u>U</u></button>
+  <div class="sep"></div>
+  <button onclick="exportPDF()">Export PDF</button>
+  <button onclick="document.getElementById('modal-overlay').classList.add('open')">?</button>
+</div>
+
+<div id="pages-container">
+  <!-- Title Page -->
+  <div class="page" id="title-page">
+    <div class="title-block">
+      <span id="tp-title" contenteditable="true" spellcheck="false">SCREENPLAY TITLE</span>
+      <span id="tp-by">Written by</span>
+      <span id="tp-author" contenteditable="true" spellcheck="false">Author Name</span>
+    </div>
+    <div id="tp-contact" contenteditable="true" spellcheck="false">Contact Info<br>email@example.com<br>Phone Number</div>
+  </div>
+
+  <!-- Script Page (grows freely, page breaks shown as rulers) -->
+  <div class="page" id="script-page" style="height:auto;overflow:visible;">
+    <div id="script-area" class="script-area" spellcheck="true"></div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h3>Keyboard Shortcuts</h3>
+    <p><kbd>Enter</kbd> — New line (auto-advances type)</p>
+    <p><kbd>Tab</kbd> — Cycle line type</p>
+    <p><kbd>Ctrl+B</kbd> — Bold</p>
+    <p><kbd>Ctrl+I</kbd> — Italic</p>
+    <p><kbd>Ctrl+U</kbd> — Underline</p>
+    <p>Type <kbd>INT.</kbd> or <kbd>EXT.</kbd> + Space → Scene Heading</p>
+    <p>Type <kbd>TO:</kbd> at end of line → Transition</p>
+    <p>Parentheticals auto-wrap with <kbd>(</kbd> <kbd>)</kbd></p>
+    <button onclick="document.getElementById('modal-overlay').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+const LINE_TYPES = ['scene','action','character','dialogue','parenthetical','transition'];
+const TYPE_CYCLE = {
+  scene: 'action',
+  action: 'action',
+  character: 'dialogue',
+  dialogue: 'character',
+  parenthetical: 'dialogue',
+  transition: 'action'
+};
+
+function showPage(which) {
+  document.getElementById('title-page').style.display = which === 'title' ? 'flex' : 'none';
+  document.getElementById('script-page').style.display = which === 'script' ? 'block' : 'none';
+}
+
+function createLine(type = 'action', text = '') {
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.dataset.type = type;
+  div.contentEditable = 'true';
+  div.spellcheck = true;
+  if (text) div.textContent = text;
+
+  div.addEventListener('keydown', onLineKeydown);
+  div.addEventListener('input', onLineInput);
+  div.addEventListener('focus', onLineFocus);
+  return div;
+}
+
+function onLineFocus(e) {
+  document.getElementById('line-type-select').value = e.target.dataset.type;
+}
+
+function onLineInput(e) {
+  const line = e.target;
+  const text = line.textContent;
+
+  // Auto-detect scene heading
+  if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.)\s/i.test(text) && line.dataset.type !== 'scene') {
+    setLineTypeOn(line, 'scene');
+  }
+  // Auto-detect transition (ends with TO:)
+  if (/\bTO:$/.test(text.trim()) && line.dataset.type !== 'transition') {
+    setLineTypeOn(line, 'transition');
+  }
+  // Auto-parenthetical wrapping
+  if (line.dataset.type === 'parenthetical') {
+    wrapParenthetical(line);
+  }
+}
+
+function wrapParenthetical(line) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+
+  // Measure cursor offset from start of line's text content
+  const before = sel.getRangeAt(0);
+  const rangeToCursor = document.createRange();
+  rangeToCursor.setStart(line, 0);
+  rangeToCursor.setEnd(before.startContainer, before.startOffset);
+  const cursorOffset = rangeToCursor.toString().length;
+
+  let t = line.textContent;
+  const hadOpenParen = t.startsWith('(');
+  if (!hadOpenParen) t = '(' + t;
+  if (!t.endsWith(')')) t = t.replace(/\)$/, '') + ')';
+
+  if (line.textContent !== t) {
+    line.textContent = t;
+    // Restore cursor: if we just added '(' at the front, shift offset by 1
+    const newOffset = Math.min(hadOpenParen ? cursorOffset : cursorOffset + 1, t.length - 1);
+    try {
+      const range = document.createRange();
+      range.setStart(line.firstChild || line, newOffset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch(_) {}
+  }
+}
+
+function onLineKeydown(e) {
+  const line = e.target;
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const nextType = TYPE_CYCLE[line.dataset.type] || 'action';
+    const newLine = createLine(nextType);
+    line.after(newLine);
+    newLine.focus();
+    // place cursor at start
+    const range = document.createRange();
+    range.setStart(newLine, 0);
+    range.collapse(true);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    return;
+  }
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const idx = LINE_TYPES.indexOf(line.dataset.type);
+    const next = LINE_TYPES[(idx + 1) % LINE_TYPES.length];
+    setLineTypeOn(line, next);
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+
+    // Measure cursor char offset from start/end of line text
+    const text = line.textContent;
+    const rangeToCursor = document.createRange();
+    rangeToCursor.setStart(line, 0);
+    rangeToCursor.setEnd(range.startContainer, range.startOffset);
+    const offsetFromStart = rangeToCursor.toString().length;
+
+    const atStart = offsetFromStart === 0;
+    const atEnd = offsetFromStart === text.length;
+
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && atStart) {
+      const prev = line.previousElementSibling;
+      if (prev) {
+        e.preventDefault();
+        prev.focus();
+        // place cursor at end of previous line
+        const r = document.createRange();
+        r.selectNodeContents(prev);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+      return;
+    }
+
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && atEnd) {
+      const next = line.nextElementSibling;
+      if (next) {
+        e.preventDefault();
+        next.focus();
+        // place cursor at start of next line
+        const r = document.createRange();
+        r.setStart(next, 0);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+      return;
+    }
+  }
+
+  if (e.key === 'Backspace' && line.textContent === '') {
+    const prev = line.previousElementSibling;
+    if (prev) {
+      e.preventDefault();
+      line.remove();
+      prev.focus();
+      // move cursor to end
+      const range = document.createRange();
+      range.selectNodeContents(prev);
+      range.collapse(false);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    }
+    return;
+  }
+
+  // Ctrl shortcuts
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'b') { e.preventDefault(); fmt('bold'); }
+    if (e.key === 'i') { e.preventDefault(); fmt('italic'); }
+    if (e.key === 'u') { e.preventDefault(); fmt('underline'); }
+  }
+}
+
+function setLineTypeOn(line, type) {
+  line.dataset.type = type;
+  document.getElementById('line-type-select').value = type;
+}
+
+function setLineType(type) {
+  const sel = window.getSelection();
+  if (!sel.anchorNode) return;
+  const line = sel.anchorNode.nodeType === 3
+    ? sel.anchorNode.parentElement.closest('.line')
+    : sel.anchorNode.closest?.('.line');
+  if (line) setLineTypeOn(line, type);
+}
+
+function fmt(cmd) {
+  document.execCommand(cmd, false, null);
+}
+
+// Init with one action line
+const area = document.getElementById('script-area');
+area.appendChild(createLine('scene', 'INT. LOCATION - DAY'));
+area.appendChild(createLine('action', ''));
+area.firstChild.focus();
+
+showPage('script');
+
+// --- Visual page break rulers ---
+const PAGE_H_PX = 1056; // 11in at 96dpi
+const PAGE_PAD_TOP = 96;
+const PAGE_PAD_BOT = 96;
+const CONTENT_H = PAGE_H_PX - PAGE_PAD_TOP - PAGE_PAD_BOT; // 864px usable
+
+function updatePageBreaks() {
+  const scriptPage = document.getElementById('script-page');
+  const container = document.getElementById('pages-container');
+
+  // Remove old rulers
+  container.querySelectorAll('.page-break-ruler').forEach(r => r.remove());
+
+  const totalH = document.getElementById('script-area').scrollHeight;
+  const numBreaks = Math.floor(totalH / CONTENT_H);
+
+  for (let i = 1; i <= numBreaks; i++) {
+    const ruler = document.createElement('hr');
+    ruler.className = 'page-break-ruler';
+    // Position ruler relative to script-page top
+    const yFromPageTop = PAGE_PAD_TOP + i * CONTENT_H;
+    ruler.style.cssText = `position:absolute;top:${yFromPageTop}px;left:0;width:100%;border:none;border-top:2px dashed #bbb;margin:0;pointer-events:none;`;
+    scriptPage.appendChild(ruler);
+  }
+
+  // Ensure script-page is tall enough
+  scriptPage.style.minHeight = (totalH + PAGE_PAD_TOP + PAGE_PAD_BOT) + 'px';
+}
+
+// Observe script area size changes
+new ResizeObserver(updatePageBreaks).observe(document.getElementById('script-area'));
+
+// PDF Export
+async function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'in', format: 'letter' });
+  const font = 'courier';
+  const fontSize = 12;
+  const lh = 1/6; // 1 line = 1/6 inch (12pt at 6 lines/inch)
+  doc.setFont(font);
+  doc.setFontSize(fontSize);
+
+  // --- Title Page ---
+  const title = document.getElementById('tp-title').textContent.trim();
+  const author = document.getElementById('tp-author').textContent.trim();
+  const contact = document.getElementById('tp-contact').innerText.trim();
+
+  doc.text(title, 4.25, 3.5, { align: 'center', maxWidth: 6 });
+  doc.text('Written by', 4.25, 3.5 + lh * 2, { align: 'center' });
+  doc.text(author, 4.25, 3.5 + lh * 4, { align: 'center' });
+  doc.text(contact, 1.27, 10, { maxWidth: 3 });
+
+  // --- Script Pages ---
+  doc.addPage();
+
+  const marginTop = 1.0;
+  const marginBottom = 1.0;
+  const pageHeight = 11;
+  const usableHeight = pageHeight - marginTop - marginBottom;
+  const leftBase = 1.27; // ~1.27in left margin
+
+  // Indents in inches from left margin
+  const indents = {
+    scene:         0,
+    action:        0,
+    character:     2.3,
+    dialogue:      1.16,
+    parenthetical: 1.54,
+    transition:    0,
+  };
+  const widths = {
+    scene:         6.0,
+    action:        6.0,
+    character:     3.5,
+    dialogue:      3.5,
+    parenthetical: 3.0,
+    transition:    6.0,
+  };
+
+  let y = marginTop;
+
+  function addPage() {
+    doc.addPage();
+    y = marginTop;
+  }
+
+  function checkPage(needed) {
+    if (y + needed > pageHeight - marginBottom) addPage();
+  }
+
+  const lines = document.querySelectorAll('#script-area .line');
+  lines.forEach(line => {
+    const type = line.dataset.type || 'action';
+    const rawText = line.innerText.trim();
+    if (!rawText) { y += lh; return; }
+
+    const x = leftBase + (indents[type] || 0);
+    const maxW = widths[type] || 6.0;
+
+    // Bold for scene headings
+    if (type === 'scene') doc.setFont(font, 'bold');
+    else doc.setFont(font, 'normal');
+
+    // Uppercase for scene/character/transition
+    const text = ['scene','character','transition'].includes(type)
+      ? rawText.toUpperCase() : rawText;
+
+    // Right-align transitions
+    const opts = type === 'transition'
+      ? { align: 'right', maxWidth: maxW }
+      : { maxWidth: maxW };
+    const xPos = type === 'transition' ? leftBase + 6.0 : x;
+
+    // Split into wrapped lines
+    const splitLines = doc.splitTextToSize(text, maxW);
+    const blockH = splitLines.length * lh;
+
+    // Extra spacing before certain types
+    if (['scene','action','character','transition'].includes(type)) {
+      checkPage(lh + blockH);
+      if (type !== 'action' || y > marginTop) y += lh;
+    } else {
+      checkPage(blockH);
+    }
+
+    doc.text(splitLines, xPos, y, opts);
+    y += blockH;
+  });
+
+  doc.save('screenplay.pdf');
+}
+</script>
+</body>
+</html>

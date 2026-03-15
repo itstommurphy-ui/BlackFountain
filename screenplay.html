@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FilmForge Screenplay</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #2b2b2b; font-family: 'Courier New', monospace; display: flex; flex-direction: column; height: 100vh; }
+
+  #toolbar {
+    background: #1a1a1a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #444;
+  }
+  #toolbar button {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+  #toolbar button:hover { background: #444; color: #fff; }
+  #toolbar button.active { background: #555; color: #fff; border-color: #888; }
+  #toolbar select {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  #toolbar .sep { width: 1px; height: 24px; background: #555; margin: 0 4px; }
+  #toolbar label { color: #aaa; font-size: 12px; }
+  #counts { color: #777; font-size: 12px; margin-left: auto; font-family: 'Courier New', monospace; }
+
+  #pages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .page {
+    background: #fff;
+    width: 816px; /* 8.5in at 96dpi */
+    min-height: 1056px; /* 11in at 96dpi */
+    height: 1056px;
+    overflow: visible;
+    padding: 96px 96px 96px 122px; /* 1in top/right/bottom, ~1.27in left */
+    font-size: 12pt;
+    line-height: 1;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    color: #000;
+  }
+
+  #script-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Visual page gap */
+  .page-spacer {
+    pointer-events: none;
+    position: relative;
+  }
+  .page-spacer::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: -122px;
+    right: -96px;
+    top: 50%;
+    height: 32px;
+    margin-top: -16px;
+    background: #2b2b2b;
+  }
+  .page-gap {
+    position: absolute;
+    left: -30px;
+    right: -30px;
+    background: #2b2b2b;
+    height: 40px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #666;
+    font-family: 'Courier New', monospace;
+  }
+
+  .page-break-ruler {
+    width: 816px;
+    border: none;
+    border-top: 2px dashed #aaa;
+    margin: 0;
+    position: relative;
+  }
+
+  /* Title Page */
+  #title-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+  }
+  #title-page .title-block { margin-top: 200px; }
+  #title-page [contenteditable] {
+    outline: none;
+    min-width: 200px;
+    display: inline-block;
+  }
+  #title-page [contenteditable]:focus { border-bottom: 1px dashed #aaa; }
+  #tp-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 12px; }
+  #tp-by { font-size: 12pt; display: block; margin-bottom: 6px; }
+  #tp-author { font-size: 12pt; display: block; margin-bottom: 60px; }
+  #tp-contact { font-size: 12pt; position: absolute; bottom: 96px; left: 122px; text-align: left; }
+
+  /* Script Lines */
+  .script-area { outline: none; position: relative; }
+
+  .line {
+    display: block;
+    outline: none;
+    min-height: 1em;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.0;
+    margin-bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
+    color: #000;
+    caret-color: #000;
+  }
+
+  /* Line type styles */
+  .line[data-type="scene"] {
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+  }
+  .line[data-type="action"] {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+  }
+  .line[data-type="character"] {
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 0;
+    margin-left: 222px;
+    width: calc(100% - 222px);
+  }
+  .line[data-type="dialogue"] {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 111px;
+    width: calc(100% - 222px);
+  }
+  .line[data-type="parenthetical"] {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 148px;
+    width: calc(100% - 296px);
+  }
+  .line[data-type="transition"] {
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    margin-left: 0;
+    width: 100%;
+    text-align: right;
+  }
+  .line[data-type="dual-char-left"],
+  .line[data-type="dual-left"],
+  .line[data-type="dual-char-right"],
+  .line[data-type="dual-right"] {
+    display: block;
+    width: auto;
+    margin: 2px 0;
+    margin-left: 0;
+  }
+  .line[data-type="dual-char-left"],
+  .line[data-type="dual-char-right"] { text-transform: uppercase; margin-left: 20px; }
+
+  .dual-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .dual-wrapper .dual-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Context menu */
+  #ctx-menu {
+    display: none;
+    position: fixed;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    z-index: 200;
+    min-width: 160px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  #ctx-menu div {
+    padding: 7px 14px;
+    color: #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+  }
+  #ctx-menu div:hover { background: #333; color: #fff; }
+  #ctx-menu div.active-type { color: #fff; background: #2a4a2a; }
+
+  /* Modal */
+  #modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: #2b2b2b;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 24px;
+    color: #ccc;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    max-width: 400px;
+    width: 90%;
+  }
+  #modal h3 { margin-bottom: 16px; color: #fff; }
+  #modal p { margin-bottom: 8px; line-height: 1.6; }
+  #modal kbd {
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 11px;
+  }
+  #modal button { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button onclick="showPage('title')">Title Page</button>
+  <button onclick="showPage('script')">Script</button>
+  <div class="sep"></div>
+  <label>Type:</label>
+  <select id="line-type-select" onchange="setLineType(this.value)">
+    <option value="scene">Scene Heading</option>
+    <option value="action" selected>Action</option>
+    <option value="character">Character</option>
+    <option value="dialogue">Dialogue</option>
+    <option value="parenthetical">Parenthetical</option>
+    <option value="transition">Transition</option>
+    <option value="dual-char-left">Dual Character (Left)</option>
+    <option value="dual-left">Dual Dialogue (Left)</option>
+    <option value="dual-char-right">Dual Character (Right)</option>
+    <option value="dual-right">Dual Dialogue (Right)</option>
+  </select>
+  <div class="sep"></div>
+  <button id="btn-bold" onclick="fmt('bold')"><b>B</b></button>
+  <button id="btn-italic" onclick="fmt('italic')"><i>I</i></button>
+  <button id="btn-underline" onclick="fmt('underline')"><u>U</u></button>
+  <div class="sep"></div>
+  <button onclick="exportPDF()">Export PDF</button>
+  <button onclick="document.getElementById('modal-overlay').classList.add('open')">?</button>
+
+<!-- Context Menu -->
+<div id="ctx-menu"></div>
+  <span id="counts">0 words &nbsp;|&nbsp; p. 1</span>
+</div>
+
+<div id="pages-container">
+  <!-- Title Page -->
+  <div class="page" id="title-page">
+    <div class="title-block">
+      <span id="tp-title" contenteditable="true" spellcheck="false">SCREENPLAY TITLE</span>
+      <span id="tp-by">Written by</span>
+      <span id="tp-author" contenteditable="true" spellcheck="false">Author Name</span>
+    </div>
+    <div id="tp-contact" contenteditable="true" spellcheck="false">Contact Info<br>email@example.com<br>Phone Number</div>
+  </div>
+
+  <!-- Script Page (grows freely, page breaks shown as rulers) -->
+  <div class="page" id="script-page" style="height:auto;overflow:visible;">
+    <div id="script-area" class="script-area" spellcheck="true"></div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h3>Keyboard Shortcuts</h3>
+    <p><kbd>Enter</kbd> — New line (auto-advances type)</p>
+    <p><kbd>Tab</kbd> — Cycle line type</p>
+    <p><kbd>Ctrl+B</kbd> — Bold</p>
+    <p><kbd>Ctrl+I</kbd> — Italic</p>
+    <p><kbd>Ctrl+U</kbd> — Underline</p>
+    <p>Type <kbd>INT.</kbd> or <kbd>EXT.</kbd> + Space → Scene Heading</p>
+    <p>Type <kbd>TO:</kbd> at end of line → Transition</p>
+    <p>Parentheticals auto-wrap with <kbd>(</kbd> <kbd>)</kbd></p>
+    <p>Right-click a line → change type</p>
+    <p><kbd>Shift+Click</kbd> to select across multiple lines</p>
+    <p><kbd>Dual-Left</kbd> / <kbd>Dual-Right</kbd> for side-by-side dialogue</p>
+    <button onclick="document.getElementById('modal-overlay').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+const LINE_TYPES = ['scene','action','character','dialogue','parenthetical','transition','dual-char-left','dual-left','dual-char-right','dual-right'];
+const TYPE_CYCLE = {
+  scene: 'action',
+  action: 'action',
+  character: 'dialogue',
+  dialogue: 'character',
+  parenthetical: 'dialogue',
+  transition: 'action',
+  'dual-char-left': 'dual-left',
+  'dual-left': 'dual-char-right',
+  'dual-char-right': 'dual-right',
+  'dual-right': 'action'
+};
+
+function showPage(which) {
+  document.getElementById('title-page').style.display = which === 'title' ? 'flex' : 'none';
+  document.getElementById('script-page').style.display = which === 'script' ? 'block' : 'none';
+}
+
+function createLine(type = 'action', text = '') {
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.dataset.type = type;
+  div.contentEditable = 'true';
+  div.spellcheck = true;
+  if (text) div.textContent = text;
+
+  div.addEventListener('keydown', onLineKeydown);
+  div.addEventListener('input', onLineInput);
+  div.addEventListener('focus', onLineFocus);
+  div.addEventListener('paste', onLinePaste);
+  div.addEventListener('contextmenu', onLineContextMenu);
+  return div;
+}
+
+// Insert a line after a reference node, handling dual-wrapper grouping
+function insertLineAfter(newLine, ref) {
+  const type = newLine.dataset.type;
+  // Find the wrapper the ref lives in (if any)
+  const currentWrapper = ref.closest('.dual-wrapper');
+
+  if (type === 'dual-char-left') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dual-wrapper';
+    const colLeft = document.createElement('div');
+    colLeft.className = 'dual-col';
+    const colRight = document.createElement('div');
+    colRight.className = 'dual-col';
+    wrapper.appendChild(colLeft);
+    wrapper.appendChild(colRight);
+    colLeft.appendChild(newLine);
+    // Insert after current wrapper if inside one, else after ref
+    if (currentWrapper) currentWrapper.after(wrapper);
+    else ref.after(wrapper);
+  } else if (type === 'dual-left') {
+    if (currentWrapper) currentWrapper.querySelector('.dual-col:first-child').appendChild(newLine);
+    else ref.after(newLine);
+  } else if (type === 'dual-char-right') {
+    if (currentWrapper) currentWrapper.querySelector('.dual-col:last-child').appendChild(newLine);
+    else ref.after(newLine);
+  } else if (type === 'dual-right') {
+    if (currentWrapper) currentWrapper.querySelector('.dual-col:last-child').appendChild(newLine);
+    else ref.after(newLine);
+  } else {
+    if (currentWrapper) currentWrapper.after(newLine);
+    else ref.after(newLine);
+  }
+}
+
+function allLines() {
+  return [...document.querySelectorAll('#script-area .line')];
+}
+// Helper: previous line in document order, crossing wrapper boundaries
+function prevLine(line) {
+  const lines = allLines();
+  const i = lines.indexOf(line);
+  return i > 0 ? lines[i - 1] : null;
+}
+// Helper: next line in document order
+function nextLine(line) {
+  const lines = allLines();
+  const i = lines.indexOf(line);
+  return i >= 0 && i < lines.length - 1 ? lines[i + 1] : null;
+}
+// Helper: focus a line and place cursor at end
+function focusEnd(line) {
+  line.focus();
+  const r = document.createRange();
+  r.selectNodeContents(line);
+  r.collapse(false);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(r);
+  line.scrollIntoView({ block: 'nearest' });
+}
+// Helper: focus a line and place cursor at start
+function focusStart(line) {
+  line.focus();
+  const r = document.createRange();
+  r.setStart(line, 0);
+  r.collapse(true);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(r);
+  line.scrollIntoView({ block: 'nearest' });
+}
+
+function onLineFocus(e) {
+  document.getElementById('line-type-select').value = e.target.dataset.type;
+}
+
+function onLinePaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  const pasteLines = text.split(/\r?\n/).filter(l => l.trim());
+  let target = e.target;
+
+  pasteLines.forEach((raw, i) => {
+    const t = raw.trim();
+    let type = 'action';
+    if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.)/i.test(t)) type = 'scene';
+    else if (/^[A-Z][A-Z\s\-\.]+$/.test(t) && t.length < 40) type = 'character';
+    else if (/^\(.*\)$/.test(t)) type = 'parenthetical';
+    else if (/\bTO:$/.test(t)) type = 'transition';
+
+    if (i === 0) {
+      target.textContent = t;
+      setLineTypeOn(target, type);
+    } else {
+      const newLine = createLine(type, t);
+      target.after(newLine);
+      target = newLine;
+    }
+  });
+  // focus last inserted line
+  const r = document.createRange();
+  r.selectNodeContents(target);
+  r.collapse(false);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(r);
+  target.focus();
+  scheduleSave();
+}
+
+// --- Context menu ---
+const CTX_LABELS = {
+  scene: 'Scene Heading', action: 'Action', character: 'Character',
+  dialogue: 'Dialogue', parenthetical: 'Parenthetical', transition: 'Transition',
+  'dual-char-left': 'Dual Character (Left)', 'dual-left': 'Dual Dialogue (Left)',
+  'dual-char-right': 'Dual Character (Right)', 'dual-right': 'Dual Dialogue (Right)'
+};
+let ctxTargetLine = null;
+
+function onLineContextMenu(e) {
+  e.preventDefault();
+  ctxTargetLine = e.currentTarget;
+  const menu = document.getElementById('ctx-menu');
+  menu.innerHTML = LINE_TYPES.map(t =>
+    `<div class="${t === ctxTargetLine.dataset.type ? 'active-type' : ''}" data-type="${t}">${CTX_LABELS[t]}</div>`
+  ).join('');
+  menu.style.cssText = `display:block;left:${e.clientX}px;top:${e.clientY}px;`;
+}
+
+document.getElementById('ctx-menu').addEventListener('click', e => {
+  const t = e.target.dataset.type;
+  if (t && ctxTargetLine) setLineTypeOn(ctxTargetLine, t);
+  document.getElementById('ctx-menu').style.display = 'none';
+});
+
+document.addEventListener('click', () => {
+  document.getElementById('ctx-menu').style.display = 'none';
+});
+
+function onLineInput(e) {
+  const line = e.target;
+  const text = line.textContent;
+
+  // Auto-detect scene heading
+  if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.)\s/i.test(text) && line.dataset.type !== 'scene') {
+    setLineTypeOn(line, 'scene');
+  }
+  // Auto-detect transition (ends with TO:)
+  if (/\bTO:$/.test(text.trim()) && line.dataset.type !== 'transition') {
+    setLineTypeOn(line, 'transition');
+  }
+  // Auto-parenthetical wrapping
+  if (line.dataset.type === 'parenthetical') {
+    wrapParenthetical(line);
+  }
+}
+
+function wrapParenthetical(line) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+
+  // Measure cursor offset from start of line's text content
+  const before = sel.getRangeAt(0);
+  const rangeToCursor = document.createRange();
+  rangeToCursor.setStart(line, 0);
+  rangeToCursor.setEnd(before.startContainer, before.startOffset);
+  const cursorOffset = rangeToCursor.toString().length;
+
+  let t = line.textContent;
+  const hadOpenParen = t.startsWith('(');
+  if (!hadOpenParen) t = '(' + t;
+  if (!t.endsWith(')')) t = t.replace(/\)$/, '') + ')';
+
+  if (line.textContent !== t) {
+    line.textContent = t;
+    // Restore cursor: if we just added '(' at the front, shift offset by 1
+    const newOffset = Math.min(hadOpenParen ? cursorOffset : cursorOffset + 1, t.length - 1);
+    try {
+      const range = document.createRange();
+      range.setStart(line.firstChild || line, newOffset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch(_) {}
+  }
+}
+
+function onLineKeydown(e) {
+  const line = e.target;
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const nextType = TYPE_CYCLE[line.dataset.type] || 'action';
+    const newLine = createLine(nextType);
+    insertLineAfter(newLine, line);
+    newLine.focus();
+    const range = document.createRange();
+    range.setStart(newLine, 0);
+    range.collapse(true);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    return;
+  }
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const idx = LINE_TYPES.indexOf(line.dataset.type);
+    const next = LINE_TYPES[(idx + 1) % LINE_TYPES.length];
+    setLineTypeOn(line, next);
+    line.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+
+    // Measure cursor char offset from start/end of line text
+    const text = line.textContent;
+    const rangeToCursor = document.createRange();
+    rangeToCursor.setStart(line, 0);
+    rangeToCursor.setEnd(range.startContainer, range.startOffset);
+    const offsetFromStart = rangeToCursor.toString().length;
+
+    const atStart = offsetFromStart === 0;
+    const atEnd = offsetFromStart === text.length;
+
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && atStart) {
+      const prev = prevLine(line);
+      if (prev) { e.preventDefault(); focusEnd(prev); }
+      return;
+    }
+
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && atEnd) {
+      const next = nextLine(line);
+      if (next) { e.preventDefault(); focusStart(next); }
+      return;
+    }
+  }
+
+  if (e.key === 'Backspace' && line.textContent === '') {
+    const prev = prevLine(line);
+    if (prev) {
+      e.preventDefault();
+      // Clean up empty dual-col/wrapper if needed
+      const col = line.parentElement;
+      line.remove();
+      if (col?.classList.contains('dual-col') && !col.querySelector('.line')) {
+        const wrapper = col.closest('.dual-wrapper');
+        if (wrapper && !wrapper.querySelector('.line')) wrapper.remove();
+      }
+      focusEnd(prev);
+    }
+    return;
+  }
+
+  // Ctrl shortcuts
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'b') { e.preventDefault(); fmt('bold'); }
+    if (e.key === 'i') { e.preventDefault(); fmt('italic'); }
+    if (e.key === 'u') { e.preventDefault(); fmt('underline'); }
+  }
+}
+
+// Simple undo stack for non-text changes (line type switches)
+const typeUndoStack = [];
+
+function setLineTypeOn(line, type) {
+  const prev = line.dataset.type;
+  if (prev === type) return;
+  typeUndoStack.push({ line, type: prev });
+  line.dataset.type = type;
+  document.getElementById('line-type-select').value = type;
+  // When switching to dual-char-left, build wrapper in-place
+  if (type === 'dual-char-left' && !line.closest('.dual-wrapper')) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dual-wrapper';
+    const colLeft = document.createElement('div'); colLeft.className = 'dual-col';
+    const colRight = document.createElement('div'); colRight.className = 'dual-col';
+    wrapper.appendChild(colLeft); wrapper.appendChild(colRight);
+    line.replaceWith(wrapper);
+    colLeft.appendChild(line);
+    line.focus();
+  }
+}
+
+function setLineType(type) {
+  const sel = window.getSelection();
+  if (!sel.anchorNode) return;
+  const line = sel.anchorNode.nodeType === 3
+    ? sel.anchorNode.parentElement.closest('.line')
+    : sel.anchorNode.closest?.('.line');
+  if (line) setLineTypeOn(line, type);
+}
+
+function fmt(cmd) {
+  document.execCommand(cmd, false, null);
+  updateFormatButtons();
+}
+
+function updateFormatButtons() {
+  document.getElementById('btn-bold').classList.toggle('active', document.queryCommandState('bold'));
+  document.getElementById('btn-italic').classList.toggle('active', document.queryCommandState('italic'));
+  document.getElementById('btn-underline').classList.toggle('active', document.queryCommandState('underline'));
+}
+
+// Cmd+A: select only script area content
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+    const area = document.getElementById('script-area');
+    if (area.contains(document.activeElement)) {
+      e.preventDefault();
+      const r = document.createRange();
+      r.selectNodeContents(area);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(r);
+    }
+  }
+  // Backspace with multi-line selection
+  if (e.key === 'Backspace') {
+    const sel = window.getSelection();
+    const area = document.getElementById('script-area');
+    if (sel && !sel.isCollapsed && (area.contains(sel.anchorNode) || sel.anchorNode === area)) {
+      const lines = [...area.querySelectorAll('.line')];
+      if (!lines.length) return;
+      const resolve = n => {
+        const el = n.nodeType === 3 ? n.parentElement : n;
+        return el.closest('.line') || (el === area || area.contains(el) ? lines[0] : null);
+      };
+      const anchorLine = resolve(sel.anchorNode);
+      const focusLine = resolve(sel.focusNode);
+      const allSelected = sel.anchorNode === area || sel.focusNode === area;
+      if (allSelected) {
+        e.preventDefault();
+        area.innerHTML = '';
+        const blank = createLine('action');
+        area.appendChild(blank);
+        blank.focus();
+        return;
+      }
+      // Only intercept if selection spans multiple lines
+      if (anchorLine && focusLine && anchorLine !== focusLine) {
+        e.preventDefault();
+        const ai = lines.indexOf(anchorLine), fi = lines.indexOf(focusLine);
+        const [first, last] = ai <= fi ? [ai, fi] : [fi, ai];
+        lines[first].innerHTML = '';
+        for (let i = last; i > first; i--) {
+          const l = lines[i];
+          const wrapper = l.parentElement?.classList.contains('dual-col') ? l.parentElement.closest('.dual-wrapper') : null;
+          l.remove();
+          if (wrapper && !wrapper.querySelector('.line')) wrapper.remove();
+        }
+        lines[first].focus();
+        const r = document.createRange(); r.setStart(lines[first], 0); r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      }
+    }
+  }
+  // Cmd+Z: pop type undo stack if non-empty
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && typeUndoStack.length) {
+    const last = typeUndoStack[typeUndoStack.length - 1];
+    // Only intercept if the line still exists in the DOM
+    if (document.getElementById('script-area').contains(last.line)) {
+      e.preventDefault();
+      last.line.dataset.type = last.type;
+      document.getElementById('line-type-select').value = last.type;
+      typeUndoStack.pop();
+    }
+  }
+});
+
+document.addEventListener('selectionchange', updateFormatButtons);
+
+// --- Save / Load ---
+const SAVE_KEY = 'filmforge_screenplay';
+
+function saveToStorage() {
+  const data = {
+    title: document.getElementById('tp-title').innerHTML,
+    author: document.getElementById('tp-author').innerHTML,
+    contact: document.getElementById('tp-contact').innerHTML,
+    lines: [...document.querySelectorAll('#script-area .line')].map(l => ({
+      type: l.dataset.type,
+      html: l.innerHTML
+    }))
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function loadFromStorage() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    document.getElementById('tp-title').innerHTML = data.title || '';
+    document.getElementById('tp-author').innerHTML = data.author || '';
+    document.getElementById('tp-contact').innerHTML = data.contact || '';
+    const area = document.getElementById('script-area');
+    area.innerHTML = '';
+    const lastLine = () => area.querySelector('.line:last-of-type') || area.lastElementChild;
+    (data.lines || []).forEach(l => {
+      const line = createLine(l.type);
+      line.innerHTML = l.html;
+      const prev = lastLine();
+      if (prev) insertLineAfter(line, prev);
+      else area.appendChild(line);
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+let saveTimer;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToStorage, 800);
+}
+
+// Attach save trigger to script area
+document.getElementById('script-area').addEventListener('input', scheduleSave);
+['tp-title','tp-author','tp-contact'].forEach(id =>
+  document.getElementById(id).addEventListener('input', scheduleSave)
+);
+
+// --- Page break constants ---
+const PAGE_H_PX = 1056;
+const PAGE_PAD_TOP = 96;
+const PAGE_PAD_BOT = 96;
+const PAGE_LINE_H = 16;
+const GAP_H = PAGE_LINE_H * 18;
+const CONTENT_H = PAGE_H_PX - PAGE_PAD_TOP - PAGE_PAD_BOT;
+const PAGE_BREATHE = PAGE_LINE_H * 3;
+
+// --- Word / page count ---
+function updateCounts() {
+  const text = document.getElementById('script-area').innerText;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const totalH = document.getElementById('script-area').scrollHeight;
+  const pages = Math.max(1, Math.ceil(totalH / CONTENT_H));
+  document.getElementById('counts').textContent = `${words} words \u00a0|\u00a0 ${pages} p.`;
+}
+
+new ResizeObserver(() => { updatePageBreaks(); updateCounts(); }).observe(document.getElementById('script-area'));
+
+// Init
+const area = document.getElementById('script-area');
+if (!loadFromStorage()) {
+  area.appendChild(createLine('scene', 'INT. LOCATION - DAY'));
+  area.appendChild(createLine('action', ''));
+}
+area.firstChild.focus();
+showPage('script');
+
+// --- Visual page break rulers ---
+function updatePageBreaks() {
+  const scriptPage = document.getElementById('script-page');
+
+  // Remove all previous spacers and bars
+  scriptPage.querySelectorAll('.page-break-ruler, .page-gap, .page-bar').forEach(r => r.remove());
+  document.querySelectorAll('#script-area .page-spacer').forEach(s => s.remove());
+  document.querySelectorAll('#script-area .line').forEach(l => {
+    delete l.dataset.spacerAdded;
+  });
+
+  const area = document.getElementById('script-area');
+  const totalH = area.scrollHeight;
+  const numBreaks = Math.floor(totalH / CONTENT_H);
+  const lines = [...document.querySelectorAll('#script-area .line')];
+
+  // Get line top relative to #script-area, walking up through any wrappers
+  function lineOffsetTop(el) {
+    let top = 0;
+    while (el && el !== area) { top += el.offsetTop; el = el.offsetParent; }
+    return top;
+  }
+
+  for (let i = 1; i <= numBreaks; i++) {
+    const breakY = i * CONTENT_H;
+    for (const line of lines) {
+      if (line.dataset.spacerAdded) continue;
+      const lineTop = lineOffsetTop(line);
+      if (lineTop >= breakY - PAGE_BREATHE) {
+        const spacer = document.createElement('div');
+        spacer.className = 'page-spacer';
+        spacer.style.height = `${GAP_H}px`;
+        line.before(spacer);
+        line.dataset.spacerAdded = '1';
+        break;
+      }
+    }
+  }
+
+  scriptPage.style.minHeight = (totalH + PAGE_PAD_TOP + PAGE_PAD_BOT + numBreaks * GAP_H) + 'px';
+}
+
+
+
+// PDF Export
+async function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'in', format: 'letter' });
+  const font = 'courier';
+  const fontSize = 12;
+  const lh = 1/6; // 1 line = 1/6 inch (12pt at 6 lines/inch)
+  doc.setFont(font);
+  doc.setFontSize(fontSize);
+
+  // --- Title Page ---
+  const title = document.getElementById('tp-title').textContent.trim();
+  const author = document.getElementById('tp-author').textContent.trim();
+  const contact = document.getElementById('tp-contact').innerText.trim();
+
+  doc.text(title, 4.25, 3.5, { align: 'center', maxWidth: 6 });
+  doc.text('Written by', 4.25, 3.5 + lh * 2, { align: 'center' });
+  doc.text(author, 4.25, 3.5 + lh * 4, { align: 'center' });
+  doc.text(contact, 1.27, 10, { maxWidth: 3 });
+
+  // --- Script Pages ---
+  doc.addPage();
+
+  const marginTop = 1.0;
+  const marginBottom = 1.0;
+  const pageHeight = 11;
+  const usableHeight = pageHeight - marginTop - marginBottom;
+  const leftBase = 1.27; // ~1.27in left margin
+
+  // Indents in inches from left margin
+  const indents = {
+    scene:         0,
+    action:        0,
+    character:     2.3,
+    dialogue:      1.16,
+    parenthetical: 1.54,
+    transition:    0,
+  };
+  const widths = {
+    scene:         6.0,
+    action:        6.0,
+    character:     3.5,
+    dialogue:      3.5,
+    parenthetical: 3.0,
+    transition:    6.0,
+  };
+
+  let y = marginTop;
+  let pageNum = 1;
+  let lastCharName = '';
+
+  function addPage() {
+    doc.addPage();
+    y = marginTop;
+    pageNum++;
+    doc.setFont(font, 'normal');
+    doc.setFontSize(fontSize);
+    doc.text(`${pageNum}.`, 7.35, 0.75);
+  }
+
+  function checkPage(needed) {
+    if (y + needed > pageHeight - marginBottom) addPage();
+  }
+
+  // Walk a line's DOM nodes and emit styled text runs
+  function emitLine(lineEl, x, maxW, forceUpper, rightAlign) {
+    const type = lineEl.dataset.type;
+    const isScene = type === 'scene';
+
+    // Collect runs: {text, bold, italic, underline}
+    function collectRuns(node, inherited) {
+      const runs = [];
+      if (node.nodeType === Node.TEXT_NODE) {
+        const t = forceUpper ? node.textContent.toUpperCase() : node.textContent;
+        if (t) runs.push({ ...inherited, text: t });
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const tag = node.tagName;
+        const ctx = {
+          bold: inherited.bold || tag === 'B' || tag === 'STRONG' || node.style.fontWeight === 'bold',
+          italic: inherited.italic || tag === 'I' || tag === 'EM' || node.style.fontStyle === 'italic',
+          underline: inherited.underline || tag === 'U' || node.style.textDecoration === 'underline'
+        };
+        node.childNodes.forEach(child => runs.push(...collectRuns(child, ctx)));
+      }
+      return runs;
+    }
+
+    const baseStyle = { bold: isScene, italic: false, underline: false };
+    const runs = collectRuns(lineEl, baseStyle);
+    if (!runs.length) return;
+
+    // Merge consecutive runs with same style
+    const merged = runs.reduce((acc, r) => {
+      const last = acc[acc.length - 1];
+      if (last && last.bold === r.bold && last.italic === r.italic && last.underline === r.underline) {
+        last.text += r.text;
+      } else {
+        acc.push({ ...r });
+      }
+      return acc;
+    }, []);
+
+    // Render — jsPDF doesn't support mixed inline styles in one call,
+    // so we render word-wrapped runs left-to-right on each line.
+    // For simplicity: render each run sequentially, tracking x offset.
+    // Full word-wrap across style boundaries is complex; we wrap per-run.
+    let curX = rightAlign ? null : x;
+
+    if (rightAlign) {
+      // For transitions just render as plain (rare to have formatting)
+      const fullText = merged.map(r => r.text).join('');
+      const style = merged[0]?.bold ? 'bold' : 'normal';
+      doc.setFont(font, style);
+      const wrapped = doc.splitTextToSize(fullText, maxW);
+      wrapped.forEach(wl => { doc.text(wl, leftBase + 6.0, y, { align: 'right' }); y += lh; });
+      return;
+    }
+
+    // For normal lines: collect all text, split to size, then re-apply styles per character
+    // Simpler approach: render full text first for wrapping, then re-render with styles
+    const fullText = merged.map(r => r.text).join('');
+    const wrappedLines = doc.splitTextToSize(fullText, maxW);
+
+    wrappedLines.forEach(wl => {
+      let lineX = x;
+      let remaining = wl;
+      for (const run of merged) {
+        if (!remaining || !run.text) continue;
+        // How much of this run appears in this wrapped line?
+        const overlap = run.text.substring(0, remaining.length);
+        if (!overlap) continue;
+
+        const fontStyle = run.bold && run.italic ? 'bolditalic'
+          : run.bold ? 'bold'
+          : run.italic ? 'italic'
+          : 'normal';
+        doc.setFont(font, fontStyle);
+
+        if (run.underline) {
+          doc.text(overlap, lineX, y);
+          const tw = doc.getTextWidth(overlap);
+          doc.setLineWidth(0.005);
+          doc.line(lineX, y + 0.07, lineX + tw, y + 0.07);
+        } else {
+          doc.text(overlap, lineX, y);
+        }
+
+        lineX += doc.getTextWidth(overlap);
+        remaining = remaining.substring(overlap.length);
+        run.text = run.text.substring(overlap.length);
+      }
+      y += lh;
+    });
+  }
+
+  const lines = [...document.querySelectorAll('#script-area .line')];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const type = line.dataset.type || 'action';
+    const rawText = line.innerText.trim();
+    if (!rawText) { y += lh; continue; }
+
+    // --- Dual dialogue: render left+right columns ---
+    if (type === 'dual-char-left') {
+      // Collect all 4 dual lines: char-left, dial-left, char-right, dial-right
+      const dualW = 2.8;
+      const leftX = leftBase;
+      const rightX = leftBase + 3.2;
+      checkPage(lh * 4);
+      y += lh;
+      const yBefore = y;
+      // emit left char
+      emitLine(line, leftX + 0.9, dualW, true, false);
+      let j = i + 1;
+      let yLeft = y, yRight = yBefore;
+      // emit left dialogue
+      if (lines[j]?.dataset.type === 'dual-left') {
+        emitLine(lines[j], leftX, dualW, false, false);
+        yLeft = y; j++;
+      }
+      // emit right char
+      if (lines[j]?.dataset.type === 'dual-char-right') {
+        y = yBefore;
+        emitLine(lines[j], rightX + 0.9, dualW, true, false);
+        j++;
+      }
+      // emit right dialogue
+      if (lines[j]?.dataset.type === 'dual-right') {
+        emitLine(lines[j], rightX, dualW, false, false);
+        yRight = y; j++;
+      }
+      y = Math.max(yLeft, yRight);
+      i = j - 1;
+      continue;
+    }
+    if (['dual-left','dual-char-right','dual-right'].includes(type)) continue;
+
+    const x = leftBase + (indents[type] || 0);
+    const maxW = widths[type] || 6.0;
+    const forceUpper = ['scene','character','transition'].includes(type);
+    const rightAlign = type === 'transition';
+
+    const fullText = forceUpper ? rawText.toUpperCase() : rawText;
+    doc.setFont(font, type === 'scene' ? 'bold' : 'normal');
+    const blockH = doc.splitTextToSize(fullText, maxW).length * lh;
+
+    // Track character name for CONT'D
+    if (type === 'character') lastCharName = rawText.toUpperCase();
+
+    // Widow prevention: scene/character alone in last 2 lines of page
+    const spaceLeft = (pageHeight - marginBottom) - y;
+    if (['scene', 'character'].includes(type) && spaceLeft < lh * 3) {
+      addPage();
+    } else if (['scene','action','character','transition'].includes(type)) {
+      checkPage(lh + blockH);
+      if (type !== 'action' || y > marginTop) y += lh;
+    } else {
+      checkPage(blockH);
+    }
+
+    // CONT'D: if a page break just happened mid-dialogue, re-emit character name
+    if (type === 'dialogue' && y === marginTop && lastCharName) {
+      doc.setFont(font, 'normal');
+      doc.text(`${lastCharName} (CONT'D)`, leftBase + indents.character, y);
+      y += lh;
+    }
+
+    emitLine(line, x, maxW, forceUpper, rightAlign);
+  }
+
+  doc.save('screenplay.pdf');
+}
+</script>
+</body>
+</html>

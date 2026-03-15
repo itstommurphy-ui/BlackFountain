@@ -2231,7 +2231,7 @@
     background: #f7f6f0; border-radius: 1px; position: relative;
     box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 16px 56px rgba(0,0,0,0.55);
     width: 100%; max-width: 800px; min-height: 1056px; flex-shrink: 0;
-    padding: 72px 80px 96px 108px; box-sizing: border-box;
+    padding: 96px 80px 120px 108px; box-sizing: border-box;
   }
   .se-page-break { position: absolute; left: 0; right: 0; height: 32px; background: #13131d; pointer-events: none; display: flex; align-items: center; justify-content: center; }
   .se-ta-wrap { position: relative; width: 100%; }
@@ -2356,7 +2356,7 @@
   <aside id="sidebar">
     <div class="sidebar-logo">
       <h1>BLACK FOUNTAIN</h1>
-      <span>Production Suite</span>
+      <span>Your All-In-One Production Toolbox</span>
     </div>
 
     <div class="sidebar-section">
@@ -2581,7 +2581,10 @@
           <div style="margin-bottom:24px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">CAST</h3>
-              <button class="btn btn-primary btn-sm" onclick="addPersonnel('cast')">+ Add Cast</button>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-sm" onclick="emailAllCast()" title="Email all cast members">✉️ Email All</button>
+                <button class="btn btn-primary btn-sm" onclick="addPersonnel('cast')">+ Add Cast</button>
+              </div>
             </div>
             <div class="table-container">
               <table class="data-table" id="cast-table">
@@ -2796,14 +2799,14 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h3 class="section-heading" style="margin:0">SCRIPT &amp; DOCUMENTS</h3>
             <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-sm" onclick="newScriptEditor()" title="Write a new script directly in the browser">✏ New Script</button>
+              <!-- Script editor hidden (WIP) -->
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">
                 + Upload Document
                 <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.fdx,.fountain,.rtf" style="display:none" onchange="handleScriptUpload(this.files)">
               </label>
             </div>
           </div>
-          <p style="font-size:11px;color:var(--text3);margin:0 0 20px">Accepted formats: PDF · DOC · DOCX · TXT · FDX · Fountain · RTF &nbsp;·&nbsp; TXT &amp; Fountain scripts can be edited directly in the browser</p>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 20px">Accepted formats: PDF · DOC · DOCX · TXT · FDX · Fountain · RTF &nbsp;·&nbsp;</p>
           <div id="script-files-list"></div>
         </div>
 
@@ -7149,6 +7152,63 @@ function downloadCustomSectionFile(csId, fileId) {
   if (!f) return;
   const a = document.createElement('a'); a.href = f.dataUrl; a.download = f.name; a.click();
 }
+
+// ══════════════════════════════════════════
+// EMAIL FUNCTIONS - for future backend integration
+// ══════════════════════════════════════════
+function emailAllCast() {
+  const p = currentProject();
+  if (!p) return;
+  
+  // Collect all emails from cast, unit, and contacts
+  const emails = [];
+  (p.cast || []).forEach(c => { if (c.email) emails.push(c.email); });
+  (p.unit || []).forEach(u => { if (u.email) emails.push(u.email); });
+  (p.contacts || []).forEach(c => { if (c.email) emails.push(c.email); });
+  
+  if (!emails.length) {
+    showToast('No email addresses found. Add contacts via Cast or Unit tabs, or in Contacts.', 'info');
+    return;
+  }
+  
+  const to = emails.join(',');
+  const subject = encodeURIComponent(p.title + ' - Communication');
+  const body = encodeURIComponent('Hi,\n\nI wanted to reach out regarding ' + p.title + '.\n\nBest regards');
+  
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+}
+
+function emailCallsheet(callsheetId) {
+  const p = currentProject();
+  if (!p) return;
+  
+  const cs = (p.callsheets || []).find(c => c.id === callsheetId);
+  if (!cs) return;
+  
+  // Collect emails from callsheet cast rows
+  const emails = [];
+  (cs.castRows || []).forEach(r => { 
+    if (r.email) emails.push(r.email); 
+    // Also check contact field for backwards compatibility
+    if (r.contact) {
+      const emailMatch = r.contact.match(/[\w.-]+@[\w.-]+\.\w+/);
+      if (emailMatch) emails.push(emailMatch[0]);
+    }
+  });
+  
+  if (!emails.length) {
+    showToast('No email addresses found in callsheet. Add cast members with email addresses.', 'info');
+    return;
+  }
+  
+  const to = emails.join(',');
+  const date = cs.date || 'Shoot Day';
+  const subject = encodeURIComponent(p.title + ' - Callsheet for ' + date);
+  const body = encodeURIComponent('Hi,\n\nPlease find the callsheet attached for ' + p.title + '.\n\nCall time and details are in the attached document.\n\nBest regards');
+  
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+}
+
 async function shareCustomSectionFile(csId, fileId) {
   const p = currentProject();
   if (!p || !p.customSections) return;
@@ -7172,7 +7232,8 @@ async function shareCustomSectionFile(csId, fileId) {
   const ovId = '_share-csf-' + fileId;
   const fname = f.name;
   const projTitle = p ? p.title : '';
-  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via Black Fountain');
+  const emailSubject = encodeURIComponent(projTitle + ' - ' + fname);
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share ' + fname + ' with you from ' + projTitle + '.\n\nPlease find the document attached.\n\nBest regards');
   const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
 
   const overlay = document.createElement('div');
@@ -7186,8 +7247,9 @@ async function shareCustomSectionFile(csId, fileId) {
       </div>
       <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Download the file first, then attach via:</div>
-        <a href="mailto:?subject=${encodeURIComponent(fname)}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Click Email, download file, then attach:</div>
+        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email (pre-filled)</a>
+        <a href="#" onclick="downloadCustomSectionFile('${csId}','${fileId}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download File</a>
         <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
         <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
@@ -7390,6 +7452,7 @@ async function confirmScriptUpload() {
     dataUrl: _pendingScriptFile.dataUrl,
     size: _pendingScriptFile.file.size,
     type: _pendingScriptFile.file.type,
+    origExt: _pendingScriptFile.file.name.split('.').pop().toLowerCase(),
     uploadedAt: Date.now()
   });
 
@@ -7462,12 +7525,32 @@ async function _extractTextForBreakdown(p, file, name, version) {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      let lastY = null, line = '';
-      for (const item of content.items) {
-        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) { text += line.trimEnd() + '\n'; line = ''; }
-        line += item.str; lastY = item.transform[5];
+      const items = content.items.filter(it => it.str.trim());
+      if (!items.length) { text += '\n'; continue; }
+      // Group into lines by Y coordinate
+      const lineGroups = [];
+      let curY = null, curGroup = [];
+      for (const item of items) {
+        const y = item.transform[5];
+        if (curY === null || Math.abs(y - curY) > 2) {
+          if (curGroup.length) lineGroups.push({ y: curY, items: curGroup });
+          curGroup = [item]; curY = y;
+        } else { curGroup.push(item); }
       }
-      if (line.trim()) text += line.trimEnd() + '\n';
+      if (curGroup.length) lineGroups.push({ y: curY, items: curGroup });
+      lineGroups.sort((a, b) => b.y - a.y); // top-to-bottom (PDF Y increases upward)
+      // Estimate left margin and character width to reconstruct indentation
+      const allX = lineGroups.flatMap(g => g.items.map(it => it.transform[4]));
+      const leftMargin = Math.min(...allX);
+      const widthSamples = items.map(it => it.width / (it.str.length || 1)).filter(w => w > 1);
+      const charWidth = widthSamples.length ? widthSamples.reduce((a, b) => a + b) / widthSamples.length : 7.2;
+      for (const group of lineGroups) {
+        group.items.sort((a, b) => a.transform[4] - b.transform[4]);
+        const lineX = group.items[0].transform[4];
+        const indent = Math.max(0, Math.round((lineX - leftMargin) / charWidth));
+        const lineStr = ' '.repeat(indent) + group.items.map(it => it.str).join('');
+        text += lineStr.trimEnd() + '\n';
+      }
       text += '\n';
     }
     if (text.trim()) { _createBreakdown(p, name, version, text.trim()); saveStore(); }
@@ -7511,7 +7594,7 @@ function renderScript(p) {
               <td style="white-space:nowrap">${formatFileSize(s.size)}</td>
               <td style="white-space:nowrap;font-size:11px">${tsLabel}${new Date(ts).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'})}</td>
               <td style="display:flex;gap:5px;flex-wrap:nowrap">
-                ${editable ? `<button class="btn btn-sm btn-primary" onclick="openScriptEditor('${s.id}')" title="Edit in browser">✏ Edit</button>` : ''}
+                ${false && editable ? `<button class="btn btn-sm btn-primary" onclick="openScriptEditor('${s.id}')" title="Edit in browser">✏ Edit</button>` : ''}
                 <button class="btn btn-sm" onclick="shareScriptFile('${s.id}')" title="Share">↗</button>
                 <button class="btn btn-sm" onclick="downloadScriptFile('${s.id}')" title="Download">⬇</button>
                 <button class="btn btn-sm btn-danger" onclick="removeScriptFile('${s.id}')" title="Remove">🗑</button>
@@ -7535,6 +7618,12 @@ function scriptFileIcon(type) {
 let _seId = null, _seDirty = false, _seTodIdx = -1, _seTodMode = 'tod';
 const SE_CHAR_INDENT = '                         '; // 25 spaces ≈ character (centred on page)
 const SE_DIAL_INDENT = '          ';               // 10 spaces ≈ dialogue indent
+// Page-break gap structure: each page block = content lines + gap lines
+const SE_CONTENT_LINES = 27; // script content lines per page
+const SE_GAP_VIS       = 4;  // visible blank margin lines on each side of the bar
+const SE_GAP_BAR       = 2;  // lines covered by the dark bar
+const SE_GAP_TOTAL     = SE_GAP_VIS * 2 + SE_GAP_BAR; // 10 gap lines total
+const SE_PAGE_BLOCK    = SE_CONTENT_LINES + SE_GAP_TOTAL; // 38 lines per page unit
 
 function _isScriptEditable(s) {
   const ext = (s.name || '').toLowerCase().split('.').pop();
@@ -7561,14 +7650,14 @@ function openScriptEditor(id) {
   const p = currentProject(); if (!p) return;
   const s = p.scripts.find(x => x.id === id); if (!s) return;
   if (!_isScriptEditable(s)) { showToast('This file type cannot be edited in the browser — download it to edit externally', 'info'); return; }
-  const text = _decodeScriptText(s);
+  const text = _seAddGapLines(_seStripGapLines(_decodeScriptText(s)));
   _seId = id; _seDirty = false;
 
   const ext  = s.name.toLowerCase().split('.').pop();
   const badge = ext === 'fountain' ? 'Fountain' : ext === 'fdx' ? 'Final Draft XML' : ext.toUpperCase();
   const isFdx = ext === 'fdx';
   const fdxNote = isFdx ? `<div style="background:rgba(212,170,44,0.12);border:1px solid rgba(212,170,44,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--accent);margin:0 0 12px;box-sizing:border-box">⚠ Editing raw Final Draft XML — save will preserve FDX structure. For full formatting control use Final Draft.</div>` : '';
-  const PAGE_LINES = 34;
+  const PAGE_LINES = SE_PAGE_BLOCK;
   const ELEMENT_LABELS = { scene: 'Scene Heading', character: 'Character', dialogue: 'Dialogue', parenthetical: 'Parenthetical', transition: 'Transition', action: 'Action', empty: '' };
   const ELEMENT_COLORS = { scene: 'var(--accent2)', character: 'var(--green)', dialogue: 'var(--text2)', transition: 'var(--orange)', parenthetical: 'var(--text3)', action: 'var(--text3)', empty: 'var(--text3)' };
 
@@ -7648,10 +7737,33 @@ function openScriptEditor(id) {
     if (elEl) { elEl.textContent = ELEMENT_LABELS[elType] || ''; elEl.style.color = ELEMENT_COLORS[elType] || 'var(--text3)'; }
     _seUpdateNav(ta);
   }
+  function autoScroll() {
+    const main = document.querySelector('.script-editor-main');
+    if (!main) return;
+    const lh = parseFloat(getComputedStyle(ta).lineHeight) || 25.65;
+    const LINES_PER_PAGE = SE_PAGE_BLOCK;
+    const MARGIN = 60;
+    const mainRect = main.getBoundingClientRect();
+    // Use actual caret viewport Y so text-wrap is handled correctly
+    const caretViewY = _seCaretPos(ta).y;
+    // Page-snap: when cursor enters a new page, bring that line to MARGIN from top
+    const lineNum = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
+    if (lineNum > 0 && lineNum % LINES_PER_PAGE === 0) {
+      main.scrollTop = Math.max(0, main.scrollTop + caretViewY - mainRect.top - MARGIN);
+      return;
+    }
+    // Standard: keep caret in the visible viewport
+    if (caretViewY + lh + MARGIN > mainRect.bottom) {
+      main.scrollTop += caretViewY + lh + MARGIN - mainRect.bottom;
+    } else if (caretViewY < mainRect.top + MARGIN) {
+      main.scrollTop = Math.max(0, main.scrollTop - (mainRect.top + MARGIN - caretViewY));
+    }
+  }
   function autoExpand() {
     ta.style.height = '1px';
     ta.style.height = Math.max(840, ta.scrollHeight) + 'px';
     _seRenderUpdate(ta);
+    autoScroll();
   }
   updateStats(); updateCursor(); autoExpand(); _seUpdatePageBreaks(ta);
 
@@ -7671,8 +7783,8 @@ function openScriptEditor(id) {
     _seUpdatePageBreaks(ta);
     updateStats(); updateCursor();
   });
-  ta.addEventListener('click', updateCursor);
-  ta.addEventListener('keyup', e => { if (e.key !== 'Tab') updateCursor(); });
+  ta.addEventListener('click', () => { _seJumpOutOfBarZone(ta); updateCursor(); autoScroll(); });
+  ta.addEventListener('keyup', e => { if (e.key !== 'Tab') { _seJumpOutOfBarZone(ta); updateCursor(); autoScroll(); } });
   ta.addEventListener('keydown', e => {
     // Time-of-day dropdown navigation
     const dd = document.getElementById('_seTodDrop');
@@ -7696,11 +7808,33 @@ function openScriptEditor(id) {
         const newLine = lineToHere.toUpperCase() + ' ' + lt.substring(cursorOff);
         ta.value = ta.value.substring(0, lineStart) + newLine + ta.value.substring(lineEnd);
         ta.setSelectionRange(lineStart + lineToHere.length + 1, lineStart + lineToHere.length + 1);
-        markDirty(); updateStats(); updateCursor(); return;
+        autoExpand(); markDirty(); updateStats(); updateCursor(); return;
       }
     }
 
     // SE_CHAR_INDENT / SE_DIAL_INDENT are module-level constants
+
+    // Backspace: collapse page gap if cursor is in the gap zone or at start of a new page
+    if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && ta.selectionStart === ta.selectionEnd) {
+      const cursor = ta.selectionStart;
+      const lineNum = ta.value.substring(0, cursor).split('\n').length - 1;
+      const posInBlock = lineNum % SE_PAGE_BLOCK;
+      const inGap = posInBlock >= SE_CONTENT_LINES;
+      const atPageStart = posInBlock === 0 && lineNum >= SE_PAGE_BLOCK && cursor === (ta.value.lastIndexOf('\n', cursor - 1) + 1);
+      if (inGap || atPageStart) {
+        e.preventDefault();
+        const blockStart = inGap ? lineNum - posInBlock : lineNum - SE_PAGE_BLOCK;
+        const gapFrom = blockStart + SE_CONTENT_LINES;
+        const gapTo   = blockStart + SE_PAGE_BLOCK;
+        const lines = ta.value.split('\n');
+        const before = lines.slice(0, gapFrom).join('\n');
+        const after  = lines.slice(gapTo).join('\n');
+        ta.value = before + (after.length ? '\n' + after : '');
+        ta.setSelectionRange(before.length, before.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor();
+        _seUpdatePageBreaks(ta); return;
+      }
+    }
 
     // Backspace on empty indented line (char mode, no name) → collapse to action
     if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && ta.selectionStart === ta.selectionEnd) {
@@ -7728,6 +7862,17 @@ function openScriptEditor(id) {
       const allLines = ta.value.split('\n');
       const lineNum = ta.value.substring(0, lineStart).split('\n').length - 1;
       let elType = _seDetectElement(lt);
+      // Page break: if pressing Enter at the end of the last content line in a page block,
+      // auto-insert the gap lines and jump cursor to the start of the next page.
+      if (lineNum % SE_PAGE_BLOCK === SE_CONTENT_LINES - 1 && cursor >= lineEnd) {
+        e.preventDefault();
+        const gapStr = '\n'.repeat(SE_GAP_TOTAL + 1);
+        ta.value = ta.value.substring(0, cursor) + gapStr + ta.value.substring(cursor);
+        ta.setSelectionRange(cursor + gapStr.length, cursor + gapStr.length);
+        autoExpand(); markDirty(); updateStats(); updateCursor();
+        _seUpdatePageBreaks(ta);
+        return;
+      }
       // Resolve dialogue context
       if (elType === 'action') {
         for (let i = lineNum - 1; i >= Math.max(0, lineNum - 6); i--) {
@@ -7787,18 +7932,20 @@ function openScriptEditor(id) {
     }
 
     if (e.key === 'Tab') {
-      // Tab on empty line after character → insert parenthetical ()
+      // Tab on empty or dialogue line in dialogue context → insert parenthetical ()
       const { lineStart, lineEnd, text: lt } = _seGetCurLine(ta);
-      if (!lt.trim()) {
+      const curType = _seDetectElement(lt);
+      if (curType === 'empty' || curType === 'dialogue') {
         const allLines = ta.value.split('\n');
         const lineNum = ta.value.substring(0, lineStart).split('\n').length - 1;
         for (let i = lineNum - 1; i >= Math.max(0, lineNum - 5); i--) {
-          const pl = (allLines[i] || '').trim(); if (!pl) continue;
-          if (_seDetectElement(pl) === 'character') {
+          const pl = allLines[i] || ''; if (!pl.trim()) continue;
+          const pt = _seDetectElement(pl);
+          if (pt === 'character' || pt === 'dialogue' || pt === 'parenthetical') {
             e.preventDefault();
-            ta.value = ta.value.substring(0, lineStart) + '()' + ta.value.substring(lineEnd);
-            ta.setSelectionRange(lineStart + 1, lineStart + 1);
-            markDirty(); updateStats(); updateCursor(); return;
+            ta.value = ta.value.substring(0, lineStart) + SE_CHAR_INDENT + '()' + ta.value.substring(lineEnd);
+            ta.setSelectionRange(lineStart + SE_CHAR_INDENT.length + 1, lineStart + SE_CHAR_INDENT.length + 1);
+            autoExpand(); markDirty(); updateStats(); updateCursor(); return;
           }
           break;
         }
@@ -7826,7 +7973,7 @@ function _seDetectElement(line) {
   const t = line.trim();
   if (!t) return 'empty';
   const sp = line.length - line.trimStart().length;
-  if (/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)[ \t]/i.test(t)) return 'scene';
+  if (/^(INT\.\/EXT\.|EXT\.\/INT\.|INT\.|EXT\.|I\/E\.?)(\s|$)/i.test(t)) return 'scene';
   if (/^(FADE (IN|OUT|TO):|CUT TO:|DISSOLVE TO:|SMASH CUT TO:|MATCH CUT TO:)/i.test(t)) return 'transition';
   if (/^\(.*\)\s*$/.test(t)) return 'parenthetical';
   // Properly-indented character name (≥20 spaces, all-caps)
@@ -8008,21 +8155,57 @@ function _seUpdateAutocomplete(ta) {
   _seHideTod();
 }
 
+// Strip gap lines from saved text (gap = SE_GAP_TOTAL+ consecutive newlines → single newline)
+function _seStripGapLines(text) {
+  return text.replace(new RegExp('\n{' + (SE_GAP_TOTAL + 1) + ',}', 'g'), '\n');
+}
+
+// Insert gap lines after every SE_CONTENT_LINES lines when more content follows
+function _seAddGapLines(text) {
+  const lines = text.split('\n');
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    result.push(lines[i]);
+    if ((i + 1) % SE_CONTENT_LINES === 0 && (i + 1) < lines.length) {
+      for (let g = 0; g < SE_GAP_TOTAL; g++) result.push('');
+    }
+  }
+  return result.join('\n');
+}
+
+// If cursor is in the dark bar zone (not the visible margin lines), jump to next content block
+function _seJumpOutOfBarZone(ta) {
+  const cursorPos = ta.selectionStart;
+  const lineNum = ta.value.substring(0, cursorPos).split('\n').length - 1;
+  const posInBlock = lineNum % SE_PAGE_BLOCK;
+  const barStart = SE_CONTENT_LINES + SE_GAP_VIS;
+  const barEnd   = barStart + SE_GAP_BAR;
+  if (posInBlock < barStart || posInBlock >= barEnd) return;
+  const blockStart = lineNum - posInBlock;
+  const nextContent = blockStart + SE_PAGE_BLOCK;
+  const lines = ta.value.split('\n');
+  while (lines.length <= nextContent) lines.push('');
+  ta.value = lines.join('\n');
+  const prefix = ta.value.split('\n').slice(0, nextContent).join('\n');
+  ta.setSelectionRange(prefix.length + 1, prefix.length + 1);
+}
+
 function _seUpdatePageBreaks(ta) {
   const overlay = document.getElementById('_seBreaks'); if (!overlay) return;
-  const lh = parseFloat(getComputedStyle(ta).lineHeight) || 25.65;
-  const CONTENT_H = 888; // page height (1056) minus top pad (72) and bottom pad (96)
-  const PAGE_TOP_PAD = 72;
-  const LINES_PER_PAGE = Math.max(10, Math.floor(CONTENT_H / lh));
-  const pageH = LINES_PER_PAGE * lh;
+  const cs  = getComputedStyle(ta);
+  const lh  = parseFloat(cs.lineHeight) || 25.65;
+  const barH = SE_GAP_BAR * lh; // bar covers 2 blank lines (~51px)
+  const PAGE_TOP_PAD  = 96;
   const totalLines = ta.value.split('\n').length;
-  const numBreaks = Math.floor(totalLines / LINES_PER_PAGE);
+  const numBreaks  = Math.floor(totalLines / SE_PAGE_BLOCK);
   let html = '';
   for (let i = 1; i <= numBreaks; i++) {
-    const top = PAGE_TOP_PAD + i * pageH - 16; // center 32px bar at boundary
-    html += `<div class="se-page-break" style="top:${top.toFixed(0)}px"><span style="font-size:9px;color:rgba(255,255,255,0.22);font-family:sans-serif;letter-spacing:1px">${i} / ${i + 1}</span></div>`;
+    const top = PAGE_TOP_PAD + (i * SE_PAGE_BLOCK - SE_GAP_TOTAL + SE_GAP_VIS) * lh;
+    html += `<div class="se-page-break" style="top:${top.toFixed(1)}px;height:${barH.toFixed(1)}px"><span style="font-size:8px;color:rgba(255,255,255,0.5);font-family:sans-serif;letter-spacing:1px">${i} / ${i + 1}</span></div>`;
   }
   overlay.innerHTML = html;
+  const page = document.querySelector('.script-editor-page');
+  if (page) page.style.minHeight = (PAGE_TOP_PAD + (numBreaks + 1) * SE_PAGE_BLOCK * lh + 120) + 'px';
 }
 
 function _seEsc(s) {
@@ -8066,7 +8249,7 @@ function _scriptEditorSave() {
   const p = currentProject(); if (!p) return;
   const s = p.scripts.find(x => x.id === _seId); if (!s) return;
   const ta = document.getElementById('_seTextarea'); if (!ta) return;
-  const text = ta.value;
+  const text = _seStripGapLines(ta.value);
   try { s.dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(text))); }
   catch(e) { s.dataUrl = 'data:text/plain;base64,' + btoa(text); }
   s.size = new Blob([text]).size;
@@ -8083,7 +8266,7 @@ function _scriptEditorClose() {
     showConfirmDialog('You have unsaved changes. Close without saving?', 'Close', () => {
       document.getElementById('_scriptEditor')?.remove();
       _seId = null; _seDirty = false;
-    });
+    }, { zIndex: 10000 });
     return;
   }
   document.getElementById('_scriptEditor')?.remove();
@@ -8151,7 +8334,8 @@ function openScriptPreview(id) {
 
   const isPdf  = s.type.includes('pdf');
   const isImg  = s.type.startsWith('image/');
-  const isText = s.type.includes('text') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx');
+  const textExts = ['txt', 'fountain', 'fdx', 'md', 'rtf'];
+  const isText = s.type.includes('text') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx') || textExts.includes(s.origExt || '');
 
   let previewHtml = '';
   if (isPdf) {
@@ -8203,7 +8387,8 @@ async function shareScriptFile(id) {
   const ovId = '_share-' + id;
   const fname = s.name;
   const projTitle = p ? p.title : '';
-  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share this document with you: ' + fname + (projTitle ? ' (' + projTitle + ')' : '') + '\n\nSent via Black Fountain');
+  const emailSubject = encodeURIComponent(projTitle + ' - ' + fname);
+  const emailBody = encodeURIComponent('Hi,\n\nI wanted to share ' + fname + ' with you from ' + projTitle + '.\n\nPlease find the document attached.\n\nBest regards');
   const textMsg   = encodeURIComponent(fname + (projTitle ? ' — ' + projTitle : ''));
 
   const overlay = document.createElement('div');
@@ -8217,8 +8402,9 @@ async function shareScriptFile(id) {
       </div>
       <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Download the file first, then attach via:</div>
-        <a href="mailto:?subject=${encodeURIComponent(fname)}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Click Email, download file, then attach:</div>
+        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email (pre-filled)</a>
+        <a href="#" onclick="downloadScriptFile('${id}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download File</a>
         <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
         <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
@@ -8777,21 +8963,46 @@ function renderBreakdownEditor(el, p) {
   }
 }
 
+function parseSceneHeading(heading) {
+  const h = heading.replace(/\s+/g, ' ').trim();
+  // Strip optional leading scene number: "1.", "42A.", "1 ", "42A -"
+  const numM = /^(\d+[A-Za-z]?)\s*[-.]?\s+/.exec(h);
+  const sceneNumber = numM ? numM[1] : null;
+  const rest = (numM ? h.slice(numM[0].length) : h).replace(/^\./, '').trim(); // strip Fountain dot
+  // Match INT/EXT prefix (with or without period, with INTERIOR/EXTERIOR longform)
+  const prefixM = /^(INT(?:ERIOR)?\.?(?:\/EXT(?:ERIOR)?\.?)?|EXT(?:ERIOR)?\.?(?:\/INT(?:ERIOR)?\.?)?|I\/E\.?)[\s.:\-]+/i.exec(rest);
+  if (!prefixM) return { sceneNumber, intExt: null, location: h, tod: null };
+  const rawPfx = prefixM[1].toUpperCase().replace(/[\s.]/g, '');
+  let intExt;
+  if (/INT.+EXT|IE/.test(rawPfx))       intExt = 'INT/EXT';
+  else if (/EXT.+INT/.test(rawPfx))      intExt = 'EXT/INT';
+  else if (/^INT/.test(rawPfx))          intExt = 'INT';
+  else                                    intExt = 'EXT';
+  const locationAndTod = rest.slice(prefixM[0].length).trim();
+  const TOD_TERMS = 'DAY|NIGHT|DAWN|DUSK|MORNING|AFTERNOON|EVENING|CONTINUOUS|CONT\'D|LATER|MOMENTS LATER|SAME TIME|SAME|GOLDEN HOUR|SUNRISE|SUNSET|TWILIGHT|MIDNIGHT|NOON|MIDDAY|PRE-DAWN|MAGIC HOUR|EARLY MORNING|LATE NIGHT|DAY\\/NIGHT|NIGHT\\/DAY';
+  const todM = new RegExp(`[-–—]\\s*(${TOD_TERMS})\\s*$`, 'i').exec(locationAndTod);
+  const tod = todM ? todM[1].toUpperCase() : null;
+  const location = (tod ? locationAndTod.slice(0, todM.index) : locationAndTod).trim();
+  return { sceneNumber, intExt, location, tod };
+}
+
 function parseBreakdownScenes(text) {
   if (!text) return [];
-  const headingRe = /^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s+.+/i;
+  // Handles: scene numbers, INTERIOR/EXTERIOR longform, I/E, missing periods, Fountain dot prefix
+  const headingRe = /^(?:\d+[A-Za-z]?\s*[-.]?\s+)?(?:\.)?(?:INT(?:ERIOR)?\.?(?:\/EXT(?:ERIOR)?\.?)?|EXT(?:ERIOR)?\.?(?:\/INT(?:ERIOR)?\.?)?|I\/E\.?)[\s.:\-]\S/i;
   const lines = text.split('\n');
   const scenes = [];
   let current = null, offset = 0;
   for (const line of lines) {
-    if (headingRe.test(line.trim())) {
+    const trimmed = line.trim();
+    if (headingRe.test(trimmed)) {
       if (current) { current.end = offset; scenes.push(current); }
-      current = { heading: line.trim(), start: offset, end: -1 };
+      current = { heading: trimmed, start: offset, end: -1, ...parseSceneHeading(trimmed) };
     }
     offset += line.length + 1;
   }
   if (current) { current.end = text.length; scenes.push(current); }
-  if (!scenes.length && text.trim()) scenes.push({ heading: 'Full Script', start: 0, end: text.length });
+  if (!scenes.length && text.trim()) scenes.push({ heading: 'Full Script', start: 0, end: text.length, intExt: null, location: null, tod: null, sceneNumber: null });
   return scenes;
 }
 
@@ -9455,12 +9666,20 @@ function detectBreakdownSuggestions(text, existingTags) {
     && !nonCharWords.has(s);
 
   // Pass A: standalone character cue lines (speakers)
+  // If the script has indentation (e.g. extracted from PDF), character cues will be
+  // indented ≥18 spaces — use that as a strong positive signal; for flat text (indent=0)
+  // fall back to the existing any-all-caps-line heuristic.
   const charNames = new Set();
+  const hasIndentation = text.split('\n').some(l => /^ {10,}\S/.test(l));
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || sceneHeadingRe.test(trimmed) || transitionRe.test(trimmed)) continue;
+    const indent = line.length - line.trimStart().length;
     const stripped = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
-    if (isValidName(stripped)) charNames.add(stripped);
+    if (!isValidName(stripped)) continue;
+    // In indented scripts only accept lines with character-cue indentation (≥18 spaces)
+    if (hasIndentation && indent < 18) continue;
+    charNames.add(stripped);
   }
 
   // Pass B: ALL-CAPS words/phrases inside *mixed-case* action lines (non-speaking characters e.g. BARTENDER)
@@ -9743,6 +9962,7 @@ function buildCallsheetCard(p, c, i) {
   const sections = c.minimized ? '' : `
     <div class="cs-toggle-bar">
       ${toggleBtns}
+      <button class="cs-ctrl-btn right pdf-hide" onclick="emailCallsheet('${c.id}')" title="Email this callsheet">✉️ Email</button>
       <button class="cs-ctrl-btn right danger pdf-hide" onclick="confirmDeleteCallsheet(${i})">🗑 Delete</button>
     </div>
     <div class="cs-content" id="cs-sections-${i}">
@@ -10349,7 +10569,7 @@ function saveAddCast() {
   const contact   = [phone, email].filter(Boolean).join(' / ');
   const p = currentProject();
   if (!p.callsheets[csIdx].castRows) p.callsheets[csIdx].castRows = [];
-  p.callsheets[csIdx].castRows.push({ actor: name, character, callTime, wrapTime, poc, contact, socials });
+  p.callsheets[csIdx].castRows.push({ actor: name, character, callTime, wrapTime, poc, contact, socials, email });
   saveContactToProject(p, name, 'Cast', phone, email, socials);
   saveStore();
   closeModal('modal-add-cast');
@@ -10617,13 +10837,27 @@ function populateContactSelect(selectId) {
   if (!select) return;
   select.innerHTML = '<option value="">— Select existing contact —</option>';
   const seen = new Set();
+  // Get current project first for priority, then others
+  const currentP = currentProject();
+  if (currentP && currentP.contacts) {
+    currentP.contacts.forEach(c => {
+      if (c.name && !seen.has(c.name.toLowerCase())) {
+        seen.add(c.name.toLowerCase());
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify({name:c.name, phone:c.phone||'', email:c.email||'', socials:c.socials||''});
+        opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '');
+        select.appendChild(opt);
+      }
+    });
+  }
   store.projects.forEach(p => {
+    if (p.id === currentP?.id) return; // skip current project already added
     (p.contacts || []).forEach(c => {
       if (c.name && !seen.has(c.name.toLowerCase())) {
         seen.add(c.name.toLowerCase());
         const opt = document.createElement('option');
         opt.value = JSON.stringify({name:c.name, phone:c.phone||'', email:c.email||'', socials:c.socials||''});
-        opt.textContent = c.name;
+        opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '') + ' - ' + p.title;
         select.appendChild(opt);
       }
     });
@@ -13093,6 +13327,7 @@ function showConfirmDialog(message, confirmLabel, onConfirm, opts = {}) {
   const triggerEl = document.activeElement;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
+  if (opts.zIndex) overlay.style.zIndex = opts.zIndex;
   overlay.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="_cdTitle" style="max-width:400px">
       <div class="modal-header">
