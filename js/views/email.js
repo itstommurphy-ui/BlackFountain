@@ -4,14 +4,13 @@ function emailAllCast() {
   const p = currentProject();
   if (!p) return;
   
-  // Collect all emails from cast, unit, and contacts
+  // Collect all emails from cast and extras
   const emails = [];
   (p.cast || []).forEach(c => { if (c.email) emails.push(c.email); });
-  (p.unit || []).forEach(u => { if (u.email) emails.push(u.email); });
-  (p.contacts || []).forEach(c => { if (c.email) emails.push(c.email); });
-  
+  (p.extras || []).forEach(c => { if (c.email) emails.push(c.email); });
+
   if (!emails.length) {
-    showToast('No email addresses found. Add contacts via Cast or Unit tabs, or in Contacts.', 'info');
+    showToast('No email addresses found. Add cast members with email addresses.', 'info');
     return;
   }
   

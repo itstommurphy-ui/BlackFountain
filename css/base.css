@@ -83,19 +83,23 @@
   [data-font-size="huge"]       .modal-overlay .modal { zoom: 1.35; max-height: 67vh; }
   [data-font-size="double"]     .modal-overlay .modal { zoom: 2;    max-height: 45vh; }
 
-  /* Context menu, tooltip and toast are also position:fixed — counter-zoom them fully */
+  /* Context menu, tooltip, toast and script preview are also position:fixed — counter-zoom them fully */
   [data-font-size="bigger"]     #ctx-menu,
   [data-font-size="bigger"]     #global-tip,
-  [data-font-size="bigger"]     #toast { zoom: 0.9091; }
+  [data-font-size="bigger"]     #toast,
+  [data-font-size="bigger"]     .script-preview-overlay { zoom: 0.9091; }
   [data-font-size="evenbigger"] #ctx-menu,
   [data-font-size="evenbigger"] #global-tip,
-  [data-font-size="evenbigger"] #toast { zoom: 0.8333; }
+  [data-font-size="evenbigger"] #toast,
+  [data-font-size="evenbigger"] .script-preview-overlay { zoom: 0.8333; }
   [data-font-size="huge"]       #ctx-menu,
   [data-font-size="huge"]       #global-tip,
-  [data-font-size="huge"]       #toast { zoom: 0.7407; }
+  [data-font-size="huge"]       #toast,
+  [data-font-size="huge"]       .script-preview-overlay { zoom: 0.7407; }
   [data-font-size="double"]     #ctx-menu,
   [data-font-size="double"]     #global-tip,
-  [data-font-size="double"]     #toast { zoom: 0.5;    }
+  [data-font-size="double"]     #toast,
+  [data-font-size="double"]     .script-preview-overlay { zoom: 0.5;    }
 
   /* ── TOAST ── */
   #toast {

@@ -24,7 +24,7 @@
 })();
 
 loadTheme();
-(async () => {
+async function _startApp() {
   await loadStore();
   initAutoSave();
   renderDashboard();
@@ -33,7 +33,8 @@ loadTheme();
     sessionStorage.removeItem('_mf_post_reload_toast');
     try { const { msg, type } = JSON.parse(pendingToast); showToast(msg, type); } catch(e) {}
   }
-})();
+}
+sbInit(_startApp);
 
 // ── Contact modal role sections ───────────────────────────────────────────────
 function ecToggleRoleSections() {
@@ -196,12 +197,17 @@ document.addEventListener('contextmenu', e => {
       items = [
         { label: 'Delete', icon: '🗑', danger: true, fn: () => removeScheduleRow(+args[0]) }
       ]; break;
-    case 'budget':
+    case 'budget': {
+      const bLine = currentProject()?.budget[+args[0]];
+      const isAtl = bLine?.section === 'atl';
       items = [
         { label: 'Edit', icon: '✎', fn: () => editBudgetLine(+args[0]) },
+        { label: 'Duplicate Line', icon: '⧉', fn: () => duplicateBudgetLine(+args[0]) },
+        { label: isAtl ? 'Move to BTL' : 'Move to ATL', icon: '↕', fn: () => moveBudgetLineSection(+args[0]) },
         null,
         { label: 'Delete', icon: '🗑', danger: true, fn: () => removeBudgetLine(+args[0]) }
       ]; break;
+    }
     case 'proj-loc': {
       const locIdx = +args[0];
       const locName = decodeURIComponent(args[1] || '');
@@ -266,6 +272,14 @@ document.addEventListener('contextmenu', e => {
         { label: 'Create Tech Checklist', icon: '☑', fn: () => openCreateScoutModal(_locName, 'tech') },
         null,
         { label: 'Delete', icon: '🗑', danger: true, fn: () => deleteLocationGlobal(pid, lidx) }
+      ]; break;
+    }
+    case 'bud-col': {
+      const colId = args[0];
+      items = [
+        { label: 'Hide Column', icon: '👁', fn: () => toggleBudgetColVisibility(colId) },
+        null,
+        { label: 'Manage Columns', icon: '⚙', fn: () => openBudgetColumnsModal() }
       ]; break;
     }
     case 'col-contact': {

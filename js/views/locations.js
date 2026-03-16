@@ -9,11 +9,12 @@ function renderProjectLocations(p) {
   const selBtn = document.getElementById('loc-remove-sel-btn');
   if (selBtn) selBtn.style.display = 'none';
   if (!p.locations.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
   } else {
     tbody.innerHTML = p.locations.map((l,i) => `
       <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.name||'')}">
         <td style="padding:6px 8px"><input type="checkbox" class="loc-cb" data-idx="${i}" onchange="updateLocSelBtn()" style="cursor:pointer"></td>
+        <td><input type="text" class="form-input" value="${(l.location||'').replace(/"/g,'&quot;')}" placeholder="—" style="min-width:120px;padding:3px 6px;font-size:12px" onblur="saveProjectLocLocation(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
         <td style="white-space:nowrap"><strong>${l.name}</strong>${_scoutIconHtml(l.name||'')}</td>
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
@@ -34,7 +35,7 @@ function renderProjectLocations(p) {
 }
 function addLocation() {
   document.getElementById('loc-edit-idx').value='';
-  ['name','avail','rules','cost','access','light','power','problems','notes'].forEach(f=>{const el=document.getElementById('loc-'+f);if(el)el.value='';});
+  ['location','name','avail','rules','cost','access','light','power','problems','notes'].forEach(f=>{const el=document.getElementById('loc-'+f);if(el)el.value='';});
   document.getElementById('loc-suit').value='suitable';
   document.getElementById('loc-contacted').value='no';
   document.getElementById('loc-recce').value='no';
@@ -116,6 +117,7 @@ function editLocation(i) {
   const l=currentProject().locations[i];
   document.getElementById('loc-edit-idx').value=i;
   document.getElementById('loc-name').value=l.name||'';
+  document.getElementById('loc-location').value=l.location||'';
   document.getElementById('loc-suit').value=l.suit||'suitable';
   document.getElementById('loc-contacted').value=l.contacted||'no';
   document.getElementById('loc-avail').value=l.avail||'';
@@ -204,6 +206,7 @@ function saveLocation() {
   if(!name){showToast('Location name required','info');return;}
   const l={
     name,
+    location:document.getElementById('loc-location').value.trim(),
     suit:document.getElementById('loc-suit').value,
     contacted:document.getElementById('loc-contacted').value,
     avail:document.getElementById('loc-avail').value,
@@ -222,6 +225,19 @@ function saveLocation() {
   if(idx!=='') p.locations[parseInt(idx)]=l; else p.locations.push(l);
   saveStore(); closeModal('modal-location'); renderProjectLocations(p); showToast('Location saved','success');
 }
+function saveProjectLocLocation(idx, value) {
+  const p = currentProject();
+  if (!p || !p.locations[idx]) return;
+  const loc = p.locations[idx];
+  loc.location = value.trim();
+  // Sync to matching entry in global store
+  const name = loc.name;
+  if (store.locations) {
+    const gl = store.locations.find(l => l.name && l.name.toLowerCase() === name.toLowerCase());
+    if (gl) gl.location = value.trim();
+  }
+  saveStore();
+}
 
 function addLocationGlobal() {
   // Populate project selector with all projects (blank = unlinked)
@@ -231,7 +247,9 @@ function addLocationGlobal() {
   // Clear all fields
   document.getElementById('gloc-project-id').value = '';
   document.getElementById('gloc-loc-idx').value = '-1';
-  ['gloc-name','gloc-cost','gloc-access','gloc-avail','gloc-light','gloc-power','gloc-problems','gloc-rules','gloc-notes'].forEach(id => {
+  const scoutBtns = document.getElementById('gloc-scout-btns');
+  if (scoutBtns) scoutBtns.style.display = 'none';
+  ['gloc-name','gloc-location','gloc-cost','gloc-access','gloc-avail','gloc-light','gloc-power','gloc-problems','gloc-rules','gloc-notes'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('gloc-suit').value = '';
@@ -239,9 +257,6 @@ function addLocationGlobal() {
   document.getElementById('gloc-cost-period').value = '';
   document.getElementById('gloc-contacted').value = 'no';
   document.getElementById('gloc-decision').value = '';
-  document.getElementById('gloc-contact-name').value = '';
-  document.getElementById('gloc-contact-phone').value = '';
-  document.getElementById('gloc-contact-email').value = '';
   openModal('modal-edit-location-global');
 }
 
@@ -262,7 +277,10 @@ function editLocationGlobal(projectId, locIdx) {
     ).join('');
   document.getElementById('gloc-project-id').value = projectId;
   document.getElementById('gloc-loc-idx').value = locIdx;
+  const scoutBtns = document.getElementById('gloc-scout-btns');
+  if (scoutBtns) scoutBtns.style.display = (projectId && projectId !== '_global') ? 'flex' : 'none';
   document.getElementById('gloc-name').value = l.name || '';
+  document.getElementById('gloc-location').value = l.location || '';
   document.getElementById('gloc-suit').value = l.suit || '';
   document.getElementById('gloc-recce').value = l.recce || 'no';
   document.getElementById('gloc-cost').value = l.cost || '';
@@ -276,23 +294,21 @@ function editLocationGlobal(projectId, locIdx) {
   document.getElementById('gloc-problems').value = l.problems || '';
   document.getElementById('gloc-rules').value = l.rules || '';
   document.getElementById('gloc-notes').value = l.notes || '';
-  document.getElementById('gloc-contact-name').value = l.contactName || '';
-  document.getElementById('gloc-contact-phone').value = l.contactPhone || '';
-  document.getElementById('gloc-contact-email').value = l.contactEmail || '';
   openModal('modal-edit-location-global');
 }
 
 function deleteLocationGlobal(projectId, locIdx) {
-  if (!confirm('Delete this location?')) return;
-  if (projectId === '_global') {
-    if (store.locations) store.locations.splice(locIdx, 1);
-  } else {
-    const p = store.projects.find(proj => proj.id === projectId);
-    if (p && p.locations) p.locations.splice(locIdx, 1);
-  }
-  saveStore();
-  renderLocations();
-  showToast('Location deleted', 'success');
+  showConfirmDialog('Delete this location?', 'Delete', () => {
+    if (projectId === '_global') {
+      if (store.locations) store.locations.splice(locIdx, 1);
+    } else {
+      const p = store.projects.find(proj => proj.id === projectId);
+      if (p && p.locations) p.locations.splice(locIdx, 1);
+    }
+    saveStore();
+    renderLocations();
+    showToast('Location deleted', 'success');
+  });
 }
 
 function saveLocationGlobal() {
@@ -306,6 +322,7 @@ function saveLocationGlobal() {
 
   const locationData = {
     name,
+    location: document.getElementById('gloc-location').value.trim(),
     suit: document.getElementById('gloc-suit').value,
     recce: document.getElementById('gloc-recce').value,
     cost: document.getElementById('gloc-cost').value,
@@ -319,9 +336,6 @@ function saveLocationGlobal() {
     problems: document.getElementById('gloc-problems').value,
     rules: document.getElementById('gloc-rules').value,
     notes: document.getElementById('gloc-notes').value,
-    contactName: document.getElementById('gloc-contact-name').value.trim(),
-    contactPhone: document.getElementById('gloc-contact-phone').value.trim(),
-    contactEmail: document.getElementById('gloc-contact-email').value.trim()
   };
 
   if (isNew) {
@@ -503,6 +517,37 @@ function openScoutingSheetForLocation(locName) {
   setTimeout(() => document.getElementById('scouting-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
+function openTechScoutForLocation(locName) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.techScouts) p.techScouts = [];
+  let idx = p.techScouts.findIndex(s => s.name && s.name.toLowerCase() === locName.toLowerCase());
+  if (idx === -1) {
+    p.techScouts.push({ name: locName, date: '', checks: {} });
+    idx = p.techScouts.length - 1;
+    saveStore();
+  }
+  _activeTechScoutIdx = idx;
+  renderTechScouts(p);
+  setTimeout(() => document.getElementById('techscout-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+function _glocGoScout(type) {
+  const projectId = document.getElementById('gloc-project-id').value;
+  const locIdx = parseInt(document.getElementById('gloc-loc-idx').value);
+  if (!projectId || projectId === '_global') return;
+  const p = store.projects.find(pr => pr.id === projectId);
+  if (!p) return;
+  const locName = (p.locations?.[locIdx]?.name) || '';
+  closeModal('modal-edit-location-global');
+  showProjectView(projectId);
+  showSection('locations');
+  setTimeout(() => {
+    if (type === 'scouting') openScoutingSheetForLocation(locName);
+    else openTechScoutForLocation(locName);
+  }, 150);
+}
+
 // TEAM
 function renderTeam() {
   const tbody=document.getElementById('team-body');
@@ -545,7 +590,8 @@ const CONTACT_BUILTIN_COLS = [
   { id: 'photos',   label: 'Photos' },
 ];
 const LOCATION_BUILTIN_COLS = [
-  { id: 'project',       label: 'Project' },
+  { id: 'location',      label: 'Location' },
+  { id: 'project',       label: 'Projects selected for' },
   { id: 'contact',       label: 'Contact' },
   { id: 'dateScouted',   label: 'Date Scouted' },
   { id: 'suitability',   label: 'Suitability' },
@@ -621,6 +667,10 @@ function showContactsView(subview) {
 
 function renderContacts() {
   const el = document.getElementById('contacts-list');
+
+  // Reset header button label (may have been changed by location contacts sub-view)
+  const headerBtn = document.querySelector('#view-contacts .page-header button.btn-primary');
+  if (headerBtn) headerBtn.textContent = contactSubView === 'locations' ? '+ Add Location' : '+ Add Contact';
 
   // Get current filters
   const filterSelect = document.getElementById('contacts-filter');
@@ -1100,36 +1150,247 @@ function _contactNavRemoveAll() {
   );
 }
 
-function renderLocationContactsSection(el) {
-  const locationContacts = [];
+// ── Location contact helpers ──────────────────────────────────────────────────
+
+let _locContactSel = new Set();
+
+function _migrateLocContacts(loc) {
+  if (loc.contacts) return;
+  if (loc.contactName) {
+    loc.contacts = [{ id: makeId(), name: loc.contactName, role: '', phone: loc.contactPhone || '', email: loc.contactEmail || '' }];
+  } else {
+    loc.contacts = [];
+  }
+}
+
+function _allLocsList() {
+  const result = [];
   store.projects.forEach(p => {
-    (p.locations || []).forEach(l => {
-      if (l.contactName) locationContacts.push({ contactName: l.contactName, contactPhone: l.contactPhone || '', contactEmail: l.contactEmail || '', locationName: l.name, project: p.title });
+    (p.locations || []).forEach((l, i) => {
+      if (l.name) result.push({ projectId: p.id, locIdx: i, name: l.name, location: l.location || '', projectTitle: p.title });
     });
   });
-  (store.locations || []).forEach(l => {
-    if (l.contactName) locationContacts.push({ contactName: l.contactName, contactPhone: l.contactPhone || '', contactEmail: l.contactEmail || '', locationName: l.name, project: '—' });
+  (store.locations || []).forEach((l, i) => {
+    if (l.name) result.push({ projectId: '_global', locIdx: i, name: l.name, location: l.location || '', projectTitle: '—' });
+  });
+  return result;
+}
+
+function _getLocByRef(projectId, locIdx) {
+  if (projectId === '_global') return (store.locations || [])[locIdx] || null;
+  const p = store.projects.find(pr => pr.id === projectId);
+  return p ? (p.locations || [])[locIdx] || null : null;
+}
+
+function _lcPopulateProjects(selectedProjectId) {
+  const sel = document.getElementById('lc-project');
+  sel.innerHTML = '<option value="">— All Projects —</option>' +
+    store.projects.map(p => `<option value="${p.id}" ${p.id === selectedProjectId ? 'selected' : ''}>${p.title}</option>`).join('');
+}
+
+function _lcFilterLocations(preProjectId, preLocIdx) {
+  const pid = document.getElementById('lc-project').value;
+  const sel = document.getElementById('lc-location-ref');
+  // Hide scene dropdown entirely when no project is selected
+  if (!pid) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
+  sel.style.display = '';
+  // Only show project-linked locations (not global store.locations entries)
+  const locs = _allLocsList().filter(l => l.projectId === pid);
+  sel.innerHTML = `<option value="">— No scene link —</option>`;
+  sel.innerHTML += locs.map(l => {
+    const label = l.location && l.location !== l.name
+      ? `${l.location} — ${l.name}`
+      : l.name;
+    return `<option value="${l.projectId}|${l.locIdx}" ${preProjectId === l.projectId && preLocIdx == l.locIdx ? 'selected' : ''}>${label}</option>`;
+  }).join('');
+}
+
+function _lcToggleOtherRole() {
+  const isOther = document.getElementById('lc-role').value === 'other';
+  document.getElementById('lc-role-other-group').style.display = isOther ? '' : 'none';
+  if (!isOther) document.getElementById('lc-role-other').value = '';
+}
+
+function addNewLocationContact() {
+  document.getElementById('lc-edit-ref').value = '';
+  document.getElementById('modal-loc-contact-title').textContent = 'ADD LOCATION CONTACT';
+  document.getElementById('lc-name').value = '';
+  document.getElementById('lc-location-name').value = '';
+  document.getElementById('lc-role').value = '';
+  document.getElementById('lc-role-other-group').style.display = 'none';
+  document.getElementById('lc-role-other').value = '';
+  document.getElementById('lc-phone').value = '';
+  document.getElementById('lc-email').value = '';
+  _lcPopulateProjects('');
+  _lcFilterLocations(); // hides scene dropdown since no project selected
+  openModal('modal-loc-contact');
+}
+
+function editLocationContact(projectId, locIdx, contactId) {
+  const loc = _getLocByRef(projectId, parseInt(locIdx));
+  if (!loc) return;
+  _migrateLocContacts(loc);
+  const c = (loc.contacts || []).find(x => x.id === contactId);
+  if (!c) return;
+  document.getElementById('lc-edit-ref').value = `${projectId}|${locIdx}|${contactId}`;
+  document.getElementById('modal-loc-contact-title').textContent = 'EDIT LOCATION CONTACT';
+  document.getElementById('lc-location-name').value = loc.location || loc.name || '';
+  document.getElementById('lc-name').value = c.name || '';
+  document.getElementById('lc-role').value = c.role || '';
+  const isOther = c.role === 'other';
+  document.getElementById('lc-role-other-group').style.display = isOther ? '' : 'none';
+  document.getElementById('lc-role-other').value = isOther ? (c.roleCustom || '') : '';
+  document.getElementById('lc-phone').value = c.phone || '';
+  document.getElementById('lc-email').value = c.email || '';
+  _lcPopulateProjects(projectId !== '_global' ? projectId : '');
+  _lcFilterLocations(projectId, locIdx);
+  openModal('modal-loc-contact');
+}
+
+function saveLocationContact() {
+  const editRef = document.getElementById('lc-edit-ref').value;
+  const name = document.getElementById('lc-name').value.trim();
+  if (!name) { showToast('Contact name required', 'info'); return; }
+  const role = document.getElementById('lc-role').value;
+  const roleCustom = role === 'other' ? document.getElementById('lc-role-other').value.trim() : '';
+  const phone = document.getElementById('lc-phone').value.trim();
+  const email = document.getElementById('lc-email').value.trim();
+  const locRef = document.getElementById('lc-location-ref').value;
+  const locationName = document.getElementById('lc-location-name').value.trim();
+  if (!locRef && !locationName) { showToast('Enter a location name or select a scene', 'info'); return; }
+  let loc, projectId, locIdx;
+  if (locRef) {
+    const parts = locRef.split('|');
+    projectId = parts[0]; locIdx = parseInt(parts[1]);
+    loc = _getLocByRef(projectId, locIdx);
+    if (!loc) { showToast('Location not found', 'error'); return; }
+  } else {
+    if (!store.locations) store.locations = [];
+    loc = store.locations.find(l => l.name && l.name.toLowerCase() === locationName.toLowerCase());
+    if (!loc) {
+      loc = { name: locationName, location: locationName, suit: 'possible', contacted: 'no', avail: '', rules: '', cost: '', costPeriod: '', access: '', recce: 'no', light: '', power: '', problems: '', decision: '', notes: '', contacts: [] };
+      store.locations.push(loc);
+    }
+    projectId = '_global'; locIdx = store.locations.indexOf(loc);
+  }
+  _migrateLocContacts(loc);
+  if (editRef) {
+    const [, , contactId] = editRef.split('|');
+    const existing = (loc.contacts || []).find(c => c.id === contactId);
+    if (existing) Object.assign(existing, { name, role, roleCustom, phone, email });
+  } else {
+    loc.contacts.push({ id: makeId(), name, role, roleCustom, phone, email });
+  }
+  saveStore();
+  closeModal('modal-loc-contact');
+  renderContacts();
+  showToast(editRef ? 'Contact updated' : 'Contact added', 'success');
+}
+
+function deleteLocationContact(projectId, locIdx, contactId) {
+  const loc = _getLocByRef(projectId, parseInt(locIdx));
+  if (!loc) return;
+  _migrateLocContacts(loc);
+  loc.contacts = (loc.contacts || []).filter(c => c.id !== contactId);
+  _locContactSel.delete(`${projectId}|${locIdx}|${contactId}`);
+  saveStore();
+  renderContacts();
+  showToast('Contact removed', 'success');
+}
+
+function _locContactToggle(key) {
+  if (_locContactSel.has(key)) _locContactSel.delete(key);
+  else _locContactSel.add(key);
+  renderContacts();
+}
+
+function _locContactSelectAll(checked, allKeys) {
+  allKeys.forEach(k => checked ? _locContactSel.add(k) : _locContactSel.delete(k));
+  renderContacts();
+}
+
+function _locContactRemoveSelected() {
+  showConfirmDialog(`Remove ${_locContactSel.size} selected contact${_locContactSel.size !== 1 ? 's' : ''}?`, 'Remove', () => {
+    _locContactSel.forEach(key => {
+      const parts = key.split('|');
+      const contactId = parts[2];
+      const locIdx = parseInt(parts[1]);
+      const projectId = parts[0];
+      const loc = _getLocByRef(projectId, locIdx);
+      if (loc) {
+        _migrateLocContacts(loc);
+        loc.contacts = (loc.contacts || []).filter(c => c.id !== contactId);
+      }
+    });
+    _locContactSel.clear();
+    saveStore();
+    renderContacts();
+  });
+}
+
+function renderLocationContactsSection(el) {
+  // Migrate any old single-contact data and collect all contacts
+  const roleLabels = { owner: 'Owner', manager: 'Manager', staff: 'Staff', friend: 'Friend of venue', agent: 'Agent / Booking', other: 'Other' };
+  const allEntries = [];
+
+  store.projects.forEach(p => {
+    (p.locations || []).forEach((l, locIdx) => {
+      _migrateLocContacts(l);
+      (l.contacts || []).forEach(c => {
+        allEntries.push({ ...c, locationName: l.name, project: p.title, projectId: p.id, locIdx });
+      });
+    });
+  });
+  (store.locations || []).forEach((l, locIdx) => {
+    _migrateLocContacts(l);
+    (l.contacts || []).forEach(c => {
+      allEntries.push({ ...c, locationName: l.name, project: '—', projectId: '_global', locIdx });
+    });
   });
 
-  if (!locationContacts.length) {
+  if (contactSubView === 'locations') {
+    const btn = document.querySelector('#view-contacts .page-header button.btn-primary');
+    if (btn) btn.textContent = '+ Add Location Contact';
+  }
+
+  if (!allEntries.length) {
     if (contactSubView === 'locations') {
-      el.innerHTML = '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No location contacts</h3><p style="color:var(--text2);margin-top:8px">Add a contact name to a location to see it here</p></div>';
+      el.innerHTML = '<div class="empty-state" style="padding:48px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📍</div><h3>No location contacts</h3><p style="color:var(--text2);margin-top:8px">Use <strong>+ Add Location Contact</strong> to add contacts for your locations</p></div>';
     }
     return;
   }
 
+  const allKeys = allEntries.map(e => `${e.projectId}|${e.locIdx}|${e.id}`);
+  const allSel = allKeys.length > 0 && allKeys.every(k => _locContactSel.has(k));
+  const allKeysJson = JSON.stringify(allKeys).replace(/"/g, '&quot;');
+
+  const header = contactSubView === 'locations'
+    ? `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        ${_locContactSel.size > 0 ? `<button class="btn btn-sm btn-danger" onclick="_locContactRemoveSelected()">Remove Selected (${_locContactSel.size})</button>` : ''}
+      </div>`
+    : `<h3 style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">📍 Location Contacts</h3>`;
+
   el.innerHTML += `<div style="margin-top:${contactSubView === 'locations' ? '0' : '32px'}">
-    ${contactSubView !== 'locations' ? '<h3 style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">📍 Location Contacts</h3>' : ''}
+    ${header}
     <div class="table-container"><table class="data-table"><thead><tr>
-      <th>Name</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th>
+      <th style="width:32px;padding:6px 4px"><input type="checkbox" ${allSel ? 'checked' : ''} onchange="_locContactSelectAll(this.checked, JSON.parse(this.dataset.keys))" data-keys="${allKeysJson}"></th>
+      <th>Name</th><th>Role</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th><th></th>
     </tr></thead><tbody>` +
-    locationContacts.map(lc => `<tr>
-      <td style="font-weight:500">${lc.contactName}</td>
-      <td>${lc.locationName || '—'}</td>
-      <td>${lc.project}</td>
-      <td>${lc.contactPhone ? `<a href="tel:${lc.contactPhone}" style="color:var(--accent2)">${lc.contactPhone}</a>` : '—'}</td>
-      <td>${lc.contactEmail ? `<a href="mailto:${lc.contactEmail}" style="color:var(--accent2)">${lc.contactEmail}</a>` : '—'}</td>
-    </tr>`).join('') +
+    allEntries.map(e => {
+      const key = `${e.projectId}|${e.locIdx}|${e.id}`;
+      const nameEsc = e.name.replace(/'/g, "\\'");
+      const projEsc = e.projectId.replace(/'/g, "\\'");
+      return `<tr onclick="editLocationContact('${projEsc}',${e.locIdx},'${e.id}')" style="cursor:pointer">
+        <td style="width:32px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" ${_locContactSel.has(key) ? 'checked' : ''} onchange="event.stopPropagation();_locContactToggle('${key}')"></td>
+        <td style="font-weight:500">${e.name}</td>
+        <td>${e.role === 'other' ? (e.roleCustom || 'Other') : (roleLabels[e.role] || e.role || '—')}</td>
+        <td>${e.locationName || '—'}</td>
+        <td>${e.project}</td>
+        <td onclick="event.stopPropagation()">${e.phone ? `<a href="tel:${e.phone}" style="color:var(--accent2)">${e.phone}</a>` : '—'}</td>
+        <td onclick="event.stopPropagation()">${e.email ? `<a href="mailto:${e.email}" style="color:var(--accent2)">${e.email}</a>` : '—'}</td>
+        <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-danger" onclick="deleteLocationContact('${projEsc}',${e.locIdx},'${e.id}')" title="Remove">✕</button></td>
+      </tr>`;
+    }).join('') +
     '</tbody></table></div></div>';
 }
 
@@ -1153,6 +1414,7 @@ function renderLocations() {
           : '';
         locationsMap[key] = {
           name: l.name,
+          location: l.location || '',
           project: p.title,
           projectId: p.id,
           locIdx,
@@ -1162,9 +1424,7 @@ function renderLocations() {
           accessibility: l.access || '',
           decision: l.decision || '',
           notes: (l.notes ? l.notes + (l.rules ? '\n' + l.rules : '') : l.rules) || '',
-          contactName: l.contactName || '',
-          contactPhone: l.contactPhone || '',
-          contactEmail: l.contactEmail || '',
+          contacts: l.contacts || [],
           source: 'location'
         };
       }
@@ -1201,6 +1461,7 @@ function renderLocations() {
       : '';
     locationsMap[key] = {
       name: l.name,
+      location: l.location || '',
       project: '—',
       projectId: '_global',
       locIdx: gIdx,
@@ -1210,9 +1471,7 @@ function renderLocations() {
       accessibility: l.access || '',
       decision: l.decision || '',
       notes: (l.notes ? l.notes + (l.rules ? '\n' + l.rules : '') : l.rules) || '',
-      contactName: l.contactName || '',
-      contactPhone: l.contactPhone || '',
-      contactEmail: l.contactEmail || '',
+      contacts: l.contacts || [],
       source: 'location'
     };
   });
@@ -1305,8 +1564,9 @@ function renderLocations() {
 
   el.innerHTML += `<div class="table-container"><table class="data-table locations-table"><thead><tr>
     <th style="width:32px;padding:6px 4px"><input type="checkbox" title="Select all" ${_locAllSel ? 'checked' : ''} onchange="_locNavSelectAll(this.checked)" onclick="event.stopPropagation()"></th>
-    <th style="${locThStyle}" onclick="setLocationSort('name')">Location${sortIcon('name', locationSort)}</th>
-    ${locVis('project')       ? `<th style="${locThStyle}" data-ctx="col-location:project" onclick="setLocationSort('project')">Project${sortIcon('project', locationSort)}${locColHideBtn('project')}</th>` : ''}
+    ${locVis('location')      ? `<th data-ctx="col-location:location">Location${locColHideBtn('location')}</th>` : ''}
+    <th style="${locThStyle}" onclick="setLocationSort('name')">Scene${sortIcon('name', locationSort)}</th>
+    ${locVis('project')       ? `<th style="${locThStyle}" data-ctx="col-location:project" onclick="setLocationSort('project')">Projects selected for${sortIcon('project', locationSort)}${locColHideBtn('project')}</th>` : ''}
     ${locVis('contact')       ? `<th data-ctx="col-location:contact">Contact${locColHideBtn('contact')}</th>` : ''}
     ${locVis('dateScouted')   ? `<th data-ctx="col-location:dateScouted">Date Scouted${locColHideBtn('dateScouted')}</th>` : ''}
     ${locVis('suitability')   ? `<th data-ctx="col-location:suitability">Suitability${locColHideBtn('suitability')}</th>` : ''}
@@ -1329,8 +1589,9 @@ function renderLocations() {
         ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openMoveLocation('${l.projectId}',${l.locIdx})" title="Move / copy details to another location" style="font-size:13px">⇄</button>
            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLocationGlobal('${l.projectId}',${l.locIdx})" title="Delete location">🗑</button>`
         : '';
-      const contactCell = l.contactName
-        ? `<span style="font-size:12px">${l.contactName}${l.contactPhone ? `<br><a href="tel:${l.contactPhone}" style="color:var(--accent2);font-size:11px">${l.contactPhone}</a>` : ''}${l.contactEmail ? `<br><a href="mailto:${l.contactEmail}" style="color:var(--accent2);font-size:11px">${l.contactEmail}</a>` : ''}</span>`
+      const _lContacts = l.contacts || [];
+      const contactCell = _lContacts.length
+        ? `<span style="font-size:12px">${_lContacts.map(c => c.name).join(', ')}</span>`
         : '<span style="color:var(--text3);font-size:11px">—</span>';
       const locCustomCells = locCustCols.map(col => {
         const val = (store.locationCustomData[l.name.toLowerCase()] || {})[col.id];
@@ -1350,6 +1611,7 @@ function renderLocations() {
       const locRowClick = l.locIdx !== null ? `onclick="editLocationGlobal('${l.projectId}',${l.locIdx})"` : '';
       const mainRow = `<tr ${ctxLocData ? `data-ctx="${ctxLocData}"` : ''} ${locRowClick} style="${l.locIdx !== null ? 'cursor:pointer' : ''}">
         <td style="width:32px;padding:6px 4px" onclick="event.stopPropagation()">${locSelKey !== null ? `<input type="checkbox" ${_locNavSel.has(locSelKey) ? 'checked' : ''} onchange="_locNavToggle('${locSelKey.replace(/'/g,"\\'")}')">` : ''}</td>
+        ${locVis('location')      ? `<td style="color:${l.location?'var(--text)':'var(--text3)'}">${l.location ? l.location.replace(/</g,'&lt;') : '—'}</td>` : ''}
         <td style="font-weight:500;white-space:nowrap">${l.name}${_scoutIconHtml(l.name)}</td>
         ${locVis('project')       ? `<td>${l.project}</td>` : ''}
         ${locVis('contact')       ? `<td>${contactCell}</td>` : ''}

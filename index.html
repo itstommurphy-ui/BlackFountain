@@ -79,6 +79,7 @@
       </div>
       <div class="topbar-right">
         <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
+        <span id="sb-auth-indicator" style="font-size:11px;font-family:var(--font-mono);color:var(--text3)" title=""></span>
         <div style="position:relative;">
           <input type="text" id="global-search" aria-label="Search projects and data" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
           <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
@@ -149,7 +150,7 @@
           <div class="section-tab" onclick="showSection('callsheet')">Callsheet</div>
           <div class="section-tab" onclick="showSection('schedule')">Schedule</div>
           <div class="section-tab" onclick="showSection('cast')">Cast & Extras</div>
-          <div class="section-tab" onclick="showSection('unit')">Unit List</div>
+          <div class="section-tab" onclick="showSection('crew')">Crew</div>
           <div class="section-tab" onclick="showSection('budget')">Budget</div>
           <div class="section-tab" onclick="showSection('equipment')">Equipment</div>
           <div class="section-tab" onclick="showSection('locations')">Locations</div>
@@ -250,14 +251,17 @@
           <div style="margin-bottom:24px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">CAST</h3>
-              <div style="display:flex;gap:8px">
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="goto-hook"></span>
+                <button class="btn btn-sm btn-danger" id="cast-remove-sel-btn" style="display:none" onclick="removeSelectedPersonnel()">✕ Remove Selected</button>
+                <button class="btn btn-sm" id="cast-email-sel-btn" style="display:none" onclick="emailSelectedCast()">✉️ Email Selected</button>
                 <button class="btn btn-sm" onclick="emailAllCast()" title="Email all cast members">✉️ Email All</button>
                 <button class="btn btn-primary btn-sm" onclick="addPersonnel('cast')">+ Add Cast</button>
               </div>
             </div>
             <div class="table-container">
               <table class="data-table" id="cast-table">
-                <thead><tr><th>Name</th><th>Role/Character</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="cast-select-all" onchange="_castSelectAll('cast',this.checked)" title="Select all" style="cursor:pointer"></th><th>Name</th><th>Role/Character</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
                 <tbody id="cast-body"></tbody>
               </table>
             </div>
@@ -265,25 +269,33 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">SUPPORTING ARTISTS (EXTRAS)</h3>
-              <button class="btn btn-primary btn-sm" onclick="addPersonnel('extras')">+ Add Extra</button>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn-sm btn-danger" id="extras-remove-sel-btn" style="display:none" onclick="removeSelectedPersonnel()">✕ Remove Selected</button>
+                <button class="btn btn-primary btn-sm" onclick="addPersonnel('extras')">+ Add Extra</button>
+              </div>
             </div>
             <div class="table-container">
               <table class="data-table" id="extras-table">
-                <thead><tr><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="extras-select-all" onchange="_castSelectAll('extras',this.checked)" title="Select all" style="cursor:pointer"></th><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
                 <tbody id="extras-body"></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- SECTION: UNIT LIST -->
-        <div id="section-unit" style="display:none">
+        <!-- SECTION: CREW -->
+        <div id="section-crew" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 class="section-heading">UNIT LIST</h3>
-            <button class="btn btn-primary btn-sm" onclick="addUnitMember()">+ Add Member</button>
+            <h3 class="section-heading" style="margin:0">CREW</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="goto-hook"></span>
+              <button class="btn btn-sm" id="crew-email-sel-btn" style="display:none" onclick="emailSelectedCrew()">✉️ Email Selected</button>
+              <button class="btn btn-sm" onclick="emailAllCrew()">✉️ Email All</button>
+              <button class="btn btn-primary btn-sm" onclick="addUnitMember()">+ Add Crew</button>
+            </div>
           </div>
-          <div id="unit-sections"></div>
+          <div id="crew-sections"></div>
         </div>
 
         <!-- SECTION: BUDGET -->
@@ -291,14 +303,44 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">BUDGET</h3>
-            <div style="display:flex;gap:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="goto-hook"></span>
+              <button class="btn btn-sm btn-danger" id="budget-remove-sel-btn" style="display:none" onclick="removeSelectedBudgetLines()">✕ Remove</button>
+              <button class="btn btn-sm btn-ghost" id="budget-bulk-dept-btn" style="display:none" onclick="bulkBudgetMoveDept()">⇄ Dept…</button>
+              <button class="btn btn-sm btn-ghost" id="budget-bulk-atl-btn" style="display:none" onclick="bulkBudgetMoveSection('atl')">→ ATL</button>
+              <button class="btn btn-sm btn-ghost" id="budget-bulk-btl-btn" style="display:none" onclick="bulkBudgetMoveSection('btl')">→ BTL</button>
+              <button class="btn btn-sm btn-ghost" id="budget-pct-btn" onclick="toggleBudgetPct()" title="Toggle % of total column">% Total</button>
+              <button class="btn btn-sm btn-ghost" onclick="openBudgetColumnsModal()" title="Show / hide columns">⚙ Columns</button>
+              <button class="btn btn-sm btn-ghost" onclick="openCopyBudgetModal()" title="Copy budget to another project">⊞ Copy to…</button>
+              <button class="btn btn-sm btn-ghost" onclick="openBudgetTemplateModal()">⊞ Templates</button>
+              <button class="btn btn-sm btn-ghost" onclick="importBudgetCSV()" title="Import CSV">⬆ Import</button>
+              <button class="btn btn-sm btn-ghost" onclick="exportBudgetCSV()" title="Export CSV">⬇ CSV</button>
+              <button class="btn btn-sm btn-ghost" onclick="exportBudgetPrint()" title="Print / PDF">🖨 PDF</button>
               <button class="btn btn-sm" onclick="addBudgetLine('atl')" style="background:rgba(230,188,60,0.15);border-color:rgba(230,188,60,0.4);color:var(--accent)">+ ATL Line</button>
               <button class="btn btn-sm" onclick="addBudgetLine('btl')" style="background:rgba(91,192,235,0.1);border-color:rgba(91,192,235,0.3);color:var(--accent2)">+ BTL Line</button>
             </div>
           </div>
           <div class="budget-summary-bar" id="budget-summary-bar"></div>
+          <div id="budget-dept-filter-bar"></div>
+          <div class="bud-search-row">
+            <input type="search" id="budget-search-input" placeholder="🔍 Search description, dept, notes…" oninput="_setBudgetSearch(this.value)" autocomplete="off">
+          </div>
           <div id="budget-atl-section"></div>
+          <div class="bud-quick-add-bar" id="bud-qa-atl">
+            <select id="baq-atl-dept" class="baq-dept"><option value="">Dept…</option></select>
+            <input id="baq-atl-desc" class="baq-desc" type="text" placeholder="Description" autocomplete="off" onkeydown="if(event.key==='Enter')quickAddBudgetLine('atl')">
+            <input id="baq-atl-rate" class="baq-num" type="number" min="0" step="0.01" placeholder="Rate">
+            <input id="baq-atl-qty"  class="baq-num" type="number" min="0" step="0.01" placeholder="Qty" value="1">
+            <button class="btn btn-sm" onclick="quickAddBudgetLine('atl')">+ Add ATL</button>
+          </div>
           <div id="budget-btl-section"></div>
+          <div class="bud-quick-add-bar" id="bud-qa-btl">
+            <select id="baq-btl-dept" class="baq-dept"><option value="">Dept…</option></select>
+            <input id="baq-btl-desc" class="baq-desc" type="text" placeholder="Description" autocomplete="off" onkeydown="if(event.key==='Enter')quickAddBudgetLine('btl')">
+            <input id="baq-btl-rate" class="baq-num" type="number" min="0" step="0.01" placeholder="Rate">
+            <input id="baq-btl-qty"  class="baq-num" type="number" min="0" step="0.01" placeholder="Qty" value="1">
+            <button class="btn btn-sm" onclick="quickAddBudgetLine('btl')">+ Add BTL</button>
+          </div>
         </div>
 
         <!-- SECTION: EQUIPMENT -->
@@ -306,7 +348,8 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="addEquipItem()">+ Add Item</button>
               <button class="btn btn-sm" onclick="resetEquipChecks()">↺ Reset Checks</button>
             </div>
@@ -319,7 +362,8 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">LOCATIONS</h3>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <span class="goto-hook"></span>
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
               <button class="btn btn-sm" onclick="openImportLocationModal()" title="Import an existing location from the database">↓ Import</button>
               <button id="loc-remove-sel-btn" class="btn btn-sm btn-danger" onclick="removeSelectedLocations()" style="display:none">✕ Remove Selected</button>
@@ -332,7 +376,7 @@
             <table class="data-table" id="locations-table">
               <thead><tr>
                 <th style="width:28px;padding:6px 8px"><input type="checkbox" id="loc-select-all" onchange="locSelectAll(this.checked)" title="Select all" style="cursor:pointer"></th>
-                <th>Location</th><th>Suitability</th><th>Contacted</th>
+                <th>Location</th><th>Scene</th><th>Suitability</th><th>Contacted</th>
                 <th>Availability</th><th>Cost/Fee</th><th>Accessibility</th>
                 <th>Recce Done</th><th>Decision</th><th></th>
               </tr></thead>
@@ -356,7 +400,7 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">SHOT LIST</h3>
-            <button class="btn btn-primary btn-sm" onclick="addShot()">+ Add Shot</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addShot()">+ Add Shot</button></div>
           </div>
           <div class="table-container">
             <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--font-mono)">
@@ -380,7 +424,7 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">PROPS LIST</h3>
-            <button class="btn btn-primary btn-sm" onclick="addPropItem('props')">+ Add Prop</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addPropItem('props')">+ Add Prop</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -395,7 +439,7 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">WARDROBE / COSTUME / MAKE-UP</h3>
-            <button class="btn btn-primary btn-sm" onclick="addWardrobeItem()">+ Add Item</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addWardrobeItem()">+ Add Item</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -410,7 +454,7 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">SOUND LOG</h3>
-            <button class="btn btn-primary btn-sm" onclick="addSoundEntry()">+ Add Entry</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addSoundEntry()">+ Add Entry</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -425,7 +469,7 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">PRODUCTION RISK ASSESSMENT</h3>
-            <button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button></div>
           </div>
           <div class="breakdown-card" style="margin-bottom:16px">
             <div class="form-row-3">
@@ -457,7 +501,8 @@
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 class="section-heading">RELEASE FORMS</h3>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="addRelease('talent')">+ Talent Release</button>
               <button class="btn btn-sm" onclick="addRelease('location')">+ Location Release</button>
             </div>
@@ -472,6 +517,8 @@
             <h3 class="section-heading" style="margin:0">SCRIPT &amp; DOCUMENTS</h3>
             <div style="display:flex;gap:8px;align-items:center">
               <!-- Script editor hidden (WIP) -->
+              <span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="showSection('breakdown')">→ Script Breakdown</button>
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">
                 + Upload Document
                 <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.fdx,.fountain,.rtf" style="display:none" onclick="this.value=''" onchange="handleScriptUpload(this.files)">
@@ -1279,8 +1326,49 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Role / Character</label>
+        <label class="form-label" id="pers-role-label">Role / Character</label>
         <input class="form-input" id="pers-role" placeholder="Role or character name">
+        <div id="pers-role-select-group" style="display:none">
+          <select class="form-select" id="pers-role-select" onchange="_persRoleToggle()">
+            <option value="">— Select role —</option>
+            <option>Director</option>
+            <option>1st AD</option>
+            <option>2nd AD</option>
+            <option>3rd AD / Floor Runner</option>
+            <option>Producer</option>
+            <option>Executive Producer</option>
+            <option>Line Producer</option>
+            <option>Production Manager</option>
+            <option>Production Coordinator</option>
+            <option>Production Assistant</option>
+            <option>DOP / Director of Photography</option>
+            <option>Camera Operator</option>
+            <option>1st AC / Focus Puller</option>
+            <option>2nd AC / Clapper Loader</option>
+            <option>Gaffer</option>
+            <option>Best Boy</option>
+            <option>Electrician</option>
+            <option>Sound Recordist</option>
+            <option>Boom Operator</option>
+            <option>Production Designer</option>
+            <option>Art Director</option>
+            <option>Set Decorator</option>
+            <option>Props Master</option>
+            <option>Costume Designer</option>
+            <option>Wardrobe Supervisor</option>
+            <option>Make-up Artist</option>
+            <option>Hair Stylist</option>
+            <option>Editor</option>
+            <option>Colourist</option>
+            <option>VFX Supervisor</option>
+            <option>Script Supervisor</option>
+            <option>Location Manager</option>
+            <option>Stunt Coordinator</option>
+            <option>Runner</option>
+            <option value="other">Other…</option>
+          </select>
+          <input class="form-input" id="pers-role-other" placeholder="Describe role…" style="display:none;margin-top:6px">
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -1353,6 +1441,18 @@
         <input class="form-input" id="bud-desc" placeholder="What is this for?">
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Vendor / Supplier <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+      <input class="form-input" id="bud-vendor" placeholder="Company or person being paid">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select class="form-input" id="bud-type">
+        <option value="cash">Cash</option>
+        <option value="inkind">In-Kind (donated / contra)</option>
+        <option value="deferred">Deferred (paid on profit)</option>
+      </select>
+    </div>
     <div class="form-row-3">
       <div class="form-group">
         <label class="form-label">Unit Rate (£)</label>
@@ -1387,10 +1487,14 @@
       <button class="modal-close" onclick="closeModal('modal-location')">✕</button>
     </div>
     <input type="hidden" id="loc-edit-idx">
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input class="form-input" id="loc-location" placeholder="e.g. 15 Mill Lane, London" data-loc-auto autocomplete="off">
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Location Name</label>
-        <input class="form-input" id="loc-name" placeholder="e.g. The Old Mill" data-loc-auto autocomplete="off">
+        <label class="form-label">Scene</label>
+        <input class="form-input" id="loc-name" placeholder="e.g. The Old Mill">
       </div>
       <div class="form-group">
         <label class="form-label">Suitability</label>
@@ -1551,10 +1655,14 @@
     </div>
     <input type="hidden" id="gloc-project-id">
     <input type="hidden" id="gloc-loc-idx">
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input class="form-input" id="gloc-location" placeholder="e.g. 15 Mill Lane, London">
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Location Name</label>
-        <input class="form-input" id="gloc-name" placeholder="e.g. The Old Mill">
+        <label class="form-label">Scene</label>
+        <input class="form-input" id="gloc-name" placeholder="e.g. THE OLD MILL">
       </div>
       <div class="form-group">
         <label class="form-label">Project</label>
@@ -1649,23 +1757,9 @@
       <label class="form-label">Notes</label>
       <textarea class="form-textarea" id="gloc-notes" placeholder="Additional notes about this location..." style="min-height:70px"></textarea>
     </div>
-    <div style="border-top:1px solid var(--border2);margin:16px 0 12px;padding-top:14px">
-      <label class="form-label" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Location Contact</label>
-      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">The person to contact about this location (owner, manager, etc.)</p>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-input" id="gloc-contact-name" placeholder="e.g. Jane Smith">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone</label>
-          <input class="form-input" id="gloc-contact-phone" placeholder="+44...">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input class="form-input" id="gloc-contact-email" placeholder="email@example.com" type="email">
-      </div>
+    <div id="gloc-scout-btns" style="display:none;margin-bottom:12px;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="_glocGoScout('scouting')">📋 Create Scouting Sheet</button>
+      <button class="btn btn-sm" onclick="_glocGoScout('tech')">🔍 Create Tech Scout</button>
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-edit-location-global')">Cancel</button>
@@ -2098,9 +2192,64 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-loc-contact">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-loc-contact-title">ADD LOCATION CONTACT</h3>
+      <button class="modal-close" onclick="closeModal('modal-loc-contact')">✕</button>
+    </div>
+    <input type="hidden" id="lc-edit-ref">
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Location <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <input class="form-input" id="lc-location-name" placeholder="e.g. 15 Mill Lane, London">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scene <span style="opacity:0.5;font-weight:400">(optional — link to script breakdown)</span></label>
+        <select class="form-select" id="lc-project" onchange="_lcFilterLocations()" style="margin-bottom:6px"></select>
+        <select class="form-select" id="lc-location-ref"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Name</label>
+        <input class="form-input" id="lc-name" placeholder="e.g. Jane Smith">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role / Relationship</label>
+        <select class="form-select" id="lc-role" onchange="_lcToggleOtherRole()">
+          <option value="">— Select —</option>
+          <option value="owner">Owner</option>
+          <option value="manager">Manager</option>
+          <option value="staff">Staff</option>
+          <option value="friend">Friend of venue</option>
+          <option value="agent">Agent / Booking</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group" id="lc-role-other-group" style="display:none">
+        <label class="form-label">Describe role <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <input class="form-input" id="lc-role-other" placeholder="e.g. Location manager's assistant">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="lc-phone" type="tel" placeholder="e.g. 07700 900000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="lc-email" type="email" placeholder="e.g. jane@venue.com">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-loc-contact')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLocationContact()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" role="status" aria-live="polite" style="display:none"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-sync.js"></script>
 <script src="js/store.js"></script>
 <script src="js/search.js"></script>
 <script src="js/settings.js"></script>
@@ -2214,5 +2363,26 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="modal-login" style="display:none;z-index:9999">
+  <div class="modal-box" style="max-width:360px;text-align:center">
+    <div style="font-size:36px;margin-bottom:8px">🎬</div>
+    <h3 style="margin:0 0 4px;font-size:18px">Black Fountain</h3>
+    <p style="color:var(--text3);font-size:13px;margin:0 0 24px">Sign in to continue</p>
+    <div id="login-step-email">
+      <input id="login-email" type="email" placeholder="your@email.com" class="modal-input" style="width:100%;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')_loginSendOtp()" autocomplete="email">
+      <button id="login-send-btn" class="btn btn-primary" style="width:100%" onclick="_loginSendOtp()">Send sign-in code</button>
+    </div>
+    <div id="login-step-otp" style="display:none">
+      <p style="color:var(--text2);font-size:13px;margin:0 0 4px">Code sent to</p>
+      <p id="login-otp-sent-to" style="color:var(--text);font-size:13px;font-weight:600;margin:0 0 14px"></p>
+      <input id="login-otp" type="text" inputmode="numeric" maxlength="6" placeholder="000000" class="modal-input" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')_loginVerifyOtp()">
+      <button id="login-verify-btn" class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="_loginVerifyOtp()">Sign in</button>
+      <button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="_loginBack()">← Use a different email</button>
+    </div>
+    <div id="login-error" style="color:var(--red);font-size:12px;margin-top:10px;min-height:16px"></div>
+  </div>
+</div>
 </body>
 </html>

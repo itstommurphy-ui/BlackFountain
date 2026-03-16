@@ -1,11 +1,12 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v9';
+const CACHE_NAME = 'blackfountain-v22';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/css/base.css',
   '/css/views.css',
+  '/js/supabase-sync.js',
   '/js/store.js',
   '/js/search.js',
   '/js/settings.js',

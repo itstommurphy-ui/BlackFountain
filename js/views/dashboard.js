@@ -102,12 +102,13 @@ function saveProject() {
 }
 
 function deleteCurrentProject() {
-  if (!confirm('Delete this project? This cannot be undone.')) return;
-  store.projects = store.projects.filter(p => p.id !== store.currentProjectId);
-  store.currentProjectId = null;
-  saveStore();
-  showView('dashboard');
-  showToast('Project deleted', 'info');
+  showConfirmDialog('Delete this project? This cannot be undone.', 'Delete Project', () => {
+    store.projects = store.projects.filter(p => p.id !== store.currentProjectId);
+    store.currentProjectId = null;
+    saveStore();
+    showView('dashboard');
+    showToast('Project deleted', 'info');
+  });
 }
 
 function changeProjectStatus(newStatus) {

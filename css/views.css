@@ -877,6 +877,47 @@
   .budget-table tr:hover td { background: var(--surface2); }
   .budget-total-row td { font-weight: 700; background: var(--surface2) !important; color: var(--text) !important; font-size: 12px; border-top: 1px solid var(--border2); }
   .dept-pill { display: inline-block; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+  .bud-handle { cursor: grab; color: var(--text3); font-size: 14px; padding: 0 4px 0 0; user-select: none; opacity: 0.4; }
+  .bud-handle:hover { opacity: 1; }
+  .bud-handle:active { cursor: grabbing; }
+  .bud-dragging td { opacity: 0.35; }
+  .bud-drag-over td { border-top: 2px solid var(--accent) !important; }
+  .budget-dept-header td { background: var(--surface2) !important; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; border-top: 2px solid var(--border2); padding: 6px 10px; }
+  .budget-dept-header:hover td { background: var(--surface3, var(--border)) !important; }
+  .budget-dept-subtotal td { font-size: 11px; font-style: italic; color: var(--text3) !important; background: var(--surface2) !important; border-top: 1px dashed var(--border2); border-bottom: 1px dashed var(--border2); text-align: right; }
+  .budget-dept-subtotal td.num { color: var(--text2) !important; font-family: var(--font-mono); text-align: right; }
+  .budget-dept-subtotal:hover td { background: var(--surface2) !important; }
+  .bsb-divider { width: 1px; background: var(--border2); align-self: stretch; margin: 0 2px; flex-shrink: 0; }
+  .bsb-card.bsb-config { background: var(--surface2); border-style: dashed; }
+  .bsb-card.bsb-remain { border-top: 3px solid var(--green); }
+  .bsb-card.bsb-remain .bsb-amount { color: var(--green); }
+  .bsb-card.bsb-over { border-top: 3px solid var(--red); }
+  .bsb-card.bsb-over .bsb-amount { color: var(--red); }
+  .bsb-input { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); padding: 3px 6px; font-size: 12px; font-family: var(--font-mono); outline: none; }
+  .bsb-input:focus { border-color: var(--accent); }
+  .tpl-pick-card { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .tpl-pick-card:hover { border-color: var(--accent); background: var(--surface); }
+  .bud-editable { cursor: text !important; }
+  .bud-editable:hover { background: var(--surface2) !important; outline: 1px dashed var(--border2); outline-offset: -2px; }
+  .bud-cell-input { width: 90px; background: var(--surface); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); padding: 2px 5px; font-size: 12px; font-family: var(--font-mono); text-align: right; outline: none; }
+  .pct-badge { display: inline-block; margin-left: 6px; font-size: 10px; color: var(--text3); font-family: var(--font-mono); opacity: 0.8; }
+  .bud-dept-filter-pill { cursor: pointer !important; }
+  .bud-dept-filter-pill:hover { filter: brightness(1.15); }
+  .budget-table th { cursor: default; }
+  .budget-table th[onclick] { cursor: pointer; }
+  .budget-table th[onclick]:hover { color: var(--text); }
+  .bud-row-over td { background: rgba(220,60,60,0.07) !important; }
+  .bud-row-over:hover td { background: rgba(220,60,60,0.13) !important; }
+  .bud-row-under td { background: rgba(60,180,100,0.07) !important; }
+  .bud-row-under:hover td { background: rgba(60,180,100,0.13) !important; }
+  .bud-search-row { margin: 6px 0 4px; }
+  .bud-search-row input { width: 100%; max-width: 340px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); padding: 5px 10px; font-size: 12px; outline: none; }
+  .bud-search-row input:focus { border-color: var(--accent); }
+  .bud-quick-add-bar { display: flex; align-items: center; gap: 6px; padding: 6px 4px; margin: 2px 0 12px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 6px; }
+  .bud-quick-add-bar .baq-dept { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--text2); font-size: 12px; padding: 4px 6px; width: 130px; }
+  .bud-quick-add-bar .baq-desc { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-size: 12px; padding: 4px 8px; min-width: 0; }
+  .bud-quick-add-bar .baq-num  { width: 80px; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-size: 12px; padding: 4px 8px; font-family: var(--font-mono); }
+  .bud-quick-add-bar input:focus, .bud-quick-add-bar select:focus { outline: none; border-color: var(--accent); }
 
   .table-container {
     background: var(--surface);
@@ -2070,9 +2111,6 @@
   .mb-drag-tab:active { cursor:grabbing; }
   .mb-drag-tab:hover { background:var(--surface5,var(--surface3)); color:var(--text2); }
   .mb-video-wrap { position:relative; }
-  .mb-video-drag { position:absolute; inset:0; cursor:grab; z-index:2; background:transparent; }
-  .mb-video-drag:active { cursor:grabbing; }
-  .mb-item.mb-active .mb-video-drag { display:none; } /* reveal iframe for interaction once placed */
   .mb-item-body { padding:9px 11px; }
   .mb-item-caption { font-size:12px; width:100%; background:transparent; border:none; outline:none; resize:none; font-family:var(--font-body); color:var(--text3); line-height:1.5; cursor:text; display:block; }
   .mb-item-caption:focus { color:var(--text2); }

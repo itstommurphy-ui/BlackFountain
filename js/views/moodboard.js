@@ -3,6 +3,8 @@
 let _currentMoodboardId = null;
 let _mbViewState = {};   // boardId -> { panX, panY, zoom }
 let _mbDrag = null;      // active drag/pan/resize state
+let _mbRafPending = false;
+let _mbLastMoveE = null;
 let _mbFullscreen = false;
 let _mbHide = { captions: false, frames: false, navbar: false, header: false };
 let _mbBgReposition = false;
@@ -233,7 +235,7 @@ function _mbItemHTML(boardId, it) {
     }
     const src = _mbVideoEmbed(it.url);
     return wrap(src
-      ? `${dragTab}<div class="mb-video-wrap"><iframe src="${src}" allow="autoplay;encrypted-media" allowfullscreen></iframe><div class="mb-video-drag" onmousedown="_mbItemMouseDown(event,'${boardId}','${it.id}')" title="Drag to move — double-click to interact"></div></div><div class="mb-item-body">${caption}</div>`
+      ? `${dragTab}<div class="mb-video-wrap"><iframe src="${src}" allow="autoplay;encrypted-media" allowfullscreen></iframe></div><div class="mb-item-body">${caption}</div>`
       : `<div class="mb-item-body" style="color:var(--text3);font-size:12px">⚠ Could not embed URL<br><small style="opacity:0.6">${esc(it.url)}</small>${caption}</div>`);
   }
   if (it.type === 'color') {
@@ -677,6 +679,8 @@ function _mbItemMouseDown(e, boardId, itemId) {
   _mbDrag = { mode:'item', boardId, itemId, startCX:e.clientX, startCY:e.clientY, origX:it.x||0, origY:it.y||0, zoom:vs.zoom };
   const el = document.querySelector(`.mb-item[data-itemid="${itemId}"]`);
   if (el) el.classList.add('mb-active');
+  // Disable pointer events on iframes and videos so they don't swallow mouseup during drag
+  document.querySelectorAll('.mb-item iframe, .mb-item video').forEach(f => { f.style.pointerEvents = 'none'; });
 }
 
 function _mbResizeStart(e, boardId, itemId) {
@@ -722,6 +726,16 @@ function _mbWrapMouseDown(e) {
 
 function _mbMouseMove(e) {
   if (!_mbDrag) return;
+  _mbLastMoveE = e;
+  if (!_mbRafPending) {
+    _mbRafPending = true;
+    requestAnimationFrame(_mbApplyMove);
+  }
+}
+function _mbApplyMove() {
+  _mbRafPending = false;
+  const e = _mbLastMoveE;
+  if (!e || !_mbDrag) return;
   const dx = e.clientX - _mbDrag.startCX;
   const dy = e.clientY - _mbDrag.startCY;
   const vs = _mbViewState[_mbDrag.boardId];
@@ -781,6 +795,9 @@ function _mbMouseUp(e) {
     if (wrap) wrap.classList.remove('panning');
   }
   _mbDrag = null;
+  _mbLastMoveE = null;
+  // Restore iframe/video pointer events after any drag ends
+  document.querySelectorAll('.mb-item iframe, .mb-item video').forEach(f => { f.style.pointerEvents = ''; });
 }
 
 function _mbWheel(e) {
@@ -1393,6 +1410,7 @@ function openContactTextEdit(cell, name, colId) {
 }
 
 function addNewContact() {
+  if (contactSubView === 'locations') { addNewLocationContact(); return; }
   _pendingFullRemovals = [];
   refreshRolesDatalist();
   // Clear all fields and open the edit modal for a brand-new contact
@@ -1699,6 +1717,7 @@ function showConfirmDialog(message, confirmLabel, onConfirm, opts = {}) {
       <p style="color:var(--text2);font-size:13px;line-height:1.65;margin:4px 0 0">${message}</p>
       <div class="form-actions">
         <button class="btn btn-sm" id="_cdCancel">Cancel</button>
+        ${(opts.extraButtons||[]).map((b,i) => `<button class="btn btn-sm ${b.btnClass||''}" id="_cdExtra${i}">${b.label}</button>`).join('')}
         <button class="btn btn-sm ${opts.btnClass||'btn-danger'}" id="_cdConfirm">${confirmLabel}</button>
       </div>
     </div>`;
@@ -1707,6 +1726,9 @@ function showConfirmDialog(message, confirmLabel, onConfirm, opts = {}) {
   overlay.querySelector('#_cdClose').onclick  = close;
   overlay.querySelector('#_cdCancel').onclick = close;
   overlay.querySelector('#_cdConfirm').onclick = () => { close(); onConfirm(); };
+  (opts.extraButtons||[]).forEach((b,i) => {
+    overlay.querySelector(`#_cdExtra${i}`).onclick = () => { close(); b.onClick(); };
+  });
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.stopPropagation(); close(); return; }

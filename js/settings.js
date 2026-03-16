@@ -142,34 +142,6 @@ async function confirmImportStore() {
   location.reload();
 }
 
-function clearAllData() {
-  const confirmText = 'DELETE ALL DATA';
-  const userInput = prompt('⚠️ WARNING: This will PERMANENTLY DELETE all your projects, contacts, locations, files, and settings. This action cannot be undone.\n\nTo confirm, type: ' + confirmText);
-  
-  if (userInput !== confirmText) {
-    if (userInput) showToast('Confirmation did not match - data NOT deleted', 'error');
-    return;
-  }
-  
-  // Clear all Black Fountain related keys
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && (key.includes('blackfountain') || key.includes('filmforge'))) {
-      keysToRemove.push(key);
-    }
-  }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
-  
-  // Also try unregistering service worker for fresh start
-  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(reg => reg.unregister());
-    });
-  }
-  
-  showToast('All data cleared - please refresh the page manually', 'success');
-}
 
 function openClearDataModal() {
   document.getElementById('clear-data-confirm').value = '';
@@ -1348,6 +1320,8 @@ async function saveStore() {
     console.error('[saveStore] IndexedDB write failed:', e);
     showToast('Data could not be saved.', 'error');
   }
+  // Cloud sync (non-blocking — file blobs are stripped, IDB is source of truth for those)
+  if (typeof sbPushStore === 'function') sbPushStore();
 }
 
 function manualSave() {
@@ -1392,17 +1366,39 @@ function triggerAutoSave() {
 async function loadStore() {
   let loaded = null;
   let migrateFromLS = false;
+  let localFileBlobMap = {};
 
+  // Always load IDB first — it holds file blobs that never go to Supabase
   try {
     const db = await openDB();
-    loaded = await new Promise((resolve, reject) => {
+    const idbData = await new Promise((resolve, reject) => {
       const tx = db.transaction('kv', 'readonly');
       const req = tx.objectStore('kv').get('v1');
       req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => reject(req.error);
     });
+    if (idbData) {
+      loaded = idbData;
+      (idbData.files || []).forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
+    }
   } catch(e) {
     console.error('[loadStore] IDB error, trying localStorage:', e);
+  }
+
+  // If logged in, pull from Supabase — it's the authoritative source for project data
+  if (typeof sbPullStore === 'function' && _sbUser) {
+    try {
+      const cloudData = await sbPullStore();
+      if (cloudData && cloudData.projects !== undefined) {
+        loaded = cloudData; // cloud wins for project/contact/settings data
+      } else if (loaded) {
+        // Cloud is empty — upload what we have locally
+        console.log('[loadStore] Cloud empty, uploading local data to Supabase');
+        sbPushStore();
+      }
+    } catch(e) {
+      console.warn('[loadStore] Supabase pull failed, using local data:', e);
+    }
   }
 
   if (!loaded) {
@@ -1437,6 +1433,10 @@ async function loadStore() {
         f.projectId = store.projects[f.projectId]?.id ?? null;
       }
     });
+    // Restore file blobs from local IDB (they're never sent to Supabase)
+    if (Object.keys(localFileBlobMap).length) {
+      store.files.forEach(f => { if (!f.data && localFileBlobMap[f.id]) f.data = localFileBlobMap[f.id]; });
+    }
     // Validate currentProjectId - clear if project no longer exists
     if (store.currentProjectId) {
       const projExists = store.projects?.some(p => p.id === store.currentProjectId);

@@ -352,7 +352,8 @@ function _scoutPrintStyles() {
     .value{font-size:13px;line-height:1.5;min-height:20px;border-bottom:1px solid #eee;padding-bottom:4px}
     .pros{border-left:3px solid #2a8;padding-left:8px}.cons{border-left:3px solid #c44;padding-left:8px}
     .suit{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:bold}
-    @media print{body{padding:0}button{display:none}}`;
+    @media print{body{padding:0}button{display:none}}
+    .bf-footer{position:fixed;bottom:6mm;right:12mm;font-size:9px;color:#bbb;font-family:Arial,sans-serif}`;
 }
 
 function _scoutHtmlDoc(s, projectTitle) {
@@ -381,6 +382,7 @@ function _scoutHtmlDoc(s, projectTitle) {
       <div class="panel"><div class="panel-head">Set Dressing Notes</div><div class="value">${s.setDressing||''}</div></div>
       <div class="panel"><div class="panel-head">Networking Notes</div><div class="value">${s.networking||''}</div></div>
     </div>
+    <div class="bf-footer">Powered by Black Fountain · blackfountain.io</div>
     </body></html>`;
 }
 
@@ -424,6 +426,7 @@ function _techScoutHtmlDoc(scout, projectTitle) {
     <h1>Tech Scout Checklist — ${scout.name||'Location'}</h1>
     <h2>${projectTitle||''} ${scout.date ? '| '+scout.date : ''} &nbsp;|&nbsp; ${checksDone}/${checksTotal} items checked</h2>
     ${cats}
+    <div class="bf-footer">Powered by Black Fountain · blackfountain.io</div>
     </body></html>`;
 }
 

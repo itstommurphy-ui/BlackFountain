@@ -272,7 +272,7 @@ function renderSection(name) {
   else if (name === 'callsheet') renderCallsheet(p);
   else if (name === 'schedule') renderSchedule(p);
   else if (name === 'cast') renderCast(p);
-  else if (name === 'unit') renderUnit(p);
+  else if (name === 'crew') renderCrew(p);
   else if (name === 'budget') renderBudget(p);
   else if (name === 'equipment') renderEquipment(p);
   else if (name === 'locations') renderProjectLocations(p);
@@ -282,7 +282,22 @@ function renderSection(name) {
 // OVERVIEW
 function getAllOverviewSections(p) {
   const base = [
-    {name:'Budget',          icon:'💷',  count: p.budget.length + ' lines',                                           tab:'budget'},
+    {name:'Budget', icon:'💷', tab:'budget', count: (() => {
+      if (!p.budget || !p.budget.length) return '0 lines';
+      const curr = p.budgetCurrency || '£';
+      const est = p.budget.reduce((s,b) => s+(parseFloat(b.rate)||0)*(parseFloat(b.qty)||1), 0);
+      return est > 0 ? curr + Math.round(est).toLocaleString('en-GB') + ' est.' : p.budget.length + ' lines';
+    })(), desc: (() => {
+      if (!p.budget || !p.budget.length) return null;
+      const hasAct = p.budget.some(b => b.actual !== '' && b.actual != null);
+      if (!hasAct) return p.budget.length + ' line' + (p.budget.length !== 1 ? 's' : '');
+      const curr = p.budgetCurrency || '£';
+      const est = p.budget.reduce((s,b) => s+(parseFloat(b.rate)||0)*(parseFloat(b.qty)||1), 0);
+      const act = p.budget.filter(b=>b.actual!==''&&b.actual!=null).reduce((s,b)=>s+(parseFloat(b.actual)||0),0);
+      const pct = est > 0 ? Math.round(act/est*100) : 0;
+      const over = act > est;
+      return curr + Math.round(act).toLocaleString('en-GB') + ' spent · ' + pct + '% ' + (over ? '⚠' : '✓');
+    })()},
     {name:'Callsheet',       icon:'📋',  count: p.callsheets.length + ' days',                                        tab:'callsheet'},
     {name:'Cast & Extras',   icon:'🎭',  count: (p.cast.length + p.extras.length) + ' people',                       tab:'cast'},
     {name:'Equipment',       icon:'🎥',  count: Object.values(p.equipment).flat().length + ' items',                  tab:'equipment'},
@@ -297,7 +312,7 @@ function getAllOverviewSections(p) {
     {name:'Stripboard',      icon:'🎞️', count: (() => { const sb = p.stripboard; if (!sb?.days?.length) return 'No days scheduled'; const total = sb.days.reduce((a,d)=>a+(d.sceneKeys||[]).length,0); return sb.days.length + ' day' + (sb.days.length!==1?'s':'') + ' · ' + total + ' scene' + (total!==1?'s':'') + ' scheduled'; })(), tab:'stripboard'},
     {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
     {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
-    {name:'Unit List',       icon:'👥',  count: p.unit.length + ' crew',                                              tab:'unit'},
+    {name:'Crew',            icon:'👥',  count: p.unit.length + ' crew',                                              tab:'crew'},
     {name:'Production Plan', icon:'✅',  count: (() => { if(!p.productionPlan) return '0 tasks'; const t=p.productionPlan.sections.reduce((a,s)=>a+s.items.length,0), d=p.productionPlan.sections.reduce((a,s)=>a+s.items.filter(i=>i.checked).length,0); return `${d}/${t} complete`; })(), tab:'plan'},
     {name:'Wardrobe',        icon:'👗',  count: (p.wardrobe||[]).length + ' items',                                   tab:'wardrobe'},
   ].sort((a,b) => a.name.localeCompare(b.name));

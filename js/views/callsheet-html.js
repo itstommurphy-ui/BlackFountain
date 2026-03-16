@@ -76,6 +76,7 @@ const MODAL_SAVE = {
   'modal-new-moodboard':      () => saveNewMoodboard(),
   'modal-mb-video':           () => saveMbVideo(),
   'modal-mb-color':           () => saveMbColor(),
+  'modal-loc-contact':  () => saveLocationContact(),
 };
 
 // Shot modal — delegated autocomplete for location and cast fields

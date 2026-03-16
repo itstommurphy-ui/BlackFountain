@@ -150,7 +150,7 @@ async function confirmScriptUpload() {
   if (_scriptUploadQueue.length) _processNextScriptUpload();
 }
 
-async function _extractTextForBreakdown(p, file, name, version) {
+async function _extractTextForBreakdown(p, file, name, version, scriptId) {
   try {
     showToast('Reading PDF for breakdown…', 'info');
     if (!window.pdfjsLib) {
@@ -197,7 +197,7 @@ async function _extractTextForBreakdown(p, file, name, version) {
       }
       text += '\n';
     }
-    if (text.trim()) { _createBreakdown(p, name, version, text.trim()); saveStore(); }
+    if (text.trim()) { _createBreakdown(p, name, version, text.trim(), scriptId || null); saveStore(); }
   } catch(e) { showToast('Could not read PDF for breakdown: ' + e.message, 'error'); }
 }
 
@@ -226,7 +226,7 @@ function renderScript(p) {
             const ts = s.editedAt || s.uploadedAt;
             const tsLabel = s.editedAt ? 'Edited ' : 'Uploaded ';
             return `
-            <tr data-ctx="script-file:${s.id}">
+            <tr data-ctx="script-file:${s.id}" oncontextmenu="showScriptCtxMenu(event,'${s.id}')" style="cursor:context-menu">
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
                   <span>${scriptFileIcon(s.type)}</span>
@@ -974,6 +974,7 @@ function openScriptPreview(id) {
   const ovId = '_sp_' + id;
   const overlay = document.createElement('div');
   overlay.id = ovId;
+  overlay.className = 'script-preview-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
 
   const isPdf  = s.type.includes('pdf');
@@ -1079,6 +1080,67 @@ function removeScriptFile(id) {
     saveStore();
     renderScript(p);
   });
+}
+
+// ── SCRIPT FILE CONTEXT MENU ──────────────────────────────────────────────────
+function showScriptCtxMenu(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  _dismissCtxMenu();
+  const p = currentProject();
+  const s = (p?.scripts || []).find(x => x.id === id);
+  if (!s) return;
+  const ext = s.name.toLowerCase().split('.').pop();
+  const canBreakdown = !['doc','docx'].includes(ext);
+
+  const menu = document.createElement('div');
+  menu.id = '_ctx-menu';
+  menu.style.cssText = `position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:4px 0;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:13px`;
+  const items = [
+    { label: '📂 Create Script Breakdown', action: () => _ctxCreateBreakdown(id), disabled: !canBreakdown, title: canBreakdown ? '' : '.doc/.docx not supported' },
+    { label: '👁 Preview',                 action: () => openScriptPreview(id) },
+    { label: '⬇ Download',                action: () => downloadScriptFile(id) },
+    { sep: true },
+    { label: '🗑 Remove',                  action: () => removeScriptFile(id), danger: true },
+  ];
+  items.forEach(item => {
+    if (item.sep) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
+      menu.appendChild(sep);
+      return;
+    }
+    const el = document.createElement('div');
+    el.style.cssText = `padding:7px 14px;cursor:${item.disabled ? 'default' : 'pointer'};color:${item.danger ? '#e55' : item.disabled ? 'var(--text3)' : 'var(--text)'};white-space:nowrap`;
+    el.textContent = item.label;
+    if (item.disabled && item.title) el.title = item.title;
+    if (!item.disabled) {
+      el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+      el.addEventListener('mousedown', e2 => { e2.stopPropagation(); _dismissCtxMenu(); item.action(); });
+    }
+    menu.appendChild(el);
+  });
+
+  // Position near cursor, keep on screen
+  document.body.appendChild(menu);
+  const mw = 210, mh = menu.offsetHeight || 160;
+  let x = e.clientX, y = e.clientY;
+  if (x + mw > window.innerWidth)  x = window.innerWidth - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+
+  setTimeout(() => document.addEventListener('mousedown', _dismissCtxMenu, { once: true }), 0);
+}
+
+
+function _dismissCtxMenu() {
+  document.getElementById('_ctx-menu')?.remove();
+}
+
+function _ctxCreateBreakdown(id) {
+  importBreakdownFromScript(id);
 }
 
 // SCRIPT BREAKDOWN CATEGORIES (industry standard colour system)

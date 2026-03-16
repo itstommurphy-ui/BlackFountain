@@ -758,7 +758,7 @@ function removePersonnel(type, i) {
     p[type].splice(i, 1);
     saveStore();
     if (type === 'cast' || type === 'extras') renderCast(p);
-    else renderUnit(p);
+    else renderCrew(p);
     if (removedName) maybePromptOrphanContact(p, removedName);
   });
 }
@@ -798,7 +798,7 @@ function saveCSCustomField() {
   let label = (select.value && select.value !== 'Other')
     ? select.value
     : document.getElementById('custom-field-label').value.trim();
-  if (!label) { alert('Please select or enter a role'); return; }
+  if (!label) { showToast('Please select or enter a role', 'info'); return; }
   const name   = document.getElementById('custom-field-name').value.trim();
   const phone  = document.getElementById('custom-field-phone').value.trim();
   const email  = document.getElementById('custom-field-email').value.trim();
@@ -1006,7 +1006,7 @@ function doExportPDF() {
 
   const doc = iframe.contentDocument || iframe.contentWindow.document;
   doc.open();
-  doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${(p.title||'Call Sheet').replace(/</g,'&lt;')} — Call Sheet</title><style>
 @page{margin:12mm;size:A4;}
 @media print{
   html,body{margin:0!important;padding:0!important;}
@@ -1078,7 +1078,8 @@ body{background:#fff;font-family:Arial,"Helvetica Neue",sans-serif;color:#1a1a1a
 .cs-note{font-size:11px;color:#555;padding:7px 10px;background:#f8f9fa;border-left:3px solid #d4aa2c;border-radius:0 4px 4px 0;margin-bottom:8px;display:flex;align-items:center;gap:8px;page-break-inside:avoid;break-inside:avoid;}
 .cs-note-input{font-size:11px;color:#1a1a1a;font-weight:600;flex:1;}
 .cs-notes-area{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;background:#fafafa;font-size:12px;line-height:1.6;color:#333;white-space:pre-wrap;}
-</style></head><body>${callsheetHTML}</body></html>`);
+.bf-footer{position:fixed;bottom:6mm;right:12mm;font-size:9px;color:#bbb;font-family:Arial,sans-serif;}
+</style></head><body>${callsheetHTML}<div class="bf-footer">Powered by Black Fountain · blackfountain.io</div></body></html>`);
   doc.close();
 
   setTimeout(() => {

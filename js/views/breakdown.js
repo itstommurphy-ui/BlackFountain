@@ -24,6 +24,7 @@ let _bdCtxFromScript = false;
 let _bdSuggestions = [];
 let _bdSuggestSelected = new Set();
 let _activeBreakdownId = null;
+let _bdRenamingId = null;
 
 // ── Multiple-breakdown helpers ─────────────────────────────────────────────
 function _migrateBreakdowns(p) {
@@ -60,8 +61,9 @@ function _autoImportBreakdownLocations(p, text) {
   let added = 0;
   for (const scene of scenes) {
     if (scene.heading === 'Full Script') continue;
-    const name = _extractLocationFromHeading(scene.heading);
-    if (!name || name.length < 2) continue;
+    const raw = _extractLocationFromHeading(scene.heading);
+    if (!raw || raw.length < 2) continue;
+    const name = raw.toLowerCase().replace(/(^|[\s\-])(\w)/g, (_, sep, letter) => sep + letter.toUpperCase());
     if (!(p.locations || []).some(l => l.name.toLowerCase() === name.toLowerCase())) {
       if (!p.locations) p.locations = [];
       p.locations.push({ name, suit: 'possible', contacted: 'no', avail: '', rules: '', cost: '', costPeriod: '', access: '', recce: 'no', light: '', power: '', problems: '', decision: '', notes: '' });
@@ -71,9 +73,9 @@ function _autoImportBreakdownLocations(p, text) {
   return added;
 }
 
-function _createBreakdown(p, name, version, rawText) {
+function _createBreakdown(p, name, version, rawText, scriptId) {
   _migrateBreakdowns(p);
-  const bd = { id: makeId(), name: name || 'New Breakdown', version: version || '', rawText: rawText || '', tags: [], createdAt: Date.now() };
+  const bd = { id: makeId(), name: name || 'New Breakdown', version: version || '', rawText: rawText || '', tags: [], createdAt: Date.now(), scriptId: scriptId || null };
   p.scriptBreakdowns.push(bd);
   _activeBreakdownId = bd.id;
   if (rawText) {
@@ -85,8 +87,51 @@ function _createBreakdown(p, name, version, rawText) {
 
 function _selectBreakdown(id) {
   _activeBreakdownId = id;
+  _bdRenamingId = null;
   const p = currentProject();
   if (p) renderBreakdown(p);
+}
+function _finishRenameBd(id, val) {
+  _bdRenamingId = null;
+  _renameBd(id, val);
+  renderBreakdown(currentProject());
+}
+
+function _renameBd(id, name) {
+  const p = currentProject();
+  _migrateBreakdowns(p);
+  const bd = (p.scriptBreakdowns || []).find(b => b.id === id);
+  if (bd && name.trim()) { bd.name = name.trim(); saveStore(); }
+}
+
+function importBdCastToSection() {
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const text = bd.rawText;
+  const tags = bd.tags || [];
+  const castRoles  = [...new Set(tags.filter(t => t.category === 'cast'  ).map(t => text.slice(t.start, t.end).trim()).filter(Boolean))];
+  const extrasRoles = [...new Set(tags.filter(t => t.category === 'extras').map(t => text.slice(t.start, t.end).trim()).filter(Boolean))];
+  if (!castRoles.length && !extrasRoles.length) { showToast('No cast or extras tagged in breakdown yet', 'info'); return; }
+  if (!p.cast)   p.cast   = [];
+  if (!p.extras) p.extras = [];
+  const blank = { name: '', number: '', email: '', notes: '', social: '', confirmed: 'green', dept: '' };
+  let added = 0;
+  for (const role of castRoles) {
+    if (!p.cast.some(m => (m.role || '').toLowerCase() === role.toLowerCase())) {
+      p.cast.push({ ...blank, role });
+      added++;
+    }
+  }
+  for (const role of extrasRoles) {
+    if (!p.extras.some(m => (m.role || '').toLowerCase() === role.toLowerCase())) {
+      p.extras.push({ ...blank, role });
+      added++;
+    }
+  }
+  if (!added) { showToast('All tagged cast/extras already in Cast & Extras section', 'info'); return; }
+  saveStore();
+  showToast(`${added} entr${added !== 1 ? 'ies' : 'y'} added to Cast & Extras section`, 'success');
 }
 
 // ── STRIPBOARD ────────────────────────────────────────────────────────────────
@@ -538,6 +583,7 @@ function renderBreakdown(p) {
   const bd = _getActiveBd(p);
   if (!bd || !bd.rawText) renderBreakdownImport(el, p);
   else renderBreakdownEditor(el, p);
+  el.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml('breakdown'); });
 }
 
 function renderBreakdownImport(el, p) {
@@ -551,6 +597,7 @@ function renderBreakdownImport(el, p) {
     <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${hasBds?'8px':'20px'}">
       <h3 class="section-heading">SCRIPT BREAKDOWN</h3>
+      <span class="goto-hook"></span>
     </div>
     ${selectorHtml}
     <div style="max-width:560px;margin:0 auto">
@@ -657,12 +704,31 @@ function showBdScriptImporter() {
 async function importBreakdownFromScript(scriptId) {
   const p = currentProject(); if (!p) return;
   const s = p.scripts.find(x => x.id === scriptId); if (!s) return;
-  document.getElementById('bd-import-wrap').style.display = 'none';
+  const importWrap = document.getElementById('bd-import-wrap');
+  if (importWrap) importWrap.style.display = 'none';
 
+  _migrateBreakdowns(p);
   const name    = s.name.replace(/\.[^.]+$/, ''); // strip extension
   const version = s.label || '';
   const ext     = s.name.toLowerCase().split('.').pop();
 
+  // Check if a breakdown already exists for this script (by id or by name fallback for older entries)
+  const existing = (p.scriptBreakdowns || []).find(b => b.scriptId === scriptId || (!b.scriptId && b.name === name));
+  if (existing) {
+    showConfirmDialog('A breakdown for this file already exists.', 'View Breakdown', () => {
+      _activeBreakdownId = existing.id;
+      showSection('breakdown');
+    }, {
+      btnClass: 'btn-primary',
+      extraButtons: [{ label: 'Create New Anyway', btnClass: '', onClick: () => _doCreateBreakdown(p, s, name, version, ext, scriptId) }]
+    });
+    return;
+  }
+
+  _doCreateBreakdown(p, s, name, version, ext, scriptId);
+}
+
+async function _doCreateBreakdown(p, s, name, version, ext, scriptId) {
   // PDF: convert stored dataUrl back to a File object then reuse existing extractor
   if (ext === 'pdf' || s.type.includes('pdf')) {
     showToast('Reading PDF for breakdown…', 'info');
@@ -670,8 +736,8 @@ async function importBreakdownFromScript(scriptId) {
       const res  = await fetch(s.dataUrl);
       const blob = await res.blob();
       const file = new File([blob], s.name, { type: s.type || 'application/pdf' });
-      await _extractTextForBreakdown(p, file, name, version);
-      renderBreakdown(p);
+      await _extractTextForBreakdown(p, file, name, version, scriptId);
+      showSection('breakdown');
     } catch(e) {
       showToast('Could not read PDF: ' + e.message, 'error');
     }
@@ -710,9 +776,9 @@ async function importBreakdownFromScript(scriptId) {
   }
 
   if (!text.trim()) { showToast('Could not extract text from this file', 'error'); return; }
-  _createBreakdown(p, name, version, text.trim());
+  _createBreakdown(p, name, version, text.trim(), scriptId);
   saveStore();
-  renderBreakdown(p);
+  showSection('breakdown');
   showToast(`Imported "${name}" into breakdown`, 'success');
 }
 
@@ -725,15 +791,20 @@ function renderBreakdownEditor(el, p) {
   const scenes = parseBreakdownScenes(text);
 
   const bds = p.scriptBreakdowns || [];
-  const selectorHtml = bds.length > 1 ? `
+  const _bdSelItem = (b) => {
+    if (b.id === bd.id) {
+      if (_bdRenamingId === b.id) {
+        return `<input id="bd-rename-inp" class="form-input" style="height:28px;padding:2px 8px;font-size:11px;font-weight:700;min-width:60px;width:${Math.max(60, b.name.length * 7 + 24)}px;max-width:220px;display:inline-block;border-color:var(--accent)" value="${_sbEsc(b.name)}" onblur="_finishRenameBd('${b.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){_bdRenamingId=null;renderBreakdown(currentProject())}">`;
+      }
+      return `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(230,188,60,0.12);border:1px solid rgba(230,188,60,0.5);border-radius:6px;padding:2px 4px 2px 10px;font-size:11px;font-weight:700;color:var(--accent)">${_sbEsc(b.name)}<button onclick="event.stopPropagation();_bdRenamingId='${b.id}';renderBreakdown(currentProject())" title="Rename" style="background:none;border:none;cursor:pointer;padding:2px 5px;font-size:12px;opacity:0.6;color:inherit;line-height:1">✎</button></span>`;
+    }
+    return `<button class="btn btn-sm" onclick="_selectBreakdown('${b.id}')">${_sbEsc(b.name)}</button>`;
+  };
+  const selectorHtml = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      ${bds.map(b => `<button class="btn btn-sm${b.id === bd.id ? ' btn-primary' : ''}" onclick="_selectBreakdown('${b.id}')" title="${b.version||''}">${b.name}${b.version ? ' <span style=\'opacity:0.6;font-size:10px\'>('+b.version+')</span>' : ''}</button>`).join('')}
-      <button class="btn btn-sm" onclick="_activeBreakdownId=null;renderBreakdownImport(document.getElementById('section-breakdown'),currentProject())">+ New</button>
-    </div>` : (bds.length === 1 ? `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--text2)">${bd.name}${bd.version ? ' <span style=\'opacity:0.6;font-weight:400\'>('+bd.version+')</span>' : ''}</span>
-      <button class="btn btn-sm" onclick="_activeBreakdownId=null;renderBreakdownImport(document.getElementById('section-breakdown'),currentProject())">+ New Breakdown</button>
-    </div>` : '');
+      ${bds.map(_bdSelItem).join('')}
+      <button class="btn btn-sm" onclick="_bdRenamingId=null;_activeBreakdownId=null;renderBreakdownImport(document.getElementById('section-breakdown'),currentProject())">${bds.length > 1 ? '+ New' : '+ New Breakdown'}</button>
+    </div>`;
 
   el.innerHTML = `
     <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
@@ -744,7 +815,9 @@ function renderBreakdownEditor(el, p) {
         <div style="font-size:11px;color:var(--text3)" data-bd-counter>${scenes.length} scene${scenes.length!==1?'s':''} · ${tags.length} tag${tags.length!==1?'s':''}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <span class="goto-hook"></span>
         <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
+        <button class="btn btn-sm" onclick="importBdCastToSection()" title="Export tagged Cast and Extras to the Cast &amp; Extras section">→ Export Cast/Extras</button>
         <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
         <button class="btn btn-sm" onclick="exportBreakdownReport()">↓ Export Report</button>
         <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownTags()">✕ Clear Tags</button>
@@ -766,6 +839,11 @@ function renderBreakdownEditor(el, p) {
         <div id="bd-report">${renderBreakdownReport(p, scenes)}</div>
       </div>
     </div>`;
+
+  if (_bdRenamingId) setTimeout(() => {
+    const inp = document.getElementById('bd-rename-inp');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 0);
 
   if (!window._bdGlobalHandler) {
     document.addEventListener('mousedown', function(e) {
@@ -955,6 +1033,9 @@ function getTextOffsetInBd(container, node, offset) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     if (walker.currentNode === node) return total + offset;
+    // Skip badge nodes — their text ("INT", "DAY" etc.) is not in bd.rawText
+    const parent = walker.currentNode.parentElement;
+    if (parent && parent.classList.contains('bd-scene-badge')) continue;
     total += walker.currentNode.textContent.length;
   }
   return total + offset;
@@ -1423,6 +1504,7 @@ function printBreakdownReport() {
     .cat-cell { padding: 5px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; }
     .items-cell { padding: 5px 12px; color: #222; line-height: 1.5; }
     .empty-cell { padding: 6px 12px; color: #aaa; font-style: italic; }
+    .bf-footer { position: fixed; bottom: 6mm; right: 12mm; font-size: 9px; color: #bbb; font-family: Arial, sans-serif; }
   </style>
 </head>
 <body>
@@ -1433,6 +1515,7 @@ function printBreakdownReport() {
     </div>
   </div>
   ${scenesHtml}
+  <div class="bf-footer">Powered by Black Fountain · blackfountain.io</div>
 </body>
 </html>`;
 
@@ -1465,7 +1548,7 @@ function _bdIsCharCue(line) {
 }
 
 // Returns sorted array of [start, end] character offsets that are inside dialogue
-// (the text lines that follow a character cue, until a blank line)
+// (the text lines that follow a character cue, until a blank line or new char cue)
 function _bdDialogueRanges(text) {
   const ranges = [];
   const lines = text.split('\n');
@@ -1476,11 +1559,20 @@ function _bdDialogueRanges(text) {
     const lineEnd = offset + line.length;
     if (!trimmed) {
       expectDialogue = false;
+    } else if (_bdIsCharCue(trimmed)) {
+      // Character cue — check if it looks like a name (not shouted dialogue like "I SAID NO!")
+      const stripped = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
+      const looksLikeName = stripped.length >= 2 && stripped.length <= 35
+        && /^[A-Z][A-Z\s\-']*$/.test(stripped) && stripped.split(/\s+/).length <= 3;
+      if (looksLikeName) {
+        // Valid char cue — (re)start dialogue expectation, do NOT mark this line as dialogue
+        expectDialogue = true;
+      } else if (expectDialogue) {
+        // All-caps but not a clean name (e.g. punctuation in speech) — still dialogue
+        ranges.push([offset, lineEnd]);
+      }
     } else if (expectDialogue) {
       ranges.push([offset, lineEnd]);
-      // dialogue continues on subsequent lines until a blank line
-    } else if (_bdIsCharCue(trimmed)) {
-      expectDialogue = true; // next non-blank line(s) will be dialogue
     }
     offset += line.length + 1; // +1 for \n
   }
@@ -1570,20 +1662,14 @@ function detectBreakdownSuggestions(text, existingTags) {
   const inHeading = (pos, end) => headingRanges.some(([hs, he]) => pos < he && end > hs);
 
   // Pass A: standalone character cue lines (speakers)
-  // If the script has indentation (e.g. extracted from PDF), character cues will be
-  // indented ≥18 spaces — use that as a strong positive signal; for flat text (indent=0)
-  // fall back to the existing any-all-caps-line heuristic.
+  // Use _bdIsCharCue (≥75% uppercase ratio) — same heuristic as _bdDialogueRanges,
+  // so the two systems stay in sync regardless of script indentation style.
   const charNames = new Set();
-  const hasIndentation = text.split('\n').some(l => /^ {10,}\S/.test(l));
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || sceneHeadingRe.test(trimmed) || transitionRe.test(trimmed)) continue;
-    const indent = line.length - line.trimStart().length;
     const stripped = trimmed.replace(/\s*\([^)]*\)\s*/g, '').trim();
-    if (!isValidName(stripped)) continue;
-    // In indented scripts only accept lines with character-cue indentation (≥18 spaces)
-    if (hasIndentation && indent < 18) continue;
-    charNames.add(stripped);
+    if (isValidName(stripped)) charNames.add(stripped);
   }
 
   // Pass B: ALL-CAPS words/phrases inside *mixed-case* action lines (non-speaking characters e.g. BARTENDER)

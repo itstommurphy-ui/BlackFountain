@@ -60,6 +60,11 @@ function showProjectView(id) {
   const p = currentProject();
   if (!p) return;
 
+  // Clean up moodboard canvas/fullscreen mode if leaving it
+  document.getElementById('content')?.classList.remove('mb-content-canvas');
+  document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
+  document.body.classList.remove('mb-fullscreen');
+
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-project').classList.add('active');
 
@@ -115,6 +120,24 @@ function showSection(name) {
     t.classList.toggle('active', onclick.includes(`'${name}'`));
   });
   renderSection(name);
+  // Inject Go To dropdown into any hooks in the active section
+  const sectionEl = document.getElementById(sectionId);
+  if (sectionEl) sectionEl.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml(name); });
+}
+
+function _gotoHtml(skip) {
+  const sections = [
+    ['budget','Budget'],['callsheet','Callsheet'],['cast','Cast & Extras'],['crew','Crew'],
+    ['equipment','Equipment'],['locations','Locations'],['overview','Overview'],
+    ['plan','Production Plan'],['brief','Project Brief'],['props','Props'],
+    ['releases','Release Forms'],['riskassess','Risk Assessment'],['schedule','Schedule'],
+    ['breakdown','Script Breakdown'],['script','Script & Docs'],['shotlist','Shot List'],
+    ['soundlog','Sound Log'],['stripboard','Stripboard'],['wardrobe','Wardrobe'],
+  ];
+  return `<select class="btn btn-sm" onchange="if(this.value){showSection(this.value);this.value=''}" style="cursor:pointer" title="Go to section">
+    <option value="">→ Go to…</option>
+    ${sections.filter(([id])=>id!==skip).map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}
+  </select>`;
 }
 
 // ══════════════════════════════════════════
