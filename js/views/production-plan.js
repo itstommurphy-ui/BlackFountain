@@ -331,9 +331,7 @@ function initOverviewLayout(p) {
 }
 
 function renderOverview(p) {
-  document.getElementById('ov-shoot-days').textContent = p.callsheets.length || '—';
-  document.getElementById('ov-cast').textContent = p.cast.length + p.extras.length;
-  document.getElementById('ov-crew').textContent = p.unit.length;
+  document.getElementById('ov-shoot-days-header').textContent = p.callsheets.length || '0';
   renderOverviewDocs(p);
   renderOverviewFiles();
   if (typeof renderQuickTasks === 'function') renderQuickTasks(p);

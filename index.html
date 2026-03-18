@@ -126,6 +126,7 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
             <div style="display:flex;gap:8px;align-items:center">
+              <span id="ov-shoot-days" style="font-size:10px;font-family:var(--font-mono);color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:4px" title="Shoot Days / Callsheets">📅 <span id="ov-shoot-days-header">0</span> days</span>
               <select class="proj-status-select" id="proj-status-select" onchange="changeProjectStatus(this.value)">
                 <option value="pre">PRE-PROD</option>
                 <option value="prod">PRODUCTION</option>
@@ -167,20 +168,6 @@
 
         <!-- SECTION: OVERVIEW -->
         <div id="section-overview">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
-            <div class="stat-card">
-              <div class="label">Shoot Days</div>
-              <div class="value" id="ov-shoot-days">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Cast Members</div>
-              <div class="value" id="ov-cast">0</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Crew Members</div>
-              <div class="value" id="ov-crew">0</div>
-            </div>
-          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px">
             <h3 class="section-heading" style="margin:0">SECTIONS <span style="font-size:10px;font-weight:400;letter-spacing:0;color:var(--text3);text-transform:none">(cards can be dragged and rearranged)</span></h3>
             <div id="ov-toolbar" style="display:flex;align-items:center;gap:8px;font-size:11px"></div>
