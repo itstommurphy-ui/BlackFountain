@@ -305,17 +305,33 @@
             <h3 class="section-heading" style="margin:0">BUDGET</h3>
             <div style="display:flex;gap:6px;align-items:center">
               <span class="goto-hook"></span>
-              <button class="btn btn-sm btn-danger" id="budget-remove-sel-btn" style="display:none" onclick="removeSelectedBudgetLines()">✕ Remove</button>
-              <button class="btn btn-sm btn-ghost" id="budget-bulk-dept-btn" style="display:none" onclick="bulkBudgetMoveDept()">⇄ Dept…</button>
-              <button class="btn btn-sm btn-ghost" id="budget-bulk-atl-btn" style="display:none" onclick="bulkBudgetMoveSection('atl')">→ ATL</button>
-              <button class="btn btn-sm btn-ghost" id="budget-bulk-btl-btn" style="display:none" onclick="bulkBudgetMoveSection('btl')">→ BTL</button>
-              <button class="btn btn-sm btn-ghost" id="budget-pct-btn" onclick="toggleBudgetPct()" title="Toggle % of total column">% Total</button>
-              <button class="btn btn-sm btn-ghost" onclick="openBudgetColumnsModal()" title="Show / hide columns">⚙ Columns</button>
-              <button class="btn btn-sm btn-ghost" onclick="openCopyBudgetModal()" title="Copy budget to another project">⊞ Copy to…</button>
-              <button class="btn btn-sm btn-ghost" onclick="openBudgetTemplateModal()">⊞ Templates</button>
-              <button class="btn btn-sm btn-ghost" onclick="importBudgetCSV()" title="Import CSV">⬆ Import</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportBudgetCSV()" title="Export CSV">⬇ CSV</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportBudgetPrint()" title="Print / PDF">🖨 PDF</button>
+              <div class="dropdown" id="budget-bulk-dropdown" style="display:none">
+                <button class="dropdown-toggle">Actions</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item danger" onclick="removeSelectedBudgetLines()">✕ Remove Selected</div>
+                  <div class="dropdown-item" onclick="bulkBudgetMoveDept()">⇄ Move to Dept</div>
+                  <div class="dropdown-item" onclick="bulkBudgetMoveSection('atl')">→ Move to ATL</div>
+                  <div class="dropdown-item" onclick="bulkBudgetMoveSection('btl')">→ Move to BTL</div>
+                </div>
+              </div>
+              <div class="dropdown">
+                <button class="dropdown-toggle">View</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="toggleBudgetPct()" id="budget-pct-btn">% Total</div>
+                  <div class="dropdown-item" onclick="openBudgetColumnsModal()">⚙ Columns</div>
+                </div>
+              </div>
+              <div class="dropdown">
+                <button class="dropdown-toggle">Data</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="openCopyBudgetModal()">⊞ Copy to…</div>
+                  <div class="dropdown-item" onclick="openBudgetTemplateModal()">⊞ Templates</div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item" onclick="importBudgetCSV()">⬆ Import CSV</div>
+                  <div class="dropdown-item" onclick="exportBudgetCSV()">⬇ Export CSV</div>
+                  <div class="dropdown-item" onclick="exportBudgetPrint()">🖨 Export PDF</div>
+                </div>
+              </div>
               <button class="btn btn-sm" onclick="addBudgetLine('atl')" style="background:rgba(230,188,60,0.15);border-color:rgba(230,188,60,0.4);color:var(--accent)">+ ATL Line</button>
               <button class="btn btn-sm" onclick="addBudgetLine('btl')" style="background:rgba(91,192,235,0.1);border-color:rgba(91,192,235,0.3);color:var(--accent2)">+ BTL Line</button>
             </div>
@@ -366,10 +382,20 @@
               <span class="goto-hook"></span>
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
               <button class="btn btn-sm" onclick="openImportLocationModal()" title="Import an existing location from the database">↓ Import</button>
-              <button id="loc-remove-sel-btn" class="btn btn-sm btn-danger" onclick="removeSelectedLocations()" style="display:none">✕ Remove Selected</button>
-              <button class="btn btn-sm btn-danger" onclick="removeAllLocations()">✕ Remove All</button>
-              <button class="btn btn-sm" onclick="addScoutingSheet()">+ Scouting Sheet</button>
-              <button class="btn btn-sm" onclick="addTechScout()">+ Tech Scout</button>
+              <div class="dropdown" id="loc-actions-dropdown" style="display:none">
+                <button class="dropdown-toggle">Actions</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item danger" onclick="removeSelectedLocations()">✕ Remove Selected</div>
+                  <div class="dropdown-item danger" onclick="removeAllLocations()">✕ Remove All</div>
+                </div>
+              </div>
+              <div class="dropdown">
+                <button class="dropdown-toggle">+ Add</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="addScoutingSheet()">+ Scouting Sheet</div>
+                  <div class="dropdown-item" onclick="addTechScout()">+ Tech Scout</div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="table-container" style="margin-bottom:20px">

@@ -200,7 +200,9 @@ function addUnitMember(dept) {
 function _updateCrewEmailSelBtn() {
   const n = document.querySelectorAll('.crew-cb:checked').length;
   const btn = document.getElementById('crew-email-sel-btn');
+  const dropdown = document.getElementById('crew-bulk-dropdown');
   if (btn) btn.style.display = n ? '' : 'none';
+  if (dropdown) dropdown.style.display = n ? '' : 'none';
 }
 function _crewSelectAll(cb, dept) {
   document.querySelectorAll('.crew-cb').forEach(c => {
@@ -243,9 +245,11 @@ function _updateCastEmailSelBtn() {
   const emailBtn        = document.getElementById('cast-email-sel-btn');
   const castRemoveBtn   = document.getElementById('cast-remove-sel-btn');
   const extrasRemoveBtn = document.getElementById('extras-remove-sel-btn');
+  const dropdown        = document.getElementById('cast-bulk-dropdown');
   if (emailBtn)        emailBtn.style.display        = n ? '' : 'none';
   if (castRemoveBtn)   castRemoveBtn.style.display   = n ? '' : 'none';
   if (extrasRemoveBtn) extrasRemoveBtn.style.display = n ? '' : 'none';
+  if (dropdown)        dropdown.style.display        = n ? '' : 'none';
 }
 function removeSelectedPersonnel() {
   const checked = [...document.querySelectorAll('.cast-cb:checked')];

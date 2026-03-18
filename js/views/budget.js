@@ -618,10 +618,8 @@ function renderBudgetSection(lines, sectionId, sectionLabel, sectionClass) {
 
 function _updateBudgetSelBtn() {
   const n = document.querySelectorAll('.budget-cb:checked').length;
-  ['budget-remove-sel-btn','budget-bulk-dept-btn','budget-bulk-atl-btn','budget-bulk-btl-btn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.style.display = n ? '' : 'none';
-  });
+  const dropdown = document.getElementById('budget-bulk-dropdown');
+  if (dropdown) dropdown.style.display = n ? '' : 'none';
 }
 
 function _budgetSelectAll(headerCb) {

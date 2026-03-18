@@ -1639,8 +1639,8 @@
   }
 
   /* Context menu */
-  #ctx-menu { display:none; position:fixed; z-index:99999; background:var(--surface); border:1px solid var(--border2); border-radius:9px; box-shadow:0 8px 28px rgba(0,0,0,0.45); padding:4px; min-width:168px; max-width:240px; }
-  .ctx-item { padding:7px 13px; cursor:pointer; font-size:13px; color:var(--text); border-radius:5px; display:flex; align-items:center; gap:9px; white-space:nowrap; }
+  #ctx-menu { display:none; position:fixed; z-index:99999; background:var(--surface); border:1px solid var(--border2); border-radius:9px; box-shadow:0 8px 28px rgba(0,0,0,0.45); padding:4px; min-width:168px; max-width:240px; user-select:none; }
+  .ctx-item { padding:7px 13px; cursor:pointer; font-size:13px; color:var(--text); border-radius:5px; display:flex; align-items:center; gap:9px; white-space:nowrap; user-select:none; }
   .ctx-item:hover { background:var(--surface2); }
   .ctx-item.ctx-danger { color:var(--red); }
   .ctx-item.ctx-danger:hover { background:rgba(220,60,60,0.1); }
@@ -2155,3 +2155,19 @@
   .mb-fs-btn .mb-fs-label { display:none; }
   body.mb-fullscreen .mb-fs-btn:hover .mb-fs-label { display:inline; }
   @media (max-width:700px) { .mb-boards-grid { grid-template-columns:1fr 1fr; } }
+
+
+/* ── QUICK TASKS WIDGET ── */
+.quick-tasks-widget { transition: border-color 0.15s; }
+.quick-tasks-widget:hover { border-color: var(--border) !important; }
+#quick-tasks-list::-webkit-scrollbar { width: 6px; }
+#quick-tasks-list::-webkit-scrollbar-track { background: transparent; }
+#quick-tasks-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+.qt-item { transition: opacity 0.15s, background 0.15s; }
+.qt-item:hover { background: var(--surface3) !important; }
+.qt-item input[type="checkbox"] { accent-color: var(--green); cursor: pointer; }
+#quick-task-input::placeholder { color: var(--text3); }
+#quick-task-input:focus { outline: none; border-color: var(--accent) !important; }
+#quick-task-deadline { cursor: pointer; }
+#quick-task-deadline::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+

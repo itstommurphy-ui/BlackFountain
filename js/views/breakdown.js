@@ -819,7 +819,15 @@ function renderBreakdownEditor(el, p) {
         <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
         <button class="btn btn-sm" onclick="importBdCastToSection()" title="Export tagged Cast and Extras to the Cast &amp; Extras section">→ Export Cast/Extras</button>
         <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
-        <button class="btn btn-sm" onclick="exportBreakdownReport()">↓ Export Report</button>
+        <div class="dropdown">
+          <button class="dropdown-toggle">↓ Export</button>
+          <div class="dropdown-menu">
+            <div class="dropdown-item" onclick="exportBreakdownReport('txt')">📄 Export as TXT</div>
+            <div class="dropdown-item" onclick="exportBreakdownReport('pdf')">📕 Export as PDF</div>
+            <div class="dropdown-item" onclick="exportBreakdownReport('doc')">📘 Export as DOC</div>
+            <div class="dropdown-item" onclick="exportBreakdownReport('html')">🌐 Export as HTML</div>
+          </div>
+        </div>
         <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownTags()">✕ Clear Tags</button>
         <button class="btn btn-sm" style="opacity:0.7" onclick="clearBreakdownScript()">🗑 Delete Script</button>
       </div>
@@ -1419,12 +1427,44 @@ function viewBreakdownReport() {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-function exportBreakdownReport() {
+function exportBreakdownReport(format = 'txt') {
   const p = currentProject();
   const bd = _getActiveBd(p);
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
+  
+  if (format === 'pdf') {
+    // Use print-friendly HTML for PDF
+    printBreakdownReport();
+    return;
+  }
+  
+  if (format === 'html') {
+    // Generate HTML breakdown
+    const html = _generateBreakdownHtml(p, scenes, tags);
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${p.title.replace(/[^a-z0-9]/gi,'_')}_breakdown.html`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return;
+  }
+  
+  if (format === 'doc') {
+    // Generate DOC-compatible HTML
+    const html = _generateBreakdownHtml(p, scenes, tags, true);
+    const blob = new Blob([html], { type: 'application/msword' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${p.title.replace(/[^a-z0-9]/gi,'_')}_breakdown.doc`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return;
+  }
+  
+  // Default: TXT format
   const lines = [
     'SCRIPT BREAKDOWN REPORT',
     `Project: ${p.title}`,
@@ -1449,6 +1489,40 @@ function exportBreakdownReport() {
   a.download = `${p.title.replace(/[^a-z0-9]/gi,'_')}_breakdown.txt`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function _generateBreakdownHtml(p, scenes, tags, forDoc = false) {
+  const bd = _getActiveBd(p);
+  const text = bd?.rawText || '';
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const docHeader = forDoc ? '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>' : '';
+  const docFooter = forDoc ? '</body></html>' : '';
+  
+  let html = docHeader;
+  html += '<h1>Script Breakdown Report</h1>';
+  html += `<p><strong>Project:</strong> ${esc(p.title)}</p>`;
+  html += `<p><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>`;
+  html += `<p><strong>Scenes:</strong> ${scenes.length} | <strong>Elements tagged:</strong> ${tags.length}</p>`;
+  html += '<hr>';
+  
+  for (const scene of scenes) {
+    const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
+    if (!st.length) continue;
+    const byCat = {};
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(esc(text.slice(t.start, t.end))); }
+    
+    html += `<h3>${esc(scene.heading)}</h3>`;
+    html += '<table border="0" cellpadding="5" style="width:100%">';
+    for (const cat of BREAKDOWN_CATEGORIES) {
+      if (byCat[cat.id]) {
+        html += `<tr><td style="background:${cat.color};color:${cat.textColor};font-weight:bold;padding:3px 8px;border-radius:4px;white-space:nowrap">${cat.label}</td><td>${byCat[cat.id].join(', ')}</td></tr>`;
+      }
+    }
+    html += '</table>';
+  }
+  
+  html += docFooter;
+  return html;
 }
 
 function printBreakdownReport() {

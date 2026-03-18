@@ -7,7 +7,7 @@
   let current = null;
   document.addEventListener('mouseover', e => {
     const el = e.target.closest('[data-tip]');
-    if (!el) return;
+    if (!el || el.classList.contains('tooltip-info')) return;
     current = el;
     tip.textContent = el.dataset.tip;
     tip.style.display = 'block';
@@ -22,6 +22,23 @@
     if (current && !current.contains(e.relatedTarget)) { current = null; tip.style.display = 'none'; }
   });
 })();
+
+// Dropdown toggle functionality
+document.addEventListener('click', function(e) {
+  const toggle = e.target.closest('.dropdown-toggle');
+  if (toggle) {
+    e.preventDefault();
+    const dropdown = toggle.closest('.dropdown');
+    const wasOpen = dropdown.classList.contains('open');
+    // Close all dropdowns
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    // Toggle clicked dropdown
+    if (!wasOpen) dropdown.classList.add('open');
+  } else if (!e.target.closest('.dropdown-menu') && !e.target.closest('input[type="file"]')) {
+    // Close dropdowns when clicking outside, but not for file input clicks
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+  }
+});
 
 loadTheme();
 async function _startApp() {

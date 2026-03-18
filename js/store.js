@@ -14,6 +14,7 @@ let store = {
   teamMembers: [],
   currentProjectId: null,
   files: [],
+  folders: [],
   contacts: [],
   locations: [],
   contactColumns: [],
@@ -71,6 +72,7 @@ function formatFileSize(bytes) {
 }
 
 let currentFileCategory = 'all';
+let currentFolderId = null;
 let _mfNewPersonCallback = null; // set when opening contact modal from file-tagging flow
 const selectedFileIds = new Set();
 
@@ -79,6 +81,63 @@ function fileProjectIds(file) {
   if (Array.isArray(file.projectIds)) return file.projectIds;
   if (file.projectId !== undefined && file.projectId !== null) return [file.projectId];
   return [];
+}
+
+// Folder helper functions
+function getFolderById(id) {
+  return store.folders?.find(f => f.id === id);
+}
+
+function getFolderFiles(folderId) {
+  return (store.files || []).filter(f => f.folderId === folderId);
+}
+
+function getRootFiles() {
+  return (store.files || []).filter(f => !f.folderId);
+}
+
+function createFolder(name, parentId = null, projectId = null) {
+  const folder = {
+    id: 'folder_' + Date.now(),
+    name: name,
+    parentId: parentId,
+    projectId: projectId,
+    createdAt: new Date().toISOString()
+  };
+  if (!store.folders) store.folders = [];
+  store.folders.push(folder);
+  save();
+  return folder;
+}
+
+function deleteFolder(folderId) {
+  // Move files in this folder to root
+  store.files.forEach(f => {
+    if (f.folderId === folderId) f.folderId = null;
+  });
+  // Delete subfolder references
+  store.folders.forEach(f => {
+    if (f.parentId === folderId) f.parentId = null;
+  });
+  // Remove the folder
+  store.folders = store.folders.filter(f => f.id !== folderId);
+  save();
+}
+
+function renameFolder(folderId, newName) {
+  const folder = getFolderById(folderId);
+  if (folder) {
+    folder.name = newName;
+    save();
+  }
+}
+
+function moveFileToFolder(fileId, folderId) {
+  const file = store.files.find(f => f.id === fileId);
+  if (file) {
+    file.folderId = folderId;
+    save();
+  }
 }
 
 // ══════════════════════════════════════════

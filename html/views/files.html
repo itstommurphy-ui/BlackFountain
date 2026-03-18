@@ -1,0 +1,43 @@
+<!-- FILES VIEW -->
+<div class="view" id="view-files">
+  <div class="page-header">
+    <h2>FILES</h2>
+    <p>Scripts, photos, storyboards & production assets</p>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <select class="form-select" id="files-project-filter" onchange="renderFiles()" style="max-width:280px;font-size:12px;">
+      <option value="all">All Projects</option>
+    </select>
+  </div>
+
+  <div class="file-tabs" id="file-tabs">
+    <div class="file-tab active" data-category="all">All Files</div>
+    <div class="file-tab" data-category="script">📄 Scripts</div>
+    <div class="file-tab" data-category="location">📍 Locations</div>
+    <div class="file-tab" data-category="bts">🎬 BTS</div>
+    <div class="file-tab" data-category="stills">📸 Stills</div>
+    <div class="file-tab" data-category="people">👥 People</div>
+    <div class="file-tab" data-category="moodboard">🎨 Moodboards</div>
+    <div class="file-tab" data-category="storyboard">🖼️ Storyboards</div>
+    <div class="file-tab" data-category="contract">📋 Contracts</div>
+    <div class="file-tab" data-category="other">📁 Other</div>
+  </div>
+
+  <div class="file-upload-zone" id="file-upload-zone" onclick="document.getElementById('file-input').click()">
+    <div class="file-upload-icon">☁️</div>
+    <div class="file-upload-text">Drop files here or click to upload</div>
+    <div class="file-upload-hint">Scripts, location photos, BTS, moodboards, storyboards</div>
+  </div>
+  <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileUpload(this.files)">
+
+  <div id="files-bulk-bar" class="file-bulk-bar">
+    <span class="file-bulk-bar-count" id="files-bulk-count"></span>
+    <span>files selected</span>
+    <div class="file-bulk-sep"></div>
+    <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'),null)">🔀 Move</button>
+    <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'),null)">🗑 Remove / Delete</button>
+    <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
+  </div>
+  <div class="file-grid" id="file-grid"></div>
+</div>

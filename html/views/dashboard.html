@@ -1,0 +1,21 @@
+<!-- DASHBOARD VIEW -->
+<div class="view active" id="view-dashboard">
+  <div class="page-header">
+    <h2>PROJECTS</h2>
+    <p>Your production pipeline at a glance</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card total-card" onclick="dashboardStatusFilter=null;renderDashboard()" style="cursor:pointer"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
+    <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>
+    <div class="stat-card" onclick="setDashboardFilter('prod')"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
+    <div class="stat-card" onclick="setDashboardFilter('post')"><div class="label">Post-Production</div><div class="value" id="stat-post">0</div><div class="sub" style="color:#e08095">●</div></div>
+    <div class="stat-card" onclick="setDashboardFilter('done')"><div class="label">Complete</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
+    <div class="stat-card" onclick="setDashboardFilter('released')"><div class="label">Released</div><div class="value" id="stat-released">0</div><div class="sub" style="color:#b88af0">●</div></div>
+  </div>
+  <div class="projects-grid" id="projects-grid">
+    <div class="new-project-card" onclick="openNewProjectModal()">
+      <div class="plus">＋</div>
+      <span>New Project</span>
+    </div>
+  </div>
+</div>

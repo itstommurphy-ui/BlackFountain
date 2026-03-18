@@ -73,7 +73,7 @@ function _planSectionHtml(section) {
       <div class="plan-add-row">
         <input class="plan-new-input" placeholder="Add item…"
           onkeydown="if(event.key==='Enter'&&this.value.trim()){addPlanItem('${section.id}',this.value.trim());this.value=''}">
-        <button class="btn btn-sm" onclick="const i=this.previousSibling;if(i.value.trim()){addPlanItem('${section.id}',i.value.trim());i.value=''}">+ Add</button>
+        <button class="btn btn-sm" onclick="const i=this.previousElementSibling;if(i.value.trim()){addPlanItem('${section.id}',i.value.trim());i.value=''}">+ Add</button>
       </div>
     </div>`;
   return `<div class="plan-section" id="plan-sec-${section.id}">
@@ -330,33 +330,444 @@ function initOverviewLayout(p) {
   }
 }
 
-function renderOverviewDocs(p) {
-  const el = document.getElementById('overview-docs');
-  if (!el) return;
-  initOverviewLayout(p);
-  const sectionMap = {};
-  getAllOverviewSections(p).forEach(s => sectionMap[s.tab] = s);
-  const cards = p.overviewLayout
-    .filter(item => item.visible && sectionMap[item.tab])
-    .map(item => sectionMap[item.tab]);
-  el.innerHTML = cards.map(s => `
-    <div class="doc-card" onclick="showSection('${s.tab}')">
-      <div class="doc-card-icon">${s.icon}</div>
-      <div class="doc-card-title">${s.name}</div>
-      ${s.desc ? `<div class="doc-card-sub">${s.desc}</div>` : ''}
-      <div class="doc-card-status ${s.count.startsWith('0') ? 'empty' : 'filled'}">
-        ${s.count.startsWith('0') ? '○ Empty' : '● ' + s.count}
-      </div>
-    </div>
-  `).join('');
-}
-
 function renderOverview(p) {
   document.getElementById('ov-shoot-days').textContent = p.callsheets.length || '—';
   document.getElementById('ov-cast').textContent = p.cast.length + p.extras.length;
   document.getElementById('ov-crew').textContent = p.unit.length;
   renderOverviewDocs(p);
   renderOverviewFiles();
+  if (typeof renderQuickTasks === 'function') renderQuickTasks(p);
+}
+
+// QUICK TASKS WIDGET
+let qtDragIndex = null;
+
+function toggleQuickTasksWidget() {
+  const widget = document.getElementById('quick-tasks-widget');
+  const list = document.getElementById('quick-tasks-list');
+  const inputRow = document.getElementById('quick-tasks-input-row');
+  const toggleBtn = widget.querySelector('button[title="Collapse/Expand"]');
+  
+  if (list.style.display === 'none') {
+    list.style.display = 'flex';
+    inputRow.style.display = 'flex';
+    toggleBtn.textContent = '▾';
+  } else {
+    list.style.display = 'none';
+    inputRow.style.display = 'none';
+    toggleBtn.textContent = '▸';
+  }
+}
+
+function renderQuickTasks(p) {
+  if (!p.quickTasks) p.quickTasks = [];
+  let tasks = [...p.quickTasks];
+  const list = document.getElementById('quick-tasks-list');
+  const progress = document.getElementById('qt-progress');
+  const sortMode = document.getElementById('qt-sort')?.value || 'custom';
+  
+  const done = tasks.filter(t => t.done).length;
+  progress.textContent = `${done}/${tasks.length}`;
+  
+  if (tasks.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:8px 0">No quick tasks yet</div>';
+    return;
+  }
+  
+  // Sort tasks - urgent at top (descending: higher numbers first)
+  const priorityRank = { low: 1, medium: 2, high: 3, urgent: 4 };
+  if (sortMode === 'priority') {
+    tasks.sort((a, b) => {
+      const rankA = priorityRank[a.priority] || 0;
+      const rankB = priorityRank[b.priority] || 0;
+      return rankB - rankA; // Descending: urgent (4) first, low (1) last
+    });
+  } else if (sortMode === 'deadline') {
+    tasks.sort((a, b) => {
+      if (!a.deadline && !b.deadline) return 0;
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+  }
+  
+  const priorityColors = {
+    low: '#60d090',
+    medium: '#f0cf70',
+    high: '#e06060',
+    urgent: '#b88af0'
+  };
+  
+  list.innerHTML = tasks.map((t, i) => {
+    const isOverdue = t.deadline && new Date(t.deadline) < new Date() && !t.done;
+    const priority = t.priority || 'medium';
+    const priorityColor = priorityColors[priority];
+    return `
+      <div class="qt-item" draggable="true" ondragstart="qtDragStart(event, ${i})" ondragover="qtDragOver(event)" ondrop="qtDrop(event, ${i})" oncontextmenu="showQuickTaskContextMenu(event, ${i})" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:6px;opacity:${t.done ? 0.5 : 1};border-left:3px solid ${priorityColor};cursor:grab">
+        <span style="color:var(--text3);font-size:12px;cursor:grab">⋮⋮</span>
+        <input type="checkbox" class="qt-select" data-index="${i}" ${t.done ? 'checked' : ''} onchange="toggleQuickTask(${i})" style="width:16px;height:16px;cursor:pointer">
+        <select onchange="setQuickTaskPriority(${i},this.value)" style="padding:2px 4px;font-size:10px;border:1px solid var(--border2);border-radius:3px;background:var(--surface);color:var(--text3);cursor:pointer">
+          <option value="low" ${priority === 'low' ? 'selected' : ''}>🟢</option>
+          <option value="medium" ${priority === 'medium' ? 'selected' : ''}>🟠</option>
+          <option value="high" ${priority === 'high' ? 'selected' : ''}>🔴</option>
+          <option value="urgent" ${priority === 'urgent' ? 'selected' : ''}>🟣</option>
+        </select>
+        <span class="qt-task-text" data-index="${i}" ondblclick="makeQuickTaskEditable(${i}, this)" style="flex:1;font-size:12px;color:var(--text);text-decoration:${t.done ? 'line-through' : 'none'}">${escapeHtml(t.text)}</span>
+        ${t.deadline ? `<span onclick="editQuickTaskDeadline(${i})" style="font-size:10px;font-family:var(--font-mono);color:${isOverdue ? 'var(--red)' : 'var(--text3)'};background:${isOverdue ? 'rgba(220,60,60,0.15)' : 'var(--surface)'};padding:2px 6px;border-radius:3px;cursor:pointer" title="Click to edit deadline">${formatQuickTaskDate(t.deadline)}</span>` : `<span onclick="editQuickTaskDeadline(${i})" style="font-size:10px;font-family:var(--font-mono);color:var(--text3);background:var(--surface);padding:2px 6px;border-radius:3px;cursor:pointer" title="Click to add deadline">+ Date</span>`}
+        <button onclick="confirmDeleteQuickTask(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.5" title="Delete">✕</button>
+      </div>
+    `;
+  }).join('');
+  
+  // Update selection UI after render
+  updateQuickTaskSelectionUI();
+}
+
+// ══════════════════════════════════════════
+// Quick Tasks - Input Modal for text input
+// ══════════════════════════════════════════
+function showInputDialog(title, message, defaultValue, onConfirm) {
+  const triggerEl = document.activeElement;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="_inputTitle" style="max-width:400px">
+      <div class="modal-header">
+        <h3 id="_inputTitle">${title}</h3>
+        <button class="modal-close" aria-label="Close" id="_inputClose">✕</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;line-height:1.65;margin:4px 0 12px">${message}</p>
+      <input type="text" id="_inputField" style="width:100%;padding:10px;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)" value="${escapeHtml(defaultValue || '')}" />
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-sm" id="_inputCancel">Cancel</button>
+        <button class="btn btn-sm btn-primary" id="_inputOk">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#_inputField');
+  const close = () => { overlay.remove(); if (triggerEl) triggerEl.focus(); };
+  overlay.querySelector('#_inputClose').onclick = close;
+  overlay.querySelector('#_inputCancel').onclick = close;
+  overlay.querySelector('#_inputOk').onclick = () => {
+    const val = input.value;
+    close();
+    onConfirm(val);
+  };
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+    if (e.key === 'Enter') { e.stopPropagation(); overlay.querySelector('#_inputOk').click(); }
+  });
+  setTimeout(() => input.focus(), 60);
+}
+
+// ══════════════════════════════════════════
+// Quick Tasks - Date Picker using native calendar popup
+// ══════════════════════════════════════════
+function showDatePicker(title, currentDate, onConfirm) {
+  const triggerEl = document.activeElement;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="_dateTitle" style="max-width:280px">
+      <div class="modal-header">
+        <h3 id="_dateTitle">${title}</h3>
+        <button class="modal-close" aria-label="Close" id="_dateClose">✕</button>
+      </div>
+      <div style="padding:10px 0">
+        <input type="date" id="_dateField" style="width:100%;padding:10px;font-size:16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text)" value="${currentDate || ''}" />
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-sm" onclick="document.getElementById('_dateField').value=''" style="flex:1">Clear</button>
+          <button class="btn btn-sm btn-primary" id="_dateOk" style="flex:1">Set Date</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#_dateField');
+  const close = () => { overlay.remove(); if (triggerEl) triggerEl.focus(); };
+  overlay.querySelector('#_dateClose').onclick = close;
+  overlay.querySelector('#_dateOk').onclick = () => {
+    const val = input.value;
+    close();
+    onConfirm(val);
+  };
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  setTimeout(() => input.showPicker(), 60); // Opens native calendar
+}
+
+function editQuickTaskDeadline(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  const task = p.quickTasks[index];
+  showDatePicker('Set Deadline', task.deadline || '', (newDate) => {
+    task.deadline = newDate || null;
+    saveStore();
+    renderQuickTasks(p);
+  });
+}
+
+function confirmDeleteQuickTask(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  const task = p.quickTasks[index];
+  
+  if (!task.done) {
+    showConfirmDialog(`Delete uncompleted task "${task.text.substring(0, 30)}${task.text.length > 30 ? '...' : ''}"?`, 'Delete', () => {
+      p.quickTasks.splice(index, 1);
+      saveStore();
+      renderQuickTasks(p);
+    }, { title: 'Confirm Delete' });
+    return;
+  }
+  p.quickTasks.splice(index, 1);
+  saveStore();
+  renderQuickTasks(p);
+}
+
+function showQuickTaskContextMenu(e, index) {
+  e.preventDefault();
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  const task = p.quickTasks[index];
+  
+  // Remove any existing menu
+  const existing = document.getElementById('qt-context-menu');
+  if (existing) existing.remove();
+  
+  const menu = document.createElement('div');
+  menu.id = 'qt-context-menu';
+  menu.style.cssText = 'position:fixed;z-index:1000;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:140px;box-shadow:var(--shadow-lg);user-select:none';
+  menu.style.left = e.pageX + 'px';
+  menu.style.top = e.pageY + 'px';
+  
+  menu.innerHTML = `
+    <div onclick="renameQuickTask(${index})" style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:4px;user-select:none">✏️ Rename</div>
+    <div onclick="editQuickTaskDeadline(${index})" style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:4px;user-select:none">📅 Change Deadline</div>
+    <div onclick="changeQuickTaskPriority(${index})" style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:4px;user-select:none">🏷️ Change Priority</div>
+    <div onclick="confirmDeleteQuickTask(${index})" style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:4px;color:var(--red);user-select:none">🗑️ Delete</div>
+  `;
+  
+  menu.querySelectorAll('div').forEach(el => {
+    el.onmouseover = () => el.style.background = 'var(--surface3)';
+    el.onmouseout = () => el.style.background = 'transparent';
+  });
+  
+  document.body.appendChild(menu);
+  
+  // Close menu on click outside
+  const closeMenu = (ev) => {
+    if (!menu.contains(ev.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeMenu), 10);
+}
+
+function renameQuickTask(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  const task = p.quickTasks[index];
+  showInputDialog('Rename Task', 'Enter new name for the task:', task.text, (newText) => {
+    if (newText.trim() === '') return;
+    task.text = newText.trim();
+    saveStore();
+    renderQuickTasks(p);
+  });
+}
+
+function changeQuickTaskPriority(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  const task = p.quickTasks[index];
+  const priorities = ['low', 'medium', 'high', 'urgent'];
+  const labels = { low: '🟢 Low', medium: '🟠 Medium', high: '🔴 High', urgent: '🟣 Urgent' };
+  const current = priorities.indexOf(task.priority || 'medium');
+  const next = priorities[(current + 1) % priorities.length];
+  task.priority = next;
+  saveStore();
+  renderQuickTasks(p);
+}
+
+function qtDragStart(e, index) {
+  qtDragIndex = index;
+  e.target.style.opacity = '0.5';
+}
+
+function qtDragOver(e) {
+  e.preventDefault();
+}
+
+function qtDrop(e, dropIndex) {
+  e.preventDefault();
+  const p = currentProject();
+  if (!p || !p.quickTasks || qtDragIndex === null) return;
+  
+  const task = p.quickTasks[qtDragIndex];
+  p.quickTasks.splice(qtDragIndex, 1);
+  p.quickTasks.splice(dropIndex, 0, task);
+  
+  qtDragIndex = null;
+  saveStore();
+  renderQuickTasks(p);
+}
+
+function setQuickTaskPriority(index, priority) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  p.quickTasks[index].priority = priority;
+  saveStore();
+  renderQuickTasks(p);
+}
+
+function addQuickTask() {
+  const input = document.getElementById('quick-task-input');
+  const deadlineInput = document.getElementById('quick-task-deadline');
+  const prioritySelect = document.getElementById('quick-task-priority');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const p = currentProject();
+  if (!p) return;
+  if (!p.quickTasks) p.quickTasks = [];
+  
+  p.quickTasks.push({
+    text: text,
+    deadline: deadlineInput.value || null,
+    priority: prioritySelect.value || 'medium',
+    done: false
+  });
+  
+  input.value = '';
+  deadlineInput.value = '';
+  prioritySelect.value = '';
+  saveStore();
+  renderQuickTasks(p);
+}
+
+function toggleQuickTask(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  p.quickTasks[index].done = !p.quickTasks[index].done;
+  saveStore();
+  renderQuickTasks(p);
+  updateQuickTaskSelectionUI();
+}
+
+// Update the selection count and delete button visibility
+function updateQuickTaskSelectionUI() {
+  const checkboxes = document.querySelectorAll('.qt-select:checked');
+  const count = checkboxes.length;
+  const delBtn = document.getElementById('qt-delete-sel');
+  const countSpan = document.getElementById('qt-selected-count');
+  const selNum = document.getElementById('qt-sel-num');
+  
+  if (count > 0) {
+    if (delBtn) { delBtn.style.display = 'inline-block'; }
+    if (countSpan) { countSpan.style.display = 'inline'; countSpan.textContent = count + ' selected'; }
+    if (selNum) { selNum.textContent = count; }
+  } else {
+    if (delBtn) { delBtn.style.display = 'none'; }
+    if (countSpan) { countSpan.style.display = 'none'; }
+  }
+}
+
+function makeQuickTaskEditable(index, spanEl) {
+  const p = currentProject();
+  if (!p || !p.quickTasks || !p.quickTasks[index]) return;
+  
+  const task = p.quickTasks[index];
+  const currentText = task.text;
+  
+  // Replace span with input
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentText;
+  input.style.cssText = 'flex:1;font-size:12px;padding:4px 8px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text);outline:none';
+  
+  // Save on Enter or blur
+  const saveEdit = () => {
+    const newText = input.value.trim();
+    if (newText && newText !== currentText) {
+      p.quickTasks[index].text = newText;
+      saveStore();
+    }
+    renderQuickTasks(p);
+  };
+  
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      renderQuickTasks(p);
+    }
+  };
+  input.onblur = saveEdit;
+  
+  spanEl.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function deleteQuickTask(index) {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  p.quickTasks.splice(index, 1);
+  saveStore();
+  renderQuickTasks(p);
+  updateQuickTaskSelectionUI();
+}
+
+function deleteSelectedQuickTasks() {
+  const p = currentProject();
+  if (!p || !p.quickTasks) return;
+  
+  const checkboxes = document.querySelectorAll('.qt-select:checked');
+  const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+  
+  if (selectedIndices.length === 0) return;
+  
+  const hasUnchecked = selectedIndices.some(i => !p.quickTasks[i]?.done);
+  
+  if (hasUnchecked) {
+    showConfirmDialog(`Delete ${selectedIndices.length} selected task(s)? Some are not completed.`, 'Delete', () => {
+      selectedIndices.sort((a, b) => b - a).forEach(i => {
+        p.quickTasks.splice(i, 1);
+      });
+      saveStore();
+      renderQuickTasks(p);
+      updateQuickTaskSelectionUI();
+    }, { title: 'Confirm Delete' });
+    return;
+  }
+  
+  // Remove in reverse order to maintain correct indices
+  selectedIndices.sort((a, b) => b - a).forEach(i => {
+    p.quickTasks.splice(i, 1);
+  });
+  
+  saveStore();
+  renderQuickTasks(p);
+  updateQuickTaskSelectionUI();
+}
+
+function formatQuickTaskDate(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff < -1) return `${Math.abs(diff)}d ago`;
+  if (diff < 7) return `In ${diff}d`;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // OVERVIEW CARDS — inline drag/select/add

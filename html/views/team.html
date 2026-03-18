@@ -1,0 +1,21 @@
+<!-- TEAM VIEW -->
+<div class="view" id="view-team">
+  <div class="page-header">
+    <h2>TEAM</h2>
+    <p>Manage access and collaborators across all projects</p>
+  </div>
+  <div class="table-container">
+    <div class="table-toolbar">
+      <div class="table-toolbar-left">
+        <span style="font-size:13px;color:var(--text2)">Team Members</span>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteTeamMember()">+ Invite Member</button>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Projects</th><th>Access</th><th></th></tr></thead>
+      <tbody id="team-body">
+        <tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">👥</div><h4>No team members yet</h4><p>Invite collaborators to your projects</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
