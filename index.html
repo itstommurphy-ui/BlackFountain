@@ -1,7 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0d12">
 <meta name="description" content="Black Fountain - Production management for film and TV">
@@ -26,9 +23,6 @@
       <div class="nav-item active" onclick="showView('dashboard')">
         <span class="icon">⬛</span> Dashboard
       </div>
-      <div class="nav-item" onclick="showView('team')">
-        <span class="icon">👥</span> Team
-      </div>
       <div class="nav-item" data-view="contacts" onclick="showContactsView('all')" style="justify-content:space-between">
         <span><span class="icon">📱</span> Contacts</span>
         <span class="sg-arrow" id="contacts-subnav-arrow" onclick="event.stopPropagation();toggleContactsSubNav()" style="font-size:9px;opacity:0.5;padding:2px 4px;transform:rotate(-90deg)">▾</span>
@@ -46,6 +40,9 @@
       </div>
       <div class="nav-item" onclick="showView('locations')">
         <span class="icon">📍</span> Locations
+      </div>
+      <div class="nav-item" onclick="showView('team')">
+        <span class="icon">👥</span> Team
       </div>
       <div class="nav-item" onclick="showView('moodboards')">
         <span class="icon">🎨</span> Moodboards
@@ -92,28 +89,6 @@
     </header>
 
     <div id="content">
-
-      <!-- DASHBOARD VIEW -->
-      <div class="view active" id="view-dashboard">
-        <div class="page-header">
-          <h2>PROJECTS</h2>
-          <p>Your production pipeline at a glance</p>
-        </div>
-        <div class="stats-row">
-          <div class="stat-card total-card" onclick="dashboardStatusFilter=null;renderDashboard()" style="cursor:pointer"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
-          <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>
-          <div class="stat-card" onclick="setDashboardFilter('prod')"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
-          <div class="stat-card" onclick="setDashboardFilter('post')"><div class="label">Post-Production</div><div class="value" id="stat-post">0</div><div class="sub" style="color:#e08095">●</div></div>
-          <div class="stat-card" onclick="setDashboardFilter('done')"><div class="label">Complete</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
-          <div class="stat-card" onclick="setDashboardFilter('released')"><div class="label">Released</div><div class="value" id="stat-released">0</div><div class="sub" style="color:#b88af0">●</div></div>
-        </div>
-        <div class="projects-grid" id="projects-grid">
-          <div class="new-project-card" onclick="openNewProjectModal()">
-            <div class="plus">＋</div>
-            <span>New Project</span>
-          </div>
-        </div>
-      </div>
 
       <!-- PROJECT VIEW -->
       <div class="view" id="view-project">
@@ -567,79 +542,6 @@
         </div>
 
       </div><!-- /view-project -->
-
-      <!-- CONTACTS VIEW -->
-      <div class="view" id="view-contacts">
-        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2>CONTACTS</h2>
-            <p>All cast and crew contacts across projects</p>
-          </div>
-          <button class="btn btn-primary" onclick="addNewContact()" style="margin-top:6px">+ Add Contact</button>
-        </div>
-        <div id="contacts-list"></div>
-      </div>
-
-      <!-- LOCATIONS VIEW -->
-      <div class="view" id="view-locations">
-        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2>LOCATIONS</h2>
-            <p>All locations across projects</p>
-          </div>
-          <button class="btn btn-primary" onclick="addLocationGlobal()" style="margin-top:6px">+ Add Location</button>
-        </div>
-        <div id="locations-list"></div>
-      </div>
-
-      <!-- MOODBOARDS VIEW -->
-      <div class="view" id="view-moodboards">
-        <div id="moodboards-container"></div>
-      </div>
-
-      <!-- FILES VIEW -->
-      <div class="view" id="view-files">
-        <div class="page-header">
-          <h2>FILES</h2>
-          <p>Scripts, photos, storyboards & production assets</p>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-          <select class="form-select" id="files-project-filter" onchange="renderFiles()" style="max-width:280px;font-size:12px;">
-            <option value="all">All Projects</option>
-          </select>
-        </div>
-
-        <div class="file-tabs" id="file-tabs">
-          <div class="file-tab active" data-category="all">All Files</div>
-          <div class="file-tab" data-category="script">📄 Scripts</div>
-          <div class="file-tab" data-category="location">📍 Locations</div>
-          <div class="file-tab" data-category="bts">🎬 BTS</div>
-          <div class="file-tab" data-category="stills">📸 Stills</div>
-          <div class="file-tab" data-category="people">👥 People</div>
-          <div class="file-tab" data-category="moodboard">🎨 Moodboards</div>
-          <div class="file-tab" data-category="storyboard">🖼️ Storyboards</div>
-          <div class="file-tab" data-category="contract">📋 Contracts</div>
-          <div class="file-tab" data-category="other">📁 Other</div>
-        </div>
-
-        <div class="file-upload-zone" id="file-upload-zone" onclick="document.getElementById('file-input').click()">
-          <div class="file-upload-icon">☁️</div>
-          <div class="file-upload-text">Drop files here or click to upload</div>
-          <div class="file-upload-hint">Scripts, location photos, BTS, moodboards, storyboards</div>
-        </div>
-        <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileUpload(this.files)">
-
-        <div id="files-bulk-bar" class="file-bulk-bar">
-          <span class="file-bulk-bar-count" id="files-bulk-count"></span>
-          <span>files selected</span>
-          <div class="file-bulk-sep"></div>
-          <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'),null)">🔀 Move</button>
-          <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'),null)">🗑 Remove / Delete</button>
-          <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
-        </div>
-        <div class="file-grid" id="file-grid"></div>
-      </div>
 
       <!-- MANAGE FILE MODAL -->
       <!-- EDIT FILE MODAL -->
@@ -1141,97 +1043,9 @@
         </div>
       </div>
 
-      <!-- SETTINGS VIEW -->
-      <div class="view" id="view-settings">
-        <div class="page-header">
-          <h2>SETTINGS</h2>
-          <p>System configuration and data backup</p>
-        </div>
-        <div style="max-width:800px">
-          <div class="card" style="margin-bottom:20px">
-            <h3 style="margin-top:0">Appearance</h3>
-            <p style="color:var(--text2);margin-bottom:16px">Choose your preferred color theme and font size.</p>
-            <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Theme</p>
-            <div style="display:flex;gap:12px;margin-bottom:20px">
-              <button class="btn" id="theme-dark-btn" onclick="setTheme('dark')" style="flex:1;padding:12px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:18px;margin-bottom:4px;display:block">🌙</span>
-                <span style="font-size:12px">Dark</span>
-              </button>
-              <button class="btn" id="theme-light-btn" onclick="setTheme('light')" style="flex:1;padding:12px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:18px;margin-bottom:4px;display:block">☀️</span>
-                <span style="font-size:12px">Light</span>
-              </button>
-            </div>
-            <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Font Size</p>
-            <div style="display:flex;gap:12px">
-              <button class="btn" id="font-classic-btn" onclick="setFontSize('classic')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:11px">Classic</span>
-              </button>
-              <button class="btn" id="font-bigger-btn" onclick="setFontSize('bigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:13px">Bigger</span>
-              </button>
-              <button class="btn" id="font-evenbigger-btn" onclick="setFontSize('evenbigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:15px">Even Bigger</span>
-              </button>
-              <button class="btn" id="font-huge-btn" onclick="setFontSize('huge')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:17px">Huge</span>
-              </button>
-              <button class="btn" id="font-double-btn" onclick="setFontSize('double')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-                <span style="font-size:19px">2× <span style="font-size:10px;opacity:0.6">WCAG</span></span>
-              </button>
-            </div>
-          </div>
-          <div class="card" style="margin-bottom:20px">
-            <h3 style="margin-top:0">Data Backup</h3>
-            <p style="color:var(--text2);margin-bottom:16px">Export your entire project database as a JSON file. This allows you to restore your data if browser cache is cleared or if you want to transfer data to another device.</p>
-            <button class="btn btn-primary" onclick="exportStore()">
-              <span class="icon">📥</span> Export Data (JSON)
-            </button>
-          </div>
-          <div class="card" style="margin-bottom:20px">
-            <h3 style="margin-top:0">Import Data</h3>
-            <p style="color:var(--text2);margin-bottom:16px">Restore your project database from a previously exported JSON file. <strong>Warning:</strong> This will replace all current data.</p>
-            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
-            <button class="btn" onclick="document.getElementById('import-file-input').click()">
-              <span class="icon">📤</span> Import Data (JSON)
-            </button>
-          </div>
-          <div class="card">
-            <h3 style="margin-top:0">Storage Info</h3>
-            <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>blackfountain_v1</code></p>
-            <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
-          </div>
-          <div class="card" style="border:2px solid #ff4444;margin-top:20px">
-            <h3 style="margin-top:0;color:#ff4444">Danger Zone</h3>
-            <p style="color:var(--text2);margin-bottom:16px">Permanently delete all data from this browser. This action cannot be undone.</p>
-            <button class="btn" style="background:#ff4444;color:white;border:none" onclick="openClearDataModal()">
-              <span class="icon">🗑️</span> Clear All Data
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- TEAM VIEW -->
-      <div class="view" id="view-team">
-        <div class="page-header">
-          <h2>TEAM</h2>
-          <p>Manage access and collaborators across all projects</p>
-        </div>
-        <div class="table-container">
-          <div class="table-toolbar">
-            <div class="table-toolbar-left">
-              <span style="font-size:13px;color:var(--text2)">Team Members</span>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="inviteTeamMember()">+ Invite Member</button>
-          </div>
-          <table class="data-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Projects</th><th>Access</th><th></th></tr></thead>
-            <tbody id="team-body">
-              <tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="icon">👥</div><h4>No team members yet</h4><p>Invite collaborators to your projects</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+
+
 
     </div><!-- /content -->
   </div><!-- /main -->
@@ -2272,6 +2086,7 @@
 <script src="js/search.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/views/nav.js"></script>
+<script src="js/view-loader.js"></script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/production-plan.js"></script>
 <script src="js/views/email.js"></script>

@@ -17,7 +17,12 @@ const loadedViews = new Set();
 
 // Load a view HTML fragment and insert it into the DOM
 async function loadView(viewName) {
+  // Skip if already loaded or if view already exists in DOM
   if (loadedViews.has(viewName)) return;
+  if (document.getElementById(`view-${viewName}`)) {
+    loadedViews.add(viewName);
+    return;
+  }
   
   const viewFile = viewFiles[viewName];
   if (!viewFile) {
@@ -87,3 +92,10 @@ window.viewLoader = {
   ensureViewLoaded,
   loadedViews
 };
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => preloadAllViews());
+} else {
+  preloadAllViews();
+}
