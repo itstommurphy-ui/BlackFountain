@@ -37,9 +37,13 @@ function sbInit(onReady) {
     }
   });
 
-  // Always start the app — cloud sync happens in the background when available
-  _sbAppStarted = true;
-  _sbAppReadyCallback();
+  // If no Supabase or session isn't immediately found, wait briefly then start
+  setTimeout(() => {
+    if (!_sbAppStarted) {
+      _sbAppStarted = true;
+      _sbAppReadyCallback();
+    }
+  }, 1000);
 }
 
 function _updateAuthIndicator() {

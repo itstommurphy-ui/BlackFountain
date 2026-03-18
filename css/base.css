@@ -172,6 +172,9 @@
     -webkit-user-select: text;
   }
 
+  body.loading #app { opacity: 0; }
+  #app { opacity: 1; transition: opacity 0.3s ease; }
+
   /* ── LAYOUT ── */
   #app { display: flex; min-height: 100vh; max-width: 100vw; overflow: hidden; }
 

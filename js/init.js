@@ -45,6 +45,7 @@ async function _startApp() {
   await loadStore();
   initAutoSave();
   renderDashboard();
+  document.body.classList.remove('loading');
   const pendingToast = sessionStorage.getItem('_mf_post_reload_toast');
   if (pendingToast) {
     sessionStorage.removeItem('_mf_post_reload_toast');
