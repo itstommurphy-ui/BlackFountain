@@ -163,6 +163,13 @@
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     line-height: 1.5;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea, [contenteditable], .selectable, .data-field, .data-table td, .bd-script-view, .bd-report, pre, code, .project-header-logline, .project-header-meta, .stat-card .value, .stat-card .sub {
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   /* ── LAYOUT ── */

@@ -1279,6 +1279,7 @@ function renderEquipment(project) {
     return `
       <div class="gear-day" draggable="true" 
         ondragstart="_gearDayDragStart(event, ${dayIdx})"
+        ondragend="_gearDayDragEnd(event)"
         ondragover="event.preventDefault(); this.style.boxShadow='0 0 0 2px var(--accent)'"
         ondragleave="this.style.boxShadow=''"
         ondrop="_gearDayDrop(event, ${dayIdx})">
@@ -1549,6 +1550,12 @@ function _gearDayDragStart(e, idx) {
   window._gearDayDragSrc = idx;
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => { e.target.style.opacity = '0.4'; }, 0);
+}
+
+function _gearDayDragEnd(e) {
+  e.target.style.opacity = '1';
+  document.querySelectorAll('.gear-day').forEach(el => el.style.boxShadow = '');
+  window._gearDayDragSrc = undefined;
 }
 
 function _gearDayDrop(e, targetIdx) {
