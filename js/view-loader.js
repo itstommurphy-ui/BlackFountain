@@ -76,14 +76,14 @@ async function ensureViewLoaded(viewName) {
 }
 
 // Override showView to lazy-load views
-// const originalShowView = window.showView;
-// window.showView = async function(name) {
-//   await ensureViewLoaded(name);
-//   // Call original showView after ensuring the view is loaded
-//   if (originalShowView) {
-//     originalShowView(name);
-//   }
-// };
+const originalShowView = window.showView;
+window.showView = async function(name) {
+  await ensureViewLoaded(name);
+  // Call original showView after ensuring the view is loaded
+  if (originalShowView) {
+    originalShowView(name);
+  }
+};
 
 // Export functions
 window.viewLoader = {

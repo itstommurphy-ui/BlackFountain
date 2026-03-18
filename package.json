@@ -12,8 +12,5 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.0.3",
     "globals": "^17.4.0"
-  },
-  "dependencies": {
-    "git": "^0.1.5"
   }
 }

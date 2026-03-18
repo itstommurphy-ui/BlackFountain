@@ -26,47 +26,8 @@ let store = {
   moodboards: []
 };
 
-function ensureSampleData() {
-  if (store.projects.length > 0) return;
-  
-  // Sample projects for demo
-  store.projects = [
-    {
-      id: 'demo_short',
-      title: 'The Quick Flick',
-      num: '001',
-      status: 'pre',
-      director: 'Jane Doe',
-      producer: 'John Smith',
-      company: 'Demo Films',
-      genre: 'Short Film',
-      notes: 'Sample project - delete anytime',
-      shootDays: 3,
-      createdAt: new Date(Date.now() - 7*24*60*60*1000).toISOString(),
-      files: [],
-      unit: [],
-      locations: []
-    },
-    {
-      id: 'demo_feature',
-      title: 'Midnight Shadows',
-      num: '002',
-      status: 'prod',
-      director: 'Alex Rivera',
-      producer: 'FilmCo',
-      company: 'Shadow Pictures',
-      genre: 'Thriller',
-      notes: 'Feature film in production',
-      shootDays: 25,
-      createdAt: new Date(Date.now() - 14*24*60*60*1000).toISOString(),
-      files: [],
-      unit: [],
-      locations: []
-    }
-  ];
-}
-
 const FILE_CATEGORIES = {
+  script:     { label: 'Scripts',          icon: '📄', extensions: ['pdf','doc','docx','txt','fdx'] },
   location:   { label: 'Location Photos',  icon: '📍', extensions: ['jpg','jpeg','png','gif','webp'] },
   bts:        { label: 'BTS',             icon: '🎬', extensions: ['jpg','jpeg','png','gif','webp'] },
   stills:     { label: 'Stills',          icon: '📸', extensions: ['jpg','jpeg','png','gif','webp'] },
