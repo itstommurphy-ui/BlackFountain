@@ -134,8 +134,13 @@
                 <option value="done">COMPLETE</option>
                 <option value="released">RELEASED</option>
               </select>
-              <button class="btn btn-sm" onclick="openEditProjectModal()">✎ Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()">✕</button>
+              <div class="dropdown">
+                <button class="dropdown-toggle">Project</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="openEditProjectModal()">✎ Edit Project</div>
+                  <div class="dropdown-item danger" onclick="deleteCurrentProject()">🗑 Delete Project</div>
+                </div>
+              </div>
             </div>
             <div style="display:flex;gap:8px">
               <button class="btn btn-sm btn-ghost" onclick="openStoryModal()" title="Logline / synopsis / outline" style="font-size:11px">📖 Story</button>
