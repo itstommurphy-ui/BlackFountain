@@ -1743,6 +1743,90 @@ function showConfirmDialog(message, confirmLabel, onConfirm, opts = {}) {
   setTimeout(() => { const c = overlay.querySelector('#_cdCancel'); if (c) c.focus(); }, 50);
 }
 
+function showPromptDialog(message, confirmLabel, onConfirm, opts = {}) {
+  const triggerEl = document.activeElement;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  if (opts.zIndex) overlay.style.zIndex = opts.zIndex;
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="_pdTitle" style="max-width:400px">
+      <div class="modal-header">
+        <h3 id="_pdTitle">${opts.title || 'Input Required'}</h3>
+        <button class="modal-close" aria-label="Close" id="_pdClose">✕</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;line-height:1.65;margin:4px 0 12px">${message}</p>
+      <div class="form-group" id="_pdFormWrap">
+        <!-- inputs injected here -->
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-sm" id="_pdCancel">Cancel</button>
+        <button class="btn btn-sm ${opts.btnClass || 'btn-primary'}" id="_pdConfirm">${confirmLabel}</button>
+      </div>
+    </div>`;
+  
+  const formWrap = overlay.querySelector('#_pdFormWrap');
+  const fields = opts.fields || [{ id: '_pdVal', label: '', placeholder: '', value: opts.defaultValue || '' }];
+  
+  fields.forEach(f => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    if (f.label) group.innerHTML = `<label class="form-label">${f.label}</label>`;
+    
+    let input;
+    if (f.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.className = 'form-textarea';
+      input.style.minHeight = '100px';
+    } else {
+      input = document.createElement('input');
+      input.className = 'form-input';
+    }
+    
+    input.id = f.id;
+    input.placeholder = f.placeholder || '';
+    input.value = f.value || '';
+    input.autocomplete = 'off';
+    group.appendChild(input);
+    formWrap.appendChild(group);
+  });
+
+  document.body.appendChild(overlay);
+  
+  const close = () => { overlay.remove(); if (triggerEl) triggerEl.focus(); };
+  const submit = () => {
+    const vals = {};
+    fields.forEach(f => { vals[f.id] = overlay.querySelector('#' + f.id).value.trim(); });
+    close();
+    onConfirm(fields.length === 1 ? vals[fields[0].id] : vals);
+  };
+
+  overlay.querySelector('#_pdClose').onclick = close;
+  overlay.querySelector('#_pdCancel').onclick = close;
+  overlay.querySelector('#_pdConfirm').onclick = submit;
+  
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+    if (e.key === 'Enter') {
+      // Don't submit on Enter if we are in a textarea
+      if (e.target.tagName === 'TEXTAREA') return;
+      e.preventDefault(); submit(); return;
+    }
+    if (e.key === 'Tab') {
+      const els = [...overlay.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')];
+      const first = els[0], last = els[els.length-1];
+      if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      }
+    }
+  });
+  
+  setTimeout(() => { 
+    const firstInp = overlay.querySelector('input');
+    if (firstInp) { firstInp.focus(); firstInp.select(); }
+  }, 50);
+}
+
 // ══════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════

@@ -300,7 +300,12 @@ function getAllOverviewSections(p) {
     })()},
     {name:'Callsheet',       icon:'📋',  count: p.callsheets.length + ' days',                                        tab:'callsheet'},
     {name:'Cast & Extras',   icon:'🎭',  count: (p.cast.length + p.extras.length) + ' people',                       tab:'cast'},
-    {name:'Equipment',       icon:'🎥',  count: Object.values(p.equipment).flat().length + ' items',                  tab:'equipment'},
+    {name:'Equipment',       icon:'🎥',  count: (() => {
+      const days = p.gearList?.length || 0;
+      let total = 0;
+      (p.gearList || []).forEach(d => d.categories.forEach(c => total += c.items.length));
+      return days > 0 ? `${days} day${days!==1?'s':''} · ${total} item${total!==1?'s':''}` : Object.values(p.equipment || {}).flat().length + ' items';
+    })(), tab:'equipment'},
     {name:'Locations',       icon:'📍',  count: p.locations.length + ' locations',                                    tab:'locations'},
     {name:'Project Brief',   icon:'🗒️', count: (p.brief&&p.brief.template) ? 'Template ' + p.brief.template : '0 fields', tab:'brief'},
     {name:'Props',           icon:'🧳',  count: (p.props||[]).length + ' items',                                      tab:'props'},

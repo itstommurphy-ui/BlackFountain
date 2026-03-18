@@ -330,14 +330,16 @@
         <div id="section-equipment" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
+            <h3 class="section-heading">GEAR LIST</h3>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="goto-hook"></span>
-              <button class="btn btn-sm" onclick="addEquipItem()">+ Add Item</button>
-              <button class="btn btn-sm" onclick="resetEquipChecks()">↺ Reset Checks</button>
+              <button class="btn btn-sm" onclick="addGearDay()">+ Add Day</button>
+              <button class="btn btn-sm" onclick="resetEquipChecks()">↺ Reset All Checks</button>
+              <button class="btn btn-sm btn-primary" onclick="exportGearPrint()">⬇ Export PDF</button>
             </div>
           </div>
-          <div class="equip-grid" id="equip-grid"></div>
+          <div class="gear-toolbar" id="gear-toolbar"></div>
+          <div class="gear-board" id="equip-grid"></div>
         </div>
 
         <!-- SECTION: LOCATIONS -->
@@ -542,6 +544,27 @@
         </div>
 
       </div><!-- /view-project -->
+
+      <!-- GEAR POOL MODAL -->
+      <div class="modal-overlay" id="modal-gear-pool">
+        <div class="modal" style="max-width:600px">
+          <div class="modal-header">
+            <h3>MASTER GEAR POOL</h3>
+            <button class="modal-close" onclick="closeModal('modal-gear-pool')">✕</button>
+          </div>
+          <div style="margin-bottom:15px;display:flex;gap:10px">
+            <input type="text" id="gear-pool-new" class="form-input" placeholder="Add new gear to master pool..." onkeydown="if(event.key==='Enter')addGearToPool()">
+            <button class="btn btn-primary" onclick="addGearToPool()">Add</button>
+          </div>
+          <div id="gear-pool-list" style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
+            <!-- Gear items here -->
+          </div>
+          <div class="modal-footer" style="margin-top:20px;justify-content:space-between">
+            <div style="font-size:11px;color:var(--text3)">Click an item to check it out to the current gear day.</div>
+            <button class="btn btn-ghost" onclick="closeModal('modal-gear-pool')">Close</button>
+          </div>
+        </div>
+      </div>
 
       <!-- MANAGE FILE MODAL -->
       <!-- EDIT FILE MODAL -->

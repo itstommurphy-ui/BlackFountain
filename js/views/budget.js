@@ -1195,58 +1195,521 @@ function applyBudgetTemplate(key) {
 }
 
 // EQUIPMENT
-function renderEquipment(p) {
-  if (!p.equipment || typeof p.equipment !== 'object') p.equipment = {};
-  const el = document.getElementById('equip-grid');
-  el.innerHTML = EQUIP_CATEGORIES.map(cat => {
-    const items = p.equipment[cat] || [];
-    return `
-      <div class="equip-section">
-        <h4>${cat}</h4>
-        ${items.map((item,i) => `
-          <div class="equip-item">
-            <div class="equip-check${item.checked?' checked':''}" onclick="toggleEquip('${cat}',${i})"></div>
-            <span class="equip-item-name${item.checked?' checked':''}">${item.name}</span>
-            <button style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px" onclick="removeEquipItem('${cat}',${i})">✕</button>
+function renderEquipment(project) {
+  const p = project || currentProject();
+  if (!p) return;
+  if (!p.equipment) p.equipment = {};
+  if (!p.gearList) p.gearList = [];
+
+  const grid = document.getElementById('equip-grid');
+  const toolbar = document.getElementById('gear-toolbar');
+
+  // Toolbar: Gear Pool count
+  let poolCount = (p.gearPool || []).length;
+  toolbar.innerHTML = `
+    <button class="btn btn-sm btn-ghost" onclick="openUnsortedGear()">
+      <span style="background:var(--accent);color:#000;padding:1px 6px;border-radius:10px;font-size:10px;margin-right:5px">${poolCount}</span>
+      Master Gear Pool
+    </button>
+  `;
+
+  if (p.gearList.length === 0) {
+    grid.innerHTML = `
+      <div style="text-align:center;padding:100px 0;width:100%;color:var(--text3)">
+        <div style="font-size:48px;margin-bottom:16px;opacity:0.2">🛠️</div>
+        <h3>No gear days created yet.</h3>
+        <p style="font-size:12px;margin-top:8px">Create your first shoot day to start building your gear checklist.</p>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="addGearDay()">+ Add Gear Day</button>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = p.gearList.map((day, dayIdx) => {
+    const renderCol = (type) => {
+      const isPre = type === 'pre';
+      const label = isPre ? 'Pre check' : 'Post check';
+      
+      let totalItems = 0;
+      let checkedItems = 0;
+      day.categories.forEach(cat => {
+        cat.items.forEach(item => {
+          totalItems++;
+          if (item[type]) checkedItems++;
+        });
+      });
+
+      return `
+        <div class="gear-col">
+          <div class="gear-col-header ${type}">
+            <div class="gear-col-label">${label}</div>
+            <div class="gear-col-stats">${checkedItems} / ${totalItems} checked</div>
           </div>
-        `).join('')}
-        <div style="margin-top:8px">
-          <button class="btn btn-sm btn-ghost" style="width:100%;font-size:11px" onclick="quickAddEquip('${cat}')">+ Add item</button>
+          ${day.categories.map((cat, catIdx) => `
+            <div class="gear-cat-card" 
+              ondragover="event.preventDefault(); this.style.borderColor='var(--accent)'" 
+              ondragleave="this.style.borderColor=''"
+              ondrop="_gearItemDrop(event, ${dayIdx}, ${catIdx})">
+              <input class="gear-cat-name" value="${(cat.name||'').replace(/"/g,'&quot;')}" 
+                style="background:transparent;border:none;border-bottom:1px solid var(--border);width:100%;outline:none;padding-bottom:4px;margin-bottom:10px"
+                onblur="updateGearCatName(${dayIdx}, ${catIdx}, this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()">
+              ${cat.items.map((item, itemIdx) => `
+                <div class="gear-item-row" style="position:relative" draggable="true"
+                  ondragstart="_gearItemDragStart(event, ${dayIdx}, ${catIdx}, ${itemIdx})"
+                  ondragend="this.style.opacity='1'">
+                  <div class="gear-item-check ${item[type]?'checked':''}" onclick="toggleGearCheck(${dayIdx}, ${catIdx}, ${itemIdx}, '${type}')"></div>
+                  <input class="gear-item-name ${item[type]?'checked':''}" value="${(item.name||'').replace(/"/g,'&quot;')}"
+                    style="background:transparent;border:none;flex:1;outline:none;font-size:11px;color:inherit;cursor:grab"
+                    onblur="updateGearItemName(${dayIdx}, ${catIdx}, ${itemIdx}, this.value)"
+                    onkeydown="if(event.key==='Enter')this.blur()">
+                  <button class="btn-ghost btn-remove" style="padding:2px 4px;font-size:10px" onclick="removeGearItemFromDay(${dayIdx}, ${catIdx}, ${itemIdx})" title="Remove item">✕</button>
+                </div>
+              `).join('')}
+              <div style="display:flex;gap:4px;margin-top:8px">
+                <button class="btn btn-sm btn-ghost" style="flex:1;font-size:10px" onclick="addGearItemToDay(${dayIdx}, ${catIdx})">+ Add item</button>
+                <button class="btn btn-sm btn-ghost" style="font-size:10px" onclick="openUnsortedGear(${dayIdx}, ${catIdx})" title="Checkout from pool">📋</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    };
+
+    return `
+      <div class="gear-day" draggable="true" 
+        ondragstart="_gearDayDragStart(event, ${dayIdx})"
+        ondragover="event.preventDefault(); this.style.boxShadow='0 0 0 2px var(--accent)'"
+        ondragleave="this.style.boxShadow=''"
+        ondrop="_gearDayDrop(event, ${dayIdx})">
+        <div class="gear-day-header" style="cursor:move">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1">
+              <input class="gear-day-title" value="${(day.label||'').replace(/"/g,'&quot;')}" 
+                style="background:transparent;border:none;width:100%;outline:none;margin-bottom:4px;font-weight:bold;cursor:text"
+                onclick="event.stopPropagation()"
+                onblur="updateGearDayLabel(${dayIdx}, this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()">
+              <div class="gear-day-shoots">
+                ${(day.shoots || []).map((s, sIdx) => `
+                  <input value="${s.replace(/"/g,'&quot;')}" 
+                    style="background:transparent;border:none;width:100%;outline:none;font-size:11px;color:var(--text3)"
+                    onblur="updateGearDayShoot(${dayIdx}, ${sIdx}, this.value)"
+                    onkeydown="if(event.key==='Enter')this.blur()">
+                `).join('')}
+                ${!(day.shoots?.length) ? '<div style="opacity:0.5;font-style:italic" onclick="editGearDay('+dayIdx+')">No shoot info added (click to edit)</div>' : ''}
+              </div>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-ghost dropdown-toggle" style="padding:4px">⋮</button>
+              <div class="dropdown-menu">
+                <div class="dropdown-item" onclick="duplicateGearDay(${dayIdx})">⧉ Duplicate Day</div>
+                <div class="dropdown-item" onclick="editGearDay(${dayIdx})">✎ Edit Details</div>
+                <div class="dropdown-item" onclick="addGearCategoryToDay(${dayIdx})">+ Add Category</div>
+                <div class="dropdown-item danger" onclick="removeGearDay(${dayIdx})">🗑 Remove Day</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="gear-columns">
+          ${renderCol('pre')}
+          ${renderCol('post')}
         </div>
       </div>
     `;
   }).join('');
 }
-function toggleEquip(cat,i) {
-  const p=currentProject();
-  if (!p.equipment[cat]) p.equipment[cat]=[];
-  p.equipment[cat][i].checked = !p.equipment[cat][i].checked;
-  saveStore(); renderEquipment(p);
+
+function updateGearDayLabel(idx, val) {
+  const p = currentProject();
+  if (p.gearList[idx].label === val) return;
+  p.gearList[idx].label = val;
+  saveStore();
 }
-function removeEquipItem(cat,i) {
-  showConfirmDialog('Remove this equipment item?', 'Remove', () => {
-    const p=currentProject();
-    p.equipment[cat].splice(i,1);
+
+function updateGearDayShoot(dayIdx, sIdx, val) {
+  const p = currentProject();
+  if (p.gearList[dayIdx].shoots[sIdx] === val) return;
+  p.gearList[dayIdx].shoots[sIdx] = val;
+  saveStore();
+}
+
+function updateGearCatName(dayIdx, catIdx, val) {
+  const p = currentProject();
+  if (p.gearList[dayIdx].categories[catIdx].name === val) return;
+  p.gearList[dayIdx].categories[catIdx].name = val;
+  saveStore();
+}
+
+function updateGearItemName(dayIdx, catIdx, itemIdx, val) {
+  const p = currentProject();
+  if (p.gearList[dayIdx].categories[catIdx].items[itemIdx].name === val) return;
+  p.gearList[dayIdx].categories[catIdx].items[itemIdx].name = val;
+  saveStore();
+}
+
+function removeGearItemFromDay(dayIdx, catIdx, itemIdx) {
+  showConfirmDialog('Remove this item from the day?', 'Remove', () => {
+    const p = currentProject();
+    p.gearList[dayIdx].categories[catIdx].items.splice(itemIdx, 1);
     saveStore(); renderEquipment(p);
   });
 }
-function quickAddEquip(cat) {
-  document.getElementById('equip-cat').value=cat;
-  document.getElementById('equip-name').value='';
-  openModal('modal-equip');
+
+function addGearDay() {
+  const p = currentProject();
+  const nextDay = p.gearList.length + 1;
+  p.gearList.push({
+    id: makeId(),
+    label: `Day ${nextDay}`,
+    shoots: [`Shoot 1: 8:00am - 1:00pm`],
+    categories: [
+      { name: 'Cameras', items: [] },
+      { name: 'Lenses', items: [] }
+    ]
+  });
+  saveStore(); renderEquipment(p);
 }
-function addEquipItem() { document.getElementById('equip-name').value=''; openModal('modal-equip'); }
-function saveEquipItem() {
-  const p=currentProject();
-  const cat=document.getElementById('equip-cat').value;
-  const name=document.getElementById('equip-name').value.trim();
-  if(!name){showToast('Item name required','info');return;}
-  if(!p.equipment[cat]) p.equipment[cat]=[];
-  p.equipment[cat].push({name,checked:false});
-  saveStore(); closeModal('modal-equip'); renderEquipment(p); showToast('Item added','success');
+
+function duplicateGearDay(idx) {
+  const p = currentProject();
+  const original = p.gearList[idx];
+  if (!original) return;
+
+  // Deep clone and reset check status
+  const clone = JSON.parse(JSON.stringify(original));
+  clone.id = makeId();
+  clone.label = original.label + ' (Copy)';
+  clone.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      item.pre = false;
+      item.post = false;
+    });
+  });
+
+  p.gearList.splice(idx + 1, 0, clone);
+  saveStore(); renderEquipment(p);
+  showToast('Day duplicated', 'success');
 }
+
+function removeGearDay(idx) {
+  showConfirmDialog('Remove this gear day?', 'Remove', () => {
+    const p = currentProject();
+    p.gearList.splice(idx, 1);
+    saveStore(); renderEquipment(p);
+  });
+}
+
+function toggleGearCheck(dayIdx, catIdx, itemIdx, type) {
+  const p = currentProject();
+  const item = p.gearList[dayIdx].categories[catIdx].items[itemIdx];
+  item[type] = !item[type];
+  saveStore(); renderEquipment(p);
+}
+
+function addGearItemToDay(dayIdx, catIdx) {
+  const p = currentProject();
+  showPromptDialog('Enter gear item name(s). Separate multiple items with commas or new lines:', 'Add Item(s)', (text) => {
+    if (!text) return;
+    // Split by comma OR newline
+    const names = text.split(/[,\n]/).map(n => n.trim()).filter(n => n);
+    if (!names.length) return;
+    
+    names.forEach(name => {
+      p.gearList[dayIdx].categories[catIdx].items.push({ name, pre: false, post: false });
+    });
+    
+    saveStore(); renderEquipment(p);
+    showToast(`${names.length} item${names.length!==1?'s':''} added`, 'success');
+  }, { 
+    title: 'Add Gear',
+    fields: [{ id: 'names', type: 'textarea', placeholder: 'e.g. Canon C200, Sony a7iii, Tripod' }]
+  });
+}
+
+function addGearCategoryToDay(dayIdx) {
+  const p = currentProject();
+  showPromptDialog('Enter category name:', 'Add Category', (name) => {
+    if (!name) return;
+    p.gearList[dayIdx].categories.push({ name, items: [] });
+    saveStore(); renderEquipment(p);
+  }, { title: 'Add Category' });
+}
+
 function resetEquipChecks() {
-  const p=currentProject();
-  Object.keys(p.equipment).forEach(cat => p.equipment[cat].forEach(i=>i.checked=false));
-  saveStore(); renderEquipment(p); showToast('Checks reset','info');
+  const p = currentProject();
+  p.gearList.forEach(day => {
+    day.categories.forEach(cat => {
+      cat.items.forEach(item => {
+        item.pre = false;
+        item.post = false;
+      });
+    });
+  });
+  saveStore(); renderEquipment(p);
+  showToast('All checks reset', 'info');
+}
+
+function openUnsortedGear() {
+  showToast('Unsorted gear pool coming soon - add items directly to days for now.', 'info');
+}
+
+function editGearDay(idx) {
+  const p = currentProject();
+  const day = p.gearList[idx];
+  
+  showPromptDialog('Edit day information:', 'Save Changes', (vals) => {
+    if (!vals.label) return;
+    day.label = vals.label;
+    day.shoots = vals.shoots.split(',').map(s => s.trim()).filter(s => s);
+    saveStore(); renderEquipment(p);
+  }, { 
+    title: 'Edit Day',
+    fields: [
+      { id: 'label', label: 'Day Label', value: day.label, placeholder: 'e.g. Day 1: Saturday 14 March' },
+      { id: 'shoots', label: 'Shoot Info (comma separated)', value: day.shoots.join(', '), placeholder: 'e.g. Shoot 1: 8:00am - 1:00pm' }
+    ]
+  });
+}
+
+function exportGearPrint() {
+  const p = currentProject();
+  if (!p.gearList || !p.gearList.length) { showToast('No gear days to export', 'info'); return; }
+
+  let html = '';
+  p.gearList.forEach(day => {
+    html += `
+      <div class="day-print">
+        <h2>${(day.label || 'Untitled Day').replace(/</g,'&lt;')}</h2>
+        <div class="meta">${(day.shoots || []).map(s => `<span>${s.replace(/</g,'&lt;')}</span>`).join(' · ')}</div>
+        
+        <div class="grid">
+          <div class="col">
+            <h3>PRE-CHECK</h3>
+            ${day.categories.map(cat => `
+              <div class="cat">
+                <div class="cat-name">${cat.name.replace(/</g,'&lt;')}</div>
+                ${cat.items.map(it => `
+                  <div class="item">
+                    <div class="check ${it.pre?'checked':''}"></div>
+                    <span>${it.name.replace(/</g,'&lt;')}</span>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+          <div class="col">
+            <h3>POST-CHECK</h3>
+            ${day.categories.map(cat => `
+              <div class="cat">
+                <div class="cat-name">${cat.name.replace(/</g,'&lt;')}</div>
+                ${cat.items.map(it => `
+                  <div class="item">
+                    <div class="check ${it.post?'checked':''}"></div>
+                    <span>${it.name.replace(/</g,'&lt;')}</span>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', 'info'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${p.title.replace(/</g,'&lt;')} — Gear List</title><style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#000;padding:20px;max-width:1000px;margin:0 auto}
+    h1{font-size:24px;margin-bottom:20px;text-align:center;text-transform:uppercase;letter-spacing:2px}
+    .day-print{margin-bottom:40px;page-break-inside:avoid}
+    h2{font-size:18px;margin:0 0 4px;border-bottom:2px solid #000;padding-bottom:4px}
+    .meta{font-size:11px;color:#666;margin-bottom:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+    h3{font-size:11px;background:#f0f0f0;padding:4px 8px;margin:0 0 10px;text-align:center;letter-spacing:1px}
+    .cat{margin-bottom:15px}
+    .cat-name{font-weight:bold;font-size:10px;text-transform:uppercase;margin-bottom:5px;border-bottom:1px solid #eee}
+    .item{display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid #f9f9f9}
+    .check{width:12px;height:12px;border:1px solid #000;border-radius:2px;flex-shrink:0}
+    .check.checked{background:#000;position:relative}
+    .check.checked::after{content:'✓';color:#fff;font-size:10px;position:absolute;top:-1px;left:1px}
+    @media print{.no-print{display:none}}
+    .no-print{margin-bottom:20px;text-align:center}
+    footer{margin-top:40px;font-size:9px;color:#999;text-align:center}
+  </style></head><body>
+    <div class="no-print"><button onclick="window.print()" style="padding:10px 20px;cursor:pointer">🖨 Print Gear List</button></div>
+    <h1>${p.title.replace(/</g,'&lt;')} — GEAR LIST</h1>
+    ${html}
+    <footer>Powered by Black Fountain</footer>
+  </body></html>`);
+  w.document.close();
+}
+
+function _gearDayDragStart(e, idx) {
+  window._gearDayDragSrc = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { e.target.style.opacity = '0.4'; }, 0);
+}
+
+function _gearDayDrop(e, targetIdx) {
+  e.preventDefault();
+  if (window._gearDayDragSrc === undefined || window._gearDayDragSrc === targetIdx) return;
+  const p = currentProject();
+  const movedDay = p.gearList.splice(window._gearDayDragSrc, 1)[0];
+  p.gearList.splice(targetIdx, 0, movedDay);
+  saveStore(); renderEquipment(p);
+  window._gearDayDragSrc = undefined;
+}
+
+function _gearItemDragStart(e, dayIdx, catIdx, itemIdx) {
+  window._gearItemDragSrc = { dayIdx, catIdx, itemIdx };
+  e.dataTransfer.effectAllowed = 'move';
+  e.stopPropagation();
+  setTimeout(() => { e.target.style.opacity = '0.4'; }, 0);
+}
+
+function _gearItemDrop(e, targetDayIdx, targetCatIdx) {
+  e.preventDefault();
+  const src = window._gearItemDragSrc;
+  if (!src) return;
+  
+  const p = currentProject();
+  const item = p.gearList[src.dayIdx].categories[src.catIdx].items.splice(src.itemIdx, 1)[0];
+  p.gearList[targetDayIdx].categories[targetCatIdx].items.push(item);
+  
+  saveStore(); renderEquipment(p);
+  window._gearItemDragSrc = null;
+}
+
+function updateGearDayLabel(dayIdx, val) {
+  const p = currentProject();
+  if (!p.gearList[dayIdx]) return;
+  p.gearList[dayIdx].label = val;
+  saveStore();
+}
+
+function updateGearDayShoot(dayIdx, sIdx, val) {
+  const p = currentProject();
+  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].shoots[sIdx]) return;
+  p.gearList[dayIdx].shoots[sIdx] = val;
+  saveStore();
+}
+
+function updateGearCatName(dayIdx, catIdx, val) {
+  const p = currentProject();
+  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].categories[catIdx]) return;
+  p.gearList[dayIdx].categories[catIdx].name = val;
+  saveStore();
+}
+
+function updateGearItemName(dayIdx, catIdx, itemIdx, val) {
+  const p = currentProject();
+  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].categories[catIdx] || !p.gearList[dayIdx].categories[catIdx].items[itemIdx]) return;
+  p.gearList[dayIdx].categories[catIdx].items[itemIdx].name = val;
+  saveStore();
+}
+
+function removeGearItemFromDay(dayIdx, catIdx, itemIdx) {
+  const p = currentProject();
+  p.gearList[dayIdx].categories[catIdx].items.splice(itemIdx, 1);
+  saveStore(); renderEquipment(p);
+}
+
+function openUnsortedGear(targetDayIdx = null, targetCatIdx = null) {
+  window._gearCheckoutTarget = targetDayIdx !== null ? { dayIdx: targetDayIdx, catIdx: targetCatIdx } : null;
+  renderGearPool();
+  openModal('modal-gear-pool');
+  setTimeout(() => {
+    const inp = document.getElementById('gear-pool-new');
+    if (inp) inp.focus();
+  }, 100);
+}
+
+function renderGearPool() {
+  const p = currentProject();
+  const pool = p.gearPool || [];
+  const list = document.getElementById('gear-pool-list');
+  if (!list) return;
+  
+  // Show/Hide target selector
+  let targetHtml = '';
+  const target = window._gearCheckoutTarget;
+  if (p.gearList && p.gearList.length > 0) {
+    targetHtml = `
+      <div style="margin-bottom:15px;padding:10px;background:var(--surface3);border-radius:var(--radius);font-size:11px;display:flex;align-items:center;gap:10px">
+        <div style="color:var(--text3);white-space:nowrap">Check out to:</div>
+        <select class="form-select" style="flex:1;font-size:11px;padding:4px 8px" onchange="_setGearCheckoutTarget(this.value)">
+          <option value="">— Select Destination —</option>
+          ${p.gearList.map((day, dIdx) => 
+            day.categories.map((cat, cIdx) => `
+              <option value="${dIdx}:${cIdx}" ${target && target.dayIdx===dIdx && target.catIdx===cIdx ? 'selected' : ''}>
+                ${day.label} > ${cat.name}
+              </option>
+            `).join('')
+          ).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  if (pool.length === 0) {
+    list.innerHTML = `
+      ${targetHtml}
+      <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Pool is empty. Add equipment you use frequently.</div>
+    `;
+    return;
+  }
+  
+  list.innerHTML = targetHtml + pool.map((item, idx) => `
+    <div class="gear-pool-item" style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;gap:12px" onclick="checkoutGearItem(${idx})">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:12px;color:var(--text)">${(item.name||'').replace(/</g,'&lt;')}</div>
+        ${item.category ? `<div style="font-size:10px;color:var(--text3);text-transform:uppercase">${item.category}</div>` : ''}
+      </div>
+      <button class="btn-ghost" style="padding:4px 8px;font-size:10px" onclick="event.stopPropagation();removeGearFromPool(${idx})">🗑</button>
+    </div>
+  `).join('');
+}
+
+function _setGearCheckoutTarget(val) {
+  if (!val) { window._gearCheckoutTarget = null; return; }
+  const [dIdx, cIdx] = val.split(':').map(Number);
+  window._gearCheckoutTarget = { dayIdx: dIdx, catIdx: cIdx };
+}
+
+function addGearToPool() {
+  const input = document.getElementById('gear-pool-new');
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+  
+  const p = currentProject();
+  if (!p.gearPool) p.gearPool = [];
+  p.gearPool.push({ name, category: '' });
+  input.value = '';
+  saveStore();
+  renderGearPool();
+}
+
+function removeGearFromPool(idx) {
+  const p = currentProject();
+  p.gearPool.splice(idx, 1);
+  saveStore();
+  renderGearPool();
+}
+
+function checkoutGearItem(poolIdx) {
+  const p = currentProject();
+  const item = p.gearPool[poolIdx];
+  const target = window._gearCheckoutTarget;
+  
+  if (target && p.gearList[target.dayIdx] && p.gearList[target.dayIdx].categories[target.catIdx]) {
+    p.gearList[target.dayIdx].categories[target.catIdx].items.push({ name: item.name, pre: false, post: false });
+    saveStore();
+    renderEquipment(p);
+    showToast(`Checked out ${item.name}`, 'success');
+    closeModal('modal-gear-pool');
+  } else {
+    showToast('Select a destination day/category first.', 'info');
+  }
 }

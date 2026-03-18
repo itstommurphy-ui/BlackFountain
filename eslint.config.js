@@ -41,6 +41,7 @@ export default [
         // ── UI helpers ───────────────────────────────────────────────────────
         showToast: "readonly",
         showConfirmDialog: "readonly",
+        showPromptDialog: "readonly",
         showContextMenu: "readonly",
         openModal: "readonly",
         closeModal: "readonly",
@@ -82,6 +83,15 @@ export default [
         renderContacts: "readonly",
         renderLocations: "readonly",
         renderMoodboards: "readonly",
+        addGearDay: "readonly",
+        duplicateGearDay: "readonly",
+        removeGearDay: "readonly",
+        toggleGearCheck: "readonly",
+        addGearItemToDay: "readonly",
+        addGearCategoryToDay: "readonly",
+        openUnsortedGear: "readonly",
+        editGearDay: "readonly",
+        exportGearPrint: "readonly",
 
         // ── Save handlers (called from HTML onsubmit/onclick) ────────────────
         saveProject: "readonly",

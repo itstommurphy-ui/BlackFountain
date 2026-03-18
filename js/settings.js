@@ -1250,6 +1250,8 @@ function defaultProject(data) {
     unit: [],
     budget: [],
     equipment: {},
+    gearList: [],
+    gearPool: [],
     locations: [],
     scoutingSheets: [],
     breakdown: [],

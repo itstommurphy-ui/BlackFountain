@@ -1652,6 +1652,33 @@
   .equip-check { width:16px; height:16px; border-radius:4px; border:2px solid var(--border2); background:var(--surface3); flex-shrink:0; cursor:pointer; transition:background .15s, border-color .15s; }
   .equip-check.checked { background:var(--accent2); border-color:var(--accent2); background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 12 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 5l3.5 3.5L11 1' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:center; background-size:10px; }
 
+  /* ── GEAR BOARD (GEAR LIST) ── */
+  .gear-board { display: flex; gap: 24px; padding: 20px 0; overflow-x: auto; min-height: 80vh; align-items: flex-start; }
+  .gear-day { min-width: 480px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; }
+  .gear-day-header { padding: 16px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .gear-day-title { font-family: var(--font-display); font-size: 20px; margin-bottom: 8px; color: var(--text); }
+  .gear-day-shoots { font-size: 11px; color: var(--text3); display: flex; flex-direction: column; gap: 4px; }
+  .gear-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; background: var(--surface); }
+  .gear-col { display: flex; flex-direction: column; gap: 12px; }
+  .gear-col-header { padding: 12px; text-align: center; border-radius: 8px 8px 0 0; border-top: 4px solid var(--border); background: var(--surface2); position: relative; }
+  .gear-col-header.pre { border-top-color: var(--green); }
+  .gear-col-header.post { border-top-color: var(--orange); }
+  .gear-col-label { font-family: var(--font-display); font-size: 14px; color: var(--text); text-transform: uppercase; letter-spacing: 1px; }
+  .gear-col-stats { font-size: 9px; color: var(--text3); margin-top: 2px; }
+  .gear-cat-card { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 12px; }
+  .gear-cat-name { font-family: var(--font-display); font-size: 12px; color: var(--text); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .gear-item-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border2); }
+  .gear-item-row:last-child { border-bottom: none; }
+  .gear-item-check { width: 16px; height: 16px; border-radius: 4px; border: 2px solid var(--border2); background: var(--surface3); cursor: pointer; flex-shrink: 0; position: relative; }
+  .gear-item-check.checked { background: var(--accent); border-color: var(--accent); }
+  .gear-item-check.checked::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #000; font-weight: bold; }
+  .gear-item-name { font-size: 11px; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gear-item-name.checked { opacity: 0.5; text-decoration: line-through; }
+  .gear-item-row .btn-remove { opacity: 0; transition: opacity .2s; }
+  .gear-item-row:hover .btn-remove { opacity: 0.6; }
+  .gear-item-row .btn-remove:hover { opacity: 1; color: var(--red); }
+  .gear-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+
   /* ===== UTILITY CLASSES ===== */
   /* Text colors */
   .text-accent { color: var(--accent); }
@@ -2171,3 +2198,9 @@
 #quick-task-deadline { cursor: pointer; }
 #quick-task-deadline::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
 
+
+/* ── GEAR POOL ── */
+.gear-pool-item:hover { background: var(--surface3); }
+.gear-pool-item:active { background: var(--surface); }
+.gear-pool-item .btn-ghost { opacity: 0; transition: opacity 0.1s; }
+.gear-pool-item:hover .btn-ghost { opacity: 1; }
