@@ -43,6 +43,7 @@ document.addEventListener('click', function(e) {
 loadTheme();
 async function _startApp() {
   await loadStore();
+  ensureSampleData();
   initAutoSave();
   renderDashboard();
   const pendingToast = sessionStorage.getItem('_mf_post_reload_toast');
