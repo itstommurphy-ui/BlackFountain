@@ -42,10 +42,15 @@ document.addEventListener('click', function(e) {
 
 loadTheme();
 async function _startApp() {
-  await loadStore();
-  initAutoSave();
-  renderDashboard();
-  document.body.classList.remove('loading');
+  try {
+    await loadStore();
+    initAutoSave();
+    renderDashboard();
+  } catch(e) {
+    console.error('[_startApp] init failed:', e);
+  } finally {
+    document.body.classList.remove('loading');
+  }
   const pendingToast = sessionStorage.getItem('_mf_post_reload_toast');
   if (pendingToast) {
     sessionStorage.removeItem('_mf_post_reload_toast');

@@ -9,6 +9,10 @@
 <link rel="stylesheet" href="css/views.css">
 </head>
 <body class="loading">
+<script>
+  // Emergency fallback to remove loading screen if JS fails
+  setTimeout(() => document.body.classList.remove('loading'), 4000);
+</script>
 <a href="#content" class="skip-link">Skip to main content</a>
 <div id="app">
   <!-- SIDEBAR -->
