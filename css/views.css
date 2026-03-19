@@ -1015,7 +1015,7 @@
   /* Star indicator in grid view */
   .file-card-star {
     position: absolute;
-    top: 8px;
+    bottom: 8px;
     right: 8px;
     font-size: 14px;
     cursor: pointer;
