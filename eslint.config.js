@@ -181,6 +181,11 @@ export default [
         currentFileCategory: "writable",
         selectedFileIds: "readonly",
         _mfNewPersonCallback: "writable",
+
+        // ── Files view ─────────────────────────────────────────────────────────
+        _openCreateFolder: "readonly",
+        openCreateFolder: "readonly",
+        confirmCreateFolder: "readonly",
       },
     },
     rules: {

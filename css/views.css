@@ -371,6 +371,146 @@
   .new-doc-card:hover { border-color: var(--accent2); color: var(--accent2); }
 
   /* ── FILES PAGE ── */
+  
+  /* Quick Access Bar */
+  .files-quick-access {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+  }
+  .quick-access-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .quick-access-item:hover {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .quick-access-icon {
+    font-size: 14px;
+  }
+  
+  /* Storage Usage */
+  .files-storage {
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+  }
+  .storage-bar {
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .storage-bar-used {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .storage-text {
+    font-size: 11px;
+    color: var(--text3);
+  }
+  
+  /* Toolbar */
+  .files-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .files-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .files-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  /* Search */
+  .files-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .files-search-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .files-search-input {
+    padding: 6px 10px 6px 30px;
+    font-size: 12px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    width: 180px;
+    transition: width 0.2s, border-color 0.2s;
+  }
+  .files-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    width: 220px;
+  }
+  .files-search-input::placeholder {
+    color: var(--text3);
+  }
+  
+  /* Sort */
+  .files-sort {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* View Toggle */
+  .files-view-toggle {
+    display: flex;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .view-toggle-btn {
+    padding: 6px 10px;
+    font-size: 14px;
+    background: var(--surface);
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    transition: all 0.15s;
+  }
+  .view-toggle-btn:hover {
+    background: var(--surface3);
+    color: var(--text2);
+  }
+  .view-toggle-btn.active {
+    background: var(--accent-dim);
+    color: var(--text);
+  }
+  
   .file-tabs {
     display: flex;
     gap: 4px;
@@ -518,6 +658,128 @@
   .file-bulk-bar-count { font-weight: 600; color: var(--text); margin-right: 4px; }
   .file-bulk-sep { flex: 1; }
   .file-bulk-clear { cursor: pointer; color: var(--text3); font-size: 11px; text-decoration: underline; }
+
+  /* Folder styles */
+  .folder-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.14s;
+    position: relative;
+    overflow: hidden;
+  }
+  .folder-card:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .folder-card.drop-target {
+    border-color: var(--accent);
+    border-style: dashed;
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  }
+  .folder-card-preview {
+    width: 100%;
+    height: 100px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+  .folder-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .folder-card-meta {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+  .folder-card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .folder-card:hover .folder-card-actions { opacity: 1; }
+  .folder-card .file-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: var(--surface3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .folder-card .file-action-btn:hover {
+    background: var(--surface);
+  }
+  .folder-card .file-action-btn.delete:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* Folder breadcrumb navigation */
+  .folder-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .folder-nav-item {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.12s;
+  }
+  .folder-nav-item:hover {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .folder-nav-item.current {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .folder-nav-sep {
+    color: var(--text3);
+    font-size: 10px;
+  }
+
+  /* Draggable file cards */
+  .file-card[draggable="true"] {
+    cursor: grab;
+  }
+  .file-card[draggable="true"]:active {
+    cursor: grabbing;
+  }
+  .file-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
   .file-action-btn {
     width: 24px;
     height: 24px;
@@ -587,6 +849,231 @@
   .file-empty-icon { font-size: 48px; opacity: 0.3; margin-bottom: 16px; }
   .file-empty-text { font-size: 14px; margin-bottom: 8px; color: var(--text2); }
   .file-empty-hint { font-size: 12px; font-family: var(--font-mono); }
+
+  /* ── LIST VIEW ── */
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .file-list-header {
+    display: grid;
+    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border2);
+    margin-bottom: 4px;
+  }
+  .file-list-header-star {}
+  .file-list-header-name {}
+  .file-list-header-type { text-align: center; }
+  .file-list-header-size { text-align: right; }
+  .file-list-header-date { text-align: right; }
+  
+  .file-list-item {
+    display: grid;
+    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .file-list-item:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+  }
+  .file-list-item.selected {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .file-list-item .file-select-check {
+    position: static;
+    opacity: 0;
+    width: 16px;
+    height: 16px;
+  }
+  .file-list-item:hover .file-select-check,
+  .file-list-item.selected .file-select-check {
+    opacity: 1;
+  }
+  .file-list-star {
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  .file-list-item:hover .file-list-star,
+  .file-list-item .file-list-star.starred {
+    opacity: 1;
+  }
+  .file-list-icon {
+    font-size: 18px;
+  }
+  .file-list-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-list-meta {
+    text-align: center;
+  }
+  .file-list-type {
+    font-size: 11px;
+  }
+  .file-list-size {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+  }
+  .file-list-date {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+  }
+  .file-list-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .file-list-item:hover .file-list-actions {
+    opacity: 1;
+  }
+
+  /* Folder list item (same as file-list-item) */
+  .folder-list-item {
+    display: grid;
+    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .folder-list-item:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+  }
+  .folder-list-star {
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  .folder-list-item:hover .folder-list-star {
+    opacity: 1;
+  }
+  .folder-list-icon {
+    font-size: 18px;
+  }
+  .folder-list-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .folder-list-type {
+    font-size: 11px;
+  }
+  .folder-list-size {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+  }
+  .folder-list-date {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+  }
+  .folder-list-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .folder-list-item:hover .folder-list-actions {
+    opacity: 1;
+  }
+
+  /* Star indicator in grid view */
+  .file-card-star {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 5;
+  }
+  .file-card:hover .file-card-star,
+  .file-card.starred .file-card-star {
+    opacity: 0.7;
+  }
+  .file-card-star:hover {
+    opacity: 1 !important;
+    transform: scale(1.2);
+  }
+  .file-card.starred .file-card-star {
+    opacity: 1;
+  }
+  
+  /* Context Menu */
+  .context-menu {
+    position: fixed;
+    z-index: 1000;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 4px 0;
+  }
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .context-menu-item:hover {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .context-menu-item.danger:hover {
+    background: rgba(196, 68, 68, 0.15);
+    color: var(--red);
+  }
+  .context-menu-icon {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+  }
+  .context-menu-sep {
+    height: 1px;
+    background: var(--border2);
+    margin: 4px 0;
+  }
 
   /* ── MODAL ── */
   .modal-overlay {

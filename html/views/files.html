@@ -6,10 +6,49 @@
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-    <select class="form-select" id="files-project-filter" onchange="renderFiles()" style="max-width:280px;font-size:12px;">
-      <option value="all">All Projects</option>
-    </select>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <select class="form-select" id="files-project-filter" onchange="renderFiles()" style="max-width:280px;font-size:12px;">
+        <option value="all">All Projects</option>
+      </select>
+      <button class="btn btn-sm btn-primary" onclick="_openCreateFolder()" title="Create new folder">📁 New Folder</button>
+      
+      <!-- Quick Access -->
+      <span style="display:flex;gap:4px;margin-left:8px;">
+        <button class="btn btn-sm" onclick="showRecentFiles()" title="Recent files">🕐 Recent</button>
+        <button class="btn btn-sm" onclick="showStarredFiles()" title="Starred files">⭐ Starred</button>
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <!-- Search -->
+      <input type="text" id="files-search-input" placeholder="Search files..." oninput="renderFiles()" 
+             style="padding:6px 10px;font-size:12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);width:150px;">
+      <!-- Sort -->
+      <select id="files-sort-select" class="form-select" onchange="setFileSort(this.value)" style="font-size:12px;width:auto;">
+        <option value="name">Sort: Name</option>
+        <option value="date">Sort: Date</option>
+        <option value="size">Sort: Size</option>
+        <option value="type">Sort: Type</option>
+      </select>
+      <!-- View Toggle -->
+      <span style="display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
+        <button class="view-toggle-btn active" id="view-grid-btn" onclick="setFileView('grid')" title="Grid view" style="padding:6px 10px;background:var(--surface);border:none;cursor:pointer;">▦</button>
+        <button class="view-toggle-btn" id="view-list-btn" onclick="setFileView('list')" title="List view" style="padding:6px 10px;background:var(--surface);border:none;cursor:pointer;border-left:1px solid var(--border2);">☰</button>
+      </span>
+    </div>
   </div>
+
+  <!-- Storage indicator -->
+  <div style="margin-bottom:16px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border2);">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;">
+      <span>Storage</span>
+      <span id="storage-text">Calculating...</span>
+    </div>
+    <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+      <div id="storage-bar-used" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s;"></div>
+    </div>
+  </div>
+
+  <div class="folder-nav" id="folder-nav"></div>
 
   <div class="file-tabs" id="file-tabs">
     <div class="file-tab active" data-category="all">All Files</div>
@@ -29,13 +68,14 @@
     <div class="file-upload-text">Drop files here or click to upload</div>
     <div class="file-upload-hint">Scripts, location photos, BTS, moodboards, storyboards</div>
   </div>
-  <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileUpload(this.files)">
+  <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.mp4,.mov,.avi,.mp3,.wav,.zip,.rar" style="display:none" onchange="handleFileUpload(this.files)">
 
   <div id="files-bulk-bar" class="file-bulk-bar">
     <span class="file-bulk-bar-count" id="files-bulk-count"></span>
     <span>files selected</span>
     <div class="file-bulk-sep"></div>
-    <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'), document.getElementById('files-project-filter')?.value === 'all' ? null : document.getElementById('files-project-filter')?.value)">🔀 Move</button>
+    <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'), document.getElementById('files-project-filter')?.value === 'all' ? null : document.getElementById('files-project-filter')?.value)">🔀 Move to Project</button>
+    <button class="btn btn-sm" onclick="openMoveSelectedToFolder()">📁 Move to Folder</button>
     <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'), document.getElementById('files-project-filter')?.value === 'all' ? null : document.getElementById('files-project-filter')?.value)">🗑 Remove / Delete</button>
     <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
   </div>

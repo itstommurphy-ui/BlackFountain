@@ -198,9 +198,16 @@ function confirmClearAllData() {
 
 function renderFiles() {
   populateFilesProjectFilter();
+  renderFolderNav();
+  updateStorageDisplay();
+  
   const grid = document.getElementById('file-grid');
   const filterSel = document.getElementById('files-project-filter');
   const projectFilter = filterSel ? filterSel.value : 'all';
+  
+  // Get search query
+  const searchInput = document.getElementById('files-search-input');
+  currentFilesSearch = searchInput ? searchInput.value.toLowerCase() : '';
 
   // Ensure tab listeners are attached
   const tabs = document.getElementById('file-tabs');
@@ -228,20 +235,100 @@ function renderFiles() {
     _makeDrop(uploadZone, handleFileUpload);
   }
 
-  let files = (store.files || []);
-  if (projectFilter !== 'all') {
+  // Get folders for current context
+  let folders = [];
+  if (filesViewMode === 'all') {
+    folders = (store.folders || []).filter(f => {
+      if (projectFilter !== 'all' && f.projectId !== projectFilter) return false;
+      return f.parentId === currentFolderId;
+    });
+  }
+
+  // Get files based on view mode
+  let files = [];
+  
+  if (filesViewMode === 'recent') {
+    // Recent files view - show all recent files regardless of folder
+    files = getRecentFiles(50);
+  } else if (filesViewMode === 'starred') {
+    // Starred files view
+    files = getStarredFiles();
+  } else {
+    // Normal folder view
+    files = (store.files || []).filter(f => f.folderId === currentFolderId);
+  }
+  
+  // Apply project filter
+  if (projectFilter !== 'all' && filesViewMode !== 'recent') {
     files = files.filter(f => fileProjectIds(f).includes(projectFilter));
   }
+  
+  // Apply category filter
   if (currentFileCategory !== 'all') {
     files = files.filter(f => fileCategories(f).includes(currentFileCategory));
   }
+  
+  // Apply search filter
+  if (currentFilesSearch) {
+    files = files.filter(f => 
+      (f.name || '').toLowerCase().includes(currentFilesSearch) ||
+      (f.description || '').toLowerCase().includes(currentFilesSearch)
+    );
+  }
 
-  if (files.length === 0) {
+  // Sort files
+  const sortSelect = document.getElementById('files-sort-select');
+  const sort = sortSelect ? sortSelect.value : 'name';
+  
+  files.sort((a, b) => {
+    let cmp = 0;
+    switch(sort) {
+      case 'name':
+        cmp = (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+        break;
+      case 'date':
+        cmp = new Date(b.modifiedAt || b.createdAt || 0) - new Date(a.modifiedAt || a.createdAt || 0);
+        break;
+      case 'size':
+        cmp = (b.size || 0) - (a.size || 0);
+        break;
+      case 'type':
+        const extA = (a.name || '').split('.').pop() || '';
+        const extB = (b.name || '').split('.').pop() || '';
+        cmp = extA.localeCompare(extB);
+        break;
+    }
+    return currentFilesSortDir === 'desc' ? -cmp : cmp;
+  });
+
+  // Sort folders by name
+  folders.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+  // Show empty state only if no folders and no files
+  if (folders.length === 0 && files.length === 0) {
+    let emptyMessage, emptyIcon, emptyTitle;
+    if (filesViewMode === 'recent') {
+      emptyTitle = 'No recent files';
+      emptyMessage = 'Files you open or edit will appear here for quick access.';
+      emptyIcon = '🕐';
+    } else if (filesViewMode === 'starred') {
+      emptyTitle = 'No starred files';
+      emptyMessage = 'Star files to add them to your favorites for quick access.';
+      emptyIcon = '⭐';
+    } else if (currentFolderId) {
+      emptyTitle = 'Folder is empty';
+      emptyMessage = 'This folder is empty. Drop files here or upload new ones.';
+      emptyIcon = '📂';
+    } else {
+      emptyTitle = 'No files yet';
+      emptyMessage = 'No files yet. Upload scripts, photos, storyboards, contracts and more.';
+      emptyIcon = '📁';
+    }
     grid.innerHTML = `
       <div class="file-empty" style="grid-column:1/-1">
-        <div class="file-empty-icon">📁</div>
-        <div class="file-empty-text">No files yet</div>
-        <div class="file-empty-hint">Upload scripts, photos, storyboards, contracts and more</div>
+        <div class="file-empty-icon">${emptyIcon}</div>
+        <div class="file-empty-text">${emptyTitle}</div>
+        <div class="file-empty-hint">${emptyMessage}</div>
       </div>`;
     updateBulkBars();
     return;
@@ -260,12 +347,23 @@ function renderFiles() {
       ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
       : '';
     const pFilter = (document.getElementById('files-project-filter')?.value === 'all') ? null : document.getElementById('files-project-filter')?.value;
-    return `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','files')">
+    const starIcon = file.starred ? '⭐' : '☆';
+    const starClass = file.starred ? 'starred' : '';
+    
+    // Grid view template
+    const gridTemplate = `
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" 
+         onclick="fileCardClick(event,'${file.id}','files')" 
+         draggable="true"
+         ondragstart="handleFileDragStart(event,'${file.id}')"
+         ondragend="handleFileDragEnd(event)"
+         oncontextmenu="showContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
+      <div class="file-card-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
         <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Move to project">🔀</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();openMoveFileToFolder(['${file.id}'])" title="Move to folder">📁</button>
         <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
         <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Remove / delete">🗑</button>
       </div>
@@ -279,6 +377,34 @@ function renderFiles() {
       ${peopleTags}
       ${projectBadge}
     </div>`;
+    
+    // List view template
+    const dateStr = file.modifiedAt ? new Date(file.modifiedAt).toLocaleDateString() : (file.createdAt ? new Date(file.createdAt).toLocaleDateString() : '—');
+    const listTemplate = `
+    <div class="file-list-item${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" 
+         onclick="fileCardClick(event,'${file.id}','files')" 
+         draggable="true"
+         ondragstart="handleFileDragStart(event,'${file.id}')"
+         ondragend="handleFileDragEnd(event)"
+         oncontextmenu="showContextMenu(event,'${file.id}','file')">
+      <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
+      <div class="file-list-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
+      <div class="file-list-icon">${getFileIcon(file)}</div>
+      <div class="file-list-name" title="${file.name}">${file.name}</div>
+      <div class="file-list-meta">
+        <span class="file-list-type">${catBadge}</span>
+      </div>
+      <div class="file-list-size">${formatFileSize(file.size)}</div>
+      <div class="file-list-date">${dateStr}</div>
+      <div class="file-list-actions">
+        <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
+        <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Remove / delete">🗑</button>
+      </div>
+    </div>`;
+    
+    return currentFileView === 'list' ? listTemplate : gridTemplate;
   };
 
   if (currentFileCategory === 'location') {
@@ -370,7 +496,36 @@ function renderFiles() {
     grid.innerHTML = html;
 
   } else {
-    grid.innerHTML = files.map(_fileCard).join('');
+    // Show folders and files in the grid or list view
+    const folderHtml = folders.map(currentFileView === 'list' ? _folderListItem : _folderCard).join('');
+    const fileHtml = files.map(_fileCard).join('');
+
+    if (currentFileView === 'list') {
+      // List view header
+      const listHeader = `<div class="file-list-header">
+        <div class="file-list-header-star"></div>
+        <div class="file-list-header-name">Name</div>
+        <div class="file-list-header-type">Type</div>
+        <div class="file-list-header-size">Size</div>
+        <div class="file-list-header-date">Modified</div>
+      </div>`;
+      // Use file-list container for list view
+      grid.className = 'file-list';
+      grid.innerHTML = listHeader + folderHtml + fileHtml;
+    } else {
+      // Grid view
+      grid.className = 'file-grid';
+      grid.innerHTML = folderHtml + fileHtml;
+    }
+
+    // Add drop zone listeners to folders after they're rendered
+    setTimeout(() => {
+      document.querySelectorAll('.folder-card, .folder-list-item').forEach(folderEl => {
+        folderEl.addEventListener('dragover', handleFolderDragOver);
+        folderEl.addEventListener('dragleave', handleFolderDragLeave);
+        folderEl.addEventListener('drop', (e) => handleFolderDrop(e, folderEl.dataset.folderId));
+      });
+    }, 0);
   }
   updateBulkBars();
 }
@@ -475,6 +630,575 @@ function updateBulkBars() {
     obar.classList.toggle('visible', overviewCount > 0);
     if (ocnt) ocnt.textContent = overviewCount;
   }
+}
+
+// ── Folders ──────────────────────────────────────────────────────────────────
+function _openCreateFolder() {
+  console.log('[Files] New Folder button clicked');
+  try {
+    const nameInput = document.getElementById('new-folder-name');
+    if (nameInput) nameInput.value = '';
+    
+    const contextEl = document.getElementById('create-folder-context');
+    if (contextEl) {
+      const filterSel = document.getElementById('files-project-filter');
+      const projectFilter = filterSel ? filterSel.value : 'all';
+      const project = projectFilter !== 'all' ? store.projects?.find(p => p.id === projectFilter) : null;
+      
+      let contextText = 'Creating folder at root level';
+      if (currentFolderId) {
+        const folder = getFolderById(currentFolderId);
+        if (folder) contextText = `Creating folder inside: ${folder.name}`;
+      }
+      if (project) {
+        contextText += ` • Project: ${project.title}`;
+      }
+      contextEl.textContent = contextText;
+    }
+    
+    openModal('modal-create-folder');
+    setTimeout(() => {
+      const nameInput = document.getElementById('new-folder-name');
+      if (nameInput) {
+        nameInput.focus();
+        // Add Enter key listener via JS to ensure it works
+        nameInput.onkeydown = function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            confirmCreateFolder();
+          }
+        };
+      }
+    }, 100);
+  } catch (err) {
+    console.error('[Files] Error opening create folder:', err);
+    showToast('Error opening create folder dialog', 'error');
+  }
+}
+
+// Alias for backwards compatibility
+function openCreateFolder() {
+  return _openCreateFolder();
+}
+
+function confirmCreateFolder() {
+  console.log('[Files] confirmCreateFolder called');
+  try {
+    const nameInput = document.getElementById('new-folder-name');
+    let name = nameInput ? nameInput.value.trim() : '';
+
+    if (!name) {
+      showToast('Please enter a folder name', 'error');
+      return;
+    }
+
+    const filterSel = document.getElementById('files-project-filter');
+    const projectFilter = filterSel ? filterSel.value : 'all';
+    const projectId = projectFilter !== 'all' ? projectFilter : null;
+
+    // Find a unique name by appending (1), (2), etc. if duplicate
+    const existingNames = (store.folders || [])
+      .filter(f => f.parentId === currentFolderId && f.projectId === projectId)
+      .map(f => f.name.toLowerCase());
+    let uniqueName = name;
+    let counter = 1;
+    while (existingNames.includes(uniqueName.toLowerCase())) {
+      uniqueName = `${name} (${counter})`;
+      counter++;
+    }
+
+    console.log('[Files] Creating folder:', uniqueName);
+    createFolder(uniqueName, currentFolderId, projectId);
+    console.log('[Files] Closing modal');
+    closeModal('modal-create-folder');
+    console.log('[Files] Rendering files');
+    renderFiles();
+    showToast(`Folder "${uniqueName}" created`, 'success');
+  } catch (err) {
+    console.error('[Files] Error creating folder:', err);
+    showToast('Error creating folder: ' + err.message, 'error');
+  }
+}
+
+function openFolder(folderId) {
+  currentFolderId = folderId;
+  renderFiles();
+}
+
+function navigateToRoot() {
+  currentFolderId = null;
+  renderFiles();
+}
+
+function navigateUp() {
+  if (currentFolderId) {
+    const folder = getFolderById(currentFolderId);
+    if (folder && folder.parentId) {
+      currentFolderId = folder.parentId;
+    } else {
+      currentFolderId = null;
+    }
+    renderFiles();
+  }
+}
+
+// ── View Mode ─────────────────────────────────────────────────────────────────
+let currentFileView = 'grid';
+let currentFilesSort = 'name';
+let currentFilesSortDir = 'asc';
+let currentFilesSearch = '';
+let filesViewMode = 'all'; // 'all', 'recent', 'starred'
+
+function setFileView(view) {
+  currentFileView = view;
+  document.getElementById('view-grid-btn')?.classList.toggle('active', view === 'grid');
+  document.getElementById('view-list-btn')?.classList.toggle('active', view === 'list');
+  renderFiles();
+}
+
+function setFileSort(sort) {
+  if (currentFilesSort === sort) {
+    currentFilesSortDir = currentFilesSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentFilesSort = sort;
+    currentFilesSortDir = 'asc';
+  }
+  const select = document.getElementById('files-sort-select');
+  if (select) select.value = sort;
+  renderFiles();
+}
+
+function showRecentFiles() {
+  filesViewMode = 'recent';
+  document.getElementById('files-search-input').value = '';
+  currentFilesSearch = '';
+  renderFiles();
+}
+
+function showStarredFiles() {
+  filesViewMode = 'starred';
+  document.getElementById('files-search-input').value = '';
+  currentFilesSearch = '';
+  renderFiles();
+}
+
+function showAllFiles() {
+  filesViewMode = 'all';
+  currentFolderId = null;
+  document.getElementById('files-search-input').value = '';
+  currentFilesSearch = '';
+  renderFiles();
+}
+
+// ── Storage Calculation ──────────────────────────────────────────────────────
+function calculateStorage() {
+  const files = store.files || [];
+  let totalSize = 0;
+  files.forEach(f => {
+    if (f.data) {
+      // Estimate base64 size
+      totalSize += f.data.length * 0.75; // Approximate decoded size
+    }
+    if (f.size) totalSize += parseInt(f.size);
+  });
+  return totalSize;
+}
+
+function formatStorageSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+function updateStorageDisplay() {
+  const used = calculateStorage();
+  const maxStorage = 100 * 1024 * 1024; // 100 MB limit for demo
+  const percent = Math.min((used / maxStorage) * 100, 100);
+  
+  const bar = document.getElementById('storage-bar-used');
+  const text = document.getElementById('storage-text');
+  
+  if (bar) bar.style.width = percent + '%';
+  if (text) text.textContent = `${formatStorageSize(used)} of ${formatStorageSize(maxStorage)} used`;
+}
+
+// ── Starred Files ─────────────────────────────────────────────────────────────
+function toggleStarFile(fileId) {
+  const file = (store.files || []).find(f => f.id === fileId);
+  if (!file) return;
+  
+  if (!file.starred) {
+    file.starred = true;
+    file.starredAt = new Date().toISOString();
+    showToast('Added to starred', 'success');
+  } else {
+    file.starred = false;
+    file.starredAt = null;
+    showToast('Removed from starred', 'success');
+  }
+  save();
+  renderFiles();
+}
+
+function getStarredFiles() {
+  return (store.files || []).filter(f => f.starred);
+}
+
+function getRecentFiles(limit = 20) {
+  return (store.files || [])
+    .filter(f => f.modifiedAt)
+    .sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt))
+    .slice(0, limit);
+}
+
+// ── Context Menu ─────────────────────────────────────────────────────────────
+let contextTargetId = null;
+let contextTargetType = null; // 'file' or 'folder'
+
+function showContextMenu(e, targetId, targetType) {
+  e.preventDefault();
+  contextTargetId = targetId;
+  contextTargetType = targetType;
+  
+  const menu = document.getElementById('context-menu');
+  if (!menu) return;
+  
+  // Update star label
+  if (targetType === 'file') {
+    const file = (store.files || []).find(f => f.id === targetId);
+    const starLabel = document.getElementById('context-star-label');
+    if (starLabel) {
+      starLabel.textContent = file?.starred ? 'Remove from Starred' : 'Add to Starred';
+    }
+  }
+  
+  menu.style.display = 'block';
+  menu.style.left = e.pageX + 'px';
+  menu.style.top = e.pageY + 'px';
+  
+  // Close on click outside
+  setTimeout(() => {
+    document.addEventListener('click', hideContextMenu, { once: true });
+  }, 10);
+}
+
+function hideContextMenu() {
+  const menu = document.getElementById('context-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function contextOpenFile() {
+  if (contextTargetType === 'file') {
+    viewFile(contextTargetId);
+  } else if (contextTargetType === 'folder') {
+    openFolder(contextTargetId);
+  }
+  hideContextMenu();
+}
+
+function contextRename() {
+  if (contextTargetType === 'file') {
+    openManageFile(contextTargetId);
+  } else if (contextTargetType === 'folder') {
+    openRenameFolder(contextTargetId);
+  }
+  hideContextMenu();
+}
+
+function contextStar() {
+  if (contextTargetType === 'file') {
+    toggleStarFile(contextTargetId);
+  }
+  hideContextMenu();
+}
+
+function contextDownload() {
+  if (contextTargetType === 'file') {
+    downloadFile(contextTargetId);
+  }
+  hideContextMenu();
+}
+
+function contextMoveToFolder() {
+  if (contextTargetType === 'file') {
+    openMoveFileToFolder([contextTargetId]);
+  }
+  hideContextMenu();
+}
+
+function contextDelete() {
+  if (contextTargetType === 'file') {
+    const filterSel = document.getElementById('files-project-filter');
+    const projectFilter = filterSel ? filterSel.value : 'all';
+    openRemoveFiles([contextTargetId], projectFilter === 'all' ? null : projectFilter);
+  } else if (contextTargetType === 'folder') {
+    deleteFolder(contextTargetId);
+  }
+  hideContextMenu();
+}
+
+// Add right-click handlers to file cards
+function _addContextMenuToFileCard(fileId) {
+  const card = document.querySelector(`[data-file-id="${fileId}"]`);
+  if (card) {
+    card.addEventListener('contextmenu', (e) => showContextMenu(e, fileId, 'file'));
+  }
+}
+
+function _addContextMenuToFolderCard(folderId) {
+  const card = document.querySelector(`[data-folder-id="${folderId}"]`);
+  if (card) {
+    card.addEventListener('contextmenu', (e) => showContextMenu(e, folderId, 'folder'));
+  }
+}
+
+function getFolderBreadcrumb() {
+  const crumbs = [];
+  let currentId = currentFolderId;
+  
+  while (currentId) {
+    const folder = getFolderById(currentId);
+    if (folder) {
+      crumbs.unshift(folder);
+      currentId = folder.parentId;
+    } else {
+      break;
+    }
+  }
+  
+  return crumbs;
+}
+
+function renderFolderNav() {
+  const nav = document.getElementById('folder-nav');
+  if (!nav) return;
+  
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+  
+  // Show "Back to All Files" button when in recent/starred mode
+  if (filesViewMode === 'recent' || filesViewMode === 'starred') {
+    const modeLabel = filesViewMode === 'recent' ? 'Recent' : 'Starred';
+    nav.innerHTML = `
+      <span class="folder-nav-item" onclick="showAllFiles()" style="cursor:pointer;">🏠 Home</span>
+      <span class="folder-nav-sep">›</span>
+      <span class="folder-nav-item current">${modeLabel}</span>
+      <span class="folder-nav-item" onclick="showAllFiles()" style="margin-left:auto;color:var(--accent);cursor:pointer;">← Back to All Files</span>
+    `;
+    return;
+  }
+  
+  // Get folders for current context
+  let folders = (store.folders || []).filter(f => {
+    if (projectFilter !== 'all' && f.projectId !== projectFilter) return false;
+    return f.parentId === currentFolderId;
+  });
+  
+  if (currentFolderId === null && folders.length === 0) {
+    nav.innerHTML = '';
+    return;
+  }
+  
+  const crumbs = getFolderBreadcrumb();
+  let html = `<span class="folder-nav-item" onclick="navigateToRoot()">🏠 Home</span>`;
+  
+  if (crumbs.length > 0) {
+    html += `<span class="folder-nav-sep">›</span>`;
+    crumbs.forEach((folder, idx) => {
+      if (idx < crumbs.length - 1) {
+        html += `<span class="folder-nav-item" onclick="openFolder('${folder.id}')">${folder.name}</span>`;
+        html += `<span class="folder-nav-sep">›</span>`;
+      } else {
+        html += `<span class="folder-nav-item current">${folder.name}</span>`;
+      }
+    });
+  }
+  
+  if (currentFolderId) {
+    html += `<span class="folder-nav-item" onclick="navigateUp()" style="margin-left:auto;">↑ Up</span>`;
+  }
+  
+  nav.innerHTML = html;
+}
+
+function _folderCard(folder) {
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+  const fileCount = getFolderFiles(folder.id).length;
+  const subfolderCount = (store.folders || []).filter(f => f.parentId === folder.id).length;
+
+  return `
+  <div class="folder-card" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
+       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
+    <div class="folder-card-actions">
+      <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
+      <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
+    </div>
+    <div class="folder-card-preview">📁</div>
+    <div class="folder-card-name" title="${folder.name}">${folder.name}</div>
+    <div class="folder-card-meta">
+      ${fileCount} file${fileCount !== 1 ? 's' : ''}${subfolderCount > 0 ? `, ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}` : ''}
+    </div>
+  </div>`;
+}
+
+function _folderListItem(folder) {
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+  const fileCount = getFolderFiles(folder.id).length;
+  const subfolderCount = (store.folders || []).filter(f => f.parentId === folder.id).length;
+  const dateStr = folder.createdAt ? new Date(folder.createdAt).toLocaleDateString() : '—';
+
+  return `
+  <div class="folder-list-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
+       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
+    <div class="folder-list-star"></div>
+    <div class="folder-list-icon">📁</div>
+    <div class="folder-list-name" title="${folder.name}">${folder.name}</div>
+    <div class="folder-list-type">Folder</div>
+    <div class="folder-list-size">${fileCount} file${fileCount !== 1 ? 's' : ''}${subfolderCount > 0 ? `, ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}` : ''}</div>
+    <div class="folder-list-date">${dateStr}</div>
+    <div class="folder-list-actions">
+      <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
+      <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
+    </div>
+  </div>`;
+}
+
+function openRenameFolder(folderId) {
+  const folder = getFolderById(folderId);
+  if (!folder) return;
+  
+  const newName = prompt('Rename folder:', folder.name);
+  if (newName && newName.trim() !== folder.name) {
+    renameFolder(folderId, newName.trim());
+    renderFiles();
+    showToast('Folder renamed', 'success');
+  }
+}
+
+function openDeleteFolder(folderId) {
+  const folder = getFolderById(folderId);
+  if (!folder) return;
+  
+  const fileCount = getFolderFiles(folderId).length;
+  const subfolderCount = (store.folders || []).filter(f => f.parentId === folderId).length;
+  
+  let message = `Delete folder "${folder.name}"?`;
+  if (fileCount > 0 || subfolderCount > 0) {
+    message += `\n\nThis folder contains ${fileCount} file${fileCount !== 1 ? 's' : ''} and ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}. Files will be moved to the current location.`;
+  }
+  
+  if (confirm(message)) {
+    deleteFolder(folderId);
+    if (currentFolderId === folderId) {
+      currentFolderId = null;
+    }
+    renderFiles();
+    showToast('Folder deleted', 'success');
+  }
+}
+
+// Drag and drop for moving files to folders
+let draggedFileId = null;
+
+function handleFileDragStart(e, fileId) {
+  draggedFileId = fileId;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', fileId);
+}
+
+function handleFileDragEnd(e) {
+  e.target.classList.remove('dragging');
+  draggedFileId = null;
+  // Remove all drop target highlights
+  document.querySelectorAll('.folder-card.drop-target').forEach(el => {
+    el.classList.remove('drop-target');
+  });
+}
+
+function handleFolderDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drop-target');
+}
+
+function handleFolderDragLeave(e) {
+  e.currentTarget.classList.remove('drop-target');
+}
+
+function handleFolderDrop(e, folderId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-target');
+  
+  if (draggedFileId) {
+    moveFileToFolder(draggedFileId, folderId);
+    showToast('File moved to folder', 'success');
+    renderFiles();
+  }
+  draggedFileId = null;
+}
+
+// Also support moving via selection (bulk move)
+function moveSelectedToFolder(folderId) {
+  const selectedIds = [...selectedFileIds];
+  if (selectedIds.length === 0) return;
+  
+  selectedIds.forEach(fileId => {
+    moveFileToFolder(fileId, folderId);
+  });
+  
+  clearFileSelection();
+  renderFiles();
+  showToast(`${selectedIds.length} file${selectedIds.length !== 1 ? 's' : ''} moved to folder`, 'success');
+}
+
+// Open modal to select folder for moving files
+function openMoveFileToFolder(fileIds) {
+  if (!fileIds || fileIds.length === 0) return;
+  
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+  
+  // Get all folders that are relevant to the project filter
+  let folders = (store.folders || []).filter(f => {
+    if (projectFilter !== 'all' && f.projectId !== projectFilter) return false;
+    return true;
+  });
+  
+  // Build folder list for prompt
+  let folderList = 'Available folders:\n';
+  if (folders.length === 0) {
+    folderList += '(none)\n';
+  } else {
+    const buildTree = (parentId, indent = '') => {
+      folders.filter(f => f.parentId === parentId).forEach(folder => {
+        folderList += `${indent}📁 ${folder.name} (ID: ${folder.id})\n`;
+        buildTree(folder.id, indent + '  ');
+      });
+    };
+    buildTree(null);
+  }
+  folderList += '\n📁 Root / No folder (leave ID empty)'; 
+  
+  const folderId = prompt(`Move ${fileIds.length} file(s) to which folder?\n\n${folderList}`);
+  
+  if (folderId !== null) {
+    const targetFolderId = folderId === '' ? null : folderId;
+    fileIds.forEach(fileId => {
+      moveFileToFolder(fileId, targetFolderId);
+    });
+    renderFiles();
+    showToast(`${fileIds.length} file(s) moved`, 'success');
+  }
+}
+
+// Open folder selection for selected files (from bulk bar)
+function openMoveSelectedToFolder() {
+  const selectedIds = getSelectedInContext('files');
+  openMoveFileToFolder(selectedIds);
 }
 
 // ── Rename ───────────────────────────────────────────────────────────────────
@@ -932,6 +1656,7 @@ function confirmRemoveFiles() {
   saveStore();
   closeModal('modal-remove-file');
   clearFileSelection();
+  renderFiles();
   showToast(alsoDelete ? `${ids.length > 1 ? ids.length + ' files' : 'File'} deleted` : `Removed from project`, alsoDelete ? 'info' : 'info');
 }
 

@@ -120,7 +120,7 @@ function createFolder(name, parentId = null, projectId = null) {
   };
   if (!store.folders) store.folders = [];
   store.folders.push(folder);
-  save();
+  saveStore();
   return folder;
 }
 
@@ -135,14 +135,14 @@ function deleteFolder(folderId) {
   });
   // Remove the folder
   store.folders = store.folders.filter(f => f.id !== folderId);
-  save();
+  saveStore();
 }
 
 function renameFolder(folderId, newName) {
   const folder = getFolderById(folderId);
   if (folder) {
     folder.name = newName;
-    save();
+    saveStore();
   }
 }
 
@@ -150,7 +150,7 @@ function moveFileToFolder(fileId, folderId) {
   const file = store.files.find(f => f.id === fileId);
   if (file) {
     file.folderId = folderId;
-    save();
+    saveStore();
   }
 }
 

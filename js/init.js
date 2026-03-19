@@ -1,5 +1,40 @@
 // INIT
 // ══════════════════════════════════════════
+
+// MODAL HELPERS - Ensure these are always available
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) { console.log('overlay NOT FOUND:', id); return; }
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    const heading = modal.querySelector('h2, h3, [class*="modal-title"]');
+    if (heading) {
+      if (!heading.id) heading.id = id + '-title';
+      modal.setAttribute('aria-labelledby', heading.id);
+    }
+    modal.querySelectorAll('.modal-close').forEach(btn => {
+      if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', 'Close');
+    });
+  }
+  overlay.classList.add('open');
+  overlay.style.display = 'flex';
+  overlay.dataset.justOpened = Date.now();
+  setTimeout(() => {
+    const first = overlay.querySelector('input:not([type=hidden]), textarea, select, button:not(.modal-close)');
+    if (first) first.focus();
+    else { const close = overlay.querySelector('.modal-close'); if (close) close.focus(); }
+  }, 60);
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove('open');
+    el.style.display = 'none';
+  }
+}
+
 (function initTooltip() {
   const tip = document.createElement('div');
   tip.id = 'global-tip';
