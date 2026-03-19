@@ -1035,14 +1035,6 @@
     opacity: 1;
   }
   
-  /* Ensure file cards and their contents are clickable */
-  .file-card {
-    z-index: 1;
-  }
-  .file-card > * {
-    pointer-events: auto;
-  }
-  
   /* Context Menu */
   .context-menu {
     position: fixed;
