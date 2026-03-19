@@ -1,13 +1,27 @@
 // VIEWS
 // ══════════════════════════════════════════
 function showView(name) {
+  // Check if view element exists - if not, the view hasn't been loaded yet
+  const viewEl = document.getElementById('view-' + name);
+  if (!viewEl) {
+    console.warn(`View '${name}' not found in DOM. Trying to load view...`);
+    // Try to load the view dynamically
+    if (window.viewLoader?.ensureViewLoaded) {
+      window.viewLoader.ensureViewLoaded(name).then(() => {
+        // Retry after load
+        showView(name);
+      });
+    }
+    return;
+  }
+  
   // Clean up canvas mode if leaving moodboards
   if (name !== 'moodboards') {
     document.getElementById('content')?.classList.remove('mb-content-canvas');
     document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
   }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
+  viewEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector(`.nav-item[onclick*="${name}"]`) || document.querySelector(`.nav-item[data-view="${name}"]`);

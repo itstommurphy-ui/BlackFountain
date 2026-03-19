@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v23';
+const CACHE_NAME = 'blackfountain-v24';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -26,14 +26,14 @@ const urlsToCache = [
   '/js/views/shotlist.js',
   '/js/views/risk.js',
   '/js/init.js',
-  '/html/views/dashboard.html',
-  '/html/views/project.html',
-  '/html/views/contacts.html',
-  '/html/views/locations.html',
-  '/html/views/moodboards.html',
-  '/html/views/files.html',
-  '/html/views/settings.html',
-  '/html/views/team.html',
+  '/html/views/dashboard',
+  '/html/views/project',
+  '/html/views/contacts',
+  '/html/views/locations',
+  '/html/views/moodboards',
+  '/html/views/files',
+  '/html/views/settings',
+  '/html/views/team',
 ];
 
 // Install event - cache resources

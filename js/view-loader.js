@@ -3,14 +3,14 @@
 // ══════════════════════════════════════════
 
 const viewFiles = {
-  'dashboard': '/html/views/dashboard.html',
-  'project': '/html/views/project.html',
-  'contacts': '/html/views/contacts.html',
-  'locations': '/html/views/locations.html',
-  'moodboards': '/html/views/moodboards.html',
-  'files': '/html/views/files.html',
-  'settings': '/html/views/settings.html',
-  'team': '/html/views/team.html'
+  'dashboard': '/html/views/dashboard',
+  'project': '/html/views/project',
+  'contacts': '/html/views/contacts',
+  'locations': '/html/views/locations',
+  'moodboards': '/html/views/moodboards',
+  'files': '/html/views/files',
+  'settings': '/html/views/settings',
+  'team': '/html/views/team'
 };
 
 const loadedViews = new Set();
@@ -53,6 +53,17 @@ async function loadView(viewName) {
     }
   } catch (error) {
     console.error(`Error loading view ${viewName}:`, error);
+    // Show error to user
+    const contentDiv = document.getElementById('content');
+    if (contentDiv && !document.getElementById('view-loading-error')) {
+      contentDiv.innerHTML += `<div id="view-loading-error" style="padding:20px;color:#f55;background:#311;">
+        <strong>Error loading views</strong><br>
+        Could not load ${viewName} view. Please try:<br>
+        • Hard refresh (Cmd+Shift+R / Ctrl+Shift+R)<br>
+        • Clear browser cache<br>
+        • Check console for details
+      </div>`;
+    }
   }
 }
 

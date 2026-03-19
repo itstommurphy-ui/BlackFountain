@@ -1203,18 +1203,15 @@ function renderEquipment(project) {
 
   const grid = document.getElementById('equip-grid');
   const toolbar = document.getElementById('gear-toolbar');
-  if (!grid) return;
 
   // Toolbar: Gear Pool count
   let poolCount = (p.gearPool || []).length;
-  if (toolbar) {
-    toolbar.innerHTML = `
-      <button class="btn btn-sm btn-ghost" onclick="openUnsortedGear()">
-        <span style="background:var(--accent);color:#000;padding:1px 6px;border-radius:10px;font-size:10px;margin-right:5px">${poolCount}</span>
-        Master Gear Pool
-      </button>
-    `;
-  }
+  toolbar.innerHTML = `
+    <button class="btn btn-sm btn-ghost" onclick="openUnsortedGear()">
+      <span style="background:var(--accent);color:#000;padding:1px 6px;border-radius:10px;font-size:10px;margin-right:5px">${poolCount}</span>
+      Master Gear Pool
+    </button>
+  `;
 
   if (p.gearList.length === 0) {
     grid.innerHTML = `
@@ -1282,7 +1279,6 @@ function renderEquipment(project) {
     return `
       <div class="gear-day" draggable="true" 
         ondragstart="_gearDayDragStart(event, ${dayIdx})"
-        ondragend="_gearDayDragEnd(event)"
         ondragover="event.preventDefault(); this.style.boxShadow='0 0 0 2px var(--accent)'"
         ondragleave="this.style.boxShadow=''"
         ondrop="_gearDayDrop(event, ${dayIdx})">
@@ -1555,12 +1551,6 @@ function _gearDayDragStart(e, idx) {
   setTimeout(() => { e.target.style.opacity = '0.4'; }, 0);
 }
 
-function _gearDayDragEnd(e) {
-  e.target.style.opacity = '1';
-  document.querySelectorAll('.gear-day').forEach(el => el.style.boxShadow = '');
-  window._gearDayDragSrc = undefined;
-}
-
 function _gearDayDrop(e, targetIdx) {
   e.preventDefault();
   if (window._gearDayDragSrc === undefined || window._gearDayDragSrc === targetIdx) return;
@@ -1591,135 +1581,3 @@ function _gearItemDrop(e, targetDayIdx, targetCatIdx) {
   window._gearItemDragSrc = null;
 }
 
-function updateGearDayLabel(dayIdx, val) {
-  const p = currentProject();
-  if (!p.gearList[dayIdx]) return;
-  p.gearList[dayIdx].label = val;
-  saveStore();
-}
-
-function updateGearDayShoot(dayIdx, sIdx, val) {
-  const p = currentProject();
-  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].shoots[sIdx]) return;
-  p.gearList[dayIdx].shoots[sIdx] = val;
-  saveStore();
-}
-
-function updateGearCatName(dayIdx, catIdx, val) {
-  const p = currentProject();
-  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].categories[catIdx]) return;
-  p.gearList[dayIdx].categories[catIdx].name = val;
-  saveStore();
-}
-
-function updateGearItemName(dayIdx, catIdx, itemIdx, val) {
-  const p = currentProject();
-  if (!p.gearList[dayIdx] || !p.gearList[dayIdx].categories[catIdx] || !p.gearList[dayIdx].categories[catIdx].items[itemIdx]) return;
-  p.gearList[dayIdx].categories[catIdx].items[itemIdx].name = val;
-  saveStore();
-}
-
-function removeGearItemFromDay(dayIdx, catIdx, itemIdx) {
-  const p = currentProject();
-  p.gearList[dayIdx].categories[catIdx].items.splice(itemIdx, 1);
-  saveStore(); renderEquipment(p);
-}
-
-function openUnsortedGear(targetDayIdx = null, targetCatIdx = null) {
-  window._gearCheckoutTarget = targetDayIdx !== null ? { dayIdx: targetDayIdx, catIdx: targetCatIdx } : null;
-  renderGearPool();
-  openModal('modal-gear-pool');
-  setTimeout(() => {
-    const inp = document.getElementById('gear-pool-new');
-    if (inp) inp.focus();
-  }, 100);
-}
-
-function renderGearPool() {
-  const p = currentProject();
-  const pool = p.gearPool || [];
-  const list = document.getElementById('gear-pool-list');
-  if (!list) return;
-  
-  // Show/Hide target selector
-  let targetHtml = '';
-  const target = window._gearCheckoutTarget;
-  if (p.gearList && p.gearList.length > 0) {
-    targetHtml = `
-      <div style="margin-bottom:15px;padding:10px;background:var(--surface3);border-radius:var(--radius);font-size:11px;display:flex;align-items:center;gap:10px">
-        <div style="color:var(--text3);white-space:nowrap">Check out to:</div>
-        <select class="form-select" style="flex:1;font-size:11px;padding:4px 8px" onchange="_setGearCheckoutTarget(this.value)">
-          <option value="">— Select Destination —</option>
-          ${p.gearList.map((day, dIdx) => 
-            day.categories.map((cat, cIdx) => `
-              <option value="${dIdx}:${cIdx}" ${target && target.dayIdx===dIdx && target.catIdx===cIdx ? 'selected' : ''}>
-                ${day.label} > ${cat.name}
-              </option>
-            `).join('')
-          ).join('')}
-        </select>
-      </div>
-    `;
-  }
-
-  if (pool.length === 0) {
-    list.innerHTML = `
-      ${targetHtml}
-      <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Pool is empty. Add equipment you use frequently.</div>
-    `;
-    return;
-  }
-  
-  list.innerHTML = targetHtml + pool.map((item, idx) => `
-    <div class="gear-pool-item" style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;gap:12px" onclick="checkoutGearItem(${idx})">
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:12px;color:var(--text)">${(item.name||'').replace(/</g,'&lt;')}</div>
-        ${item.category ? `<div style="font-size:10px;color:var(--text3);text-transform:uppercase">${item.category}</div>` : ''}
-      </div>
-      <button class="btn-ghost" style="padding:4px 8px;font-size:10px" onclick="event.stopPropagation();removeGearFromPool(${idx})">🗑</button>
-    </div>
-  `).join('');
-}
-
-function _setGearCheckoutTarget(val) {
-  if (!val) { window._gearCheckoutTarget = null; return; }
-  const [dIdx, cIdx] = val.split(':').map(Number);
-  window._gearCheckoutTarget = { dayIdx: dIdx, catIdx: cIdx };
-}
-
-function addGearToPool() {
-  const input = document.getElementById('gear-pool-new');
-  if (!input) return;
-  const name = input.value.trim();
-  if (!name) return;
-  
-  const p = currentProject();
-  if (!p.gearPool) p.gearPool = [];
-  p.gearPool.push({ name, category: '' });
-  input.value = '';
-  saveStore();
-  renderGearPool();
-}
-
-function removeGearFromPool(idx) {
-  const p = currentProject();
-  p.gearPool.splice(idx, 1);
-  saveStore();
-  renderGearPool();
-}
-
-function checkoutGearItem(poolIdx) {
-  const p = currentProject();
-  const item = p.gearPool[poolIdx];
-  const target = window._gearCheckoutTarget;
-  
-  if (target && p.gearList[target.dayIdx] && p.gearList[target.dayIdx].categories[target.catIdx]) {
-    p.gearList[target.dayIdx].categories[target.catIdx].items.push({ name: item.name, pre: false, post: false });
-    saveStore();
-    renderEquipment(p);
-    showToast(`Checked out ${item.name}`, 'success');
-    closeModal('modal-gear-pool');
-  } else {
-    showToast('Select a destination day/category first.', 'info');
-  }
-}

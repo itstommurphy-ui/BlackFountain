@@ -45,6 +45,12 @@ async function _startApp() {
   try {
     await loadStore();
     initAutoSave();
+    // Wait for views to be loaded before showing dashboard
+    if (window.viewLoader?.preloadAllViews) {
+      await window.viewLoader.preloadAllViews();
+    }
+    // Show the dashboard view on initial load
+    showView('dashboard');
     renderDashboard();
   } catch(e) {
     console.error('[_startApp] init failed:', e);
