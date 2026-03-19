@@ -1404,6 +1404,7 @@ async function loadStore() {
   let loaded = null;
   let migrateFromLS = false;
   let localFileBlobMap = {};
+  let loadSource = 'none';
 
   // Always load IDB first — it holds file blobs that never go to Supabase
   try {
@@ -1416,6 +1417,7 @@ async function loadStore() {
     });
     if (idbData) {
       loaded = idbData;
+      loadSource = 'IndexedDB';
       (idbData.files || []).forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
     }
   } catch(e) {
@@ -1428,6 +1430,7 @@ async function loadStore() {
       const cloudData = await sbPullStore();
       if (cloudData && cloudData.projects !== undefined) {
         loaded = cloudData; // cloud wins for project/contact/settings data
+        loadSource = 'Supabase';
       } else if (loaded) {
         // Cloud is empty — upload what we have locally
         console.log('[loadStore] Cloud empty, uploading local data to Supabase');
@@ -1442,9 +1445,15 @@ async function loadStore() {
     // First run or IDB unavailable — try localStorage
     try {
       const raw = localStorage.getItem('blackfountain_v1');
-      if (raw) { loaded = JSON.parse(raw); migrateFromLS = true; }
+      if (raw) { 
+        loaded = JSON.parse(raw); 
+        loadSource = 'localStorage';
+        migrateFromLS = true; 
+      }
     } catch(e) {}
   }
+
+  console.log(`[loadStore] Loaded ${loaded ? loaded.projects?.length || 0 : 0} projects from ${loadSource}`);
 
   if (loaded) {
     Object.assign(store, loaded);
@@ -1516,6 +1525,21 @@ async function loadStore() {
       localStorage.removeItem('blackfountain_v1');
       console.log('[loadStore] migrated data from localStorage to IndexedDB');
     }
+  }
+
+  // CRITICAL: Mark store as loaded and trigger dashboard re-render
+  if (typeof storeLoaded !== 'undefined') {
+    storeLoaded = true;
+    window.dispatchEvent(new CustomEvent('storeLoaded'));
+    
+    // If dashboard is active, force re-render
+    if (document.getElementById('view-dashboard')?.classList.contains('active')) {
+      renderDashboard();
+    }
+  }
+
+  if (store.projects && store.projects.length === 0) {
+    console.warn('[loadStore] No projects found after full load/migration');
   }
 }
 

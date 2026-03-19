@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v23';
+const CACHE_NAME = 'blackfountain-v23-dev-' + Math.floor(Date.now() / 86400000); // Daily auto-bust for dev
 const urlsToCache = [
   '/',
   '/index.html',

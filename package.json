@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx serve . --listen 3000 --no-clipboard",
-    "dev:python": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000",
+    "dev-serve": "npx serve . --listen 3000 --no-clipboard",
     "lint": "eslint js/**/*.js"
   },
   "devDependencies": {

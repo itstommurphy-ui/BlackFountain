@@ -53,6 +53,7 @@ function showView(name) {
     renderSettings();
   }
   setTimeout(initTableScrollbars, 0);
+  updateHash('dashboard', name);
 }
 
 function showProjectView(id) {
@@ -97,9 +98,13 @@ function showProjectView(id) {
   renderSidebarProjects();
 
   showSection('overview');
+  updateHash('project', id);
 }
 
 function showSection(name) {
+  if (store.currentProjectId) {
+    updateHash('project', store.currentProjectId, name);
+  }
   _activeSection = name;
   // Record section visit immediately (silently, no save-indicator flash)
   if (name !== 'overview') {
@@ -151,7 +156,28 @@ function setDashboardFilter(status) {
 }
 
 function renderDashboard() {
+  // Guard: Wait for store to load before rendering
+  if (typeof storeLoaded !== 'undefined' && !storeLoaded) {
+    const grid = document.getElementById('projects-grid');
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3);">
+          <div style="font-size:48px;margin-bottom:16px;">⚡</div>
+          <div style="font-size:18px;font-weight:500;margin-bottom:8px;color:var(--text2);">Loading projects...</div>
+          <div style="font-size:13px;">Loading from cloud storage</div>
+        </div>
+      `;
+    }
+    return;
+  }
+
   const projects = store.projects || [];
+  
+  // Safety check + logging
+  if (projects.length === 0) {
+    console.warn('[renderDashboard] No projects found after store load');
+  }
+  
   const statTotal = document.getElementById('stat-total');
   if (statTotal) statTotal.textContent = projects.length;
   const statPre = document.getElementById('stat-pre');
@@ -197,8 +223,8 @@ function renderDashboard() {
       </div>
       <div class="project-card-footer">
         <div class="project-card-tags">
-          <span class="tag">${p.cast.length} cast</span>
-          <span class="tag">${p.unit.length} crew</span>
+          <span class="tag">${p.cast?.length || 0} cast</span>
+          <span class="tag">${p.unit?.length || 0} crew</span>
           ${p.genre ? `<span class="tag">${p.genre}</span>` : ''}
         </div>
       </div>
