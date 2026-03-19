@@ -828,31 +828,36 @@ function updateStorageDisplay() {
 
 // ── Starred Files ─────────────────────────────────────────────────────────────
 function toggleStarFile(fileId) {
-  console.log('[Star] Toggle star for file:', fileId);
   const file = (store.files || []).find(f => f.id === fileId);
-  if (!file) {
-    console.log('[Star] File not found');
-    return;
-  }
+  if (!file) return;
   
-  console.log('[Star] Current starred state:', file.starred);
-  
-  if (!file.starred) {
-    file.starred = true;
+  // Toggle starred state
+  file.starred = !file.starred && file.starred !== true;
+  if (file.starred) {
     file.starredAt = new Date().toISOString();
     showToast('Added to starred', 'success');
   } else {
-    file.starred = false;
     file.starredAt = null;
     showToast('Removed from starred', 'success');
   }
   
-  console.log('[Star] New starred state:', file.starred);
-  console.log('[Star] Calling saveStore...');
   saveStore();
-  console.log('[Star] Calling renderFiles...');
-  renderFiles();
-  console.log('[Star] Done');
+  
+  // Update just the star element directly instead of full re-render
+  const starEl = document.querySelector(`[data-file-id="${fileId}"] .file-card-star`);
+  if (starEl) {
+    starEl.textContent = file.starred ? '⭐' : '☆';
+    const cardEl = starEl.closest('.file-card');
+    if (cardEl) {
+      cardEl.classList.toggle('starred', file.starred);
+    }
+  }
+  
+  // Also update list view if present
+  const listStarEl = document.querySelector(`[data-file-id="${fileId}"] .file-list-star`);
+  if (listStarEl) {
+    listStarEl.textContent = file.starred ? '⭐' : '☆';
+  }
 }
 
 function getStarredFiles() {
