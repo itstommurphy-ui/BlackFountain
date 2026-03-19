@@ -221,6 +221,13 @@ function renderFiles() {
     });
   }
 
+  // Ensure file upload drop zone is attached
+  const uploadZone = document.getElementById('file-upload-zone');
+  if (uploadZone) {
+    uploadZone.classList.add('drop-zone');
+    _makeDrop(uploadZone, handleFileUpload);
+  }
+
   let files = (store.files || []);
   if (projectFilter !== 'all') {
     files = files.filter(f => fileProjectIds(f).includes(projectFilter));
@@ -477,41 +484,24 @@ function openManageFile(id) {
   if (!file) return;
 
   document.getElementById('manage-file-id').value = id;
-  document.getElementById('manage-file-name').value = file.name;
-  document.getElementById('manage-file-desc').value = file.description || '';
 
   const cats = fileCategories(file);
+  const isImage = file.data && file.data.startsWith('data:image');
+  const nameNoExt = file.name.replace(/\.[^.]+$/, '');
+  const suggestedCat = cats[0] || 'other';
 
   // Build category checkboxes
-  const catsEl = document.getElementById('manage-file-cats');
-  catsEl.innerHTML = Object.entries(FILE_CATEGORIES).map(([k, v]) =>
+  const catChecks = Object.entries(FILE_CATEGORIES).map(([k, v]) =>
     `<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;">
       <input type="checkbox" data-mfcat="${k}" ${cats.includes(k) ? 'checked' : ''} style="width:13px;height:13px;" onchange="mfCatChange()">
       ${v.icon} ${v.label}
     </label>`
   ).join('');
 
-  // People tags
-  const tagsEl = document.getElementById('mf-people-tags');
-  tagsEl.innerHTML = '';
-  document.getElementById('mf-people-input').value = '';
-  document.getElementById('mf-people-dropdown').style.display = 'none';
-  (file.people || []).forEach(name => {
-    // Find their role from the project contacts if available
-    let role = '';
-    fileProjectIds(file).forEach(pid => {
-      const proj = store.projects.find(p => p.id === pid);
-      const contact = (proj?.contacts || []).find(c => c.name?.toLowerCase() === name.toLowerCase());
-      if (contact && contact.roles && contact.roles.length) role = contact.roles.join(', ');
-    });
-    mfAddPersonTag(name, role);
-  });
-
   // Project dropdown
   const currentPids = fileProjectIds(file);
   const activePid = currentPids[0] || '';
-  document.getElementById('mf-project-select').innerHTML =
-    `<option value="">— No project —</option>` +
+  const projectOptions = `<option value="">— No project —</option>` +
     store.projects.map(proj =>
       `<option value="${proj.id}" ${proj.id === activePid ? 'selected' : ''}>${proj.title || 'Untitled Project'}</option>`
     ).join('');
@@ -527,19 +517,80 @@ function openManageFile(id) {
   const currentLoc = file.location || '';
   if (currentLoc) allLocs.add(currentLoc);
 
-  const locSel = document.getElementById('mf-location-select');
-  locSel.innerHTML = `<option value="">— None —</option>` +
+  const locationOptions = `<option value="">— None —</option>` +
     [...allLocs].sort().map(n => `<option value="${n}" ${n === currentLoc ? 'selected' : ''}>${n}</option>`).join('') +
     `<option value="__new__">+ Create new location…</option>`;
-  document.getElementById('mf-location-new').value = '';
-  document.getElementById('mf-location-new-row').style.display = 'none';
 
-  const isImage = file.data && file.data.startsWith('data:image');
-  document.getElementById('mf-alt-input').value = file.altText || '';
-  document.getElementById('mf-alt-section').style.display = isImage ? 'block' : 'none';
+  // People tags
+  let peopleTagsHtml = '';
+  (file.people || []).forEach(name => {
+    let role = '';
+    fileProjectIds(file).forEach(pid => {
+      const proj = store.projects.find(p => p.id === pid);
+      const contact = (proj?.contacts || []).find(c => c.name?.toLowerCase() === name.toLowerCase());
+      if (contact && contact.roles && contact.roles.length) role = contact.roles.join(', ');
+    });
+    const roleText = role ? ` <span style="color:var(--text3);font-size:9px;">(${role})</span>` : '';
+    peopleTagsHtml += `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 6px;background:var(--accent);color:#fff;border-radius:3px;font-size:10px;">${name}${roleText}<span style="cursor:pointer;margin-left:2px;" onclick="this.parentElement.remove()">×</span></span>`;
+  });
 
-  // Show/hide conditional sections
-  mfCatChange();
+  // Build the content HTML similar to upload modal
+  const contentEl = document.getElementById('manage-file-content');
+  contentEl.innerHTML = `
+    <div style="border:1px solid var(--border2);border-radius:var(--radius);padding:12px;background:var(--surface2);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div data-thumb style="width:52px;height:52px;border-radius:6px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">
+          ${file.data ? getFileIcon(file) : getFileIcon({name:file.name, data:'', category:suggestedCat})}
+        </div>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name} · ${formatFileSize(file.size)}</span>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" id="manage-file-name" type="text" value="${nameNoExt}" style="font-size:12px;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Link to Project</label>
+        <select class="form-select" id="mf-project-select" style="font-size:12px;" onchange="mfProjectChange()">
+          ${projectOptions}
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Categories</label>
+        <div id="manage-file-cats" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:8px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);">
+          ${catChecks}
+        </div>
+      </div>
+      <div id="mf-people-section" style="display:${cats.includes('people')?'block':'none'};margin-bottom:10px;">
+        <label class="form-label">Who's in this?</label>
+        <div id="mf-people-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:10px;">
+          ${peopleTagsHtml}
+        </div>
+        <div style="position:relative;">
+          <input class="form-input" id="mf-people-input" placeholder="Search or add person…" style="font-size:12px;" autocomplete="off"
+            oninput="mfPeopleSearch(this)" onkeydown="mfPeopleKey(event)">
+          <div id="mf-people-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:150px;overflow-y:auto;box-shadow:var(--shadow);"></div>
+        </div>
+        <div style="margin-top:5px;font-size:10px;color:var(--text3);">New people will be added to project contacts on save.</div>
+      </div>
+      <div id="mf-location-section" style="display:${cats.includes('location')?'block':'none'};margin-bottom:10px;">
+        <label class="form-label">Linked Location</label>
+        <select class="form-select" id="mf-location-select" style="font-size:12px;" onchange="mfLocationSelectChange()">
+          ${locationOptions}
+        </select>
+        <div id="mf-location-new-row" style="display:none;margin-top:6px;">
+          <input class="form-input" id="mf-location-new" placeholder="New location name…" style="font-size:12px;">
+          <div style="margin-top:4px;font-size:10px;color:var(--text3);">Will be added to this project's locations.</div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Description / Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="manage-file-desc" type="text" value="${file.description || ''}" placeholder="e.g. Final draft, Location scout photos…" style="font-size:12px;">
+      </div>
+      <div id="mf-alt-section" style="display:${isImage?'block':'none'};">
+        <label class="form-label">Alt Text <span style="color:var(--text3);font-weight:400">(for accessibility)</span></label>
+        <input class="form-input" id="mf-alt-input" value="${file.altText || ''}" placeholder="Describe the image for screen readers" style="font-size:12px;">
+      </div>
+    </div>`;
 
   openModal('modal-manage-file');
 }
@@ -1233,8 +1284,7 @@ function _makeDrop(el, fn) {
   });
 }
 
-// Main file upload zone (Files tab)
-_makeDrop(document.getElementById('file-upload-zone'), handleFileUpload);
+// Main file upload zone (Files tab) - now attached in renderFiles() after view is loaded
 
 // Overview project files area
 const ovFilesGrid = document.getElementById('overview-files-grid');

@@ -54,14 +54,28 @@ function getFileCategory(filename) {
 }
 
 function getFileIcon(file) {
-  if (file.data && file.data.startsWith('data:image')) {
-    return `<img src="${file.data}" alt="${file.altText || file.name}">`;
+  if (file.data) {
+    // Check for image
+    if (file.data.startsWith('data:image')) {
+      return `<img src="${file.data}" alt="${file.altText || file.name}">`;
+    }
+    // Check for video
+    if (file.data.startsWith('data:video') || file.type?.startsWith('video/')) {
+      return `<video src="${file.data}" controls preload="metadata" style="width:100%;height:100%;object-fit:contain;max-height:120px;"></video>`;
+    }
+    // Check for audio
+    if (file.data.startsWith('data:audio') || file.type?.startsWith('audio/')) {
+      return `<audio src="${file.data}" controls preload="none" style="width:100%;"></audio>`;
+    }
   }
   const ext = (file.name || '').split('.').pop().toLowerCase();
   if (ext === 'pdf') return '📄';
   if (['doc','docx'].includes(ext)) return '📝';
   if (ext === 'txt') return '📃';
   if (['fdx'].includes(ext)) return '🎞️';
+  // Check for audio/video extensions even if data is missing
+  if (['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) return '🎵';
+  if (['mp4','mov','avi','mkv','webm'].includes(ext)) return '🎬';
   return FILE_CATEGORIES[file.category]?.icon || '📁';
 }
 

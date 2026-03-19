@@ -121,61 +121,14 @@
       <!-- MANAGE FILE MODAL -->
       <!-- EDIT FILE MODAL -->
       <div class="modal-overlay" id="modal-manage-file">
-        <div class="modal" style="max-width:500px">
+        <div class="modal" style="max-width:520px">
           <div class="modal-header">
             <h3>EDIT FILE</h3>
             <button class="modal-close" onclick="closeModal('modal-manage-file')">✕</button>
           </div>
           <input type="hidden" id="manage-file-id">
-          <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0 20px;">
-
-            <div>
-              <label class="form-label">Link to Project</label>
-              <select class="form-select" id="mf-project-select" style="font-size:12px;" onchange="mfProjectChange()"></select>
-            </div>
-
-            <div>
-              <label class="form-label">Display Name</label>
-              <input class="form-input" id="manage-file-name" type="text" style="font-size:12px;">
-            </div>
-
-            <div>
-              <label class="form-label">Categories</label>
-              <div id="manage-file-cats" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:8px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);"></div>
-            </div>
-
-            <div id="mf-people-section" style="display:none;">
-              <label class="form-label">Who's in this?</label>
-              <div id="mf-people-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:6px;"></div>
-              <div style="position:relative;">
-                <input class="form-input" id="mf-people-input" placeholder="Search or add person…" style="font-size:12px;" autocomplete="off"
-                  oninput="mfPeopleSearch(this)" onkeydown="mfPeopleKey(event)">
-                <div id="mf-people-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:100;max-height:150px;overflow-y:auto;box-shadow:var(--shadow);"></div>
-              </div>
-              <div style="margin-top:5px;font-size:10px;color:var(--text3);">New people will be added to project contacts on save.</div>
-            </div>
-
-            <div id="mf-location-section" style="display:none;">
-              <label class="form-label">Linked Location</label>
-              <select class="form-select" id="mf-location-select" style="font-size:12px;" onchange="mfLocationSelectChange()">
-                <option value="">— None —</option>
-              </select>
-              <div id="mf-location-new-row" style="display:none;margin-top:6px;">
-                <input class="form-input" id="mf-location-new" placeholder="New location name…" style="font-size:12px;">
-                <div style="margin-top:4px;font-size:10px;color:var(--text3);">Will be added to this project's locations.</div>
-              </div>
-            </div>
-
-            <div>
-              <label class="form-label">Description / Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
-              <input class="form-input" id="manage-file-desc" type="text" placeholder="e.g. Final draft, Location scout photos…" style="font-size:12px;">
-            </div>
-
-            <div id="mf-alt-section" style="display:none;">
-              <label class="form-label">Alt Text <span style="color:var(--text3);font-weight:400">(for accessibility)</span></label>
-              <input class="form-input" id="mf-alt-input" placeholder="Describe the image for screen readers" style="font-size:12px;">
-            </div>
-
+          <div id="manage-file-content" style="display:flex;flex-direction:column;gap:14px;padding:4px 0 20px;max-height:55vh;overflow-y:auto;padding-right:4px;">
+            <!-- File content will be rendered here by openManageFile -->
           </div>
           <div class="form-actions">
             <button class="btn" onclick="closeModal('modal-manage-file')">Cancel</button>
