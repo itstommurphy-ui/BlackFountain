@@ -362,7 +362,7 @@ function renderFiles() {
          ondragend="handleFileDragEnd(event)"
          oncontextmenu="showContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
-      <div class="file-card-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
+      <div class="file-card-star" onclick="event.stopPropagation();event.preventDefault();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
         <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Move to project">🔀</button>
@@ -391,7 +391,7 @@ function renderFiles() {
          ondragend="handleFileDragEnd(event)"
          oncontextmenu="showContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
-      <div class="file-list-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
+      <div class="file-list-star" onclick="event.stopPropagation();event.preventDefault();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
       <div class="file-list-icon">${getFileIcon(file)}</div>
       <div class="file-list-name" title="${file.name}">${file.name}</div>
       <div class="file-list-meta">
