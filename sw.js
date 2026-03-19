@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v24';
+const CACHE_NAME = 'blackfountain-v25';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -64,6 +64,27 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
+  // For JS and HTML files, try network first to get updates
+  const isJsOrHtml = event.request.url.endsWith('.js') || 
+                     event.request.url.endsWith('.html') ||
+                     event.request.url.includes('/html/');
+
+  if (isJsOrHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Clone and cache the fresh response
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseToCache));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other assets, use cache-first strategy
   event.respondWith(
     caches.match(event.request)
       .then(response => {

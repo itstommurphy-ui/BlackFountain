@@ -14,7 +14,13 @@ function showView(name) {
     }
     return;
   }
-  
+
+  // Save current view to localStorage for persistence across refreshes
+  try {
+    localStorage.setItem('bf_currentView', JSON.stringify({ type: 'global', name: name }));
+    console.log('[ViewRestore] Saved global view:', name);
+  } catch (e) {}
+
   // Clean up canvas mode if leaving moodboards
   if (name !== 'moodboards') {
     document.getElementById('content')?.classList.remove('mb-content-canvas');
@@ -74,6 +80,12 @@ function showProjectView(id) {
   const p = currentProject();
   if (!p) return;
 
+  // Save current view to localStorage for persistence across refreshes
+  try {
+    localStorage.setItem('bf_currentView', JSON.stringify({ type: 'project', projectId: id }));
+    console.log('[ViewRestore] Saved project view:', id);
+  } catch (e) {}
+
   // Clean up moodboard canvas/fullscreen mode if leaving it
   document.getElementById('content')?.classList.remove('mb-content-canvas');
   document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
@@ -115,6 +127,15 @@ function showProjectView(id) {
 
 function showSection(name) {
   _activeSection = name;
+  // Save current section to localStorage for persistence across refreshes
+  try {
+    const currentView = JSON.parse(localStorage.getItem('bf_currentView') || '{}');
+    if (currentView.type === 'project') {
+      localStorage.setItem('bf_currentView', JSON.stringify({ type: 'project', projectId: currentView.projectId, section: name }));
+      console.log('[ViewRestore] Saved project section:', name, 'for project:', currentView.projectId);
+    }
+  } catch (e) {}
+
   // Record section visit immediately (silently, no save-indicator flash)
   if (name !== 'overview') {
     const p = currentProject();

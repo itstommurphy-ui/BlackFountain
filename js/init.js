@@ -45,13 +45,54 @@ async function _startApp() {
   try {
     await loadStore();
     initAutoSave();
-    // Wait for views to be loaded before showing dashboard
+    // Wait for views to be loaded before showing the appropriate view
     if (window.viewLoader?.preloadAllViews) {
       await window.viewLoader.preloadAllViews();
     }
-    // Show the dashboard view on initial load
-    showView('dashboard');
-    renderDashboard();
+
+    // Try to restore the previously active view from localStorage
+    let restoredView = null;
+    try {
+      const savedView = localStorage.getItem('bf_currentView');
+      console.log('[ViewRestore] Checking for saved view, found:', savedView);
+      if (savedView) {
+        restoredView = JSON.parse(savedView);
+        console.log('[ViewRestore] Parsed view:', restoredView);
+      }
+    } catch (e) {
+      console.warn('Could not restore view:', e);
+    }
+
+    if (restoredView) {
+      if (restoredView.type === 'global') {
+        // Restore global view (dashboard, contacts, etc.)
+        showView(restoredView.name);
+        // Also trigger render for the restored view
+        if (restoredView.name === 'dashboard') {
+          renderDashboard();
+        }
+      } else if (restoredView.type === 'project') {
+        // Restore project view
+        const projectExists = store.projects?.some(p => p.id === restoredView.projectId);
+        if (projectExists) {
+          showProjectView(restoredView.projectId);
+          // Restore the specific section if available
+          if (restoredView.section) {
+            showSection(restoredView.section);
+          } else {
+            showSection('overview');
+          }
+        } else {
+          // Project no longer exists, fall back to dashboard
+          showView('dashboard');
+          renderDashboard();
+        }
+      }
+    } else {
+      // No saved view, show dashboard as default
+      showView('dashboard');
+      renderDashboard();
+    }
   } catch(e) {
     console.error('[_startApp] init failed:', e);
   } finally {
