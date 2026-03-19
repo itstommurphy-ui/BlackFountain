@@ -2472,8 +2472,8 @@
   [data-font-size="double"]     .mb-fs-btn { zoom: 0.5;    }
 
   /* Budget toolbar overflow fix at 2x zoom */
-  [data-font-size="double"] #section-budget > div:nth-child(3) { flex-wrap: wrap !important; }
-  [data-font-size="double"] #section-budget > div:nth-child(3) > div { flex-wrap: wrap !important; }
+  [data-font-size="double"] #section-budget > div:nth-child(2) { flex-wrap: wrap !important; }
+  [data-font-size="double"] #section-budget > div:nth-child(2) > div { flex-wrap: wrap !important; }
 
   /* Budget quick-add bars - allow wrapping at 2x zoom */
   [data-font-size="double"] .bud-quick-add-bar { flex-wrap: wrap !important; gap: 8px !important; }
