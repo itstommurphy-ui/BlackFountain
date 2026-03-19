@@ -828,8 +828,14 @@ function updateStorageDisplay() {
 
 // ── Starred Files ─────────────────────────────────────────────────────────────
 function toggleStarFile(fileId) {
+  console.log('[Star] Toggle star for file:', fileId);
   const file = (store.files || []).find(f => f.id === fileId);
-  if (!file) return;
+  if (!file) {
+    console.log('[Star] File not found');
+    return;
+  }
+  
+  console.log('[Star] Current starred state:', file.starred);
   
   if (!file.starred) {
     file.starred = true;
@@ -840,8 +846,13 @@ function toggleStarFile(fileId) {
     file.starredAt = null;
     showToast('Removed from starred', 'success');
   }
+  
+  console.log('[Star] New starred state:', file.starred);
+  console.log('[Star] Calling saveStore...');
   saveStore();
+  console.log('[Star] Calling renderFiles...');
   renderFiles();
+  console.log('[Star] Done');
 }
 
 function getStarredFiles() {
