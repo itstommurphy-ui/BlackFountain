@@ -1073,14 +1073,45 @@ function openRenameFolder(folderId) {
   const folder = getFolderById(folderId);
   if (!folder) return;
   
-  showPromptDialog('Enter new folder name:', 'Rename', (vals) => {
-    const newName = vals._pdVal;
-    if (newName && newName.trim() !== folder.name) {
-      renameFolder(folderId, newName.trim());
+  // Create inline modal for renaming
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" style="max-width:400px">
+      <div class="modal-header">
+        <h3>Rename Folder</h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div class="form-group" style="margin:16px 0;">
+        <label class="form-label">Folder name</label>
+        <input type="text" class="form-input" id="_rename-folder-input" value="${folder.name}">
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" id="_rename-folder-confirm">Rename</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  
+  const input = document.getElementById('_rename-folder-input');
+  setTimeout(() => input.focus(), 50);
+  
+  document.getElementById('_rename-folder-confirm').onclick = () => {
+    const newName = input.value.trim();
+    if (newName && newName !== folder.name) {
+      renameFolder(folderId, newName);
       renderFiles();
       showToast('Folder renamed', 'success');
     }
-  }, { defaultValue: folder.name, title: 'Rename Folder' });
+    overlay.remove();
+  };
+  
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('_rename-folder-confirm').click();
+    }
+  };
 }
 
 function openDeleteFolder(folderId) {
