@@ -39,19 +39,17 @@
       </div>
     </div>
     <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">Data Backup</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Export your entire project database as a JSON file. This allows you to restore your data if browser cache is cleared or if you want to transfer data to another device.</p>
-      <button class="btn btn-primary" onclick="exportStore()">
-        <span class="icon">📥</span> Export Data (JSON)
-      </button>
-    </div>
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">Import Data</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Restore your project database from a previously exported JSON file. <strong>Warning:</strong> This will replace all current data.</p>
-      <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
-      <button class="btn" onclick="document.getElementById('import-file-input').click()">
-        <span class="icon">📤</span> Import Data (JSON)
-      </button>
+      <h3 style="margin-top:0">Data Management</h3>
+      <p style="color:var(--text2);margin-bottom:16px">Backup and restore your project database. Export creates a JSON file you can use to restore data later.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportStore()">
+          <span class="icon">📥</span> Export Data
+        </button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
+        <button class="btn" onclick="document.getElementById('import-file-input').click()">
+          <span class="icon">📤</span> Import Data
+        </button>
+      </div>
     </div>
     <div class="card">
       <h3 style="margin-top:0">Storage Info</h3>

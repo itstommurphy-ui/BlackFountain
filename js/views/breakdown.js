@@ -158,8 +158,9 @@ function _sbStripColor(intExt, tod) {
 }
 
 function _sbPageEighths(scene) {
-  const chars = (scene.end - scene.start);
-  const eighths = Math.max(1, Math.round(chars / 212)); // ~1700 chars/page ÷ 8
+  // 1/8 page = ~6.75 lines (based on industry standard: 1 inch ≈ 1/8 page)
+  const lineCount = scene.lineCount || 1;
+  const eighths = Math.max(1, Math.round(lineCount / 6.75));
   return eighths >= 8 ? Math.floor(eighths/8) + '-' + (eighths%8||'0') + '/8' : eighths + '/8';
 }
 
@@ -892,17 +893,18 @@ function parseBreakdownScenes(text) {
   const headingRe = /^(?:\d+[A-Za-z]?\s*[-.]?\s+)?(?:\.)?(?:INT(?:ERIOR)?\.?(?:\/EXT(?:ERIOR)?\.?)?|EXT(?:ERIOR)?\.?(?:\/INT(?:ERIOR)?\.?)?|I\/E\.?)[\s.:\-]\S/i;
   const lines = text.split('\n');
   const scenes = [];
-  let current = null, offset = 0;
+  let current = null, offset = 0, lineIndex = 0;
   for (const line of lines) {
     const trimmed = line.trim();
     if (headingRe.test(trimmed)) {
-      if (current) { current.end = offset; scenes.push(current); }
-      current = { heading: trimmed, start: offset, end: -1, ...parseSceneHeading(trimmed) };
+      if (current) { current.end = offset; current.lineCount = lineIndex - current.startLineIndex; scenes.push(current); }
+      current = { heading: trimmed, start: offset, end: -1, startLineIndex: lineIndex, ...parseSceneHeading(trimmed) };
     }
+    lineIndex++;
     offset += line.length + 1;
   }
-  if (current) { current.end = text.length; scenes.push(current); }
-  if (!scenes.length && text.trim()) scenes.push({ heading: 'Full Script', start: 0, end: text.length, intExt: null, location: null, tod: null, sceneNumber: null });
+  if (current) { current.end = text.length; current.lineCount = lineIndex - current.startLineIndex; scenes.push(current); }
+  if (!scenes.length && text.trim()) scenes.push({ heading: 'Full Script', start: 0, end: text.length, intExt: null, location: null, tod: null, sceneNumber: null, lineCount: lines.length, startLineIndex: 0 });
   return scenes;
 }
 
@@ -1007,9 +1009,10 @@ function renderBreakdownReport(p, scenes) {
             </div>
           </div>`).join('')
       : `<span style="font-size:11px;color:var(--text3);opacity:0.5">No elements tagged</span>`;
+    const pageLen = _sbPageEighths(scene);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
       <div onclick="scrollBreakdownToScene(${scene.start})" style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:5px" title="Jump to scene in script">
-        <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}
+        <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}<span style="margin-left:auto;font-size:10px;color:#E5C07B;font-weight:600">${pageLen} pgs</span>
       </div>
       <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">${body}</div>
     </div>`;
@@ -1127,9 +1130,7 @@ function scrollBreakdownToScene(sceneStart) {
   if (!sv) return;
   const heading = sv.querySelector(`[data-scene-start="${sceneStart}"]`);
   if (!heading) return;
-  const headingRect = heading.getBoundingClientRect();
-  const svRect = sv.getBoundingClientRect();
-  sv.scrollTop = sv.scrollTop + headingRect.top - svRect.top - 8;
+  sv.scrollTop = heading.offsetTop;
 }
 
 // Tag context menu

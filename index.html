@@ -85,9 +85,15 @@
           <input type="text" id="global-search" aria-label="Search projects and data" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
           <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
         </div>
-        <button class="btn btn-sm" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</button>
-        <button class="btn btn-sm" onclick="manualSave()">💾 Save</button>
-        <button class="btn btn-sm" onclick="exportData()">⬇ Export</button>
+        <div class="dropdown">
+          <button class="btn btn-sm dropdown-toggle">⚙ Actions</button>
+          <div class="dropdown-menu" style="right:0;left:auto">
+            <div class="dropdown-item" onclick="manualSave()">💾 Save Data</div>
+            <div class="dropdown-item" onclick="exportData()">⬇ Export Data</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</div>
+          </div>
+        </div>
         <button class="btn btn-sm btn-primary" onclick="openNewProjectModal()">+ New Project</button>
       </div>
     </header>

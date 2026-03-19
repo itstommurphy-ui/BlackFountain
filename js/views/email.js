@@ -21,6 +21,69 @@ function emailAllCast() {
   window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
 }
 
+function emailAllExtras() {
+  const p = currentProject();
+  if (!p) return;
+  
+  const emails = (p.extras || []).map(c => c.email).filter(Boolean);
+  if (!emails.length) {
+    showToast('No email addresses found for extras.', 'info');
+    return;
+  }
+  
+  const to = emails.join(',');
+  const subject = encodeURIComponent(p.title + ' - Extras Communication');
+  const body = encodeURIComponent('Hi,\n\nI wanted to reach out regarding ' + p.title + '.\n\nBest regards');
+  
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+}
+
+function emailSelectedExtras() {
+  const p = currentProject();
+  if (!p) return;
+  
+  const emails = [...document.querySelectorAll('.extras-cb:checked')]
+    .map(cb => p.extras[parseInt(cb.dataset.idx)]?.email).filter(Boolean);
+  if (!emails.length) {
+    showToast('No email addresses in selection', 'info');
+    return;
+  }
+  
+  const subject = encodeURIComponent(p.title + ' - Extras Communication');
+  const body = encodeURIComponent('Hi,\n\nI wanted to reach out regarding ' + p.title + '.\n\nBest regards');
+  
+  window.location.href = 'mailto:' + emails.join(',') + '?subject=' + subject + '&body=' + body;
+}
+
+function showEmailDeptModal() {
+  const p = currentProject();
+  if (!p) return;
+  
+  // Get unique departments from crew
+  const depts = [...new Set((p.unit || []).map(m => m.dept || 'Other'))].sort();
+  if (!depts.length) {
+    showToast('No crew departments found', 'info');
+    return;
+  }
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'email-dept-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px 18px 18px;width:290px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:700">Email Department</span>
+        <button onclick="document.getElementById('email-dept-modal').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 12px">Select a department to email:</p>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">
+        ${depts.map(d => `<button class="btn btn-sm" style="justify-content:flex-start;text-align:left" onclick="emailCrewDept('${d}');document.getElementById('email-dept-modal').remove()">📧 ${d}</button>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
 function emailCallsheet(callsheetId) {
   const p = currentProject();
   if (!p) return;

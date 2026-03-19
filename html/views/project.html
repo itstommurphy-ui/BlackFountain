@@ -20,14 +20,13 @@
               <div class="dropdown">
                 <button class="dropdown-toggle">Project</button>
                 <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="openStoryModal()">📖 Story / Logline</div>
+                  <div class="dropdown-item" onclick="openProjectFiles()">📁 Project Files</div>
+                  <div class="dropdown-divider"></div>
                   <div class="dropdown-item" onclick="openEditProjectModal()">✎ Edit Project</div>
                   <div class="dropdown-item danger" onclick="deleteCurrentProject()">🗑 Delete Project</div>
                 </div>
               </div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm btn-ghost" onclick="openStoryModal()" title="Logline / synopsis / outline" style="font-size:11px">📖 Story</button>
-              <button class="btn btn-sm btn-ghost" onclick="openProjectFiles()" title="Project files" style="font-size:11px">📁 Files</button>
             </div>
           </div>
         </div>
@@ -173,7 +172,13 @@ Priority colour bar shows urgency">?</span>
                     <div class="dropdown-item" onclick="emailSelectedCast()">✉️ Email Selected</div>
                   </div>
                 </div>
-                <button class="btn btn-sm" onclick="emailAllCast()" title="Email all cast members">✉️ Email All</button>
+                <div class="dropdown">
+                  <button class="btn btn-sm dropdown-toggle">✉️ Email</button>
+                  <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="emailAllCast()">✉️ Email All Cast</div>
+                    <div class="dropdown-item" onclick="emailSelectedCast()">✉️ Email Selected</div>
+                  </div>
+                </div>
                 <button class="btn btn-primary btn-sm" onclick="addPersonnel('cast')">+ Add Cast</button>
               </div>
             </div>
@@ -189,6 +194,13 @@ Priority colour bar shows urgency">?</span>
               <h3 class="section-heading">SUPPORTING ARTISTS (EXTRAS)</h3>
               <div style="display:flex;gap:8px;align-items:center">
                 <button class="btn btn-sm btn-danger" id="extras-remove-sel-btn" style="display:none" onclick="removeSelectedPersonnel()">✕ Remove Selected</button>
+                <div class="dropdown">
+                  <button class="btn btn-sm dropdown-toggle">✉️ Email</button>
+                  <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="emailAllExtras()">✉️ Email All Extras</div>
+                    <div class="dropdown-item" onclick="emailSelectedExtras()">✉️ Email Selected</div>
+                  </div>
+                </div>
                 <button class="btn btn-primary btn-sm" onclick="addPersonnel('extras')">+ Add Extra</button>
               </div>
             </div>
@@ -215,7 +227,14 @@ Priority colour bar shows urgency">?</span>
                   <div class="dropdown-item danger" onclick="removeSelectedPersonnel()">✕ Remove Selected</div>
                 </div>
               </div>
-              <button class="btn btn-sm" onclick="emailAllCrew()">✉️ Email All</button>
+              <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle">✉️ Email</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="emailAllCrew()">✉️ Email All Crew</div>
+                  <div class="dropdown-item" onclick="emailSelectedCrew()">✉️ Email Selected</div>
+                  <div class="dropdown-item" onclick="showEmailDeptModal()">📧 Email Department</div>
+                </div>
+              </div>
               <button class="btn btn-primary btn-sm" onclick="addUnitMember()">+ Add Crew</button>
             </div>
           </div>
@@ -314,8 +333,13 @@ Priority colour bar shows urgency">?</span>
                 </div>
               </div>
               <button id="loc-remove-sel-btn" class="btn btn-sm btn-danger" onclick="removeSelectedLocations()" style="display:none">✕ Remove Selected</button>
-              <button class="btn btn-sm" onclick="addScoutingSheet()">+ Scouting Sheet</button>
-              <button class="btn btn-sm" onclick="addTechScout()">+ Tech Scout</button>
+              <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle">+ Add</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="addScoutingSheet()">📋 Scouting Sheet</div>
+                  <div class="dropdown-item" onclick="addTechScout()">📝 Tech Scout Checklist</div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="table-container" style="margin-bottom:20px">
@@ -449,8 +473,13 @@ Priority colour bar shows urgency">?</span>
             <h3 class="section-heading">RELEASE FORMS</h3>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="goto-hook"></span>
-              <button class="btn btn-sm" onclick="addRelease('talent')">+ Talent Release</button>
-              <button class="btn btn-sm" onclick="addRelease('location')">+ Location Release</button>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-primary dropdown-toggle">+ Add Release</button>
+                <div class="dropdown-menu">
+                  <div class="dropdown-item" onclick="addRelease('talent')">🎭 Talent Release</div>
+                  <div class="dropdown-item" onclick="addRelease('location')">📍 Location Release</div>
+                </div>
+              </div>
             </div>
           </div>
           <div id="releases-list"></div>
@@ -462,7 +491,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h3 class="section-heading" style="margin:0">SCRIPT & DOCUMENTS</h3>
             <div style="display:flex;gap:8px;align-items:center">
-              <!-- Script editor hidden (WIP) -->
               <span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="showSection('breakdown')">→ Script Breakdown</button>
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">

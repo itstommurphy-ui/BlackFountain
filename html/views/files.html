@@ -12,12 +12,16 @@
       </select>
       <button class="btn btn-sm btn-primary" onclick="_openCreateFolder()" title="Create new folder">📁 New Folder</button>
       
-      <!-- Quick Access -->
-      <span style="display:flex;gap:4px;margin-left:8px;">
-        <button class="btn btn-sm" onclick="showRecentFiles()" title="Recent files">🕐 Recent</button>
-        <button class="btn btn-sm" onclick="showStarredFiles()" title="Starred files">⭐ Starred</button>
-        <button class="btn btn-sm btn-danger" onclick="if(confirm('Delete ALL files? This cannot be undone.')){store.files=[];saveStore();renderFiles();showToast('All files deleted','success')}" title="Delete all files">🗑 Clear All</button>
-      </span>
+      <!-- Quick Access Dropdown -->
+      <div class="dropdown">
+        <button class="btn btn-sm dropdown-toggle">📂 View</button>
+        <div class="dropdown-menu">
+          <div class="dropdown-item" onclick="showRecentFiles()">🕐 Recent Files</div>
+          <div class="dropdown-item" onclick="showStarredFiles()">⭐ Starred Files</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" onclick="if(confirm('Delete ALL files? This cannot be undone.')){store.files=[];saveStore();renderFiles();showToast('All files deleted','success')}">🗑 Clear All Files</div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <!-- Search -->
