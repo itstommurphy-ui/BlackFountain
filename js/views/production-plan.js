@@ -276,6 +276,7 @@ function renderSection(name) {
   else if (name === 'budget') renderBudget(p);
   else if (name === 'equipment') renderEquipment(p);
   else if (name === 'locations') renderProjectLocations(p);
+  else if (name === 'moodboards') renderProjectMoodboards(p);
   setTimeout(initTableScrollbars, 0);
 }
 
@@ -307,6 +308,7 @@ function getAllOverviewSections(p) {
       return days > 0 ? `${days} day${days!==1?'s':''} · ${total} item${total!==1?'s':''}` : Object.values(p.equipment || {}).flat().length + ' items';
     })(), tab:'equipment'},
     {name:'Locations',       icon:'📍',  count: p.locations.length + ' locations',                                    tab:'locations'},
+    {name:'Moodboards',      icon:'🎨',  count: (store.moodboards||[]).filter(b => b.projectId === p.id).length + ' boards', tab:'moodboards'},
     {name:'Project Brief',   icon:'🗒️', count: (p.brief&&p.brief.template) ? 'Template ' + p.brief.template : '0 fields', tab:'brief'},
     {name:'Props',           icon:'🧳',  count: (p.props||[]).length + ' items',                                      tab:'props'},
     {name:'Release Forms',   icon:'📝',  count: (p.releases||[]).length + ' forms',                                   tab:'releases'},

@@ -43,6 +43,7 @@
           <div class="section-tab" onclick="showSection('budget')">Budget</div>
           <div class="section-tab" onclick="showSection('equipment')">Equipment</div>
           <div class="section-tab" onclick="showSection('locations')">Locations</div>
+          <div class="section-tab" onclick="showSection('moodboards')">Moodboards</div>
           <div class="section-tab" onclick="showSection('shotlist')">Shot List</div>
           <div class="section-tab" onclick="showSection('props')">Props</div>
           <div class="section-tab" onclick="showSection('wardrobe')">Wardrobe</div>
@@ -289,8 +290,8 @@ Priority colour bar shows urgency">?</span>
             <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="goto-hook"></span>
-              <button class="btn btn-sm" onclick="addEquipItem()">+ Add Item</button>
-              <button class="btn btn-sm" onclick="resetEquipChecks()">↺ Reset Checks</button>
+              <div id="gear-toolbar" style="display:flex;gap:8px;align-items:center"></div>
+              <button class="btn btn-sm btn-primary" onclick="addGearDay()">+ Add Gear Day</button>
             </div>
           </div>
           <div class="equip-grid" id="equip-grid"></div>
@@ -485,6 +486,16 @@ Priority colour bar shows urgency">?</span>
         <div id="section-plan" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div id="plan-content"></div>
+        </div>
+
+        <!-- SECTION: MOODBOARDS -->
+        <div id="section-moodboards" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading" style="margin:0">MOODBOARDS</h3>
+            <button class="btn btn-sm btn-primary" onclick="openNewMoodboardModal()">+ New Board</button>
+          </div>
+          <div id="project-moodboards-container"></div>
         </div>
 
         <!-- SECTION: CUSTOM (shared container for user-created sections) -->

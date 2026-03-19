@@ -128,7 +128,7 @@ function showSection(name) {
 function _gotoHtml(skip) {
   const sections = [
     ['budget','Budget'],['callsheet','Callsheet'],['cast','Cast & Extras'],['crew','Crew'],
-    ['equipment','Equipment'],['locations','Locations'],['overview','Overview'],
+    ['equipment','Equipment'],['locations','Locations'],['moodboards','Moodboards'],['overview','Overview'],
     ['plan','Production Plan'],['brief','Project Brief'],['props','Props'],
     ['releases','Release Forms'],['riskassess','Risk Assessment'],['schedule','Schedule'],
     ['breakdown','Script Breakdown'],['script','Script & Docs'],['shotlist','Shot List'],
@@ -151,13 +151,19 @@ function setDashboardFilter(status) {
 }
 
 function renderDashboard() {
-  const { projects } = store;
-  document.getElementById('stat-total').textContent = projects.length;
-  document.getElementById('stat-pre').textContent = projects.filter(p => p.status === 'pre').length;
-  document.getElementById('stat-prod').textContent = projects.filter(p => p.status === 'prod').length;
-  document.getElementById('stat-post').textContent = projects.filter(p => p.status === 'post').length;
-  document.getElementById('stat-done').textContent = projects.filter(p => p.status === 'done').length;
-  document.getElementById('stat-released').textContent = projects.filter(p => p.status === 'released').length;
+  const projects = store.projects || [];
+  const statTotal = document.getElementById('stat-total');
+  if (statTotal) statTotal.textContent = projects.length;
+  const statPre = document.getElementById('stat-pre');
+  if (statPre) statPre.textContent = projects.filter(p => p.status === 'pre').length;
+  const statProd = document.getElementById('stat-prod');
+  if (statProd) statProd.textContent = projects.filter(p => p.status === 'prod').length;
+  const statPost = document.getElementById('stat-post');
+  if (statPost) statPost.textContent = projects.filter(p => p.status === 'post').length;
+  const statDone = document.getElementById('stat-done');
+  if (statDone) statDone.textContent = projects.filter(p => p.status === 'done').length;
+  const statReleased = document.getElementById('stat-released');
+  if (statReleased) statReleased.textContent = projects.filter(p => p.status === 'released').length;
 
   // Highlight active filter card
   ['pre','prod','post','done','released'].forEach(s => {
@@ -217,6 +223,7 @@ function toggleStatusGroup(status) {
 
 function renderSidebarProjects() {
   const el = document.getElementById('sidebar-projects');
+  if (!el) return;
   const groups = [
     { status: 'pre',      label: 'Pre-Production' },
     { status: 'prod',     label: 'Production' },
@@ -225,8 +232,9 @@ function renderSidebarProjects() {
     { status: 'released', label: 'Released' }
   ];
   let html = '';
+  const storeProjects = store.projects || [];
   groups.forEach(g => {
-    const projects = store.projects.filter(p => p.status === g.status);
+    const projects = storeProjects.filter(p => p.status === g.status);
     if (!projects.length) return;
     const collapsed = collapsedStatusGroups.has(g.status);
     html += `<div class="sidebar-status-group${collapsed ? ' collapsed' : ''}" onclick="toggleStatusGroup('${g.status}')">

@@ -130,18 +130,18 @@
           <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0 20px;">
 
             <div>
-              <label class="form-label">File Name</label>
-              <input class="form-input" id="manage-file-name" type="text">
+              <label class="form-label">Link to Project</label>
+              <select class="form-select" id="mf-project-select" style="font-size:12px;" onchange="mfProjectChange()"></select>
             </div>
 
             <div>
-              <label class="form-label">Description / Notes</label>
-              <input class="form-input" id="manage-file-desc" type="text" placeholder="Optional notes…">
+              <label class="form-label">Display Name</label>
+              <input class="form-input" id="manage-file-name" type="text" style="font-size:12px;">
             </div>
 
             <div>
               <label class="form-label">Categories</label>
-              <div id="manage-file-cats" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);"></div>
+              <div id="manage-file-cats" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:8px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);"></div>
             </div>
 
             <div id="mf-people-section" style="display:none;">
@@ -155,11 +155,6 @@
               <div style="margin-top:5px;font-size:10px;color:var(--text3);">New people will be added to project contacts on save.</div>
             </div>
 
-            <div>
-              <label class="form-label">Project</label>
-              <select class="form-select" id="mf-project-select" style="font-size:12px;" onchange="mfProjectChange()"></select>
-            </div>
-
             <div id="mf-location-section" style="display:none;">
               <label class="form-label">Linked Location</label>
               <select class="form-select" id="mf-location-select" style="font-size:12px;" onchange="mfLocationSelectChange()">
@@ -169,6 +164,16 @@
                 <input class="form-input" id="mf-location-new" placeholder="New location name…" style="font-size:12px;">
                 <div style="margin-top:4px;font-size:10px;color:var(--text3);">Will be added to this project's locations.</div>
               </div>
+            </div>
+
+            <div>
+              <label class="form-label">Description / Notes <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+              <input class="form-input" id="manage-file-desc" type="text" placeholder="e.g. Final draft, Location scout photos…" style="font-size:12px;">
+            </div>
+
+            <div id="mf-alt-section" style="display:none;">
+              <label class="form-label">Alt Text <span style="color:var(--text3);font-weight:400">(for accessibility)</span></label>
+              <input class="form-input" id="mf-alt-input" placeholder="Describe the image for screen readers" style="font-size:12px;">
             </div>
 
           </div>

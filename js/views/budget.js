@@ -1203,15 +1203,18 @@ function renderEquipment(project) {
 
   const grid = document.getElementById('equip-grid');
   const toolbar = document.getElementById('gear-toolbar');
+  if (!grid) return;
 
   // Toolbar: Gear Pool count
   let poolCount = (p.gearPool || []).length;
-  toolbar.innerHTML = `
-    <button class="btn btn-sm btn-ghost" onclick="openUnsortedGear()">
-      <span style="background:var(--accent);color:#000;padding:1px 6px;border-radius:10px;font-size:10px;margin-right:5px">${poolCount}</span>
-      Master Gear Pool
-    </button>
-  `;
+  if (toolbar) {
+    toolbar.innerHTML = `
+      <button class="btn btn-sm btn-ghost" onclick="openUnsortedGear()">
+        <span style="background:var(--accent);color:#000;padding:1px 6px;border-radius:10px;font-size:10px;margin-right:5px">${poolCount}</span>
+        Master Gear Pool
+      </button>
+    `;
+  }
 
   if (p.gearList.length === 0) {
     grid.innerHTML = `

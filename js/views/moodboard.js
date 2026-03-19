@@ -13,6 +13,17 @@ let _mbFsHideTimer = null;
 function renderMoodboards() {
   const el = document.getElementById('moodboards-container');
   if (!el) return;
+  _renderMoodboardsInto(el);
+}
+
+function renderProjectMoodboards(p) {
+  const el = document.getElementById('project-moodboards-container');
+  if (!el) return;
+  el._mbFilterPid = p.id;
+  _renderMoodboardsInto(el);
+}
+
+function _renderMoodboardsInto(el) {
   const view    = document.getElementById('view-moodboards');
   const content = document.getElementById('content');
   if (_currentMoodboardId) {
@@ -41,23 +52,28 @@ function _renderMoodboardList(el) {
     `<option value="${p.id}" ${filterPid === p.id ? 'selected':''}>${p.title}</option>`
   ).join('');
 
+  const isProjectView = !!el._mbFilterPid && el.id === 'project-moodboards-container';
+
+  const filterSelect = isProjectView ? '' : `
+    <select class="form-select" style="max-width:220px;font-size:12px"
+      onchange="document.getElementById('${el.id}')._mbFilterPid=this.value;${el.id === 'moodboards-container' ? 'renderMoodboards()' : 'renderProjectMoodboards(currentProject())'}">
+      <option value="all" ${filterPid==='all'?'selected':''}>All Projects</option>
+      <option value="_none" ${filterPid==='_none'?'selected':''}>No Project</option>
+      ${projOptions}
+    </select>`;
+
   el.innerHTML = `
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
-        <h2>MOODBOARDS</h2>
-        <p>Visual inspiration boards for your projects</p>
+        <h2 style="font-size:16px">${isProjectView ? 'PROJECT MOODBOARDS' : 'MOODBOARDS'}</h2>
+        <p style="font-size:12px">${isProjectView ? 'Visual inspiration for this project' : 'Visual inspiration boards for your projects'}</p>
       </div>
-      <button class="btn btn-primary" onclick="openNewMoodboardModal()" style="margin-top:6px">+ New Board</button>
+      <button class="btn btn-primary btn-sm" onclick="openNewMoodboardModal()" style="margin-top:6px">+ New Board</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px">
       <input class="form-input" placeholder="Search boards…" value="${search.replace(/"/g,'&quot;')}"
-        oninput="document.getElementById('moodboards-container')._mbSearch=this.value;renderMoodboards()" style="max-width:200px;font-size:12px">
-      <select class="form-select" style="max-width:220px;font-size:12px"
-        onchange="document.getElementById('moodboards-container')._mbFilterPid=this.value;renderMoodboards()">
-        <option value="all" ${filterPid==='all'?'selected':''}>All Projects</option>
-        <option value="_none" ${filterPid==='_none'?'selected':''}>No Project</option>
-        ${projOptions}
-      </select>
+        oninput="document.getElementById('${el.id}')._mbSearch=this.value;${el.id === 'moodboards-container' ? 'renderMoodboards()' : 'renderProjectMoodboards(currentProject())'}" style="max-width:200px;font-size:12px">
+      ${filterSelect}
       <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${filtered.length} board${filtered.length!==1?'s':''}</span>
     </div>`;
 
@@ -135,7 +151,10 @@ function _renderMoodboardDetail(el) {
         style="font-size:14px;font-weight:600;max-width:220px;padding:4px 8px;background:transparent;border-color:transparent"
         onfocus="this.style.borderColor=''" onblur="_mbSaveTitle('${b.id}',this.value)"
         onkeydown="if(event.key==='Enter')this.blur()">
-      ${proj ? `<span class="tag" style="font-size:11px;flex-shrink:0">${proj.title}</span>` : ''}
+      <select class="form-select" style="font-size:11px;max-width:160px;height:28px;padding:0 8px" onchange="_mbSaveProject('${b.id}',this.value)">
+        <option value="">— No project —</option>
+        ${store.projects.map(p => `<option value="${p.id}" ${p.id===b.projectId?'selected':''}>${p.title}</option>`).join('')}
+      </select>
       <div style="width:1px;height:22px;background:var(--border2);flex-shrink:0"></div>
       <span style="font-size:11px;color:var(--text3);flex-shrink:0">Add:</span>
       <button class="btn btn-sm" onclick="document.getElementById('mb-img-input').click()">🖼 Image</button>
@@ -372,8 +391,10 @@ function openMoodboard(id) {
 function openNewMoodboardModal() {
   document.getElementById('mb-new-title').value = '';
   const sel = document.getElementById('mb-new-project');
+  const activePid = typeof getActivePid === 'function' ? getActivePid() : null;
+  const projects = store.projects || [];
   sel.innerHTML = `<option value="">— No project —</option>` +
-    store.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+    projects.map(p => `<option value="${p.id}" ${p.id === activePid ? 'selected' : ''}>${p.title}</option>`).join('');
   openModal('modal-new-moodboard');
 }
 
@@ -381,8 +402,8 @@ function saveNewMoodboard() {
   const title = document.getElementById('mb-new-title').value.trim();
   if (!title) { showToast('Please enter a board title', 'info'); return; }
   const projectId = document.getElementById('mb-new-project').value || null;
-  const board = { id: makeId(), title, projectId, createdAt: Date.now(), items: [] };
-  store.moodboards = store.moodboards || [];
+  const board = { id: typeof makeId === 'function' ? makeId() : Date.now().toString(36), title, projectId, createdAt: Date.now(), items: [] };
+  if (!store.moodboards) store.moodboards = [];
   store.moodboards.push(board);
   saveStore();
   closeModal('modal-new-moodboard');
@@ -947,6 +968,14 @@ function _mbSaveTitle(boardId, value) {
   if (v) { b.title = v; saveStore(); }
 }
 
+function _mbSaveProject(boardId, projectId) {
+  const b = (store.moodboards||[]).find(x => x.id === boardId);
+  if (!b) return;
+  b.projectId = projectId || null;
+  saveStore();
+  renderMoodboards();
+}
+
 function deleteMbItem(boardId, itemId) {
   const b = (store.moodboards||[]).find(x => x.id === boardId);
   if (!b) return;
@@ -982,13 +1011,15 @@ function expandThumbHTML(f) {
   const preview = f.data && f.data.startsWith('data:image')
     ? `<img src="${f.data}" alt="${f.altText || f.name}">`
     : `<span>${FILE_CATEGORIES[fileCategories(f)[0]]?.icon || '📁'}</span>`;
+  const pid = getActivePid();
+  const pidArg = pid ? `'${pid}'` : 'null';
   return `<div class="expand-photo-thumb" title="${f.name}" onclick="viewFile('${f.id}')">
     ${preview}
     <div class="expand-photo-actions">
       <span class="expand-photo-action-btn" onclick="event.stopPropagation();openManageFile('${f.id}')" title="Edit">✏️</span>
-      <span class="expand-photo-action-btn" onclick="event.stopPropagation();openMoveFile(['${f.id}'],null)" title="Move">🔀</span>
+      <span class="expand-photo-action-btn" onclick="event.stopPropagation();openMoveFile(['${f.id}'], ${pidArg})" title="Move">🔀</span>
       <span class="expand-photo-action-btn" onclick="event.stopPropagation();downloadFile('${f.id}')" title="Download">⬇️</span>
-      <span class="expand-photo-action-btn danger" onclick="event.stopPropagation();openRemoveFiles(['${f.id}'],null)" title="Delete">🗑</span>
+      <span class="expand-photo-action-btn danger" onclick="event.stopPropagation();openRemoveFiles(['${f.id}'], ${pidArg})" title="Delete">🗑</span>
     </div>
   </div>`;
 }

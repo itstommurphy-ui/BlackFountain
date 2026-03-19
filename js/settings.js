@@ -202,6 +202,25 @@ function renderFiles() {
   const filterSel = document.getElementById('files-project-filter');
   const projectFilter = filterSel ? filterSel.value : 'all';
 
+  // Ensure tab listeners are attached
+  const tabs = document.getElementById('file-tabs');
+  if (tabs) {
+    if (!tabs._listenerAttached) {
+      tabs.addEventListener('click', function(e) {
+        const tab = e.target.closest('.file-tab');
+        if (tab) {
+          currentFileCategory = tab.dataset.category;
+          renderFiles();
+        }
+      });
+      tabs._listenerAttached = true;
+    }
+    // Sync active state
+    tabs.querySelectorAll('.file-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.category === currentFileCategory);
+    });
+  }
+
   let files = (store.files || []);
   if (projectFilter !== 'all') {
     files = files.filter(f => fileProjectIds(f).includes(projectFilter));
@@ -233,14 +252,15 @@ function renderFiles() {
     const peopleTags = (file.people || []).length
       ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
       : '';
+    const pFilter = (document.getElementById('files-project-filter')?.value === 'all') ? null : document.getElementById('files-project-filter')?.value;
     return `
     <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','files')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
-        <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'],null)" title="Move to project">🔀</button>
+        <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Move to project">🔀</button>
         <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
-        <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'],null)" title="Remove / delete">🗑</button>
+        <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Remove / delete">🗑</button>
       </div>
       <div class="file-card-preview">${getFileIcon(file)}</div>
       <div class="file-card-name" title="${file.name}">${file.name}</div>
@@ -514,6 +534,10 @@ function openManageFile(id) {
   document.getElementById('mf-location-new').value = '';
   document.getElementById('mf-location-new-row').style.display = 'none';
 
+  const isImage = file.data && file.data.startsWith('data:image');
+  document.getElementById('mf-alt-input').value = file.altText || '';
+  document.getElementById('mf-alt-section').style.display = isImage ? 'block' : 'none';
+
   // Show/hide conditional sections
   mfCatChange();
 
@@ -556,12 +580,6 @@ function mfAddPersonTag(name, existingRole) {
 
   const isNew = !getAllContactNames().some(n => n.toLowerCase() === name.toLowerCase());
 
-  // For brand-new people, open the full contact creation modal
-  if (isNew && !existingRole) {
-    addNewContactFromMf(name);
-    return;
-  }
-
   const tag = document.createElement('span');
   tag.dataset.mfperson = name;
   tag.dataset.role = existingRole || '';
@@ -570,6 +588,17 @@ function mfAddPersonTag(name, existingRole) {
   const nameSpan = document.createElement('span');
   nameSpan.textContent = '👤 ' + name;
   tag.appendChild(nameSpan);
+
+  // For new contacts, show a small role input inside the tag (matches upload modal)
+  if (isNew && !existingRole) {
+    const roleInput = document.createElement('input');
+    roleInput.placeholder = 'role…';
+    roleInput.setAttribute('list', 'roles-datalist');
+    roleInput.style.cssText = 'width:70px;font-size:10px;padding:1px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none;';
+    roleInput.addEventListener('input', () => { tag.dataset.role = roleInput.value.trim(); });
+    roleInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    tag.appendChild(roleInput);
+  }
 
   const removeBtn = document.createElement('span');
   removeBtn.style.cssText = 'cursor:pointer;color:var(--text3);';
@@ -699,6 +728,9 @@ function confirmManageFile() {
     file.location = '';
   }
 
+  // Alt text
+  file.altText = document.getElementById('mf-alt-input').value.trim();
+
   saveStore();
   closeModal('modal-manage-file');
   renderFiles(); renderOverviewFiles();
@@ -733,14 +765,21 @@ function openMoveFile(ids, sourcePid) {
 
   if (!targetOptions) { showToast('No other projects to move to', 'info'); return; }
 
-  const sourceLabel = sourcePid !== null && sourcePid !== undefined
-    ? (store.projects.find(p => p.id === sourcePid)?.title || 'this project')
-    : (ids.length === 1
-        ? (() => { const pids = fileProjectIds((store.files||[]).find(f=>f.id===ids[0])||{}); return pids.length===1 ? (store.projects.find(p => p.id === pids[0])?.title||'this project') : 'current projects'; })()
-        : 'current projects');
+  let inferredPid = sourcePid;
+  if (!inferredPid && ids.length === 1) {
+    const f = (store.files || []).find(f => f.id === ids[0]);
+    if (f) {
+      const pids = fileProjectIds(f);
+      if (pids.length === 1) inferredPid = pids[0];
+    }
+  }
+
+  const sourceLabel = inferredPid
+    ? (store.projects.find(p => p.id === inferredPid)?.title || 'this project')
+    : 'current projects';
 
   document.getElementById('move-file-ids-store').dataset.ids = JSON.stringify(ids);
-  document.getElementById('move-file-source-pid').value = sourcePid ?? '';
+  document.getElementById('move-file-source-pid').value = inferredPid ?? '';
   document.getElementById('move-file-target').innerHTML = targetOptions;
   document.getElementById('move-file-keep-copy').checked = false;
   document.getElementById('move-file-source-label').textContent = sourceLabel;
@@ -758,12 +797,20 @@ function confirmMoveFile() {
   if (!targetPid) return;
 
   ids.forEach(id => {
-    const file = (store.files||[]).find(f=>f.id===id);
+    const file = (store.files || []).find(f => f.id === id);
     if (!file) return;
     if (!Array.isArray(file.projectIds)) { file.projectIds = fileProjectIds(file); delete file.projectId; }
-    if (!file.projectIds.includes(targetPid)) file.projectIds.push(targetPid);
+
+    // If target is same as source, just keep it (unless user specifically wanted to move but change their mind to the same project?)
+    // But targetPid should not be sourcePid based on UI, but if it is, we should not delete it.
+    const isActuallyNew = !file.projectIds.map(String).includes(String(targetPid));
+    if (isActuallyNew) file.projectIds.push(targetPid);
+
     if (!keepCopy && sourcePid !== null) {
-      file.projectIds = file.projectIds.filter(p => p !== sourcePid);
+      // Use string comparison to be robust
+      file.projectIds = file.projectIds.filter(p => String(p) !== String(sourcePid));
+      // Ensure we don't accidentally leave it empty if target was same as source
+      if (file.projectIds.length === 0 && isActuallyNew) file.projectIds.push(targetPid);
     }
   });
 
@@ -1186,34 +1233,22 @@ function _makeDrop(el, fn) {
   });
 }
 
-// File tab switching
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('file-tabs').addEventListener('click', function(e) {
-    if (e.target.classList.contains('file-tab')) {
-      document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      currentFileCategory = e.target.dataset.category;
-      renderFiles();
-    }
-  });
+// Main file upload zone (Files tab)
+_makeDrop(document.getElementById('file-upload-zone'), handleFileUpload);
 
-  // Main file upload zone (Files tab)
-  _makeDrop(document.getElementById('file-upload-zone'), handleFileUpload);
+// Overview project files area
+const ovFilesGrid = document.getElementById('overview-files-grid');
+if (ovFilesGrid) {
+  ovFilesGrid.classList.add('drop-zone');
+  _makeDrop(ovFilesGrid, handleFileUploadFromOverview);
+}
 
-  // Overview project files area
-  const ovFilesGrid = document.getElementById('overview-files-grid');
-  if (ovFilesGrid) {
-    ovFilesGrid.classList.add('drop-zone');
-    _makeDrop(ovFilesGrid, handleFileUploadFromOverview);
-  }
-
-  // Script & Docs section
-  const sectionScript = document.getElementById('section-script');
-  if (sectionScript) {
-    sectionScript.classList.add('drop-zone');
-    _makeDrop(sectionScript, handleScriptUpload);
-  }
-});
+// Script & Docs section
+const sectionScript = document.getElementById('section-script');
+if (sectionScript) {
+  sectionScript.classList.add('drop-zone');
+  _makeDrop(sectionScript, handleScriptUpload);
+}
 
 const EQUIP_CATEGORIES = [
   'Camera','Glass (Lenses)','Batteries','Grip Equipment','Accessories',
@@ -1413,6 +1448,7 @@ async function loadStore() {
 
   if (loaded) {
     Object.assign(store, loaded);
+    if (!store.projects) store.projects = [];
     if (!store.files) store.files = [];
     if (!store.contacts) store.contacts = [];
     if (!store.locations) store.locations = [];
@@ -1423,6 +1459,29 @@ async function loadStore() {
     if (!store.locationColumns) store.locationColumns = [];
     if (!store.locationCustomData) store.locationCustomData = {};
     if (!store.moodboards) store.moodboards = [];
+
+    // Migrate: Ensure all projects have IDs and required fields
+    store.projects.forEach(p => {
+      if (!p.id) p.id = makeId();
+      if (!p.gearList) p.gearList = [];
+      if (!p.gearPool) p.gearPool = [];
+      if (!p.equipment) p.equipment = {};
+      if (!p.callsheets) p.callsheets = [];
+      if (!p.cast) p.cast = [];
+      if (!p.extras) p.extras = [];
+      if (!p.unit) p.unit = [];
+      if (!p.schedule) p.schedule = [];
+      if (!p.scripts) p.scripts = [];
+      if (!p.locations) p.locations = [];
+      if (!p.scoutingSheets) p.scoutingSheets = [];
+      if (!p.breakdown) p.breakdown = [];
+    });
+
+    // Migrate: convert legacy currentProjectId (array index) to project UUID string
+    if (typeof store.currentProjectId === 'number') {
+      store.currentProjectId = store.projects[store.currentProjectId]?.id ?? null;
+    }
+
     // Migrate: convert legacy integer projectIds (array indices) to project UUID strings
     store.files.forEach(f => {
       if (f.projectIds) {
@@ -1433,6 +1492,13 @@ async function loadStore() {
       }
       if (typeof f.projectId === 'number') {
         f.projectId = store.projects[f.projectId]?.id ?? null;
+      }
+    });
+
+    // Migrate: convert legacy integer projectIds in moodboards
+    store.moodboards.forEach(b => {
+      if (typeof b.projectId === 'number') {
+        b.projectId = store.projects[b.projectId]?.id ?? null;
       }
     });
     // Restore file blobs from local IDB (they're never sent to Supabase)

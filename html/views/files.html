@@ -35,8 +35,8 @@
     <span class="file-bulk-bar-count" id="files-bulk-count"></span>
     <span>files selected</span>
     <div class="file-bulk-sep"></div>
-    <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'),null)">🔀 Move</button>
-    <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'),null)">🗑 Remove / Delete</button>
+    <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('files'), document.getElementById('files-project-filter')?.value === 'all' ? null : document.getElementById('files-project-filter')?.value)">🔀 Move</button>
+    <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('files'), document.getElementById('files-project-filter')?.value === 'all' ? null : document.getElementById('files-project-filter')?.value)">🗑 Remove / Delete</button>
     <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
   </div>
   <div class="file-grid" id="file-grid"></div>

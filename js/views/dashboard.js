@@ -84,7 +84,7 @@ function saveProject() {
   } else {
     const p = defaultProject({
       title,
-      num: document.getElementById('proj-input-num').value.trim() || String(store.projects.length + 1).padStart(3,'0'),
+      num: document.getElementById('proj-input-num').value.trim() || String((store.projects || []).length + 1).padStart(3,'0'),
       status: document.getElementById('proj-input-status').value,
       director: document.getElementById('proj-input-director').value.trim(),
       producer: document.getElementById('proj-input-producer').value.trim(),
@@ -92,6 +92,7 @@ function saveProject() {
       genre: document.getElementById('proj-input-genre').value.trim(),
       notes: document.getElementById('proj-input-notes').value.trim(),
     });
+    if (!store.projects) store.projects = [];
     store.projects.push(p);
     closeModal('modal-project');
     saveStore();
