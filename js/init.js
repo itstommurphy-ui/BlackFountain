@@ -45,22 +45,9 @@ async function _startApp() {
   try {
     await loadStore();
     initAutoSave();
-    
-    // Ensure dashboard renders after store load (fallback for hash routing edge cases)
-    if (!location.hash || location.hash === '#') {
-      showView('dashboard');
-    } else {
-      restoreFromHash();
-    }
-    
-    // Force dashboard render if it's the active view
-    if (document.getElementById('view-dashboard')?.classList.contains('active')) {
-      renderDashboard();
-    }
+    renderDashboard();
   } catch(e) {
     console.error('[_startApp] init failed:', e);
-    // Emergency fallback: show dashboard even on error
-    showView('dashboard');
   } finally {
     document.body.classList.remove('loading');
   }
@@ -70,43 +57,7 @@ async function _startApp() {
     try { const { msg, type } = JSON.parse(pendingToast); showToast(msg, type); } catch(e) {}
   }
 }
-sbInit(_startApp());
-
-
-// ══ HASH ROUTER ══
-function updateHash(type, ...args) {
-  const params = new URLSearchParams();
-  params.set('view', type);
-  args.forEach((arg, i) => params.set(`arg${i}`, String(arg || '')));
-  history.replaceState(null, '', '#' + params.toString());
-}
-
-function restoreFromHash() {
-  try {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const type = params.get('view') || 'dashboard';
-    if (type === 'project') {
-      const proj = params.get('arg0') || params.get('project');
-      if (proj) {
-        store.currentProjectId = proj;
-        showProjectView(proj);
-        const section = params.get('arg1') || params.get('section') || 'overview';
-        showSection(section);
-      } else {
-        showView('dashboard');
-      }
-    } else {
-      showView(type);
-    }
-  } catch(e) {
-    console.warn('[restoreFromHash]', e);
-    showView('dashboard');
-  }
-}
-
-window.onpopstate = restoreFromHash;
-restoreFromHash(); // initial parse
-
+sbInit(_startApp);
 
 // ── Contact modal role sections ───────────────────────────────────────────────
 function ecToggleRoleSections() {

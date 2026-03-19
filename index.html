@@ -1,8 +1,5 @@
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#0d0d12">
 <meta name="description" content="Black Fountain - Production management for film and TV">
 <link rel="manifest" href="manifest.json">
@@ -1770,17 +1767,9 @@ function triggerPWAInstall() {
   }
 }
 
-// Register Service Worker for offline usage (skip in dev)
+// Register Service Worker for offline usage
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Skip SW registration on localhost dev server to avoid caching issues
-    if (location.hostname === 'localhost' || location.port === '3000') {
-      console.log('Dev mode: Skipping Service Worker registration');
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
-      }
-      return;
-    }
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('Service Worker registered - app works offline!'))
       .catch(err => console.log('Service Worker registration failed:', err));
