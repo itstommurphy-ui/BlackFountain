@@ -174,7 +174,7 @@ function renderCrew(p) {
           <tbody>
             ${grouped[dept].map(m => `
               <tr onclick="editPersonnel('unit',${m._i})" style="cursor:pointer">
-                <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="crew-cb" data-idx="${m._i}" onchange="_updateCrewEmailSelBtn()"></td>
+                <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="crew-cb" data-type="unit" data-idx="${m._i}" onchange="_updateCrewEmailSelBtn()"></td>
                 <td><strong>${m.name}</strong></td>
                 <td>${m.role||'—'}</td><td>${m.number||'—'}</td>
                 <td>${m.email||'—'}</td><td>${m.social||'—'}</td>
@@ -252,7 +252,7 @@ function _updateCastEmailSelBtn() {
   if (dropdown)        dropdown.style.display        = n ? '' : 'none';
 }
 function removeSelectedPersonnel() {
-  const checked = [...document.querySelectorAll('.cast-cb:checked')];
+  const checked = [...document.querySelectorAll('.cast-cb:checked, .crew-cb:checked')];
   if (!checked.length) return;
   showConfirmDialog(`Remove ${checked.length} selected entr${checked.length !== 1 ? 'ies' : 'y'}?`, 'Remove', () => {
     const p = currentProject();
@@ -268,6 +268,7 @@ function removeSelectedPersonnel() {
     }
     saveStore();
     renderCast(p);
+    renderCrew(p);
     showToast(`${checked.length} entr${checked.length !== 1 ? 'ies' : 'y'} removed`, 'info');
   });
 }
