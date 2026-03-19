@@ -138,6 +138,41 @@
   [data-font-size="evenbigger"] #bd-suggest-modal > div   { zoom: 1.2;  max-height: 68.3vh !important; }
   [data-font-size="huge"]       #bd-suggest-modal > div   { zoom: 1.35; max-height: 60.7vh !important; }
   [data-font-size="double"]     #bd-suggest-modal > div   { zoom: 2;    max-height: 41vh   !important; }
+
+  /* Context menus - counter-zoom all fixed context menus */
+  [data-font-size="bigger"]     .context-menu { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .context-menu { zoom: 0.8333; }
+  [data-font-size="huge"]       .context-menu { zoom: 0.7407; }
+  [data-font-size="double"]     .context-menu { zoom: 0.5;    }
+
+  /* Quick task context menu */
+  [data-font-size="bigger"]     #qt-context-menu { zoom: 0.9091; }
+  [data-font-size="evenbigger"] #qt-context-menu { zoom: 0.8333; }
+  [data-font-size="huge"]       #qt-context-menu { zoom: 0.7407; }
+  [data-font-size="double"]     #qt-context-menu { zoom: 0.5;    }
+
+  /* Section picker dropdown */
+  [data-font-size="bigger"]     #_ov-picker { zoom: 0.9091; }
+  [data-font-size="evenbigger"] #_ov-picker { zoom: 0.8333; }
+  [data-font-size="huge"]       #_ov-picker { zoom: 0.7407; }
+  [data-font-size="double"]     #_ov-picker { zoom: 0.5;    }
+
+  /* Breakdown suggestion tooltip */
+  [data-font-size="bigger"]     #bd-sug-tip { zoom: 0.9091; }
+  [data-font-size="evenbigger"] #bd-sug-tip { zoom: 0.8333; }
+  [data-font-size="huge"]       #bd-sug-tip { zoom: 0.7407; }
+  [data-font-size="double"]     #bd-sug-tip { zoom: 0.5;    }
+
+  /* Generic overlay backdrop - targets dynamically created overlays with high z-index */
+  [data-font-size="bigger"]     [style*="z-index:10000"],
+  [data-font-size="bigger"]     [style*="z-index: 10000"] { zoom: 0.9091; }
+  [data-font-size="evenbigger"] [style*="z-index:10000"],
+  [data-font-size="evenbigger"] [style*="z-index: 10000"] { zoom: 0.8333; }
+  [data-font-size="huge"]       [style*="z-index:10000"],
+  [data-font-size="huge"]       [style*="z-index: 10000"] { zoom: 0.7407; }
+  [data-font-size="double"]     [style*="z-index:10000"],
+  [data-font-size="double"]     [style*="z-index: 10000"] { zoom: 0.5;    }
+
   body { font-size: 13.5px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100vw; }

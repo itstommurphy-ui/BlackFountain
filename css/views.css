@@ -2446,6 +2446,31 @@
   [data-font-size="evenbigger"] .script-editor-overlay { zoom: 0.8333; }
   [data-font-size="huge"]       .script-editor-overlay { zoom: 0.7407; }
   [data-font-size="double"]     .script-editor-overlay { zoom: 0.5;    }
+
+  /* Stripboard location dropdown */
+  [data-font-size="bigger"]     .sb-loc-list { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .sb-loc-list { zoom: 0.8333; }
+  [data-font-size="huge"]       .sb-loc-list { zoom: 0.7407; }
+  [data-font-size="double"]     .sb-loc-list { zoom: 0.5;    }
+
+  /* Breakdown popover */
+  [data-font-size="bigger"]     .bd-popover { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .bd-popover { zoom: 0.8333; }
+  [data-font-size="huge"]       .bd-popover { zoom: 0.7407; }
+  [data-font-size="double"]     .bd-popover { zoom: 0.5;    }
+
+  /* Script editor time-of-day dropdown */
+  [data-font-size="bigger"]     .se-tod-drop { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .se-tod-drop { zoom: 0.8333; }
+  [data-font-size="huge"]       .se-tod-drop { zoom: 0.7407; }
+  [data-font-size="double"]     .se-tod-drop { zoom: 0.5;    }
+
+  /* Moodboard fullscreen button */
+  [data-font-size="bigger"]     .mb-fs-btn { zoom: 0.9091; }
+  [data-font-size="evenbigger"] .mb-fs-btn { zoom: 0.8333; }
+  [data-font-size="huge"]       .mb-fs-btn { zoom: 0.7407; }
+  [data-font-size="double"]     .mb-fs-btn { zoom: 0.5;    }
+
   .script-editor-topbar {
     display: flex; align-items: center; gap: 10px; padding: 8px 16px;
     background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0;
