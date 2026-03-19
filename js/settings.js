@@ -254,8 +254,11 @@ function renderFiles() {
     // Starred files view
     files = getStarredFiles();
   } else {
-    // Normal folder view
-    files = (store.files || []).filter(f => f.folderId === currentFolderId);
+    // Normal folder view - files without folderId (undefined) should show when at root (null)
+    files = (store.files || []).filter(f => {
+      const fileFolderId = f.folderId || null;
+      return fileFolderId === currentFolderId;
+    });
   }
   
   // Apply project filter
@@ -1958,6 +1961,7 @@ function confirmFileUpload() {
       type: pending.file.type,
       size: pending.file.size,
       data: pending.dataUrl,
+      folderId: null,
       projectIds: [projectId],
       uploadedAt: new Date().toISOString(),
     });
