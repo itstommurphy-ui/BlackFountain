@@ -840,7 +840,7 @@ function toggleStarFile(fileId) {
     file.starredAt = null;
     showToast('Removed from starred', 'success');
   }
-  save();
+  saveStore();
   renderFiles();
 }
 
@@ -1073,12 +1073,14 @@ function openRenameFolder(folderId) {
   const folder = getFolderById(folderId);
   if (!folder) return;
   
-  const newName = prompt('Rename folder:', folder.name);
-  if (newName && newName.trim() !== folder.name) {
-    renameFolder(folderId, newName.trim());
-    renderFiles();
-    showToast('Folder renamed', 'success');
-  }
+  showPromptDialog('Enter new folder name:', 'Rename', (vals) => {
+    const newName = vals._pdVal;
+    if (newName && newName.trim() !== folder.name) {
+      renameFolder(folderId, newName.trim());
+      renderFiles();
+      showToast('Folder renamed', 'success');
+    }
+  }, { defaultValue: folder.name, title: 'Rename Folder' });
 }
 
 function openDeleteFolder(folderId) {
@@ -1090,17 +1092,17 @@ function openDeleteFolder(folderId) {
   
   let message = `Delete folder "${folder.name}"?`;
   if (fileCount > 0 || subfolderCount > 0) {
-    message += `\n\nThis folder contains ${fileCount} file${fileCount !== 1 ? 's' : ''} and ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}. Files will be moved to the current location.`;
+    message += `<br><br>This folder contains ${fileCount} file${fileCount !== 1 ? 's' : ''} and ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}. Files will be moved to the current location.`;
   }
   
-  if (confirm(message)) {
+  showConfirmDialog(message, 'Delete Folder', () => {
     deleteFolder(folderId);
     if (currentFolderId === folderId) {
       currentFolderId = null;
     }
     renderFiles();
     showToast('Folder deleted', 'success');
-  }
+  });
 }
 
 // Drag and drop for moving files to folders
