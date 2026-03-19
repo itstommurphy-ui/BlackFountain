@@ -1450,8 +1450,410 @@ function resetEquipChecks() {
   showToast('All checks reset', 'info');
 }
 
-function openUnsortedGear() {
-  showToast('Unsorted gear pool coming soon - add items directly to days for now.', 'info');
+function openUnsortedGear(targetDayIdx, targetCatIdx) {
+  const p = currentProject();
+  if (!p.gearPool) p.gearPool = [];
+  
+  // If targeting a specific day/category, show checkout dialog
+  if (typeof targetDayIdx === 'number' && typeof targetCatIdx === 'number') {
+    _showGearPoolCheckout(targetDayIdx, targetCatIdx);
+    return;
+  }
+  
+  // Otherwise show full gear pool management
+  _showGearPoolManager();
+}
+
+const GEAR_CATEGORIES = [
+  'Cameras', 'Lenses', 'Tripods & Supports', 'Lighting', 'Grip',
+  'Sound Recording', 'Sound Mixing', 'Power', 'Accessories', 'Computers', 'Other'
+];
+
+function _showGearPoolManager() {
+  const p = currentProject();
+  if (!p.gearPool) p.gearPool = [];
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '1000';
+  
+  // Group items by category
+  const itemsByCategory = {};
+  GEAR_CATEGORIES.forEach(cat => itemsByCategory[cat] = []);
+  p.gearPool.forEach(item => {
+    const cat = item.category || 'Other';
+    if (!itemsByCategory[cat]) cat = 'Other';
+    itemsByCategory[cat].push(item);
+  });
+  
+  const renderPoolItems = () => {
+    if (p.gearPool.length === 0) {
+      return '<div style="text-align:center;padding:40px;color:var(--text3)">No items in pool. Add some below!</div>';
+    }
+    
+    let html = '';
+    GEAR_CATEGORIES.forEach(cat => {
+      const items = itemsByCategory[cat] || [];
+      if (items.length === 0) return;
+      
+      html += `<div style="margin-bottom:16px">
+        <div style="font-size:11px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:600">${cat}</div>`;
+      
+      html += items.map((item, idx) => {
+        // Find actual index in original array
+        const actualIdx = p.gearPool.indexOf(item);
+        return `
+          <div class="gear-pool-item" style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border-radius:4px;margin-bottom:4px">
+            <span style="flex:1;font-size:13px">${(item.name||'').replace(/</g,'&lt;')}</span>
+            <button class="btn btn-sm btn-ghost" onclick="_removeFromGearPool(${actualIdx})" title="Remove">✕</button>
+          </div>`;
+      }).join('');
+      
+      html += '</div>';
+    });
+    
+    return html;
+  };
+  
+  // Build category options
+  const catOptions = GEAR_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;width:90%;max-height:80vh;display:flex;flex-direction:column">
+      <div class="modal-header">
+        <h3>Master Gear Pool</h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px">
+        <p style="color:var(--text2);font-size:12px;margin-bottom:16px">
+          Add gear here once, then quickly check it out to multiple shoot days.
+        </p>
+        <div id="_gearPoolItems">${renderPoolItems()}</div>
+      </div>
+      <div style="padding:16px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <select id="_poolCategory" class="form-select" style="width:160px">
+            ${catOptions}
+          </select>
+          <input type="text" id="_newPoolItem" class="form-input" style="flex:1" 
+            placeholder="Enter item name(s) - separate multiple with commas"
+            onkeydown="if(event.key==='Enter')_addToGearPool()">
+        </div>
+        <button class="btn btn-primary" onclick="_addToGearPool()" style="width:100%">+ Add to Pool</button>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(overlay);
+  
+  overlay.addEventListener('click', e => { 
+    if (e.target === overlay) overlay.remove(); 
+  });
+  
+  // Focus input
+  setTimeout(() => document.getElementById('_newPoolItem')?.focus(), 50);
+}
+
+function _addToGearPool() {
+  const input = document.getElementById('_newPoolItem');
+  const categorySelect = document.getElementById('_poolCategory');
+  if (!input || !categorySelect) return;
+  
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const category = categorySelect.value;
+  const p = currentProject();
+  if (!p.gearPool) p.gearPool = [];
+  
+  // Split by comma
+  const names = text.split(',').map(n => n.trim()).filter(n => n);
+  names.forEach(name => {
+    p.gearPool.push({ name, category, pre: false, post: false });
+  });
+  
+  saveStore();
+  
+  // Re-render the pool items (same logic as _showGearPoolManager)
+  const itemsContainer = document.getElementById('_gearPoolItems');
+  if (itemsContainer) {
+    if (p.gearPool.length === 0) {
+      itemsContainer.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">No items in pool. Add some below!</div>';
+    } else {
+      // Group items by category
+      const itemsByCategory = {};
+      GEAR_CATEGORIES.forEach(cat => itemsByCategory[cat] = []);
+      p.gearPool.forEach(item => {
+        const cat = item.category || 'Other';
+        if (!itemsByCategory[cat]) cat = 'Other';
+        itemsByCategory[cat].push(item);
+      });
+      
+      let html = '';
+      GEAR_CATEGORIES.forEach(cat => {
+        const items = itemsByCategory[cat] || [];
+        if (items.length === 0) return;
+        
+        html += `<div style="margin-bottom:16px">
+          <div style="font-size:11px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:600">${cat}</div>`;
+        
+        html += items.map((item, idx) => {
+          const actualIdx = p.gearPool.indexOf(item);
+          return `
+            <div class="gear-pool-item" style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border-radius:4px;margin-bottom:4px">
+              <span style="flex:1;font-size:13px">${(item.name||'').replace(/</g,'&lt;')}</span>
+              <button class="btn btn-sm btn-ghost" onclick="_removeFromGearPool(${actualIdx})" title="Remove">✕</button>
+            </div>`;
+        }).join('');
+        
+        html += '</div>';
+      });
+      
+      itemsContainer.innerHTML = html;
+    }
+  }
+  
+  input.value = '';
+  input.focus();
+  
+  // Update toolbar count
+  renderEquipment(p);
+}
+
+function _removeFromGearPool(idx) {
+  const p = currentProject();
+  if (!p.gearPool || !p.gearPool[idx]) return;
+  
+  p.gearPool.splice(idx, 1);
+  saveStore();
+  
+  // Re-render the pool items with categories
+  const itemsContainer = document.getElementById('_gearPoolItems');
+  if (itemsContainer) {
+    if (p.gearPool.length === 0) {
+      itemsContainer.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">No items in pool. Add some below!</div>';
+    } else {
+      const itemsByCategory = {};
+      GEAR_CATEGORIES.forEach(cat => itemsByCategory[cat] = []);
+      p.gearPool.forEach(item => {
+        const cat = item.category || 'Other';
+        if (!itemsByCategory[cat]) cat = 'Other';
+        itemsByCategory[cat].push(item);
+      });
+      
+      let html = '';
+      GEAR_CATEGORIES.forEach(cat => {
+        const items = itemsByCategory[cat] || [];
+        if (items.length === 0) return;
+        
+        html += `<div style="margin-bottom:16px">
+          <div style="font-size:11px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:600">${cat}</div>`;
+        
+        html += items.map((item, i) => {
+          const actualIdx = p.gearPool.indexOf(item);
+          return `
+            <div class="gear-pool-item" style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border-radius:4px;margin-bottom:4px">
+              <span style="flex:1;font-size:13px">${(item.name||'').replace(/</g,'&lt;')}</span>
+              <button class="btn btn-sm btn-ghost" onclick="_removeFromGearPool(${actualIdx})" title="Remove">✕</button>
+            </div>`;
+        }).join('');
+        
+        html += '</div>';
+      });
+      
+      itemsContainer.innerHTML = html;
+    }
+  }
+  
+  renderEquipment(p);
+}
+
+function _showGearPoolCheckout(targetDayIdx, targetCatIdx) {
+  const p = currentProject();
+  if (!p.gearPool || p.gearPool.length === 0) {
+    showToast('No items in gear pool. Add some first!', 'info');
+    return;
+  }
+  
+  const day = p.gearList[targetDayIdx];
+  const targetCategory = day?.categories[targetCatIdx];
+  if (!day || !targetCategory) {
+    showToast('Invalid day or category', 'error');
+    return;
+  }
+  
+  // Get items already in this category to filter them out
+  const existingNames = new Set(targetCategory.items.map(i => i.name.toLowerCase()));
+  const availableItems = p.gearPool.filter(item => !existingNames.has(item.name.toLowerCase()));
+  
+  if (availableItems.length === 0) {
+    showToast('All pool items are already in this category!', 'info');
+    return;
+  }
+  
+  // Group available items by category
+  const itemsByCategory = {};
+  GEAR_CATEGORIES.forEach(cat => itemsByCategory[cat] = []);
+  availableItems.forEach((item, idx) => {
+    const cat = item.category || 'Other';
+    if (!itemsByCategory[cat]) cat = 'Other';
+    itemsByCategory[cat].push({ ...item, poolIndex: idx });
+  });
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '1000';
+  
+  // Build category-grouped HTML
+  let itemsHtml = '';
+  GEAR_CATEGORIES.forEach(cat => {
+    const items = itemsByCategory[cat] || [];
+    if (items.length === 0) return;
+    
+    const isMatch = cat.toLowerCase() === targetCategory.name.toLowerCase() || 
+      _categoryMatches(cat, targetCategory.name);
+    
+    itemsHtml += `<div style="margin-bottom:16px${isMatch ? ';border-left:3px solid var(--accent);padding-left:12px' : ''}">
+      <div style="font-size:11px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:600">
+        ${cat}${isMatch ? ' ← will be added here' : ''}
+      </div>`;
+    
+    itemsHtml += items.map(item => `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border-radius:4px;margin-bottom:4px;cursor:pointer">
+        <input type="checkbox" class="_poolCheck" value="${item.poolIndex}" data-category="${cat}" style="width:16px;height:16px">
+        <span style="flex:1;font-size:13px">${(item.name||'').replace(/</g,'&lt;')}</span>
+      </label>
+    `).join('');
+    
+    itemsHtml += '</div>';
+  });
+  
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:500px;width:90%;max-height:80vh;display:flex;flex-direction:column">
+      <div class="modal-header">
+        <h3>Checkout from Pool</h3>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div style="padding:0 16px">
+        <p style="color:var(--text2);font-size:12px">
+          Adding to: <strong>${day.label}</strong> → <strong>${targetCategory.name}</strong>
+        </p>
+        <p style="color:var(--text3);font-size:11px;margin-top:4px">
+          Items will be automatically routed to matching categories in your gear day.
+        </p>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px" id="_poolCheckoutItems">
+        ${itemsHtml}
+      </div>
+      <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <label style="font-size:12px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="_selectAllPool" onchange="_toggleSelectAllPool()"> Select All
+        </label>
+        <button class="btn btn-primary" onclick="_checkoutFromPool(${targetDayIdx}, ${targetCatIdx})">Add Selected</button>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(overlay);
+  
+  overlay.addEventListener('click', e => { 
+    if (e.target === overlay) overlay.remove(); 
+  });
+}
+
+// Helper to match categories intelligently
+function _categoryMatches(poolCat, dayCat) {
+  const pc = poolCat.toLowerCase();
+  const dc = dayCat.toLowerCase();
+  
+  // Exact match
+  if (pc === dc) return true;
+  
+  // Camera variations
+  if ((pc.includes('camera') && dc.includes('camera')) ||
+      (pc.includes('lens') && dc.includes('lens')) ||
+      (pc.includes('tripod') && dc.includes('tripod') || pc.includes('support') && dc.includes('support')) ||
+      (pc.includes('light') && dc.includes('light')) ||
+      (pc.includes('grip') && dc.includes('grip')) ||
+      (pc.includes('sound') && dc.includes('sound')) ||
+      (pc.includes('power') && dc.includes('power')) ||
+      (pc.includes('accessories') && dc.includes('accessories')) ||
+      (pc.includes('computer') && dc.includes('computer'))) {
+    return true;
+  }
+  
+  return false;
+}
+
+function _toggleSelectAllPool() {
+  const selectAll = document.getElementById('_selectAllPool');
+  const checkboxes = document.querySelectorAll('._poolCheck');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+function _checkoutFromPool(targetDayIdx, targetCatIdx) {
+  const p = currentProject();
+  const checked = document.querySelectorAll('._poolCheck:checked');
+  
+  if (checked.length === 0) {
+    showToast('No items selected', 'info');
+    return;
+  }
+  
+  const day = p.gearList[targetDayIdx];
+  const targetCategory = day?.categories[targetCatIdx];
+  if (!day || !targetCategory) return;
+  
+  // Get items already in all categories of this day
+  const existingByCategory = {};
+  day.categories.forEach(cat => {
+    existingByCategory[cat.name.toLowerCase()] = new Set(cat.items.map(i => i.name.toLowerCase()));
+  });
+  
+  const pool = p.gearPool || [];
+  let addedCount = 0;
+  
+  checked.forEach(cb => {
+    const poolIdx = parseInt(cb.value);
+    const poolItem = pool[poolIdx];
+    if (!poolItem) return;
+    
+    const itemCategory = poolItem.category || 'Other';
+    
+    // Find matching category in the day
+    let targetCat = day.categories.find(cat => 
+      _categoryMatches(itemCategory, cat.name) || 
+      cat.name.toLowerCase() === itemCategory.toLowerCase()
+    );
+    
+    // If no match, use the originally selected category
+    if (!targetCat) {
+      targetCat = targetCategory;
+    }
+    
+    // Check if item already exists in that category
+    const existingSet = existingByCategory[targetCat.name.toLowerCase()];
+    if (existingSet && existingSet.has(poolItem.name.toLowerCase())) {
+      return; // Already exists in this category
+    }
+    
+    // Add item to the category
+    targetCat.items.push({ name: poolItem.name, pre: false, post: false });
+    
+    // Update tracking
+    if (!existingSet) {
+      existingByCategory[targetCat.name.toLowerCase()] = new Set();
+    }
+    existingByCategory[targetCat.name.toLowerCase()].add(poolItem.name.toLowerCase());
+    
+    addedCount++;
+  });
+  
+  saveStore();
+  renderEquipment(p);
+  
+  // Close modal
+  document.querySelector('.modal-overlay.open')?.remove();
+  
+  showToast(`${addedCount} item${addedCount !== 1 ? 's' : ''} added from pool`, 'success');
 }
 
 function editGearDay(idx) {
