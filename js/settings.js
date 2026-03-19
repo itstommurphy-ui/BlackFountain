@@ -1140,6 +1140,11 @@ function openDeleteFolder(folderId) {
 let draggedFileId = null;
 
 function handleFileDragStart(e, fileId) {
+  // Don't start drag if clicking on buttons or interactive elements
+  if (e.target.closest('button') || e.target.closest('.file-card-star') || e.target.closest('.file-card-actions') || e.target.closest('.file-select-check')) {
+    e.preventDefault();
+    return;
+  }
   draggedFileId = fileId;
   e.target.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
