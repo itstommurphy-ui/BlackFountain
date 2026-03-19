@@ -1021,8 +1021,7 @@
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.15s;
-    z-index: 10;
-    pointer-events: auto;
+    z-index: 5;
   }
   .file-card:hover .file-card-star,
   .file-card.starred .file-card-star {
@@ -1034,6 +1033,14 @@
   }
   .file-card.starred .file-card-star {
     opacity: 1;
+  }
+  
+  /* Ensure file cards and their contents are clickable */
+  .file-card {
+    z-index: 1;
+  }
+  .file-card > * {
+    pointer-events: auto;
   }
   
   /* Context Menu */
