@@ -231,7 +231,8 @@ function openCustomSectionFilePreview(csId, fileId) {
   // Build a one-off preview overlay directly
   const ovId = '_csp_' + fileId;
   const isPdf = f.type.includes('pdf'), isImg = f.type.startsWith('image/');
-  const isText = f.type.includes('text') || f.name.endsWith('.txt') || f.name.endsWith('.fountain');
+  const textExts = ['txt', 'fountain', 'fdx', 'md', 'rtf'];
+  const isText = f.type.includes('text') || f.type.includes('xml') || f.name.endsWith('.txt') || f.name.endsWith('.fountain') || f.name.endsWith('.fdx') || textExts.includes(f.name.split('.').pop().toLowerCase());
   let previewHtml = '';
   if (isPdf) previewHtml = `<embed src="${f.dataUrl}" type="application/pdf" style="width:min(820px,90vw);height:80vh;border-radius:8px;border:none">`;
   else if (isImg) previewHtml = `<img src="${f.dataUrl}" alt="${f.altText || f.name}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;

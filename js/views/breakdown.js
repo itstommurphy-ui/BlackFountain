@@ -134,6 +134,59 @@ function importBdCastToSection() {
   showToast(`${added} entr${added !== 1 ? 'ies' : 'y'} added to Cast & Extras section`, 'success');
 }
 
+// Export a single prop from breakdown to props section
+function _bdExportProp(propName) {
+  const p = currentProject();
+  if (!p.props) p.props = [];
+  // Check if prop already exists (case-insensitive)
+  if (p.props.some(pr => (pr.name || '').toLowerCase() === propName.toLowerCase())) {
+    return false;
+  }
+  p.props.push({
+    name: propName,
+    qty: 1,
+    chars: '',
+    scenes: '',
+    locs: '',
+    pgs: '',
+    notes: ''
+  });
+  return true;
+}
+
+// Export all props from breakdown to Props section (manual export button)
+function importBdPropsToSection() {
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) return;
+  const text = bd.rawText;
+  const tags = bd.tags || [];
+  const propItems = [...new Set(tags.filter(t => t.category === 'props').map(t => text.slice(t.start, t.end).trim()).filter(Boolean))];
+  if (!propItems.length) { showToast('No props tagged in breakdown yet', 'info'); return; }
+  if (!p.props) p.props = [];
+  let added = 0;
+  for (const prop of propItems) {
+    if (_bdExportProp(prop)) {
+      added++;
+    }
+  }
+  if (!added) { showToast('All tagged props already in Props section', 'info'); return; }
+  saveStore();
+  showToast(`${added} prop${added !== 1 ? 's' : ''} added to Props section`, 'success');
+}
+
+// Auto-export prop when tagged in breakdown
+function _bdAutoExportProp(tagText, bd) {
+  const text = bd.rawText;
+  const propName = text.slice(tagText.start, tagText.end).trim();
+  if (!propName) return;
+  const added = _bdExportProp(propName);
+  if (added) {
+    saveStore();
+    showToast(`Prop "${propName}" added to Props section`, 'success');
+  }
+}
+
 // ── STRIPBOARD ────────────────────────────────────────────────────────────────
 
 function _sbEsc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -819,6 +872,7 @@ function renderBreakdownEditor(el, p) {
         <span class="goto-hook"></span>
         <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
         <button class="btn btn-sm" onclick="importBdCastToSection()" title="Export tagged Cast and Extras to the Cast &amp; Extras section">→ Export Cast/Extras</button>
+        <button class="btn btn-sm" onclick="importBdPropsToSection()" title="Export tagged Props to the Props section">→ Export Props</button>
         <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
         <div class="dropdown">
           <button class="dropdown-toggle">↓ Export</button>
@@ -1129,8 +1183,12 @@ function scrollBreakdownToScene(sceneStart) {
   const sv = document.getElementById('bd-script-view');
   if (!sv) return;
   const heading = sv.querySelector(`[data-scene-start="${sceneStart}"]`);
-  if (!heading) return;
-  sv.scrollTop = heading.offsetTop;
+  if (!heading) {
+    console.warn('Scene heading not found for sceneStart:', sceneStart);
+    return;
+  }
+  // Use scrollIntoView to properly handle container padding and alignment
+  heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Tag context menu
@@ -1207,8 +1265,17 @@ function executeTagAction(tagId, action, toCategory) {
   if (!tag) { hideBdPopover(); return; }
   if (action === 'move') {
     tag.category = toCategory;
+    // Auto-export prop to Props section when moved to props category
+    if (toCategory === 'props') {
+      _bdAutoExportProp(tag, bd);
+    }
   } else if (action === 'add') {
-    bd.tags.push({ id: makeId(), category: toCategory, start: tag.start, end: tag.end });
+    const newTag = { id: makeId(), category: toCategory, start: tag.start, end: tag.end };
+    bd.tags.push(newTag);
+    // Auto-export prop to Props section when added to props category
+    if (toCategory === 'props') {
+      _bdAutoExportProp(newTag, bd);
+    }
   }
   hideBdPopover();
   saveStore();
@@ -1222,7 +1289,12 @@ function applyBreakdownTag(category) {
   if (!bd) return;
   const { start, end } = _bdPendingSelection;
   if (!bd.tags) bd.tags = [];
-  bd.tags.push({ id: makeId(), category, start, end });
+  const newTag = { id: makeId(), category, start, end };
+  bd.tags.push(newTag);
+  // Auto-export prop to Props section when tagged
+  if (category === 'props') {
+    _bdAutoExportProp(newTag, bd);
+  }
   window.getSelection()?.removeAllRanges();
   hideBdPopover();
   saveStore();

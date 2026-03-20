@@ -359,6 +359,62 @@
         </div>
       </div>
 
+      <!-- VIDEO PLAYER MODAL -->
+      <div class="modal-overlay" id="modal-video-player" onclick="if(event.target===this)closeModal('modal-video-player')">
+        <div class="modal" style="max-width:90vw;max-height:90vh;background:#000;padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#111;border-bottom:1px solid #333;">
+            <h3 id="vp-title" style="margin:0;font-size:14px;color:#fff;"></h3>
+            <div style="display:flex;gap:8px;">
+              <button onclick="toggleVideoFullscreen()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;padding:4px 8px;" title="Fullscreen">⛶</button>
+              <button class="modal-close" onclick="closeModal('modal-video-player')" style="color:#fff;">✕</button>
+            </div>
+          </div>
+          <div id="vp-container" style="display:flex;align-items:center;justify-content:center;min-height:400px;max-height:70vh;">
+            <video id="vp-video" controls style="max-width:100%;max-height:70vh;"></video>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#111;border-top:1px solid #333;">
+            <span id="vp-info" style="color:#888;font-size:12px;"></span>
+            <a id="vp-download" href="#" download class="btn btn-sm" style="background:#e6bc3c;color:#000;">⬇ Download</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT UPLOAD MODAL -->
+      <div class="modal-overlay" id="modal-edit-upload">
+        <div class="modal" style="max-width:480px">
+          <div class="modal-header">
+            <h3>Upload Edit / Cut</h3>
+            <button class="modal-close" onclick="closeModal('modal-edit-upload')">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0 20px">
+            <div>
+              <label class="form-label">Name</label>
+              <input class="form-input" id="eu-name" placeholder="Edit name">
+            </div>
+            <div id="eu-version-section" style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+              <div style="padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border)">
+                <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2)">
+                  <input type="checkbox" id="eu-is-version" style="width:14px;height:14px;accent-color:var(--accent)" onchange="document.getElementById('eu-version-row').style.display=this.checked?'block':'none'">
+                  This is a new version of an existing edit
+                </label>
+                <div id="eu-version-row" style="display:none;margin-top:8px">
+                  <label class="form-label" style="margin-bottom:4px">Which edit?</label>
+                  <select class="form-select" id="eu-parent-edit" style="font-size:12px"></select>
+                </div>
+              </div>
+              <div style="padding:10px 12px">
+                <label class="form-label" style="margin-bottom:4px">Version</label>
+                <input class="form-input" id="eu-version" placeholder="e.g. v1, v2, Final">
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-edit-upload')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmEditUpload()">Upload</button>
+          </div>
+        </div>
+      </div>
+
       <!-- REMOVE CONTACT MODAL -->
       <div class="modal-overlay" id="modal-remove-contact">
         <div class="modal" style="max-width:400px">

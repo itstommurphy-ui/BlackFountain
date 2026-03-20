@@ -980,7 +980,8 @@ function openScriptPreview(id) {
   const isPdf  = s.type.includes('pdf');
   const isImg  = s.type.startsWith('image/');
   const textExts = ['txt', 'fountain', 'fdx', 'md', 'rtf'];
-  const isText = s.type.includes('text') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx') || textExts.includes(s.origExt || '');
+  const fileExt = s.name.split('.').pop().toLowerCase();
+  const isText = s.type.includes('text') || s.type.includes('xml') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx') || textExts.includes(fileExt) || textExts.includes(s.origExt || '');
 
   let previewHtml = '';
   if (isPdf) {
@@ -993,6 +994,18 @@ function openScriptPreview(id) {
       text = decodeURIComponent(escape(atob(s.dataUrl.split(',')[1])));
     } catch(e) {
       try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = '(Cannot decode file)'; }
+    }
+    // Parse Final Draft XML to extract readable text
+    const fname = s.name.toLowerCase();
+    const ext = (s.origExt || fname.split('.').pop() || '').toLowerCase();
+    if (fname.endsWith('.fdx') || ext === 'fdx') {
+      try {
+        const xml = new DOMParser().parseFromString(text, 'text/xml');
+        const extracted = Array.from(xml.querySelectorAll('Paragraph'))
+          .map(par => Array.from(par.querySelectorAll('Text')).map(t => t.textContent).join(''))
+          .filter(s => s.trim()).join('\n');
+        if (extracted.trim()) text = extracted;
+      } catch(e) {}
     }
     previewHtml = `<pre style="background:var(--surface);color:var(--text);padding:20px;border-radius:8px;overflow:auto;width:min(820px,90vw);max-height:80vh;font-size:12px;line-height:1.7;white-space:pre-wrap;text-align:left">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
   } else {

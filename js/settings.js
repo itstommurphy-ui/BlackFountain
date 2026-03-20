@@ -553,10 +553,14 @@ function renderOverviewFiles() {
     const peopleTags = (file.people || []).length
       ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">${(file.people).map(n => `<span style="font-size:9px;padding:1px 5px;background:var(--surface3);border-radius:3px;color:var(--text2);">👤 ${n}</span>`).join('')}</div>`
       : '';
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isVideo = (file.data && file.data.startsWith('data:video')) || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
+    const playBtn = isVideo ? `<button class="file-action-btn" onclick="event.stopPropagation();openVideoPlayer('${file.id}')" title="Play video">▶</button>` : '';
     return `
     <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" style="font-size:11px;">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','overview')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
+        ${playBtn}
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
         <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'],'${projectId}')" title="Move to project">🔀</button>
         <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
@@ -2044,10 +2048,13 @@ function viewFile(id) {
   if (!file) return;
   const win = window.open();
   const ext = file.name.split('.').pop().toLowerCase();
+  const isVideo = file.data.startsWith('data:video') || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
   if (file.data.startsWith('data:image')) {
     win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${file.data}" alt="${file.altText || file.name}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
   } else if (ext === 'pdf') {
     win.document.write(`<!DOCTYPE html><html><head><title>${file.name}</title><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;overflow:hidden;}iframe{width:100%;height:100%;border:none;}</style></head><body><iframe src="${file.data}"></iframe></body></html>`);
+  } else if (isVideo) {
+    win.document.write(`<!DOCTYPE html><html><head><title>${file.name}</title><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;}video{max-width:100%;max-height:90vh;}h1{color:#fff;font-family:sans-serif;font-size:16px;font-weight:normal;margin:10px 0;}</style></head><body><video controls autoplay><source src="${file.data}" type="${file.type || 'video/mp4'}">Your browser does not support video playback.</video><h1>${file.name}</h1></body></html>`);
   } else {
     win.document.write(`<html><head><title>${file.name}</title></head><body style="margin:0;padding:20px;font-family:sans-serif;background:#f5f5f5"><div style="background:white;padding:40px;border-radius:8px;max-width:600px;margin:40px auto"><h2 style="margin-bottom:12px">${file.name}</h2><p style="color:#666;margin-bottom:20px">${formatFileSize(file.size)}</p><a href="${file.data}" download="${file.name}" style="background:#e6bc3c;color:#000;padding:10px 20px;text-decoration:none;border-radius:4px;font-weight:600">Download</a></div></body></html>`);
   }
@@ -2065,6 +2072,282 @@ function _makeDrop(el, fn) {
     el.classList.remove('dragover');
     if (e.dataTransfer.files.length) fn(e.dataTransfer.files);
   });
+}
+
+// ── EDITS / CUTS ──────────────────────────────────────────────────────────────────
+let _pendingEditFile = null; // { file, dataUrl }
+let _editUploadQueue = [];
+
+function handleEditUpload(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const p = currentProject();
+  if (!p) { showToast('Please select a project first', 'warning'); return; }
+  
+  // Process one file at a time via the modal
+  _editUploadQueue = Array.from(fileList);
+  _processNextEditUpload();
+}
+
+function _processNextEditUpload() {
+  const p = currentProject();
+  if (!p || !_editUploadQueue.length) return;
+  
+  const file = _editUploadQueue.shift();
+  const reader = new FileReader();
+  reader.onload = e => {
+    _pendingEditFile = { file, dataUrl: e.target.result };
+    openEditUploadModal(p, file);
+  };
+  reader.readAsDataURL(file);
+}
+
+function openEditUploadModal(p, file) {
+  const nameNoExt = file.name.replace(/\.[^.]+$/, '');
+  const euName = document.getElementById('eu-name');
+  const euVersion = document.getElementById('eu-version');
+  const euIsVersion = document.getElementById('eu-is-version');
+  const euVersionRow = document.getElementById('eu-version-row');
+  const euParentEdit = document.getElementById('eu-parent-edit');
+  
+  if (!euName || !euVersion || !euIsVersion || !euVersionRow || !euParentEdit) {
+    console.error('[openEditUploadModal] Modal elements not found in DOM');
+    // Modal HTML might not be loaded yet - try opening anyway
+    openModal('modal-edit-upload');
+    return;
+  }
+  
+  euName.value = nameNoExt;
+  euVersion.value = '';
+  euIsVersion.checked = false;
+  euVersionRow.style.display = 'none';
+  
+  // Populate existing edits dropdown - only show LATEST version of each edit
+  const allEdits = store.files || [];
+  const editsByBaseName = {};
+  allEdits.forEach(f => {
+    if (f.categories?.includes('edits') && f.projectIds?.includes(p.id)) {
+      const key = f.baseName || f.id;
+      if (!editsByBaseName[key] || (f.version || 1) > (editsByBaseName[key].version || 1)) {
+        editsByBaseName[key] = f;
+      }
+    }
+  });
+  const existingEdits = Object.values(editsByBaseName).sort((a, b) => (b.version || 1) - (a.version || 1));
+  
+  const editOpts = existingEdits.length
+    ? existingEdits.map(e => `<option value="${e.id}">${e.name}</option>`).join('')
+    : '<option value="">— None —</option>';
+  
+  euParentEdit.innerHTML = editOpts;
+  
+  // If there are existing edits, pre-check the version checkbox
+  if (existingEdits.length > 0) {
+    euIsVersion.checked = true;
+    euVersionRow.style.display = 'block';
+  }
+  
+  openModal('modal-edit-upload');
+}
+
+function confirmEditUpload() {
+  const p = currentProject();
+  if (!p || !_pendingEditFile) {
+    console.log('[confirmEditUpload] early exit - p:', !!p, '_pendingEditFile:', !!_pendingEditFile);
+    return;
+  }
+  
+  const name = document.getElementById('eu-name').value.trim() || _pendingEditFile.file.name;
+  const versionLabel = document.getElementById('eu-version').value.trim();
+  const isVersion = document.getElementById('eu-is-version').checked;
+  const parentId = document.getElementById('eu-parent-edit').value;
+  
+  const ext = _pendingEditFile.file.name.split('.').pop().toLowerCase();
+  
+  // Determine version number and baseName
+  let version = 1;
+  let baseName = 'edit_' + makeId(); // Unique baseName for standalone edits
+  
+  if (isVersion && parentId) {
+    const parent = (store.files || []).find(f => f.id === parentId);
+    if (parent) {
+      version = (parent.version || 1) + 1;
+      baseName = parent.baseName || 'edit_' + parent.id;
+    }
+  }
+  
+  // Store version label separately, not in the filename
+  const displayName = name + '.' + ext;
+  
+  store.files = store.files || [];
+  const newFile = {
+    id: makeId(),
+    name: displayName,
+    categories: ['edits'],
+    people: [],
+    location: '',
+    description: '',
+    altText: '',
+    type: _pendingEditFile.file.type,
+    size: _pendingEditFile.file.size,
+    data: _pendingEditFile.dataUrl,
+    folderId: null,
+    projectIds: [p.id],
+    uploadedAt: new Date().toISOString(),
+    version: version,
+    versionLabel: versionLabel || null,
+    baseName: baseName
+  };
+  store.files.push(newFile);
+  console.log('[confirmEditUpload] File added, total files:', store.files.length, '| file data length:', newFile.data?.length);
+  
+  saveStore();
+  closeModal('modal-edit-upload');
+  renderOverviewEdits();
+  renderFiles();
+  showToast('Edit uploaded', 'success');
+  
+  _pendingEditFile = null;
+  
+  // Process next file in queue if any
+  if (_editUploadQueue.length) _processNextEditUpload();
+}
+
+function renderOverviewEdits() {
+  const p = currentProject();
+  console.log('[renderOverviewEdits] p:', !!p, 'currentProjectId:', store.currentProjectId);
+  if (!p) return;
+  
+  const grid = document.getElementById('overview-edits-grid');
+  const empty = document.getElementById('overview-edits-empty');
+  if (!grid || !empty) {
+    console.log('[renderOverviewEdits] grid or empty not found, grid:', !!grid, 'empty:', !!empty);
+    return;
+  }
+  
+  const allFiles = store.files || [];
+  console.log('[renderOverviewEdits] Total files:', allFiles.length, '| projectId:', p.id);
+  
+  const edits = allFiles.filter(f => {
+    const hasCategory = f.categories?.includes('edits');
+    const hasProject = f.projectIds?.includes(p.id);
+    return hasCategory && hasProject;
+  }).sort((a, b) => {
+    // First sort by baseName to group versions together
+    const aKey = a.baseName || a.id;
+    const bKey = b.baseName || b.id;
+    if (aKey !== bKey) return aKey.localeCompare(bKey);
+    // Then sort by version number (highest first)
+    return (b.version || 1) - (a.version || 1);
+  });
+  
+  console.log('[renderOverviewEdits] Filtered edits:', edits.length, '| edits:', edits.map(e => e.name));
+  
+  if (edits.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  
+  empty.style.display = 'none';
+  
+  // Group by base name for version display
+  const grouped = {};
+  edits.forEach(edit => {
+    const key = edit.baseName || edit.name.replace(/\.[^.]+$/, '').toLowerCase();
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(edit);
+  });
+  
+  let html = '';
+  Object.entries(grouped).forEach(([baseName, versionList]) => {
+    const latest = versionList[0];
+    const versions = versionList.length;
+    const displayTitle = latest.name.replace(/\.[^.]+$/, '');
+    // Use stored versionLabel field, fallback to auto version number
+    const customLabel = latest.versionLabel;
+    const versionDisplay = customLabel ? customLabel : (versions > 1 ? `v${latest.version || 1}` : '');
+    
+    html += `
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px;position:relative;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="width:48px;height:48px;background:var(--surface3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎞</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${displayTitle}">${displayTitle}</div>
+            <div style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+              ${versionDisplay ? `<span style="background:var(--accent);color:var(--bg);padding:1px 6px;border-radius:3px;font-weight:600;">${versionDisplay}</span>` : '<span>Single edit</span>'}
+              ${versions > 1 ? `<span>(${versions} versions)</span>` : ''}
+              <span>•</span>
+              <span>${formatFileSize(latest.size)}</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <button class="btn btn-sm" style="flex:1;font-size:11px;" onclick="openVideoPlayer('${latest.id}')">▶ Play</button>
+          <button class="btn btn-sm" style="flex:1;font-size:11px;" onclick="downloadFile('${latest.id}')">⬇ Download</button>
+        </div>
+        ${versions > 1 ? `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border2);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">PREVIOUS VERSIONS</div>
+            <div style="display:flex;flex-direction:column;gap:4px;max-height:80px;overflow-y:auto;">
+              ${versionList.slice(1).map(v => {
+                const prevLabel = v.versionLabel || `v${v.version || 1}`;
+                return `
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;padding:4px 6px;background:var(--surface3);border-radius:3px;">
+                  <span>${prevLabel}</span>
+                  <div style="display:flex;gap:4px;">
+                    <button onclick="openVideoPlayer('${v.id}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0 4px;">▶</button>
+                    <button onclick="downloadFile('${v.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 4px;">⬇</button>
+                  </div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+  
+  grid.innerHTML = html;
+}
+
+// ── VIDEO PLAYER MODAL ─────────────────────────────────────────────────────────────
+
+function openVideoPlayer(fileId) {
+  const file = (store.files || []).find(f => f.id === fileId);
+  if (!file) return;
+  
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isVideo = file.data.startsWith('data:video') || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
+  if (!isVideo) {
+    viewFile(fileId);
+    return;
+  }
+  
+  document.getElementById('vp-title').textContent = file.name;
+  document.getElementById('vp-info').textContent = formatFileSize(file.size);
+  
+  const video = document.getElementById('vp-video');
+  video.src = file.data;
+  video.load();
+  
+  const dlBtn = document.getElementById('vp-download');
+  dlBtn.href = file.data;
+  dlBtn.download = file.name;
+  
+  openModal('modal-video-player');
+}
+
+function toggleVideoFullscreen() {
+  const container = document.getElementById('vp-container');
+  const video = document.getElementById('vp-video');
+  
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else if (container.requestFullscreen) {
+    container.requestFullscreen();
+  } else if (video.requestFullscreen) {
+    video.requestFullscreen();
+  }
 }
 
 // Main file upload zone (Files tab) - now attached in renderFiles() after view is loaded
@@ -2178,18 +2461,31 @@ async function saveStore() {
     clearTimeout(window._saveFlashT);
     window._saveFlashT = setTimeout(() => ind.style.opacity = '0', 2000);
   }
+  let idbSuccess = false;
   try {
     const db = await openDB();
     await new Promise((resolve, reject) => {
       const tx = db.transaction('kv', 'readwrite');
       tx.objectStore('kv').put(store, 'v1');
-      tx.oncomplete = resolve;
+      tx.oncomplete = () => { idbSuccess = true; resolve(); };
       tx.onerror = () => reject(tx.error);
     });
+    console.log('[saveStore] IndexedDB write success, files:', store.files?.length);
   } catch(e) {
     console.error('[saveStore] IndexedDB write failed:', e);
-    showToast('Data could not be saved.', 'error');
+    showToast('Data could not be saved: ' + e.message, 'error');
   }
+  // Backup file metadata to localStorage (NOT the video data - too large for localStorage)
+  try {
+    const filesMeta = store.files.map(f => ({
+      id: f.id, name: f.name, categories: f.categories, projectIds: f.projectIds,
+      version: f.version, versionLabel: f.versionLabel, baseName: f.baseName,
+      uploadedAt: f.uploadedAt, size: f.size, type: f.type
+      // Note: NOT saving f.data (the actual video) - too large for localStorage
+    }));
+    const backup = { files: filesMeta, currentProjectId: store.currentProjectId };
+    localStorage.setItem('blackfountain_backup', JSON.stringify(backup));
+  } catch(e) { console.warn('[saveStore] localStorage backup failed:', e); }
   // Cloud sync (non-blocking — file blobs are stripped, IDB is source of truth for those)
   if (typeof sbPushStore === 'function') sbPushStore();
 }
@@ -2249,6 +2545,9 @@ async function loadStore() {
     });
     if (idbData) {
       loaded = idbData;
+      const fileCount = (idbData.files || []).length;
+      const blobCount = (idbData.files || []).filter(f => f.data).length;
+      console.log('[loadStore] IDB loaded, files:', fileCount, 'with blobs:', blobCount);
       (idbData.files || []).forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
     }
   } catch(e) {
@@ -2256,11 +2555,18 @@ async function loadStore() {
   }
 
   // If logged in, pull from Supabase — it's the authoritative source for project data
+  // BUT we need to preserve local file blobs since they're not stored in the cloud
   if (typeof sbPullStore === 'function' && _sbUser) {
     try {
       const cloudData = await sbPullStore();
       if (cloudData && cloudData.projects !== undefined) {
+        // Capture local file blobs BEFORE overwriting with cloud data
+        if (loaded && loaded.files) {
+          loaded.files.forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
+          console.log('[loadStore] Saved local blobs before cloud sync:', Object.keys(localFileBlobMap).length);
+        }
         loaded = cloudData; // cloud wins for project/contact/settings data
+        console.log('[loadStore] Cloud data loaded, files in cloud:', (cloudData.files || []).length);
       } else if (loaded) {
         // Cloud is empty — upload what we have locally
         console.log('[loadStore] Cloud empty, uploading local data to Supabase');
@@ -2335,8 +2641,28 @@ async function loadStore() {
       }
     });
     // Restore file blobs from local IDB (they're never sent to Supabase)
+    const filesWithDataBefore = store.files?.filter(f => f.data)?.length || 0;
     if (Object.keys(localFileBlobMap).length) {
       store.files.forEach(f => { if (!f.data && localFileBlobMap[f.id]) f.data = localFileBlobMap[f.id]; });
+    }
+    const filesWithDataAfter = store.files?.filter(f => f.data)?.length || 0;
+    console.log('[loadStore] File blobs restored:', filesWithDataBefore, '->', filesWithDataAfter, '| localFileBlobMap size:', Object.keys(localFileBlobMap).length);
+    
+    // If still no file data, try localStorage backup
+    if (filesWithDataAfter === 0) {
+      try {
+        const backup = localStorage.getItem('blackfountain_backup');
+        if (backup) {
+          const backupData = JSON.parse(backup);
+          if (backupData.files) {
+            const filesWithBackupData = backupData.files.filter(f => f.data).length;
+            console.log('[loadStore] Trying localStorage backup, files with data:', filesWithBackupData);
+            if (filesWithBackupData > 0) {
+              store.files = backupData.files;
+            }
+          }
+        }
+      } catch(e) { console.warn('[loadStore] localStorage backup restore failed:', e); }
     }
     // Validate currentProjectId - clear if project no longer exists
     if (store.currentProjectId) {

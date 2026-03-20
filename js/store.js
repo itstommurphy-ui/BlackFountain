@@ -35,6 +35,7 @@ const FILE_CATEGORIES = {
   moodboard:  { label: 'Moodboards',       icon: '🎨', extensions: ['jpg','jpeg','png','gif','webp'] },
   storyboard: { label: 'Storyboards',      icon: '🖼️', extensions: ['jpg','jpeg','png','gif','webp','pdf'] },
   contract:   { label: 'Contracts',        icon: '📋', extensions: ['pdf','doc','docx'] },
+  edits:      { label: 'Edits',            icon: '🎞️', extensions: ['mp4','mov','avi','mkv','webm','m4v'] },
   other:      { label: 'Other',            icon: '📁', extensions: [] },
 };
 

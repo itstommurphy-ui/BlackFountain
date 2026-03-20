@@ -73,10 +73,28 @@ const MODAL_SAVE = {
   'modal-move-file':          () => confirmMoveFile(),
   'modal-remove-file':        () => confirmRemoveFiles(),
   'modal-script-upload':      () => confirmScriptUpload(),
+  'modal-edit-upload':        () => confirmEditUpload(),
   'modal-new-moodboard':      () => saveNewMoodboard(),
   'modal-mb-video':           () => saveMbVideo(),
   'modal-mb-color':           () => saveMbColor(),
-  'modal-loc-contact':  () => saveLocationContact(),
+  'modal-mb-note':           () => saveMbNote(),
+  'modal-loc-contact':       () => saveLocationContact(),
+  // Missing modals - file management
+  'modal-create-folder':      () => confirmCreateFolder(),
+  'modal-upload-file':       () => confirmFileUpload(),
+  'modal-remove-contact':    () => confirmRemoveContact(),
+  'modal-orphan-contact':    () => confirmOrphanRemove(),
+  // Missing modals - location
+  'modal-move-location':     () => doLocationTransfer(false),
+  'modal-import-location':   () => { /* handled inline */ },
+  'modal-create-scout':       () => confirmCreateScout(),
+  // Missing modals - callsheet
+  'modal-remove-csrow':      () => confirmRemoveCSRow(),
+  'modal-export':            () => doExportPDF(),
+  'modal-delete-cs':         () => doDeleteCallsheet(),
+  // Missing modals - data management
+  'modal-clear-data':        () => confirmClearAllData(),
+  'modal-import-data':       () => confirmImportStore(),
 };
 
 // Shot modal — delegated autocomplete for location and cast fields
@@ -165,7 +183,9 @@ document.addEventListener('keydown', e => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'SELECT') return;
     const saveFn = MODAL_SAVE[open.id];
-    if (saveFn) { e.preventDefault(); saveFn(); }
+    if (saveFn) { e.preventDefault(); saveFn(); return; }
+    // Handle dynamically created custom section modal
+    if (open.id === '_create-cs') { e.preventDefault(); saveCustomSection('_create-cs'); }
   }
 });
 document.querySelectorAll('.modal-overlay').forEach(overlay => {

@@ -99,13 +99,31 @@ Priority colour bar shows urgency">?</span>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
 
+          <!-- EDITS / CUTS WIDGET -->
+          <div style="margin-top:28px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:10px">
+                <h3 class="section-heading" style="margin:0;">🎞️ EDITS</h3>
+                <span class="tooltip-info" data-tip="Upload video cuts here. New uploads with the same name create new versions.">?</span>
+              </div>
+              <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+                + Upload Cut
+                <input type="file" multiple accept="video/*,.mp4,.mov,.avi,.mkv,.webm,.m4v" style="display:none" onchange="handleEditUpload(this.files);this.value=''">
+              </label>
+            </div>
+            <div id="overview-edits-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+            <div id="overview-edits-empty" style="text-align:center;padding:24px;color:var(--text3);font-size:12px;">
+              No edits uploaded yet. Click "Upload Cut" to add your first edit.
+            </div>
+          </div>
+
           <!-- PROJECT FILES WIDGET -->
           <div style="margin-top:28px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
               <h3 class="section-heading" style="margin:0;">PROJECT FILES</h3>
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">
                 + Upload File
-                <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.fdx" style="display:none" onchange="handleFileUploadFromOverview(this.files)">
+                <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.fdx,.mp4,.mov,.avi,.mkv,.webm,.m4v" style="display:none" onchange="handleFileUploadFromOverview(this.files)">
               </label>
             </div>
             <div id="overview-files-bulk-bar" class="file-bulk-bar">

@@ -341,6 +341,7 @@ function renderOverview(p) {
   document.getElementById('ov-shoot-days-header').textContent = p.callsheets.length || '0';
   renderOverviewDocs(p);
   renderOverviewFiles();
+  if (typeof renderOverviewEdits === 'function') renderOverviewEdits();
   if (typeof renderQuickTasks === 'function') renderQuickTasks(p);
 }
 
@@ -996,6 +997,7 @@ function openCreateCustomSection() {
   const csId = '_create-cs';
   const overlay = document.createElement('div');
   overlay.id = csId;
+  overlay.className = 'modal-overlay open';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px 20px 18px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">

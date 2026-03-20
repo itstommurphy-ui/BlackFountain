@@ -171,7 +171,7 @@ function renderPropTable(type, tbodyId, p) {
     return;
   }
   tbody.innerHTML = list.map((item,i) => `
-    <tr data-ctx="prop:${type}:${i}">
+    <tr data-ctx="prop:${type}:${i}" onclick="editPropItem('${type}',${i})" style="cursor:pointer">
       <td><strong>${item.name}</strong></td>
       <td>${item.qty||1}</td>
       <td>${item.chars||'—'}</td>
