@@ -2732,3 +2732,11 @@
 .gear-pool-item:active { background: var(--surface); }
 .gear-pool-item .btn-ghost { opacity: 0; transition: opacity 0.1s; }
 .gear-pool-item:hover .btn-ghost { opacity: 1; }
+
+
+/* ── SCHEDULE VIEW - DAY HEADERS ── */
+.day-header-row td {
+  background: var(--bg2) !important;
+  border-left: 3px solid var(--accent);
+  padding: 10px 12px !important;
+}

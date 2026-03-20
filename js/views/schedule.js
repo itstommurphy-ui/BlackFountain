@@ -1,19 +1,543 @@
-// SCHEDULE
-function renderSchedule(p) {
-  const tbody = document.getElementById('schedule-body');
-  if (!p.schedule.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:30px"><div class="icon">🕐</div><h4>No shots scheduled</h4></div></td></tr>`;
+// ================================================================
+// SMART PRODUCTION SCHEDULE ENGINE (v3.0 - Dynamic Flow & DnD)
+// ================================================================
+
+/**
+ * 1. GENERATION: Create schedule from shot list.
+ */
+async function generateScheduleFromShots() {
+  const p = currentProject();
+  if (!p || !p.shots || !p.shots.length) {
+    showToast('No shots in shot list. Add shots first.', 'info');
     return;
   }
-  tbody.innerHTML = p.schedule.map((s,i) => `
-    <tr data-ctx="schedule:${i}">
-      <td>${s.time||'—'}</td><td>${s.scene||'—'}</td><td>${s.shot||'—'}</td>
-      <td><span class="tag">${s.type||'—'}</span></td>
-      <td>${s.desc||'—'}</td><td>${s.cast||'—'}</td>
-      <td>${s.pages||'—'}</td><td>${s.est||'—'}</td>
-      <td><button class="btn btn-sm btn-ghost btn-danger" onclick="removeScheduleRow(${i})">✕</button></td>
-    </tr>
-  `).join('');
+  
+  if (!p.schedule) p.schedule = [];
+  const existingShotRefs = new Set(p.schedule.map(s => `${s.sceneKey}-${s.shotNum}`).filter(Boolean));
+  let added = 0;
+  
+  p.shots.forEach(shot => {
+    const ref = `${shot.sceneKey}-${shot.num}`;
+    if (existingShotRefs.has(ref)) return;
+    
+    const totalTime = (parseInt(shot.setuptime) || 0) + (parseInt(shot.shoottime) || 0);
+    
+    p.schedule.push({
+      time: '',
+      scene: shot.scene || '',
+      shot: shot.num || '',
+      shotNum: shot.num,
+      sceneKey: shot.sceneKey,
+      type: shot.type || '',
+      desc: shot.desc || '',
+      cast: shot.cast || '',
+      pages: shot.pages || '',
+      est: totalTime || 45,
+      location: shot.location || '',
+      extint: shot.extint || 'INT DAY',
+      movement: shot.movement || 'Stationary',
+    });
+    existingShotRefs.add(ref);
+    added++;
+  });
+  
+  _applyProductionSort(p.schedule);
+  await saveStore();
+  await wrapScheduleDays();
+  showToast(`Generated ${added} entries`, 'success');
+}
+
+// ================================================================
+
+/**
+ * 1. THE FLOW ENGINE: This is the "Big Brain" core.
+ * Instead of just calculating times, it re-paginates the entire production
+ * whenever a limit (Wrap Time) or a duration (Mins) changes.
+ */
+async function wrapScheduleDays() {
+  const p = currentProject();
+  if (!p || !p.schedule) return;
+
+  // Use project-wide defaults or standard 10-hour day
+  const DEFAULT_CALL = 420;  // 07:00
+  const DEFAULT_WRAP = 1020; // 17:00
+  const BUFFER = 15; // 15 min buffer
+
+  // Get existing day headers with their custom times
+  const existingHeaders = p.schedule.filter(s => s.isDayHeader);
+  
+  // 1. Get ONLY the shots (ignore old headers) to keep user's custom order
+  let shots = p.schedule.filter(s => !s.isDayHeader);
+  
+  const newSchedule = [];
+  let dayNum = 1;
+  let currentDayShots = [];
+  let currentMins = 0;
+  let dayCallTime = DEFAULT_CALL;
+  let dayWrapTime = DEFAULT_WRAP;
+  
+  // 2. Distribute shots into days based on the "Limit"
+  shots.forEach((shot, idx) => {
+    const duration = parseInt(shot.est) || 0;
+    
+    // Check if we need to use custom times for this day
+    const headerForDay = existingHeaders.find((h, i) => i + 1 === dayNum);
+    if (headerForDay) {
+      dayCallTime = headerForDay.callTime || DEFAULT_CALL;
+      dayWrapTime = headerForDay.wrapTime || DEFAULT_WRAP;
+    }
+    
+    const dayLimit = dayWrapTime - dayCallTime - BUFFER;
+    
+    // Check if this shot fits in the current day's window
+    if (currentDayShots.length > 0 && (currentMins + duration) > dayLimit) {
+      newSchedule.push({
+        isDayHeader: true,
+        desc: `DAY ${dayNum}`,
+        callTime: dayCallTime,
+        wrapTime: dayWrapTime,
+        totalEst: currentMins
+      });
+      newSchedule.push(...currentDayShots);
+      
+      dayNum++;
+      currentDayShots = [];
+      currentMins = 0;
+      
+      // Get times for next day
+      const nextHeader = existingHeaders.find((h, i) => i + 1 === dayNum);
+      dayCallTime = nextHeader?.callTime || DEFAULT_CALL;
+      dayWrapTime = nextHeader?.wrapTime || DEFAULT_WRAP;
+    }
+    currentDayShots.push(shot);
+    currentMins += duration;
+  });
+
+  // Push the final remaining shots
+  if (currentDayShots.length > 0) {
+    newSchedule.push({ 
+      isDayHeader: true, 
+      desc: `DAY ${dayNum}`, 
+      callTime: dayCallTime, 
+      wrapTime: dayWrapTime, 
+      totalEst: currentMins 
+    });
+    newSchedule.push(...currentDayShots);
+  }
+
+  p.schedule = newSchedule;
+  await rippleScheduleTimes(); 
+}
+
+/**
+ * 2. THE RIPPLE: Recalculates every timestamp in the project.
+ */
+async function rippleScheduleTimes() {
+  const p = currentProject();
+  if (!p.schedule) return;
+  
+  let runningTime = 420;
+
+  p.schedule.forEach((item, idx) => {
+    if (item.isDayHeader) {
+      runningTime = item.callTime || 420;
+      // Re-sum the day's total for the UI
+      const dayShots = _getShotsForDay(p.schedule, idx);
+      item.totalEst = dayShots.reduce((sum, s) => sum + (parseInt(s.est) || 0), 0);
+    } else {
+      item.time = _formatTime(runningTime);
+      runningTime += (parseInt(item.est) || 0);
+    }
+  });
+  await saveStore();
+  renderSchedule(p);
+}
+
+// ================================================================
+// THE BRAIN: Optimization & Conflict Detection
+// ================================================================
+
+/**
+ * THE BRAIN: Optimization & Conflict Detection
+ * Checks for both Actor Downtime and Scene Fragmentation.
+ */
+function getOptimizationSuggestion(shotIdx, schedule) {
+  const shot = schedule[shotIdx];
+  if (!shot || shot.isDayHeader) return null;
+
+  const dayIndex = _findDayHeaderIndex(schedule, shotIdx);
+  const dayShots = _getShotsForDay(schedule, dayIndex);
+  const myPosInDay = dayShots.indexOf(shot);
+
+  // --- LOGIC A: Scene Fragmentation (The "Reunite" Suggestion) ---
+  const sameSceneShots = dayShots.filter(s => s.scene === shot.scene && s !== shot);
+  if (sameSceneShots.length > 0) {
+    const otherPositions = sameSceneShots.map(s => dayShots.indexOf(s));
+    const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
+
+    if (minGap > 1) { // There are unrelated shots between shots of the SAME scene
+      const targetPos = dayIndex + otherPositions[0] + 1;
+      return { 
+        type: 'scene',
+        targetPos, 
+        message: `EFFICIENCY TIP: This is part of Scene ${shot.scene}. Click to group it with the other ${sameSceneShots.length} shots to avoid a lighting reset.`
+      };
+    }
+  }
+
+  // --- LOGIC B: Actor Downtime (The "Downtime" Suggestion) ---
+  if (shot.cast) {
+    const actors = shot.cast.split(',').map(a => a.trim());
+    for (const actor of actors) {
+      const actorShots = dayShots.filter(s => s.cast && s.cast.includes(actor));
+      if (actorShots.length <= 1) continue;
+
+      const otherPositions = actorShots.map(s => dayShots.indexOf(s)).filter(p => p !== myPosInDay);
+      const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
+
+      if (minGap > 3) {
+        const targetPos = dayIndex + otherPositions[0] + 1;
+        const savings = (minGap - 1) * 45; // Estimate 45m per skipped shot
+        return { 
+          type: 'actor',
+          actor,
+          targetPos, 
+          message: `AD TIP: ${actor} is currently waiting through ${minGap - 1} unrelated shots. Click to save them ~${savings}m of downtime.`
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Helper to render cast pills
+ */
+function _renderCastPills(cast) {
+  if (!cast) return '';
+  return cast.split(',').map(c => `<span class="actor-pill">${c.trim()}</span>`).join('');
+}
+
+/**
+ * Wand tooltip functions
+ */
+let wandTooltipEl = null;
+function showWandTooltip(el, message) {
+  if (!wandTooltipEl) {
+    wandTooltipEl = document.createElement('div');
+    wandTooltipEl.className = 'wand-tooltip';
+    document.body.appendChild(wandTooltipEl);
+  }
+  wandTooltipEl.textContent = message;
+  
+  const tooltipWidth = 200;
+  wandTooltipEl.style.width = tooltipWidth + 'px';
+  wandTooltipEl.style.maxWidth = tooltipWidth + 'px';
+  wandTooltipEl.style.display = 'block';
+  
+  const rect = el.getBoundingClientRect();
+  const tooltipHeight = wandTooltipEl.offsetHeight;
+  
+  // Calculate horizontal position first
+  let left = rect.left + window.scrollX - (tooltipWidth / 2) + 10;
+  if (left < 10) left = 10;
+  if (left + tooltipWidth > window.innerWidth - 10) left = window.innerWidth - tooltipWidth - 10;
+  
+  // Check if it fits above - if not, show below
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const neededSpace = tooltipHeight + 15;
+  
+  let top;
+  if (spaceAbove >= neededSpace) {
+    // Fit above
+    top = rect.top + window.scrollY - neededSpace;
+  } else if (spaceBelow >= neededSpace) {
+    // Fit below
+    top = rect.bottom + window.scrollY + 10;
+  } else {
+    // Fit where there's more space
+    if (spaceBelow > spaceAbove) {
+      top = rect.bottom + window.scrollY + 10;
+    } else {
+      top = window.scrollY + 10;
+    }
+  }
+  
+  wandTooltipEl.style.left = left + 'px';
+  wandTooltipEl.style.top = top + 'px';
+}
+function hideWandTooltip() {
+  if (wandTooltipEl) wandTooltipEl.style.display = 'none';
+}
+
+// Select all schedule entries
+function _schedSelectAll() {
+  document.querySelectorAll('.sched-cb').forEach(cb => cb.checked = true);
+}
+
+// Remove selected schedule entries
+function _schedRemoveSelected() {
+  const checked = document.querySelectorAll('.sched-cb:checked');
+  if (!checked.length) {
+    showToast('No entries selected', 'info');
+    return;
+  }
+  showConfirmDialog(`Remove ${checked.length} selected entr${checked.length > 1 ? 'ies' : 'y'}?`, 'Remove', () => {
+    const p = currentProject();
+    const indices = [...checked].map(cb => parseInt(cb.dataset.idx)).sort((a, b) => b - a);
+    indices.forEach(i => p.schedule.splice(i, 1));
+    saveStore();
+    renderSchedule(p);
+    showToast(`Removed ${indices.length} entr${indices.length > 1 ? 'ies' : 'y'}`, 'success');
+  });
+}
+
+// Remove all schedule entries including day headers
+function _schedRemoveAll() {
+  const p = currentProject();
+  if (!p.schedule || !p.schedule.length) {
+    showToast('Schedule is already empty', 'info');
+    return;
+  }
+  showConfirmDialog('Clear entire schedule (including all day headers)?', 'Clear All', () => {
+    p.schedule = [];
+    saveStore();
+    renderSchedule(p);
+    showToast('Schedule cleared', 'success');
+  });
+}
+
+/**
+ * 3. RENDER: The "Sweet" UI.
+ * Features: Drag-and-drop rows, inline time editing, and the Magic Wand.
+ */
+function renderSchedule(p) {
+  const container = document.getElementById('schedule-container');
+  if (!p.schedule || !p.schedule.length) {
+    container.innerHTML = `<div class="empty-state"><h4>No shots.</h4><button class="btn btn-primary" onclick="generateScheduleFromShots()">Generate from Shotlist</button></div>`;
+    return;
+  }
+
+  const rows = p.schedule.map((s, i) => {
+    if (s.isDayHeader) {
+      const isOvertime = (s.totalEst || 0) > 600;
+      return `
+        <tr class="day-header-row" data-idx="${i}">
+          <td colspan="10" style="background:#111; border-left: 6px solid #ffd700; padding: 15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <strong style="font-size:1.1em; letter-spacing:1px;">${s.desc}</strong>
+                <button onclick="wrapScheduleDays()" style="background:#333; color:#888; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;">Recalculate Days</button>
+              </div>
+              <div style="display:flex; gap:20px; align-items:center; font-size:12px;">
+                <label>Call: <input type="time" class="time-input" value="${_minToInput(s.callTime||420)}" onchange="updateDayTime(${i}, 'callTime', this.value)"></label>
+                <label>Wrap: <input type="time" class="time-input" value="${_minToInput(s.wrapTime||1020)}" onchange="updateDayTime(${i}, 'wrapTime', this.value)"></label>
+                <span>Work: <b style="color:${isOvertime ? '#ff4d4d' : '#00ff88'}">${Math.floor((s.totalEst||0)/60)}h ${(s.totalEst||0)%60}m</b></span>
+              </div>
+            </div>
+          </td>
+        </tr>`;
+    }
+
+    // If it's a scene fragment, highlight the row slightly
+    const suggestion = getOptimizationSuggestion(i, p.schedule);
+    const rowStyle = (suggestion && suggestion.type === 'scene') ? 'border-left: 4px solid #ff4d4d; background: rgba(255, 77, 77, 0.05);' : '';
+    
+    const wand = suggestion ? `
+      <span class="magic-wand" 
+            onclick="moveShot(${i}, ${suggestion.targetPos})" 
+            onmouseover="showWandTooltip(this, '${suggestion.message.replace(/'/g, "\\'")}')" 
+            onmouseout="hideWandTooltip()">
+        🪄
+      </span>` : '';
+
+    const castHtml = _renderCastPills(s.cast);
+
+    return `
+      <tr class="sched-row" style="${rowStyle}" draggable="true" ondragstart="dragShot(event, ${i})" ondragover="allowDrop(event)" ondrop="dropShot(event, ${i})">
+        <td class="drag-handle">⠿</td>
+        <td style="color:#ffd700; font-weight:bold; width:90px;">${s.time||''}</td>
+        <td><b>SC ${s.scene||''}</b></td>
+        <td>${s.shot||''}</td>
+        <td><span class="tag-type">${s.type||''}</span></td>
+        <td class="cell-truncate" title="${s.desc||''}">${s.desc||''}</td>
+        <td>${castHtml} ${wand}</td>
+        <td style="width:40px;">${s.pages||''}</td>
+        <td><input type="number" class="est-input" value="${s.est}" onchange="updateShotDuration(${i}, this.value)"></td>
+        <td><button class="btn-delete" onclick="removeScheduleRow(${i})">✕</button></td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <style>
+      .time-input { background:#222; border:1px solid #444; color:#ffd700; border-radius:4px; padding:2px; cursor:pointer; }
+      .drag-handle { color:#444; cursor:grab; font-size:18px; width:20px; text-align:center; }
+      .sched-row { transition: background 0.3s ease; }
+      .sched-row:active { cursor:grabbing; background:#222; }
+      .magic-wand { position: relative; cursor: pointer; margin-left: 8px; font-size: 1.2em; }
+      .wand-tooltip { 
+        display: none; position: fixed; z-index: 1000;
+        background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; width: 240px;
+        font-size: 12px; line-height: 1.4; border: 1px solid #ffd700;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      }
+      @keyframes glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; filter: drop-shadow(0 0 5px #ffd700); } }
+      .actor-pill { background:#2a2a2a; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #444; }
+      .est-input { width:45px; background:#000; border:1px solid #333; color:#fff; text-align:center; font-weight:bold; }
+    </style>
+    <table class="data-table" style="width:100%; border-collapse:collapse;">${rows}</table>`;
+}
+
+/**
+ * 4. DRAG & DROP LOGIC
+ */
+let draggedIdx = null;
+function dragShot(e, idx) { draggedIdx = idx; e.dataTransfer.setData("text", idx); }
+function allowDrop(e) { e.preventDefault(); }
+async function dropShot(e, targetIdx) {
+  e.preventDefault();
+  const p = currentProject();
+  const item = p.schedule.splice(draggedIdx, 1)[0];
+  p.schedule.splice(targetIdx, 0, item);
+  // Re-run the flow engine to see if the move changes day breaks
+  await wrapScheduleDays();
+  showToast('Order Updated', 'success');
+}
+
+/**
+ * 5. SMART ACTIONS
+ */
+async function updateDayTime(idx, field, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const p = currentProject();
+  p.schedule[idx][field] = (h * 60) + m;
+  
+  // Changing a limit "re-jigs" the whole schedule
+  await wrapScheduleDays(); 
+}
+
+async function updateShotDuration(idx, val) {
+  const p = currentProject();
+  p.schedule[idx].est = parseInt(val) || 0;
+  // Longer shots might push following scenes to the next day
+  await wrapScheduleDays();
+}
+
+async function moveShot(from, to) {
+  hideWandTooltip();
+  const p = currentProject();
+  const item = p.schedule.splice(from, 1)[0];
+  p.schedule.splice(to, 0, item);
+  await wrapScheduleDays();
+  showToast('Optimized Location', 'success');
+}
+
+// 6. ACTIONS & HELPERS
+
+// Export function for schedule
+function exportSchedule() {
+  const p = currentProject();
+  if (!p.schedule || !p.schedule.length) { showToast('No schedule to export', 'info'); return; }
+  const formats = ['HTML', 'Text', 'CSV'];
+  const menu = document.createElement('div');
+  menu.className = 'dropdown-menu';
+  menu.style.cssText = 'position:absolute;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:1000';
+  formats.forEach(fmt => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-item';
+    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer';
+    btn.textContent = '📄 ' + fmt;
+    btn.onclick = () => { document.body.removeChild(menu); exportScheduleAs(fmt); };
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  const rect = event.target.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  setTimeout(() => document.addEventListener('click', () => menu.remove()), 100);
+}
+function exportScheduleAs(fmt) {
+  const p = currentProject();
+  let content = '', filename = 'schedule', type = 'text/plain';
+  // Group by day
+  let currentDay = '';
+  const rows = p.schedule.map(s => {
+    if (s.isDayHeader) { currentDay = s.desc; return null; }
+    return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+  }).filter(r => r);
+  if (fmt === 'HTML') {
+    content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}.day{background:#ffd700;color:#000;font-weight:bold}</style></head><body><h1>Production Schedule</h1><table><tr><th>Day</th><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th></tr>';
+    let lastDay = '';
+    rows.forEach(r => {
+      const dayRow = r.day !== lastDay ? `<tr class="day"><td colspan="9">${r.day}</td></tr>` : '';
+      lastDay = r.day;
+      content += dayRow + `<tr><td></td><td>${r.time}</td><td>${r.scene}</td><td>${r.shot}</td><td>${r.type}</td><td>${r.desc}</td><td>${r.cast}</td><td>${r.pages}</td><td>${r.est}</td></tr>`;
+    });
+    content += '</table></body></html>';
+    filename += '.html'; type = 'text/html';
+  } else if (fmt === 'CSV') {
+    content = `Day,Time,Scene,Shot,Type,Description,Cast,Pages,Est (mins)\n`;
+    let lastDay = '';
+    rows.forEach(r => {
+      const d = (r.desc || '').replace(/"/g, '""');
+      if (r.day !== lastDay) content += `"${r.day}","","","","","","","","\n`;
+      lastDay = r.day;
+      content += `"${r.day}","${r.time}","${r.scene}","${r.shot}","${r.type}","${d}","${r.cast}","${r.pages}","${r.est}"\n`;
+    });
+    filename += '.csv'; type = 'text/csv';
+  } else {
+    let lastDay = '';
+    content = 'PRODUCTION SCHEDULE\n' + '='.repeat(50) + '\n\n';
+    rows.forEach(r => {
+      if (r.day !== lastDay) { content += '\n' + r.day + '\n' + '-'.repeat(30) + '\n'; lastDay = r.day; }
+      content += `${r.time} - SC ${r.scene} / ${r.shot} (${r.type})\n   ${r.desc}\n   Cast: ${r.cast} | Est: ${r.est} mins\n`;
+    });
+    filename += '.txt';
+  }
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('Exported as ' + fmt, 'success');
+}
+
+function _applyProductionSort(arr) {
+  arr.sort((a, b) => {
+    if (a.location !== b.location) return (a.location || '').localeCompare(b.location || '');
+    if (a.extint !== b.extint) return (a.extint || '').localeCompare(b.extint || '');
+    return (parseInt(a.scene) || 0) - (parseInt(b.scene) || 0);
+  });
+}
+
+function _findDayHeaderIndex(sched, shotIdx) {
+  for (let i = shotIdx; i >= 0; i--) { if (sched[i].isDayHeader) return i; }
+  return 0;
+}
+
+function _getShotsForDay(sched, headerIdx) {
+  const shots = [];
+  for (let i = headerIdx + 1; i < sched.length; i++) {
+    if (sched[i].isDayHeader) break;
+    shots.push(sched[i]);
+  }
+  return shots;
+}
+
+function _formatTime(minutes) {
+  let m = minutes % 1440;
+  const h = Math.floor(m / 60);
+  const mins = m % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${mins.toString().padStart(2, '0')} ${ampm}`;
+}
+
+function _minToInput(mins) {
+  const h = Math.floor((mins || 0) / 60).toString().padStart(2, '0');
+  const m = ((mins || 0) % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
 }
 function addScheduleRow() { document.getElementById('sched-edit-idx').value=''; ['time','scene','shot','desc','cast','pages','est'].forEach(f => document.getElementById('sched-'+f).value=''); openModal('modal-schedule'); }
 function removeScheduleRow(i) { showConfirmDialog('Remove this schedule entry?', 'Remove', () => { const p=currentProject(); p.schedule.splice(i,1); saveStore(); renderSchedule(p); }); }

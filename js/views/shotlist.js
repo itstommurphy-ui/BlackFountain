@@ -1,15 +1,212 @@
 // SHOT LIST
 // ══════════════════════════════════════════
+
+// Smart time estimation based on shot complexity
+function _calcSmartTime(shot) {
+  let setupTime = 15;
+  let shootTime = 20;
+  
+  // Movement complexity
+  const movementComplex = {
+    'Stationary': 1,
+    'Pan': 1.1,
+    'Tilt': 1.1,
+    'Handheld': 1.3,
+    'Dolly': 1.5,
+    'Crane': 1.8,
+    'Gimbal': 1.4,
+    'Tracking': 1.6
+  };
+  const moveMult = movementComplex[shot.movement] || 1;
+  setupTime = Math.round(setupTime * moveMult);
+  
+  // Shot type complexity
+  const typeComplex = {
+    'Wide': 0.8,
+    'Establishing': 0.7,
+    'Mid/Medium': 1,
+    'Close-Up': 0.9,
+    'Extreme Close-Up': 0.8,
+    'Over-the-Shoulder': 1.1,
+    'POV/Point of View': 1.2,
+    'Insert': 0.6,
+    'Aerial': 2.0,
+    'B-Roll': 0.7
+  };
+  const typeMult = typeComplex[shot.type] || 1;
+  shootTime = Math.round(shootTime * typeMult);
+  
+  // Sound considerations
+  if (shot.sound === 'MOS') {
+    shootTime = Math.round(shootTime * 0.8); // Faster without sync sound
+  } else if (shot.sound === 'Yes') {
+    setupTime += 10; // Extra time for sound setup
+  }
+  
+  // Cast count impact
+  const castCount = (shot.cast || '').split(',').filter(Boolean).length;
+  if (castCount > 3) {
+    setupTime += (castCount - 3) * 5; // Extra 5 min per additional cast
+  }
+  
+  return { setuptime: setupTime, shoottime: shootTime };
+}
+
+// Recalculate time estimates for all shots
+function recalcAllShotTimes() {
+  const p = currentProject();
+  if (!p || !p.shots || !p.shots.length) {
+    showToast('No shots to recalculate', 'info');
+    return;
+  }
+  
+  let updated = 0;
+  p.shots.forEach(shot => {
+    const times = _calcSmartTime(shot);
+    shot.setuptime = String(times.setuptime);
+    shot.shoottime = String(times.shoottime);
+    updated++;
+  });
+  
+  saveStore();
+  renderShotList(p);
+  showToast(`Recalculated times for ${updated} shots`, 'success');
+}
+
+// Optimize shot order - group by location, then INT/EXT+TOD, then movement
+function optimizeShotOrder() {
+  const p = currentProject();
+  if (!p || !p.shots || !p.shots.length) {
+    showToast('No shots to optimize', 'info');
+    return;
+  }
+  
+  // Priority: location > extint > movement > scene > setup > shot
+  const priority = (shot) => {
+    const loc = (shot.location || '').toLowerCase();
+    const extint = shot.extint || 'INT DAY';
+    const move = shot.movement || 'Stationary';
+    const scene = parseInt(shot.scene) || 0;
+    const setup = parseInt(shot.setup) || 1;
+    const num = parseInt(shot.num) || 1;
+    return `${loc}|${extint}|${move}|${String(scene).padStart(3,'0')}|${String(setup).padStart(2,'0')}|${String(num).padStart(2,'0')}`;
+  };
+  
+  const sorted = [...p.shots].sort((a, b) => priority(a).localeCompare(priority(b)));
+  p.shots = sorted;
+  
+  saveStore();
+  renderShotList(p);
+  showToast('Shots optimized: grouped by location → lighting → movement', 'success');
+}
+
+// Select all shots
+function _shotSelectAll() {
+  document.querySelectorAll('.shot-cb').forEach(cb => cb.checked = true);
+}
+
+// Remove selected shots
+function _shotRemoveSelected() {
+  const checked = document.querySelectorAll('.shot-cb:checked');
+  if (!checked.length) {
+    showToast('No shots selected', 'info');
+    return;
+  }
+  showConfirmDialog(`Remove ${checked.length} selected shot${checked.length > 1 ? 's' : ''}?`, 'Remove', () => {
+    const p = currentProject();
+    const indices = [...checked].map(cb => parseInt(cb.dataset.idx)).sort((a, b) => b - a);
+    indices.forEach(i => p.shots.splice(i, 1));
+    saveStore();
+    renderShotList(p);
+    showToast(`Removed ${indices.length} shot${indices.length > 1 ? 's' : ''}`, 'success');
+  });
+}
+
+// Generate shots from script breakdown
+function generateShotsFromBreakdown() {
+  const p = currentProject();
+  if (!p) return;
+  
+  const bd = _getActiveBd(p);
+  if (!bd?.rawText) {
+    showToast('No script breakdown found. Import a script first.', 'info');
+    return;
+  }
+  
+  const scenes = parseBreakdownScenes(bd.rawText);
+  if (!scenes.length) {
+    showToast('No scenes found in breakdown.', 'info');
+    return;
+  }
+  
+  if (!p.shots) p.shots = [];
+  
+  const sceneData = _sbBuildSceneData(p);
+  let added = 0;
+  
+  scenes.forEach((scene, idx) => {
+    const existingShots = p.shots.filter(s => s.sceneKey === scene.heading);
+    if (existingShots.length > 0) return;
+    
+    const dataEntry = sceneData[scene.heading];
+    const castList = dataEntry?.cast?.join(', ') || '';
+    const location = scene.location || '';
+    const intExt = scene.intExt || 'INT';
+    const tod = scene.tod || 'DAY';
+    const extint = `${intExt} ${tod}`.trim();
+    
+    const suggestedShots = [
+      { type: 'Wide', movement: 'Stationary', desc: `Establish scene ${scene.sceneNumber || idx + 1}` },
+      { type: 'Mid/Medium', movement: 'Stationary', desc: 'Master shot - cover dialogue' },
+      { type: 'Close-Up', movement: 'Stationary', desc: 'Reaction shot' },
+    ];
+    
+    suggestedShots.forEach((shot, shotIdx) => {
+      const tempShot = {
+        type: shot.type,
+        movement: shot.movement,
+        sound: 'Yes',
+        cast: castList
+      };
+      const times = _calcSmartTime(tempShot);
+      
+      p.shots.push({
+        scene: scene.sceneNumber || scene.heading,
+        sceneKey: scene.heading,
+        setup: '1',
+        num: String(shotIdx + 1),
+        type: shot.type,
+        movement: shot.movement,
+        extint: extint,
+        location: location,
+        sound: 'Yes',
+        desc: shot.desc,
+        cast: castList,
+        pages: '',
+        length: '',
+        setuptime: String(times.setuptime),
+        shoottime: String(times.shoottime),
+      });
+      added++;
+    });
+  });
+  
+  saveStore();
+  renderShotList(p);
+  showToast(`Added ${added} suggested shots from ${scenes.length} scenes`, 'success');
+}
+
 function renderShotList(p) {
   const tbody = document.getElementById('shotlist-body');
   let totalMins = 0;
   if (!p.shots || !p.shots.length) {
-    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state" style="padding:30px"><div class="icon">🎬</div><h4>No shots yet</h4></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="17"><div class="empty-state" style="padding:30px"><div class="icon">🎬</div><h4>No shots yet</h4></div></td></tr>`;
   } else {
     tbody.innerHTML = p.shots.map((s,i) => {
       const t = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
       totalMins += t;
       return `<tr data-ctx="shot:${i}" onclick="editShot(${i})" style="cursor:pointer">
+        <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="shot-cb" data-idx="${i}"></td>
         <td>${s.scene||'—'}</td><td>${s.setup||'—'}</td><td>${s.num||'—'}</td>
         <td><span class="tag">${s.type||'—'}</span></td>
         <td>${s.movement||'—'}</td><td>${s.location||'—'}</td>
@@ -159,6 +356,50 @@ function _acPick(e, el) {
 function _acRemove() { document.getElementById('_ac-list')?.remove(); }
 
 function removeShot(i) { showConfirmDialog('Remove this shot?', 'Remove', () => { const p=currentProject(); p.shots.splice(i,1); saveStore(); renderShotList(p); }); }
+function removeAllShots() { showConfirmDialog('Remove ALL shots? This cannot be undone.', 'Remove All', () => { const p=currentProject(); p.shots=[]; saveStore(); renderShotList(p); showToast('All shots removed', 'success'); }); }
+
+// Export functions for shotlist
+function exportShotList() {
+  const p = currentProject();
+  if (!p.shots || !p.shots.length) { showToast('No shots to export', 'info'); return; }
+  const formats = ['HTML', 'Text', 'CSV'];
+  const menu = document.createElement('div');
+  menu.className = 'dropdown-menu';
+  menu.style.cssText = 'position:absolute;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:1000';
+  formats.forEach(fmt => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-item';
+    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer';
+    btn.textContent = '📄 ' + fmt;
+    btn.onclick = () => { document.body.removeChild(menu); exportShotListAs(fmt); };
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  const rect = event.target.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  setTimeout(() => document.addEventListener('click', () => menu.remove()), 100);
+}
+function exportShotListAs(fmt) {
+  const p = currentProject();
+  let content = '', filename = 'shotlist', type = 'text/plain';
+  if (fmt === 'HTML') {
+    content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Shot List</h1><table><tr><th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Ext/Int</th><th>Description</th><th>Cast</th><th>Est (mins)</th></tr>' + p.shots.map(s => `<tr><td>${s.scene||''}</td><td>${s.setup||''}</td><td>${s.num||''}</td><td>${s.type||''}</td><td>${s.movement||''}</td><td>${s.location||''}</td><td>${s.extint||''}</td><td>${s.desc||''}</td><td>${s.cast||''}</td><td>${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}</td></tr>`).join('') + '</table></body></html>';
+    filename += '.html'; type = 'text/html';
+  } else if (fmt === 'CSV') {
+    content = 'Scene,Setup,Shot,Type,Movement,Location,Ext/Int,Description,Cast,Est (mins)\n' + p.shots.map(s => `"${s.scene||''}","${s.setup||''}","${s.num||''}","${s.type||''}","${s.movement||''}","${s.location||''}","${s.extint||''}","${(s.desc||'').replace(/"/g,'\"')}","${s.cast||''}","${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}"`).join('\n');
+    filename += '.csv'; type = 'text/csv';
+  } else {
+    content = 'SHOT LIST\n' + '=' .repeat(50) + '\n\n' + p.shots.map((s,i) => `${i+1}. SC ${s.scene||''} / SETUP ${s.setup||''} / SHOT ${s.num||''} (${s.type||''})\n   Movement: ${s.movement||''} | Location: ${s.location||''} | ${s.extint||''}\n   Description: ${s.desc||''}\n   Cast: ${s.cast||''} | Est: ${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)} mins\n`).join('\n');
+    filename += '.txt';
+  }
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('Exported as ' + fmt, 'success');
+}
 
 // ══════════════════════════════════════════
 // PROPS / WARDROBE

@@ -46,6 +46,8 @@ export default [
         openModal: "readonly",
         closeModal: "readonly",
         loadTheme: "readonly",
+        exportStore: "readonly",
+        importStore: "readonly",
         initTableScrollbars: "readonly",
 
         // ── Navigation / views ───────────────────────────────────────────────

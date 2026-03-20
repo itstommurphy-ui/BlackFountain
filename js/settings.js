@@ -85,18 +85,25 @@ function loadTheme() {
 }
 
 function exportStore() {
-  const dataStr = JSON.stringify(store, null, 2);
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const date = new Date().toISOString().split('T')[0];
-  a.href = url;
-  a.download = `blackfountain-backup-${date}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Data exported successfully', 'success');
+  try {
+    const dataStr = JSON.stringify(store, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `blackfountain-backup-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (typeof showToast === 'function') {
+      showToast('Data exported successfully', 'success');
+    }
+  } catch (err) {
+    console.error('Export failed:', err);
+    alert('Failed to export data: ' + err.message);
+  }
 }
 
 function importStore(input) {
