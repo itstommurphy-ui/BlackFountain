@@ -76,9 +76,66 @@ document.addEventListener('click', function(e) {
 });
 
 loadTheme();
+
+// ══════════════════════════════════════════
+// INFRASTRUCTURE INITIALIZATION
+// ══════════════════════════════════════════
+
+function _initInfrastructure() {
+  // Initialize EventBus listeners
+  
+  // Listen for data changes and refresh autocomplete
+  if (window.EventBus) {
+    EventBus.on(EventBus.Events.DATA_CHANGED, () => {
+      if (window.AutoComplete) {
+        AutoComplete.refreshAll();
+      }
+      if (window.Data) {
+        Data.clearCache();
+      }
+    });
+    
+    // Listen for project changes
+    EventBus.on(EventBus.Events.PROJECT_SWITCHED, () => {
+      if (window.Data) {
+        Data.clearCache();
+      }
+    });
+    
+    // Listen for data saved events
+    EventBus.on(EventBus.Events.DATA_SAVED, () => {
+      if (window.Data) {
+        Data.clearCache();
+      }
+    });
+  }
+  
+  // Initialize autocomplete datalists
+  if (window.AutoComplete) {
+    // Initial refresh after store loads
+    setTimeout(() => AutoComplete.refreshAll(), 100);
+  }
+  
+  console.log('[Infrastructure] Initialized EventBus, Data layer, and AutoComplete');
+}
+
 async function _startApp() {
   try {
+    // Check for previous emergency backup issues first
+    if (typeof checkEmergencyBackup === 'function') {
+      checkEmergencyBackup();
+    }
+    
     await loadStore();
+    
+    // Apply theme/font preferences from cloud store
+    if (typeof loadTheme === 'function') {
+      loadTheme();
+    }
+    
+    // Initialize new infrastructure modules
+    _initInfrastructure();
+    
     initAutoSave();
     // Wait for views to be loaded before showing the appropriate view
     if (window.viewLoader?.preloadAllViews) {

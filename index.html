@@ -1721,6 +1721,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-sync.js"></script>
 <script src="js/store.js"></script>
+<script src="js/events.js"></script>
+<script src="js/data.js"></script>
+<script src="js/autocomplete.js"></script>
 <script src="js/search.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/views/nav.js"></script>
@@ -1842,6 +1845,9 @@ if ('serviceWorker' in navigator) {
     <h3 style="margin:0 0 4px;font-size:18px">Black Fountain</h3>
     <p style="color:var(--text3);font-size:13px;margin:0 0 24px">Sign in to continue</p>
     <div id="login-step-email">
+      <button onclick="sbGoogleSignIn()" style="width:100%; padding:0.6rem; background:white; color:#333; border:1px solid #ccc; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:0.75rem;">
+        <img src="https://www.google.com/favicon.ico" style="width:16px;height:16px;"> Sign in with Google
+      </button>
       <input id="login-email" type="email" placeholder="your@email.com" class="modal-input" style="width:100%;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')_loginSendOtp()" autocomplete="email">
       <button id="login-send-btn" class="btn btn-primary" style="width:100%" onclick="_loginSendOtp()">Send sign-in code</button>
     </div>

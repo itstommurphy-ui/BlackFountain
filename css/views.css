@@ -78,7 +78,7 @@
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
   .project-card::before {
     content: '';
@@ -216,7 +216,7 @@
     align-items: flex-start;
     box-shadow: var(--shadow);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
   }
   .project-header::after {

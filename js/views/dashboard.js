@@ -112,6 +112,33 @@ function deleteCurrentProject() {
   });
 }
 
+function deleteProjectFromDashboard(projectId) {
+  showConfirmDialog('Delete this project? This cannot be undone.', 'Delete Project', () => {
+    store.projects = store.projects.filter(p => p.id !== projectId);
+    saveStore();
+    showView('dashboard');
+    showToast('Project deleted', 'info');
+    renderProjects();
+    renderSidebarProjects();
+  });
+}
+
+function editProjectFromDashboard(projectId) {
+  const p = getProject(projectId);
+  if (!p) return;
+  editingProjectId = p.id;
+  document.getElementById('modal-project-title').textContent = 'EDIT PROJECT';
+  document.getElementById('proj-input-title').value = p.title;
+  document.getElementById('proj-input-num').value = p.num;
+  document.getElementById('proj-input-status').value = p.status;
+  document.getElementById('proj-input-director').value = p.director;
+  document.getElementById('proj-input-producer').value = p.producer;
+  document.getElementById('proj-input-company').value = p.company;
+  document.getElementById('proj-input-genre').value = p.genre;
+  document.getElementById('proj-input-notes').value = p.notes;
+  openModal('modal-project');
+}
+
 function changeProjectStatus(newStatus) {
   const p = currentProject();
   if (!p) return;

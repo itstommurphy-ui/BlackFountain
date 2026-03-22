@@ -4,6 +4,17 @@
     <h2>PROJECTS</h2>
     <p>Your production pipeline at a glance</p>
   </div>
+  
+  <!-- QUICK ACTIONS -->
+  <div class="quick-actions-widget" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">⚡ Quick Actions:</span>
+    <button class="btn btn-sm" onclick="quickActionContinue()" title="Continue where you left off">▶ Continue</button>
+    <button class="btn btn-sm" onclick="quickActionNewProject()" title="Create a new project">+ New Project</button>
+    <button class="btn btn-sm" onclick="quickActionExportAll()" title="Export all project data">⬇ Export All</button>
+    <button class="btn btn-sm" onclick="quickActionMigrateFiles()" title="Migrate large files to IndexedDB">🗄 Migrate Files</button>
+    <button class="btn btn-sm" onclick="quickActionViewRecent()" title="View recently edited projects">🕐 Recent</button>
+  </div>
+  
   <div class="stats-row">
     <div class="stat-card total-card" onclick="dashboardStatusFilter=null;renderDashboard()" style="cursor:pointer"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
     <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>

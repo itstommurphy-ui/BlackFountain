@@ -48,19 +48,23 @@ function updateThemeButtons() {
 
 function setTheme(theme) {
   localStorage.setItem('blackfountain_theme', theme);
+  store.preferences = store.preferences || {};
+  store.preferences.theme = theme;
+  saveStore();
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
   updateThemeButtons();
-  showToast(`Theme changed to ${theme}`, 'success');
 }
 
 function setFontSize(size) {
   localStorage.setItem('blackfountain_font_size', size);
+  store.preferences = store.preferences || {};
+  store.preferences.fontSize = size;
+  saveStore();
   const html = document.documentElement;
-  // Remove any previous font-size attribute then set new one
   html.removeAttribute('data-font-size');
   if (size !== 'classic') html.setAttribute('data-font-size', size);
   updateFontSizeButtons();
@@ -78,10 +82,12 @@ function updateFontSizeButtons() {
 }
 
 function loadTheme() {
-  const theme = localStorage.getItem('blackfountain_theme') || 'dark';
+  const theme = store.preferences?.theme || localStorage.getItem('blackfountain_theme') || 'dark';
+  const fontSize = store.preferences?.fontSize || localStorage.getItem('blackfountain_font_size') || 'classic';
   if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
-  const fontSize = localStorage.getItem('blackfountain_font_size') || 'classic';
   if (fontSize !== 'classic') document.documentElement.setAttribute('data-font-size', fontSize);
+  localStorage.setItem('blackfountain_theme', theme);
+  localStorage.setItem('blackfountain_font_size', fontSize);
 }
 
 function exportStore() {
@@ -106,9 +112,53 @@ function exportStore() {
   }
 }
 
+// Emergency backup: triggers when localStorage fails, creates downloadable file
+function createEmergencyBackup(reason) {
+  console.warn('[EmergencyBackup] Triggered:', reason);
+  try {
+    const dataStr = JSON.stringify(store);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+    a.href = url;
+    a.download = `EMERGENCY-BACKUP-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('⚠️ Emergency backup downloaded! Save this file safely.', 'error', 10000);
+    // Store in sessionStorage as last resort
+    sessionStorage.setItem('_emergency_backup_reason', reason);
+    sessionStorage.setItem('_emergency_backup_time', Date.now().toString());
+    console.log('[EmergencyBackup] Download initiated');
+  } catch(e) {
+    console.error('[EmergencyBackup] Failed to create download:', e);
+    showToast('⚠️ CRITICAL: Could not create backup file! Data may be lost!', 'error', 15000);
+  }
+}
+
+// Check for previous emergency backup on load
+function checkEmergencyBackup() {
+  const reason = sessionStorage.getItem('_emergency_backup_reason');
+  const time = sessionStorage.getItem('_emergency_backup_time');
+  if (reason) {
+    sessionStorage.removeItem('_emergency_backup_reason');
+    sessionStorage.removeItem('_emergency_backup_time');
+    const minutesAgo = time ? Math.round((Date.now() - parseInt(time)) / 60000) : 'unknown';
+    showToast(`⚠️ Previous session had data issues (${reason}). Consider importing a backup if data is missing.`, 'error', 15000);
+  }
+}
+
 function importStore(input) {
   const file = input.files[0];
   if (!file) return;
+  
+  // Warn if file is very large (>50MB)
+  const fileSizeMB = file.size / (1024 * 1024);
+  if (fileSizeMB > 50) {
+    showToast(`Warning: Large file (${fileSizeMB.toFixed(1)}MB). Import may take a while.`, 'info', 5000);
+  }
   
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -141,11 +191,37 @@ async function confirmImportStore() {
     return;
   }
 
-  Object.keys(store).forEach(k => delete store[k]);
-  Object.assign(store, imported);
-  await saveStore();
+  try {
+    // Clear existing store and merge imported data
+    Object.keys(store).forEach(k => delete store[k]);
+    Object.assign(store, imported);
+    
+    // Ensure all required keys exist
+    if (!store.projects) store.projects = [];
+    if (!store.files) store.files = [];
+    if (!store.contacts) store.contacts = [];
+    if (!store.locations) store.locations = [];
+    if (!store.contactColumns) store.contactColumns = [];
+    if (!store.contactCustomData) store.contactCustomData = {};
+    if (!store.contactHiddenCols) store.contactHiddenCols = [];
+    if (!store.locationHiddenCols) store.locationHiddenCols = [];
+    if (!store.locationColumns) store.locationColumns = [];
+    if (!store.locationCustomData) store.locationCustomData = {};
+    if (!store.moodboards) store.moodboards = [];
+    
+    console.log('[confirmImportStore] Starting save...');
+    await saveStore();
+    console.log('[confirmImportStore] Save complete, reloading...');
+  } catch (err) {
+    console.error('[confirmImportStore] Save failed:', err);
+    showToast('Failed to save data: ' + err.message, 'error');
+    closeModal('modal-import-data');
+    return;
+  }
+  
   closeModal('modal-import-data');
   sessionStorage.setItem('_mf_post_reload_toast', JSON.stringify({ msg: 'Import successful — your data is ready.', type: 'success' }));
+  // Reload after save completes
   location.reload();
 }
 
@@ -2455,19 +2531,19 @@ function openDB() {
 }
 
 async function saveStore() {
-  // Record section activity for the active section
+  // 1. Record activity for the current section
   const p = currentProject();
   if (p && _activeSection && _activeSection !== 'overview') {
     if (!p.sectionActivity) p.sectionActivity = {};
     p.sectionActivity[_activeSection] = Date.now();
   }
-  // flash save indicator
-  const ind = document.getElementById('save-indicator');
-  if (ind) {
-    ind.style.opacity = '1';
-    clearTimeout(window._saveFlashT);
-    window._saveFlashT = setTimeout(() => ind.style.opacity = '0', 2000);
+  
+  // 2. Visual Feedback
+  if (window.SaveFeedback) {
+    SaveFeedback.showSaving();
   }
+
+  // 3. PRIMARY SAVE: IndexedDB (This is your "Source of Truth")
   let idbSuccess = false;
   try {
     const db = await openDB();
@@ -2477,24 +2553,61 @@ async function saveStore() {
       tx.oncomplete = () => { idbSuccess = true; resolve(); };
       tx.onerror = () => reject(tx.error);
     });
-    console.log('[saveStore] IndexedDB write success, files:', store.files?.length);
+    console.log('[saveStore] IndexedDB success');
   } catch(e) {
-    console.error('[saveStore] IndexedDB write failed:', e);
-    showToast('Data could not be saved: ' + e.message, 'error');
+    console.error('[saveStore] IndexedDB failed:', e);
+    showToast('Primary save failed! Please export your data manually.', 'error');
+    return; // Stop here if primary save fails
   }
-  // Backup file metadata to localStorage (NOT the video data - too large for localStorage)
+
+  // 4. SECONDARY SAVE: Supabase Cloud (The "Backup")
+  // We only run this if we are logged in.
+  if (typeof sbPushStore === 'function') {
+    try {
+      await sbPushStore(); 
+      console.log('[saveStore] Cloud sync successful');
+    } catch (e) {
+      console.warn('[saveStore] Cloud sync failed:', e);
+    }
+  }
+
+  // 5. EMERGENCY FALLBACK: LocalStorage
+  // Save essential data to localStorage as backup for when IndexedDB fails
+  // Only store metadata and small data - NOT large moodboards or files
   try {
-    const filesMeta = store.files.map(f => ({
-      id: f.id, name: f.name, categories: f.categories, projectIds: f.projectIds,
-      version: f.version, versionLabel: f.versionLabel, baseName: f.baseName,
-      uploadedAt: f.uploadedAt, size: f.size, type: f.type
-      // Note: NOT saving f.data (the actual video) - too large for localStorage
-    }));
-    const backup = { files: filesMeta, currentProjectId: store.currentProjectId };
-    localStorage.setItem('blackfountain_backup', JSON.stringify(backup));
-  } catch(e) { console.warn('[saveStore] localStorage backup failed:', e); }
-  // Cloud sync (non-blocking — file blobs are stripped, IDB is source of truth for those)
-  if (typeof sbPushStore === 'function') sbPushStore();
+    localStorage.setItem('bf_last_save', Date.now().toString());
+    localStorage.setItem('bf_currentProjectId_backup', store.currentProjectId || '');
+    // Save only essential data - skip large arrays like moodboards and files
+    if (store.projects) {
+      try { localStorage.setItem('bf_projects_backup', JSON.stringify(store.projects)); } catch(e) {}
+    }
+    if (store.contacts) {
+      try { localStorage.setItem('bf_contacts_backup', JSON.stringify(store.contacts)); } catch(e) {}
+    }
+    if (store.locations) {
+      try { localStorage.setItem('bf_locations_backup', JSON.stringify(store.locations)); } catch(e) {}
+    }
+    if (store.folders) {
+      try { localStorage.setItem('bf_folders_backup', JSON.stringify(store.folders)); } catch(e) {}
+    }
+    if (store.teamMembers) {
+      try { localStorage.setItem('bf_team_backup', JSON.stringify(store.teamMembers)); } catch(e) {}
+    }
+    localStorage.setItem('bf_backup_timestamp', Date.now().toString());
+    console.log('[saveStore] LocalStorage backup saved');
+  } catch(e) { 
+    console.warn('[saveStore] LocalStorage backup failed:', e.message);
+  }
+
+  // 6. Visual feedback - show saved
+  if (window.SaveFeedback) {
+    SaveFeedback.showSaved();
+  }
+
+  // 7. Notify the rest of the app
+  if (typeof EventBus !== 'undefined') {
+    EventBus.emit(EventBus.Events.DATA_SAVED, { timestamp: Date.now() });
+  }
 }
 
 function manualSave() {
@@ -2529,6 +2642,8 @@ function initAutoSave() {
       saveStore();
     }
   });
+  
+  // Note: Auto-backup removed to avoid performance issues. Users can manually export from Settings.
 }
 
 function triggerAutoSave() {
@@ -2563,6 +2678,7 @@ async function loadStore() {
 
   // If logged in, pull from Supabase — it's the authoritative source for project data
   // BUT we need to preserve local file blobs since they're not stored in the cloud
+  console.log('[loadStore] Checking cloud sync: sbPullStore exists:', typeof sbPullStore === 'function', '| _sbUser:', _sbUser);
   if (typeof sbPullStore === 'function' && _sbUser) {
     try {
       const cloudData = await sbPullStore();
@@ -2590,6 +2706,33 @@ async function loadStore() {
       const raw = localStorage.getItem('blackfountain_v1');
       if (raw) { loaded = JSON.parse(raw); migrateFromLS = true; }
     } catch(e) {}
+  }
+
+  // Try to restore from our new localStorage backups if IDB failed
+  if (!loaded || !loaded.projects || loaded.projects.length === 0) {
+    try {
+      const projectsJson = localStorage.getItem('bf_projects_backup');
+      const contactsJson = localStorage.getItem('bf_contacts_backup');
+      const locationsJson = localStorage.getItem('bf_locations_backup');
+      const foldersJson = localStorage.getItem('bf_folders_backup');
+      const moodboardsJson = localStorage.getItem('bf_moodboards_backup');
+      const teamJson = localStorage.getItem('bf_team_backup');
+      const currentPid = localStorage.getItem('bf_currentProjectId_backup');
+      const timestamp = localStorage.getItem('bf_backup_timestamp');
+      
+      if (projectsJson) {
+        loaded = loaded || {};
+        loaded.projects = JSON.parse(projectsJson);
+        if (contactsJson) loaded.contacts = JSON.parse(contactsJson);
+        if (locationsJson) loaded.locations = JSON.parse(locationsJson);
+        if (foldersJson) loaded.folders = JSON.parse(foldersJson);
+        if (moodboardsJson) loaded.moodboards = JSON.parse(moodboardsJson);
+        if (teamJson) loaded.teamMembers = JSON.parse(teamJson);
+        if (currentPid) loaded.currentProjectId = currentPid || null;
+        console.log('[loadStore] Restored from localStorage backup, timestamp:', timestamp);
+        migrateFromLS = true;
+      }
+    } catch(e) { console.warn('[loadStore] localStorage backup restore failed:', e); }
   }
 
   if (loaded) {

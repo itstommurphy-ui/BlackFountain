@@ -1,3 +1,263 @@
+// ══════════════════════════════════════════
+// SMART CALLSHEET GENERATION
+// ══════════════════════════════════════════
+
+/**
+ * Smart generate a callsheet from schedule data with auto-calculated call times
+ * based on location travel times
+ */
+async function smartGenerateCallsheet() {
+  const p = currentProject();
+  if (!p) { showToast('No project selected', 'info'); return; }
+  
+  // Check if we have schedule data
+  if (!p.schedule || !p.schedule.length) {
+    showToast('No schedule data. Generate schedule from shots first.', 'info');
+    return;
+  }
+  
+  // Extract unique locations from schedule and their order
+  const locationOrder = [];
+  const locationMap = new Map();
+  
+  p.schedule.forEach(row => {
+    if (row.isDayHeader) return;
+    const loc = row.location?.trim();
+    if (loc && !locationMap.has(loc)) {
+      locationMap.set(loc, true);
+      locationOrder.push(loc);
+    }
+  });
+  
+  if (locationOrder.length === 0) {
+    showToast('No locations found in schedule', 'info');
+    return;
+  }
+  
+  // Get travel times between consecutive locations
+  const travelTimes = calculateTravelTimes(p, locationOrder);
+  
+  // Create new callsheet
+  const cs = createSmartCallsheet(p, locationOrder, travelTimes);
+  
+  if (!p.callsheets) p.callsheets = [];
+  p.callsheets.push(cs);
+  
+  await saveStore();
+  renderCallsheet(p);
+  showToast(`Callsheet created with ${locationOrder.length} locations`, 'success');
+}
+
+/**
+ * Calculate travel times between consecutive locations
+ */
+function calculateTravelTimes(p, locationOrder) {
+  const travelTimes = [];
+  const locations = p.locations || [];
+  
+  for (let i = 0; i < locationOrder.length - 1; i++) {
+    const fromLoc = locationOrder[i];
+    const toLoc = locationOrder[i + 1];
+    
+    // Find location data to get travel info
+    const fromData = locations.find(l => l.name === fromLoc);
+    const toData = locations.find(l => l.name === toLoc);
+    
+    // Default travel time: 30 mins if no data
+    let travelMins = 30;
+    
+    // Check for travel time in location data
+    if (fromData?.travelTimes) {
+      const tt = fromData.travelTimes[toLoc];
+      if (tt !== undefined) travelMins = tt;
+    } else if (toData?.travelTimes) {
+      const tt = toData.travelTimes[fromLoc];
+      if (tt !== undefined) travelMins = tt;
+    }
+    
+    travelTimes.push({
+      from: fromLoc,
+      to: toLoc,
+      minutes: travelMins
+    });
+  }
+  
+  return travelTimes;
+}
+
+/**
+ * Create a smart callsheet with auto-calculated times
+ */
+function createSmartCallsheet(p, locationOrder, travelTimes) {
+  const DEFAULT_CALL = '07:00'; // 7:00 AM default crew call
+  const SETUP_BUFFER = 60; // 1 hour setup time
+  const TRAVEL_BUFFER = 15; // 15 min buffer between locations
+  
+  // Get first location for initial call time
+  const firstLoc = locationOrder[0];
+  let currentTime = _parseTimeToMins(DEFAULT_CALL);
+  
+  // Set crew call time (1 hour before first shot)
+  const crewCallTime = _minsToTimeStr(currentTime - SETUP_BUFFER);
+  
+  // Build schedule rows from schedule data
+  const schedRows = [];
+  let currentLocation = null;
+  let travelIdx = 0;
+  
+  p.schedule.forEach(row => {
+    if (row.isDayHeader) return;
+    
+    const loc = row.location?.trim();
+    
+    // Check if we need to add travel time to new location
+    if (loc && loc !== currentLocation && currentLocation !== null) {
+      // Find travel time to this location
+      const travel = travelTimes.find(t => t.from === currentLocation && t.to === loc);
+      if (travel) {
+        currentTime += travel.minutes + TRAVEL_BUFFER;
+        // Add travel row
+        schedRows.push({
+          time: _minsToTimeStr(currentTime),
+          scene: '',
+          shot: '',
+          shotType: 'travel',
+          desc: `Travel to ${loc} (${travel.minutes} min)`,
+          cast: '',
+          est: String(travel.minutes)
+        });
+      }
+    }
+    
+    if (loc) currentLocation = loc;
+    
+    // Calculate shot time
+    const shotEst = parseInt(row.est) || 45;
+    const shotTime = _minsToTimeStr(currentTime);
+    
+    schedRows.push({
+      time: shotTime,
+      scene: row.scene || '',
+      shot: row.shot || '',
+      shotType: row.type || '',
+      desc: row.desc || '',
+      cast: row.cast || '',
+      est: String(shotEst)
+    });
+    
+    currentTime += shotEst;
+  });
+  
+  // Estimate wrap time
+  const estWrap = _minsToTimeStr(currentTime);
+  
+  // Build location rows
+  const locRows = locationOrder.map(locName => {
+    const locData = (p.locations || []).find(l => l.name === locName);
+    return {
+      loc: locName,
+      city: locData?.location || '',
+      parking: locData?.parking || '',
+      hospital: locData?.hospital || ''
+    };
+  });
+  
+  // Build cast rows from schedule cast members
+  const castMembers = new Map();
+  p.schedule.forEach(row => {
+    if (row.cast) {
+      row.cast.split(',').forEach(cast => {
+        const name = cast.trim();
+        if (name && !castMembers.has(name)) {
+          castMembers.set(name, { name, character: '', callTime: '', wrapTime: '' });
+        }
+      });
+    }
+  });
+  
+  // Set call times for cast (30 min after crew call)
+  const castCallMins = _parseTimeToMins(DEFAULT_CALL) + 30;
+  castMembers.forEach(cast => {
+    cast.callTime = _minsToTimeStr(castCallMins);
+  });
+  
+  return {
+    date: '',
+    prodNum: p.num,
+    prodTitle: p.title,
+    company: p.company || '',
+    dirProd: p.director || '',
+    producer: p.producer || '',
+    crewCall: crewCallTime,
+    shootCall: DEFAULT_CALL,
+    estWrap: estWrap,
+    daylight: '',
+    weather: '',
+    weatherDetail: '',
+    actorsContact: '',
+    sasContact: '',
+    locRows: locRows,
+    castRows: Array.from(castMembers.values()),
+    schedRows: schedRows,
+    generalNotes: 'Auto-generated from schedule. Check and adjust times as needed.',
+    logoDataUrl: null,
+    customFields: [],
+    sectionOrder: ['crew','locations','cast','schedule','notes'],
+    hideContactDetails: true,
+    hideCrewCall: false,
+    hideLocations: false,
+    hideCast: false,
+    hideSchedule: false,
+    hideNotes: false,
+    minimized: false,
+    minimizedCrew: false,
+    minimizedLocations: false,
+    minimizedCast: false,
+    minimizedSchedule: false,
+    minimizedNotes: false,
+    exportSelected: true,
+    _smartGenerated: true,
+    _generatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Parse time string (HH:MM) to minutes
+ */
+function _parseTimeToMins(timeStr) {
+  if (!timeStr) return 0;
+  const match = String(timeStr).match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return 0;
+  return parseInt(match[1]) * 60 + parseInt(match[2]);
+}
+
+/**
+ * Convert minutes to time string (HH:MM)
+ */
+function _minsToTimeStr(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+/**
+ * Update travel time between two locations
+ */
+function setTravelTime(fromLoc, toLoc, minutes) {
+  const p = currentProject();
+  if (!p || !p.locations) return;
+  
+  const loc = p.locations.find(l => l.name === fromLoc);
+  if (!loc) return;
+  
+  if (!loc.travelTimes) loc.travelTimes = {};
+  loc.travelTimes[toLoc] = minutes;
+  
+  saveStore();
+  showToast(`Travel time set: ${fromLoc} → ${toLoc}: ${minutes} min`, 'success');
+}
+
+// ══════════════════════════════════════════
 // CALLSHEET
 // ══════════════════════════════════════════
 

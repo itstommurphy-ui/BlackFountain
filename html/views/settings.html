@@ -46,8 +46,11 @@
           <span class="icon">📥</span> Export Data
         </button>
         <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
-        <button class="btn" onclick="document.getElementById('import-file-input').click()">
+        <label for="import-file-input" class="btn" style="cursor:pointer">
           <span class="icon">📤</span> Import Data
+        </label>
+        <button class="btn" style="background:#ff9500;border:none;color:#000" onclick="exportStore();showToast('Use the downloaded file to restore if needed','info',8000)">
+          <span class="icon">💾</span> Download Backup
         </button>
       </div>
     </div>

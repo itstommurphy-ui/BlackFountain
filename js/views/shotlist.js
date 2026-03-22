@@ -1,3 +1,111 @@
+// ══════════════════════════════════════════
+// VIRTUAL SCROLLING UTILITY
+// ══════════════════════════════════════════
+
+const VirtualScroll = (function() {
+  const instances = new Map();
+  
+  function create(containerId, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+    
+    const config = {
+      itemHeight: options.itemHeight || 40,
+      buffer: options.buffer || 5,
+      renderItem: options.renderItem || (() => ''),
+      onScroll: options.onScroll || null,
+      totalItems: 0
+    };
+    
+    let scrollTop = 0;
+    let containerHeight = 0;
+    
+    function updateDimensions() {
+      containerHeight = container.clientHeight;
+    }
+    
+    function render() {
+      updateDimensions();
+      const totalHeight = config.totalItems * config.itemHeight;
+      const startIdx = Math.max(0, Math.floor(scrollTop / config.itemHeight) - config.buffer);
+      const endIdx = Math.min(config.totalItems, Math.ceil((scrollTop + containerHeight) / config.itemHeight) + config.buffer);
+      
+      // Create spacer elements
+      const html = [];
+      
+      // Top spacer
+      if (startIdx > 0) {
+        html.push(`<div style="height: ${startIdx * config.itemHeight}px;"></div>`);
+      }
+      
+      // Render visible items
+      for (let i = startIdx; i < endIdx; i++) {
+        html.push(config.renderItem(i));
+      }
+      
+      // Bottom spacer
+      if (endIdx < config.totalItems) {
+        html.push(`<div style="height: ${(config.totalItems - endIdx) * config.itemHeight}px;"></div>`);
+      }
+      
+      container.innerHTML = html.join('');
+    }
+    
+    function handleScroll(e) {
+      scrollTop = e.target.scrollTop;
+      render();
+      if (config.onScroll) {
+        config.onScroll(scrollTop);
+      }
+    }
+    
+    function setTotalItems(count) {
+      config.totalItems = count;
+      render();
+    }
+    
+    function scrollToIndex(index) {
+      container.scrollTop = index * config.itemHeight;
+      scrollTop = container.scrollTop;
+      render();
+    }
+    
+    function destroy() {
+      container.removeEventListener('scroll', handleScroll);
+      instances.delete(containerId);
+    }
+    
+    // Attach scroll listener
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    
+    const instance = {
+      setTotalItems,
+      scrollToIndex,
+      render,
+      destroy,
+      get config() { return config; }
+    };
+    
+    instances.set(containerId, instance);
+    return instance;
+  }
+  
+  function get(containerId) {
+    return instances.get(containerId);
+  }
+  
+  function destroy(containerId) {
+    const inst = instances.get(containerId);
+    if (inst) inst.destroy();
+  }
+  
+  return { create, get, destroy };
+})();
+
+// Export to global
+window.VirtualScroll = VirtualScroll;
+
+// ══════════════════════════════════════════
 // SHOT LIST
 // ══════════════════════════════════════════
 
@@ -198,13 +306,61 @@ function generateShotsFromBreakdown() {
 
 function renderShotList(p) {
   const tbody = document.getElementById('shotlist-body');
+  const VIRTUAL_SCROLL_THRESHOLD = 100; // Use virtual scroll for 100+ items
   let totalMins = 0;
+  
   if (!p.shots || !p.shots.length) {
     tbody.innerHTML = `<tr><td colspan="17"><div class="empty-state" style="padding:30px"><div class="icon">🎬</div><h4>No shots yet</h4></div></td></tr>`;
+    document.getElementById('shotlist-total').textContent = '0 mins';
+    VirtualScroll.destroy('shotlist-body');
+    return;
+  }
+  
+  // Pre-calculate totals
+  p.shots.forEach(s => {
+    totalMins += (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
+  });
+  
+  // Use virtual scrolling for large lists
+  if (p.shots.length > VIRTUAL_SCROLL_THRESHOLD) {
+    // Create or update virtual scroll instance
+    let vs = VirtualScroll.get('shotlist-body');
+    if (!vs) {
+      vs = VirtualScroll.create('shotlist-body', {
+        itemHeight: 42, // Approximate row height
+        buffer: 10,
+        totalItems: p.shots.length,
+        renderItem: (i) => {
+          const s = p.shots[i];
+          const t = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
+          return `<tr data-ctx="shot:${i}" onclick="editShot(${i})" style="cursor:pointer;height:42px">
+            <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="shot-cb" data-idx="${i}"></td>
+            <td>${s.scene||'—'}</td><td>${s.setup||'—'}</td><td>${s.num||'—'}</td>
+            <td><span class="tag">${s.type||'—'}</span></td>
+            <td>${s.movement||'—'}</td><td>${s.location||'—'}</td>
+            <td><span class="chip" style="font-size:10px">${s.extint||'—'}</span></td>
+            <td>${s.sound||'—'}</td>
+            <td style="max-width:200px">${s.desc||'—'}</td>
+            <td>${s.cast||'—'}</td><td>${s.pages||'—'}</td><td>${s.length||'—'}</td>
+            <td>${s.setuptime||'—'}</td><td>${s.shoottime||'—'}</td>
+            <td><strong style="color:var(--accent)">${t||'—'}</strong></td>
+            <td onclick="event.stopPropagation()">
+              <button class="btn btn-sm btn-ghost btn-danger" onclick="removeShot(${i})">✕</button>
+            </td>
+          </tr>`;
+        }
+      });
+    } else {
+      vs.setTotalItems(p.shots.length);
+    }
+    // Show count indicator
+    tbody.setAttribute('data-virtual', 'true');
   } else {
+    // Regular rendering for smaller lists
+    VirtualScroll.destroy('shotlist-body');
+    tbody.removeAttribute('data-virtual');
     tbody.innerHTML = p.shots.map((s,i) => {
       const t = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
-      totalMins += t;
       return `<tr data-ctx="shot:${i}" onclick="editShot(${i})" style="cursor:pointer">
         <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="shot-cb" data-idx="${i}"></td>
         <td>${s.scene||'—'}</td><td>${s.setup||'—'}</td><td>${s.num||'—'}</td>
@@ -222,6 +378,7 @@ function renderShotList(p) {
       </tr>`;
     }).join('');
   }
+  
   const h = Math.floor(totalMins/60), m = totalMins%60;
   document.getElementById('shotlist-total').textContent = h ? `${h} hr ${m} mins` : `${totalMins} mins`;
 }

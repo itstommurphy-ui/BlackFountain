@@ -185,6 +185,120 @@ function setDashboardFilter(status) {
   renderDashboard();
 }
 
+// ══════════════════════════════════════════
+// DASHBOARD QUICK ACTIONS
+// ══════════════════════════════════════════
+
+/**
+ * Continue where you left off - opens last active project and section
+ */
+async function quickActionContinue() {
+  const lastProject = localStorage.getItem('bf_lastProject');
+  const lastSection = localStorage.getItem('bf_lastSection');
+  
+  if (lastProject && store.projects?.find(p => p.id === lastProject)) {
+    showProjectView(lastProject);
+    if (lastSection) {
+      setTimeout(() => showSection(lastSection), 300);
+    }
+    showToast('Resumed: ' + (store.projects.find(p => p.id === lastProject)?.title || 'project'), 'success');
+  } else if (store.projects?.length > 0) {
+    // Open most recent project
+    const recent = getMostRecentProject();
+    if (recent) {
+      showProjectView(recent.id);
+      showToast('Opened: ' + recent.title, 'success');
+    }
+  } else {
+    showToast('No projects to continue', 'info');
+  }
+}
+
+/**
+ * Get most recently edited project
+ */
+function getMostRecentProject() {
+  if (!store.projects?.length) return null;
+  return [...store.projects].sort((a, b) => {
+    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return bTime - aTime;
+  })[0];
+}
+
+/**
+ * Quick action: Create new project
+ */
+function quickActionNewProject() {
+  openNewProjectModal();
+}
+
+/**
+ * Quick action: Export all project data
+ */
+async function quickActionExportAll() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    version: '1.0',
+    projects: store.projects,
+    contacts: store.contacts,
+    locations: store.locations,
+    files: store.files
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `black-fountain-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showToast('All data exported successfully', 'success');
+}
+
+/**
+ * Quick action: Migrate large files to IndexedDB
+ */
+async function quickActionMigrateFiles() {
+  if (window.FileStore) {
+    try {
+      await FileStore.init();
+      await FileStore.migrateFromLocalStorage();
+      showToast('Files migrated to IndexedDB', 'success');
+    } catch (err) {
+      showToast('Migration failed: ' + err.message, 'error');
+    }
+  } else {
+    showToast('FileStore not available', 'error');
+  }
+}
+
+/**
+ * Quick action: View recently edited projects
+ */
+function quickActionViewRecent() {
+  const recent = getMostRecentProject();
+  if (recent) {
+    showProjectView(recent.id);
+    showToast('Most recent: ' + recent.title, 'info');
+  } else {
+    showToast('No projects found', 'info');
+  }
+}
+
+/**
+ * Save last active project and section
+ */
+function saveLastActive(projectId, section) {
+  if (projectId) {
+    localStorage.setItem('bf_lastProject', projectId);
+  }
+  if (section) {
+    localStorage.setItem('bf_lastSection', section);
+  }
+}
+
 function renderDashboard() {
   const projects = store.projects || [];
   const statTotal = document.getElementById('stat-total');
@@ -217,20 +331,27 @@ function renderDashboard() {
   const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
 
   grid.innerHTML = visibleProjects.map(p => `
-    <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
+    <div class="project-card status-${p.status}">
       <div class="project-card-header">
-        <div>
+        <div onclick="showProjectView('${p.id}')" style="flex:1;min-width:0;cursor:pointer">
           <div class="project-card-num">#${p.num}</div>
           <div class="project-card-title">${p.title}</div>
         </div>
+        <div class="dropdown" style="flex-shrink:0">
+          <button class="dropdown-toggle project-card-menu" style="padding:4px 8px;background:transparent;border:none;font-size:16px;color:var(--text3)" onclick="event.stopPropagation()">⋮</button>
+          <div class="dropdown-menu" style="right:0;left:auto">
+            <div class="dropdown-item" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')">✎ Edit Project</div>
+            <div class="dropdown-item danger" onclick="event.stopPropagation();deleteProjectFromDashboard('${p.id}')">🗑 Delete Project</div>
+          </div>
+        </div>
         <span class="status-badge ${badgeClass[p.status]}">${statusMap[p.status]}</span>
       </div>
-      <div class="project-card-meta">
+      <div class="project-card-meta" onclick="showProjectView('${p.id}')">
         ${p.director ? `<div>Dir: ${p.director}</div>` : ''}
         ${p.company ? `<div>${p.company}</div>` : ''}
         ${p.notes ? `<div style="margin-top:6px;color:var(--text3)">${p.notes.substring(0,80)}${p.notes.length>80?'…':''}</div>` : ''}
       </div>
-      <div class="project-card-footer">
+      <div class="project-card-footer" onclick="showProjectView('${p.id}')">
         <div class="project-card-tags">
           <span class="tag">${p.cast.length} cast</span>
           <span class="tag">${p.unit.length} crew</span>
