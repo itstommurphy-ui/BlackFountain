@@ -6,6 +6,7 @@ const _SB_KEY = 'sb_publishable__Q-8dJNUZ_As-krVwGop0w_yZDBNEYO';
 
 let _sb = null;
 let _sbUser = null;
+let _cachedToken = null;
 let _sbAppReadyCallback = null;
 let _sbAppStarted = false;
 
@@ -16,9 +17,23 @@ async function sbInit(onReady) {
     onReady();
     return;
   }
+  // Guard: only ever create one client
+  if (_sb) {
+    console.warn('[sbInit] Client already exists — skipping re-init');
+    onReady();
+    return;
+  }
   try {
     console.log('[sbInit] Creating Supabase client...');
-    _sb = supabase.createClient(_SB_URL, _SB_KEY);
+    _sb = supabase.createClient(_SB_URL, _SB_KEY, {
+      auth: {
+        persistSession: true,
+        storageKey: 'bf-supabase-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        lock: false
+      }
+    });
     console.log('[sbInit] Supabase client created successfully');
   } catch(e) {
     console.warn('[sbInit] Supabase init failed — running offline only', e);
@@ -28,6 +43,7 @@ async function sbInit(onReady) {
 
   _sb.auth.onAuthStateChange(async (event, session) => {
     _sbUser = session?.user ?? null;
+    _cachedToken = session?.access_token ?? null;
     _updateAuthIndicator();
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && _sbUser) {
       _sbKeepAlive(); // Start keepalive when signed in
@@ -89,9 +105,9 @@ function _updateAuthIndicator() {
   const el = document.getElementById('sb-auth-indicator');
   if (!el) return;
   if (_sbUser) {
-    el.innerHTML = `<span style="cursor:pointer" title="Signed in — click to sign out">${_sbUser.email}</span>`;
-    el.onclick = sbSignOut;
-    el.title = 'Signed in — click to sign out';
+    el.innerHTML = `<span style="cursor:default" title="Signed in">${_sbUser.email}</span>`;
+    el.onclick = null;
+    el.title = 'Signed in';
     el.style.cursor = 'pointer';
   } else {
     el.innerHTML = `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="_showLoginModal()">Sign in</button>`;
@@ -141,8 +157,20 @@ async function sbGoogleSignIn() {
 }
 
 async function sbSignOut() {
-  if (!_sb) return;
-  await _sb.auth.signOut();
+  try {
+    if (_sb) {
+      // scope: 'local' only clears this tab's session, avoids lock contention
+      await _sb.auth.signOut({ scope: 'local' });
+    }
+  } catch (e) {
+    console.warn('[sbSignOut] ignored:', e.message);
+  } finally {
+    _cachedToken = null;
+    // Belt and braces: clear the auth key directly
+    localStorage.removeItem('bf-supabase-auth');
+    showToast('Signed out', 'success');
+    setTimeout(() => window.location.reload(), 800);
+  }
 }
 
 // Keep session alive by pinging periodically
@@ -170,15 +198,18 @@ async function sbPullStore() {
   
   try {
     // Get user's session token for authorization
-    const { data: { session } } = await _sb.auth.getSession();
-    const token = session?.access_token;
+    if (!_cachedToken) {
+      const { data: { session } } = await _sb.auth.getSession();
+      _cachedToken = session?.access_token || null;
+    }
+    const token = _cachedToken;
     if (!token) { console.warn('[sbPullStore] No access token'); return null; }
 
     console.log('[sbPullStore] Using REST API for user_id:', _sbUser.id);
     const url = `${_SB_URL}/rest/v1/stores?user_id=eq.${_sbUser.id}&select=data`;
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const response = await fetch(url, {
       headers: {
@@ -217,8 +248,11 @@ async function sbPushStore() {
   
   try {
     // Get user's session token for authorization
-    const { data: { session } } = await _sb.auth.getSession();
-    const token = session?.access_token;
+    if (!_cachedToken) {
+      const { data: { session } } = await _sb.auth.getSession();
+      _cachedToken = session?.access_token || null;
+    }
+    const token = _cachedToken;
     if (!token) { console.warn('[sbPushStore] No access token'); return; }
 
     const stripped = {

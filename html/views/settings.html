@@ -54,6 +54,23 @@
         </button>
       </div>
     </div>
+    <!-- CONTACT LINKING CARD -->
+    <div class="card" style="margin-bottom:20px">
+      <h3 style="margin-top:0">Contact Linking</h3>
+      <p style="color:var(--text2);margin-bottom:16px">
+        Link cast, extras, and crew across your projects to their contact records.
+        Once linked, updating a phone number or email in Contacts updates it everywhere.
+      </p>
+      <div id="contact-link-stats" style="font-size:12px;color:var(--text3);font-family:var(--font-mono);margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="openContactMigrationModal()">
+          <span class="icon">⚭</span> Link Cast & Crew to Contacts
+        </button>
+        <button class="btn" onclick="_syncAllContacts()" title="Push latest phone/email from contacts to all linked rows">
+          <span class="icon">↻</span> Sync Contact Data
+        </button>
+      </div>
+    </div>
     <div class="card">
       <h3 style="margin-top:0">Storage Info</h3>
       <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>blackfountain_v1</code></p>

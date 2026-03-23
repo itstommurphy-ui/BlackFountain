@@ -127,7 +127,12 @@ async function _startApp() {
     }
     
     await loadStore();
-    
+
+    // Run silent contact migration to link existing personnel to contacts
+    if (typeof ContactAnchor !== 'undefined') {
+      ContactAnchor.runSilentMigration();
+    }
+
     // Apply theme/font preferences from cloud store
     if (typeof loadTheme === 'function') {
       loadTheme();

@@ -2681,7 +2681,10 @@ async function loadStore() {
   console.log('[loadStore] Checking cloud sync: sbPullStore exists:', typeof sbPullStore === 'function', '| _sbUser:', _sbUser);
   if (typeof sbPullStore === 'function' && _sbUser) {
     try {
-      const cloudData = await sbPullStore();
+      const cloudData = await Promise.race([
+        sbPullStore(),
+        new Promise(resolve => setTimeout(() => resolve(null), 6000))
+      ]);
       if (cloudData && cloudData.projects !== undefined) {
         // Capture local file blobs BEFORE overwriting with cloud data
         if (loaded && loaded.files) {
@@ -2691,9 +2694,8 @@ async function loadStore() {
         loaded = cloudData; // cloud wins for project/contact/settings data
         console.log('[loadStore] Cloud data loaded, files in cloud:', (cloudData.files || []).length);
       } else if (loaded) {
-        // Cloud is empty — upload what we have locally
-        console.log('[loadStore] Cloud empty, uploading local data to Supabase');
-        sbPushStore();
+        console.log('[loadStore] Cloud unavailable, using local data');
+        sbPushStore(); // push local up when connection recovers
       }
     } catch(e) {
       console.warn('[loadStore] Supabase pull failed, using local data:', e);

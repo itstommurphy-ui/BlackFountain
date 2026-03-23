@@ -91,6 +91,9 @@
             <div class="dropdown-item" onclick="manualSave()">💾 Save Data</div>
             <div class="dropdown-item" onclick="exportData()">⬇ Export Data</div>
             <div class="dropdown-divider"></div>
+            <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
+            <div class="dropdown-item" onclick="sbSignOut()">🚪 Sign Out</div>
+            <div class="dropdown-divider"></div>
             <div class="dropdown-item" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</div>
           </div>
         </div>
@@ -1721,6 +1724,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-sync.js"></script>
 <script src="js/store.js"></script>
+<script src="js/contact-anchor.js"></script>
+<script src="js/contact-migration-ui.js"></script>
+<script src="js/personnel-contact-patch.js"></script>
+<script src="js/settings-contact-helpers.js"></script>
 <script src="js/events.js"></script>
 <script src="js/data.js"></script>
 <script src="js/autocomplete.js"></script>
