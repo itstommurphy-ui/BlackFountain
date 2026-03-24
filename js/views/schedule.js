@@ -76,7 +76,7 @@ async function wrapScheduleDays() {
   const BUFFER = 15;
 
   const existingHeaders = p.schedule.filter(s => s.isDayHeader);
-  let shots = p.schedule.filter(s => !s.isDayHeader);
+  let shots = p.schedule.filter(s => !s.isDayHeader && !s._nonShot);
 
   // Group shots by scene key so we never split a scene across days
   // Preserve the existing sort order within each scene group
@@ -196,17 +196,8 @@ function getOptimizationSuggestion(shotIdx, schedule) {
     const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
 
     if (minGap > 1) { // There are unrelated shots between shots of the SAME scene
-      // Count actual schedule index of the target shot
-      // by finding the otherPositions[0]-th non-nonShot row after dayIndex
-      let targetPos = dayIndex + 1;
-      let shotCount = 0;
-      while (targetPos < schedule.length && !schedule[targetPos].isDayHeader) {
-        if (!schedule[targetPos]._nonShot) {
-          if (shotCount === otherPositions[0]) break;
-          shotCount++;
-        }
-        targetPos++;
-      }
+      // target is the schedule index of sameSceneShots[0]
+      const targetPos = schedule.indexOf(sameSceneShots[0]);
       return { 
         type: 'scene',
         targetPos, 
@@ -226,17 +217,8 @@ function getOptimizationSuggestion(shotIdx, schedule) {
       const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
 
       if (minGap > 3) {
-        // Count actual schedule index of the target shot
-        // by finding the otherPositions[0]-th non-nonShot row after dayIndex
-        let targetPos = dayIndex + 1;
-        let shotCount = 0;
-        while (targetPos < schedule.length && !schedule[targetPos].isDayHeader) {
-          if (!schedule[targetPos]._nonShot) {
-            if (shotCount === otherPositions[0]) break;
-            shotCount++;
-          }
-          targetPos++;
-        }
+        const otherShot = actorShots.find(s => dayShots.indexOf(s) !== myPosInDay);
+        const targetPos = schedule.indexOf(otherShot);
         const savings = (minGap - 1) * 45; // Estimate 45m per skipped shot
         return { 
           type: 'actor',
@@ -400,7 +382,7 @@ function renderSchedule(p) {
         <td>${s.scene||''}</td>
         <td>${s.shot||''}</td>
         <td><span class="tag-type">${s.type||''}</span></td>
-        <td class="cell-truncate" title="${s.desc||''}">${s.desc||''}</td>
+        <td><input type="text" class="desc-input" value="${s.desc||''}" onchange="updateShotDesc(${i}, this.value)"></td>
         <td>${castHtml} ${wand}</td>
         <td style="width:40px;">${s.pages||''}</td>
         <td><input type="number" class="est-input" value="${s.est}" onchange="updateShotDuration(${i}, this.value)"></td>
@@ -411,6 +393,8 @@ function renderSchedule(p) {
   container.innerHTML = `
     <style>
       .time-input { background:#222; border:1px solid #444; color:#ffd700; border-radius:4px; padding:2px; cursor:pointer; }
+      .desc-input { background:#222; border:1px solid #444; color:#ccc; border-radius:4px; padding:2px; width:100%; box-sizing:border-box; }
+      .desc-input:focus { border-color:#ffd700; outline:none; }
       .drag-handle { color:#444; cursor:grab; font-size:18px; width:20px; text-align:center; }
       .sched-row { transition: background 0.3s ease; }
       .sched-row:active { cursor:grabbing; background:#222; }
@@ -479,83 +463,71 @@ async function updateShotDuration(idx, val) {
   await wrapScheduleDays();
 }
 
+async function updateShotDesc(idx, val) {
+  const p = currentProject();
+  const scheduleRow = p.schedule[idx];
+  
+  // Update schedule row
+  scheduleRow.desc = val;
+  
+  // Also update the corresponding shot in shotlist
+  if (scheduleRow.shotRef && p.shots) {
+    const [scenePart, setupPart, numPart] = scheduleRow.shotRef.split('::');
+    const targetShot = p.shots.find(s => {
+      const shotScene = s.sceneId || s.sceneKey || s.scene || '';
+      return shotScene === scenePart && s.setup == setupPart && s.num == numPart;
+    });
+    if (targetShot) {
+      targetShot.desc = val;
+    }
+  }
+  
+  // Save the project so the description persists
+  await saveStore();
+}
+
 async function moveShot(from, to) {
   hideWandTooltip();
   const p = currentProject();
   const item = p.schedule.splice(from, 1)[0];
   p.schedule.splice(to, 0, item);
-  await wrapScheduleDays();
+  await rippleScheduleTimes(); // ← was wrapScheduleDays()
   showToast('Optimized Location', 'success');
 }
 
 // 6. ACTIONS & HELPERS
 
 // Export function for schedule
-function exportSchedule() {
+function exportSchedule(event) {
+  event.stopPropagation();
   const p = currentProject();
-  if (!p.schedule || !p.schedule.length) { showToast('No schedule to export', 'info'); return; }
-  const formats = ['HTML', 'Text', 'CSV'];
+  if (!p?.schedule?.length) { showToast('No schedule to export', 'info'); return; }
+
   const menu = document.createElement('div');
-  menu.className = 'dropdown-menu';
-  menu.style.cssText = 'position:absolute;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:1000';
-  formats.forEach(fmt => {
+  menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:9999';
+  
+  ['HTML', 'CSV', 'Text'].forEach(fmt => {
     const btn = document.createElement('button');
-    btn.className = 'dropdown-item';
-    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer';
+    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)';
     btn.textContent = '📄 ' + fmt;
-    btn.onclick = () => { document.body.removeChild(menu); exportScheduleAs(fmt); };
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      menu.remove();
+      _doExport('schedule', fmt, p);
+    };
     menu.appendChild(btn);
   });
+
   document.body.appendChild(menu);
   const rect = event.target.getBoundingClientRect();
-  menu.style.top = (rect.bottom + 4) + 'px';
-  menu.style.right = (window.innerWidth - rect.right) + 'px';
-  setTimeout(() => document.addEventListener('click', () => menu.remove()), 100);
-}
-function exportScheduleAs(fmt) {
-  const p = currentProject();
-  let content = '', filename = 'schedule', type = 'text/plain';
-  // Group by day
-  let currentDay = '';
-  const rows = p.schedule.map(s => {
-    if (s.isDayHeader) { currentDay = s.desc; return null; }
-    return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
-  }).filter(r => r);
-  if (fmt === 'HTML') {
-    content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}.day{background:#ffd700;color:#000;font-weight:bold}</style></head><body><h1>Production Schedule</h1><table><tr><th>Day</th><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th></tr>';
-    let lastDay = '';
-    rows.forEach(r => {
-      const dayRow = r.day !== lastDay ? `<tr class="day"><td colspan="9">${r.day}</td></tr>` : '';
-      lastDay = r.day;
-      content += dayRow + `<tr><td></td><td>${r.time}</td><td>${r.scene}</td><td>${r.shot}</td><td>${r.type}</td><td>${r.desc}</td><td>${r.cast}</td><td>${r.pages}</td><td>${r.est}</td></tr>`;
-    });
-    content += '</table></body></html>';
-    filename += '.html'; type = 'text/html';
-  } else if (fmt === 'CSV') {
-    content = `Day,Time,Scene,Shot,Type,Description,Cast,Pages,Est (mins)\n`;
-    let lastDay = '';
-    rows.forEach(r => {
-      const d = (r.desc || '').replace(/"/g, '""');
-      if (r.day !== lastDay) content += `"${r.day}","","","","","","","","\n`;
-      lastDay = r.day;
-      content += `"${r.day}","${r.time}","${r.scene}","${r.shot}","${r.type}","${d}","${r.cast}","${r.pages}","${r.est}"\n`;
-    });
-    filename += '.csv'; type = 'text/csv';
-  } else {
-    let lastDay = '';
-    content = 'PRODUCTION SCHEDULE\n' + '='.repeat(50) + '\n\n';
-    rows.forEach(r => {
-      if (r.day !== lastDay) { content += '\n' + r.day + '\n' + '-'.repeat(30) + '\n'; lastDay = r.day; }
-      content += `${r.time} - SC ${r.scene} / ${r.shot} (${r.type})\n   ${r.desc}\n   Cast: ${r.cast} | Est: ${r.est} mins\n`;
-    });
-    filename += '.txt';
-  }
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  showToast('Exported as ' + fmt, 'success');
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+
+  // Single cleanup listener
+  setTimeout(() => {
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    document.addEventListener('click', close);
+  }, 0);
 }
 
 function _applyProductionSort(arr) {

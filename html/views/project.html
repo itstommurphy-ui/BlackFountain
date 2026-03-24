@@ -173,7 +173,7 @@ Priority colour bar shows urgency">?</span>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <button class="btn btn-sm btn-ghost" onclick="wrapScheduleDays()" title="Wrap schedule with custom times">📅 Wrap Days</button>
               <button class="btn btn-sm btn-ghost" onclick="showSection('shotlist')" title="Go to Shot List">📋 Shot List</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportSchedule()" title="Export Schedule">📤 Export</button>
+              <button class="btn btn-sm btn-ghost" onclick="exportSchedule(event)" title="Export Schedule">📤 Export</button>
               <button class="btn btn-sm btn-ghost btn-danger" onclick="_schedRemoveAll()">🗑 Clear All</button>
               <button class="btn btn-primary btn-sm" onclick="addScheduleRow()">+ Add Entry</button></div>
           </div>
@@ -400,7 +400,7 @@ Priority colour bar shows urgency">?</span>
             <h3 class="section-heading">SHOT LIST</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-sm btn-ghost" onclick="generateShotsFromBreakdown()" title="Generate shots from script breakdown">⚡ Generate</button><button class="btn btn-sm btn-ghost" onclick="recalcAllShotTimes()" title="Recalculate time estimates for all shots">⏱ Recalc Times</button><button class="btn btn-sm btn-ghost" onclick="optimizeShotOrder()" title="Group shots by location to minimize company moves">🔄 Optimize</button>
               <button class="btn btn-sm btn-ghost" onclick="showSection('schedule')" title="Go to Schedule">📅 Schedule</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportShotList()" title="Export Shot List">📤 Export</button>
+              <button class="btn btn-sm btn-ghost" onclick="exportShotList(event)" title="Export Shot List">📤 Export</button>
               <button class="btn btn-sm btn-ghost btn-danger" onclick="document.getElementById('shot-actions').style.display=document.getElementById('shot-actions').style.display==='none'?'':'none'">🗑 Remove ▾</button>
               <div id="shot-actions" style="display:none;position:absolute;right:190px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:1000"><button onclick="_shotRemoveSelected();document.getElementById('shot-actions').style.display='none'" style="display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)">🗑 Remove Selected</button><button onclick="removeAllShots();document.getElementById('shot-actions').style.display='none'" style="display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)">🗑 Remove All</button></div>
               <button class="btn btn-primary btn-sm" onclick="addShot()">+ Add Shot</button></div>

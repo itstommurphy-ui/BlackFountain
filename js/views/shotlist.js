@@ -516,45 +516,136 @@ function removeShot(i) { showConfirmDialog('Remove this shot?', 'Remove', () => 
 function removeAllShots() { showConfirmDialog('Remove ALL shots? This cannot be undone.', 'Remove All', () => { const p=currentProject(); p.shots=[]; saveStore(); renderShotList(p); showToast('All shots removed', 'success'); }); }
 
 // Export functions for shotlist
-function exportShotList() {
+function exportShotList(event) {
+  event.stopPropagation();
   const p = currentProject();
-  if (!p.shots || !p.shots.length) { showToast('No shots to export', 'info'); return; }
-  const formats = ['HTML', 'Text', 'CSV'];
+  if (!p?.shots?.length) { showToast('No shots to export', 'info'); return; }
+
   const menu = document.createElement('div');
-  menu.className = 'dropdown-menu';
-  menu.style.cssText = 'position:absolute;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:1000';
-  formats.forEach(fmt => {
+  menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:9999';
+  
+  ['HTML', 'CSV', 'Text'].forEach(fmt => {
     const btn = document.createElement('button');
-    btn.className = 'dropdown-item';
-    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer';
+    btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)';
     btn.textContent = '📄 ' + fmt;
-    btn.onclick = () => { document.body.removeChild(menu); exportShotListAs(fmt); };
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      menu.remove();
+      _doExport('shotlist', fmt, p);
+    };
     menu.appendChild(btn);
   });
+
   document.body.appendChild(menu);
   const rect = event.target.getBoundingClientRect();
-  menu.style.top = (rect.bottom + 4) + 'px';
-  menu.style.right = (window.innerWidth - rect.right) + 'px';
-  setTimeout(() => document.addEventListener('click', () => menu.remove()), 100);
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+
+  // Single cleanup listener
+  setTimeout(() => {
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    document.addEventListener('click', close);
+  }, 0);
 }
-function exportShotListAs(fmt) {
-  const p = currentProject();
-  let content = '', filename = 'shotlist', type = 'text/plain';
-  if (fmt === 'HTML') {
-    content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Shot List</h1><table><tr><th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Ext/Int</th><th>Description</th><th>Cast</th><th>Est (mins)</th></tr>' + p.shots.map(s => `<tr><td>${s.scene||''}</td><td>${s.setup||''}</td><td>${s.num||''}</td><td>${s.type||''}</td><td>${s.movement||''}</td><td>${s.location||''}</td><td>${s.extint||''}</td><td>${s.desc||''}</td><td>${s.cast||''}</td><td>${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}</td></tr>`).join('') + '</table></body></html>';
-    filename += '.html'; type = 'text/html';
-  } else if (fmt === 'CSV') {
-    content = 'Scene,Setup,Shot,Type,Movement,Location,Ext/Int,Description,Cast,Est (mins)\n' + p.shots.map(s => `"${s.scene||''}","${s.setup||''}","${s.num||''}","${s.type||''}","${s.movement||''}","${s.location||''}","${s.extint||''}","${(s.desc||'').replace(/"/g,'\"')}","${s.cast||''}","${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}"`).join('\n');
-    filename += '.csv'; type = 'text/csv';
+
+// Shared export function for shotlist and schedule
+function _doExport(type, fmt, p) {
+  console.log('_doExport start', type, fmt);
+  
+  // Counter to prevent browser caching issues
+  window._exportCount = (window._exportCount || 0) + 1;
+  let content = '', filename = type, mimeType = 'text/plain';
+
+  if (type === 'shotlist') {
+    if (fmt === 'HTML') {
+      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Shot List</h1><table><tr><th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Ext/Int</th><th>Description</th><th>Cast</th><th>Est (mins)</th></tr>' + p.shots.map(s => `<tr><td>${s.scene||''}</td><td>${s.setup||''}</td><td>${s.num||''}</td><td>${s.type||''}</td><td>${s.movement||''}</td><td>${s.location||''}</td><td>${s.extint||''}</td><td>${s.desc||''}</td><td>${s.cast||''}</td><td>${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}</td></tr>`).join('') + '</table></body></html>';
+      filename = `shotlist-${window._exportCount}.html`; mimeType = 'text/html';
+    } else if (fmt === 'CSV') {
+      content = 'Scene,Setup,Shot,Type,Movement,Location,Ext/Int,Description,Cast,Est (mins)\n' + p.shots.map(s => `"${s.scene||''}","${s.setup||''}","${s.num||''}","${s.type||''}","${s.movement||''}","${s.location||''}","${s.extint||''}","${(s.desc||'').replace(/"/g,'\"')}","${s.cast||''}","${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}"`).join('\n');
+      filename = `shotlist-${window._exportCount}.csv`; mimeType = 'text/csv';
+    } else {
+      content = 'SHOT LIST\n' + '='.repeat(50) + '\n\n' + p.shots.map((s,i) => `${i+1}. SC ${s.scene||''} / SETUP ${s.setup||''} / SHOT ${s.num||''} (${s.type||''})\n   Movement: ${s.movement||''} | Location: ${s.location||''} | ${s.extint||''}\n   Description: ${s.desc||''}\n   Cast: ${s.cast||''} | Est: ${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)} mins\n`).join('\n');
+      filename = `shotlist-${window._exportCount}.txt`;
+    }
   } else {
-    content = 'SHOT LIST\n' + '=' .repeat(50) + '\n\n' + p.shots.map((s,i) => `${i+1}. SC ${s.scene||''} / SETUP ${s.setup||''} / SHOT ${s.num||''} (${s.type||''})\n   Movement: ${s.movement||''} | Location: ${s.location||''} | ${s.extint||''}\n   Description: ${s.desc||''}\n   Cast: ${s.cast||''} | Est: ${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)} mins\n`).join('\n');
-    filename += '.txt';
+    // Schedule export
+    if (fmt === 'HTML') {
+      // Group by day
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}.day{background:#ffd700;color:#000;font-weight:bold}</style></head><body><h1>Production Schedule</h1><table><tr><th>Day</th><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th></tr>';
+      let lastDay = '';
+      rows.forEach(r => {
+        const dayRow = r.day !== lastDay ? `<tr class="day"><td colspan="9">${r.day}</td></tr>` : '';
+        lastDay = r.day;
+        content += dayRow + `<tr><td></td><td>${r.time}</td><td>${r.scene}</td><td>${r.shot}</td><td>${r.type}</td><td>${r.desc}</td><td>${r.cast}</td><td>${r.pages}</td><td>${r.est}</td></tr>`;
+      });
+      content += '</table></body></html>';
+      filename = `schedule-${window._exportCount}.html`; mimeType = 'text/html';
+    } else if (fmt === 'CSV') {
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      content = `Day,Time,Scene,Shot,Type,Description,Cast,Pages,Est (mins)\n`;
+      let lastDay = '';
+      rows.forEach(r => {
+        const d = (r.desc || '').replace(/"/g, '""');
+        if (r.day !== lastDay) content += `"${r.day}","","","","","","","","\n`;
+        lastDay = r.day;
+        content += `"${r.day}","${r.time}","${r.scene}","${r.shot}","${r.type}","${d}","${r.cast}","${r.pages}","${r.est}"\n`;
+      });
+      filename = `schedule-${window._exportCount}.csv`; mimeType = 'text/csv';
+    } else {
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      let lastDay = '';
+      content = 'PRODUCTION SCHEDULE\n' + '='.repeat(50) + '\n\n';
+      rows.forEach(r => {
+        if (r.day !== lastDay) { content += '\n' + r.day + '\n' + '-'.repeat(30) + '\n'; lastDay = r.day; }
+        content += `${r.time} - SC ${r.scene} / ${r.shot} (${r.type})\n   ${r.desc}\n   Cast: ${r.cast} | Est: ${r.est} mins\n`;
+      });
+      filename = `schedule-${window._exportCount}.txt`;
+    }
   }
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+
+  console.log('content length:', content.length);
+  
+  const blob = new Blob([content], { type: mimeType });
+  console.log('blob size:', blob.size);
+  
+  // Use msSaveBlob for IE, otherwise create and immediately destroy object URL
+  if (window.navigator.msSaveBlob) {
+    window.navigator.msSaveBlob(blob, filename);
+  } else {
+    const url = URL.createObjectURL(blob);
+    console.log('url:', url);
+    
+    const a = Object.assign(document.createElement('a'), {
+      href: url,
+      download: filename,
+      style: 'display:none'
+    });
+    document.body.appendChild(a);
+    console.log('clicking...');
+    a.click();
+    console.log('clicked');
+    
+    // Must happen in next tick after click
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log('cleaned up');
+    }, 1000);
+  }
+  
   showToast('Exported as ' + fmt, 'success');
 }
 
