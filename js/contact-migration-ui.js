@@ -116,7 +116,6 @@ function openContactMigrationModal() {
     </div>`;
 
   document.body.appendChild(overlay);
-  _cmUpdateSummary();
 
   // ── Internal helpers (scoped to this modal instance) ──────
 
@@ -131,7 +130,7 @@ function openContactMigrationModal() {
     // Re-render just this row's detail + buttons
     const rowEl = document.getElementById(`cmrow_${i}`);
     if (rowEl) rowEl.outerHTML = buildRowHtml(rows[i], i);
-    _cmUpdateSummary();
+    window._cmUpdateSummary();
   };
 
   window._cmChoose = function(i, contactId) {
@@ -148,7 +147,7 @@ function openContactMigrationModal() {
     // Re-render all rows
     const container = document.getElementById('cm-rows');
     if (container) container.innerHTML = rows.map((r, i) => buildRowHtml(r, i)).join('');
-    _cmUpdateSummary();
+    window._cmUpdateSummary();
   };
 
   window._cmUpdateSummary = function() {
@@ -180,6 +179,8 @@ function openContactMigrationModal() {
     if (parts.length) showToast(parts.join(' · '), 'success');
     else showToast('No changes made', 'info');
   };
+
+  window._cmUpdateSummary(); // call after all window assignments are done
 }
 
 window.openContactMigrationModal = openContactMigrationModal;
