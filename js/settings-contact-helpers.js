@@ -19,8 +19,8 @@ function renderContactLinkStats() {
 
   const pct = total ? Math.round((linked / total) * 100) : 0;
   el.innerHTML = total
-    ? `${linked} of ${total} cast/crew rows linked to contacts (${pct}%)`
-    : 'No cast or crew entries found across projects.';
+    ? `<p>When you add cast or crew to a project, Black Fountain can link them to your Contacts so phone numbers and emails stay in sync everywhere.</p><p><strong>${linked} of ${total} people</strong> across your projects are currently linked (${pct}%).</p>`
+    : '<p>No cast or crew entries found across projects.</p>';
 }
 
 /** Sync all contact data to linked rows */

@@ -32,6 +32,7 @@ function renderSettings() {
   // Update theme button styles
   updateThemeButtons();
   updateFontSizeButtons();
+  renderContactLinkStats();
 }
 
 function updateThemeButtons() {
