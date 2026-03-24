@@ -87,19 +87,30 @@
 
     let castRows;
     if (allCastNames.size > 0) {
-      castRows = [...allCastNames].map(name => {
-        // Try to find contact info via ContactAnchor
-        const info = typeof ContactAnchor !== 'undefined'
-          ? { phone: ContactAnchor.resolvePhone({ name }), email: ContactAnchor.resolveEmail({ name }) }
-          : { phone: '', email: '' };
+      castRows = [...allCastNames].map(characterName => {
+        // Try to find the actor who plays this character in p.cast[]
+        const castEntry = (p.cast || []).find(m =>
+          (m.role || '').toLowerCase() === characterName.toLowerCase()
+        );
+        const actorName = castEntry?.name || '';
+        const phone = castEntry
+          ? (typeof ContactAnchor !== 'undefined'
+              ? ContactAnchor.resolvePhone(castEntry)
+              : castEntry.number || castEntry.phone || '')
+          : '';
+        const email = castEntry
+          ? (typeof ContactAnchor !== 'undefined'
+              ? ContactAnchor.resolveEmail(castEntry)
+              : castEntry.email || '')
+          : '';
         return {
-          actor:     name,
-          character: '',
+          actor:     actorName,
+          character: characterName,
           callTime:  '',
           wrapTime:  '',
           poc:       '',
-          contact:   [info.phone, info.email].filter(Boolean).join(' / '),
-          socials:   '',
+          contact:   [phone, email].filter(Boolean).join(' / '),
+          socials:   castEntry?.social || '',
         };
       });
     } else {
