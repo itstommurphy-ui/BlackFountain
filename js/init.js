@@ -128,6 +128,11 @@ async function _startApp() {
     
     await loadStore();
 
+    // Apply cloud-loaded preferences immediately
+    if (typeof Prefs !== 'undefined' && Prefs.applyAll) {
+      Prefs.applyAll();
+    }
+
     // Run silent contact migration to link existing personnel to contacts
     if (typeof ContactAnchor !== 'undefined') {
       ContactAnchor.runSilentMigration();

@@ -581,7 +581,97 @@ function buildCallsheetCard(p, c, i) {
   </div>`;
 }
 
+// Department mapping for crew roles
+const CREW_DEPT_MAP = {
+  // Production
+  'producer': 'Production', 'line producer': 'Production', 'prod manager': 'Production', 'production manager': 'Production',
+  'prod coordinator': 'Production', 'production coordinator': 'Production', 'ap': 'Production', 'assistant producer': 'Production',
+  'executive producer': 'Production', 'ep': 'Production', 'unit manager': 'Production', 'production supervisor': 'Production',
+  // Direction
+  'director': 'Direction', 'dir': 'Direction', 'assistant director': 'Direction', 'ad': 'Direction', '2nd ad': 'Direction',
+  '2nd assistant director': 'Direction', 'script supervisor': 'Direction', ' continuity': 'Direction',
+  // Script
+  'writer': 'Script', 'screenwriter': 'Script', 'story editor': 'Script', 'script editor': 'Script',
+  // Camera
+  'dp': 'Camera', 'director of photography': 'Camera', 'cinematographer': 'Camera', 'camera operator': 'Camera',
+  'cam op': 'Camera', '1st ac': 'Camera', 'first ac': 'Camera', '2nd ac': 'Camera', 'second ac': 'Camera',
+  'dit': 'Camera', 'digital imaging technician': 'Camera', 'camera pa': 'Camera', 'steadicam': 'Camera',
+  'camera trainee': 'Camera', 'video assist': 'Camera',
+  // Sound
+  'sound mixer': 'Sound', 'sound recordist': 'Sound', 'audio': 'Sound', 'boom operator': 'Sound',
+  'sound operator': 'Sound', 'sound technician': 'Sound', 'audio technician': 'Sound', 'sound pa': 'Sound',
+  // Lights
+  'gaffer': 'Lights', 'best boy': 'Lights', 'electric': 'Lights', 'electrician': 'Lights', 'lighting': 'Lights',
+  'lighting technician': 'Lights', 'lamp operator': 'Lights', 'rigging': 'Lights', 'rigger': 'Lights',
+  'grip': 'Lights', 'key grip': 'Lights', 'best boy grip': 'Lights', 'dolly grip': 'Lights',
+  // Makeup
+  'makeup': 'Makeup', 'makeup artist': 'Makeup', 'mua': 'Makeup', 'hair': 'Makeup', 'hair stylist': 'Makeup',
+  'key makeup': 'Makeup', 'makeup assistant': 'Makeup', 'prosthetics': 'Makeup', 'sfx makeup': 'Makeup',
+  // Behind-the-Scenes
+  'production designer': 'Behind-the-Scenes', 'art director': 'Behind-the-Scenes', 'set designer': 'Behind-the-Scenes',
+  'set decorator': 'Behind-the-Scenes', 'prop master': 'Behind-the-Scenes', 'props': 'Behind-the-Scenes',
+  'costume designer': 'Behind-the-Scenes', 'wardrobe': 'Behind-the-Scenes', 'costumer': 'Behind-the-Scenes',
+  'stylist': 'Behind-the-Scenes', 'catering': 'Behind-the-Scenes', 'craft services': 'Behind-the-Scenes',
+  'transport': 'Behind-the-Scenes', 'driver': 'Behind-the-Scenes', 'transport captain': 'Behind-the-Scenes',
+  'location manager': 'Behind-the-Scenes', 'location scout': 'Behind-the-Scenes', 'security': 'Behind-the-Scenes',
+  // Post-Production
+  'editor': 'Post-Production', 'assistant editor': 'Post-Production', 'ae': 'Post-Production',
+  'colorist': 'Post-Production', 'vfx': 'Post-Production', 'visual effects': 'Post-Production',
+  'composer': 'Post-Production', 'sound designer': 'Post-Production', 're-recording mixer': 'Post-Production',
+  'finishing': 'Post-Production', 'post supervisor': 'Post-Production'
+};
+
+function _getCrewDept(role) {
+  if (!role) return 'Other';
+  const lc = role.toLowerCase().trim();
+  return CREW_DEPT_MAP[lc] || 'Other';
+}
+
 function buildCrewSection(c, i) {
+  const crew = c.customFields || [];
+  
+  // Group crew by department
+  const deptOrder = ['Production','Direction','Script','Camera','Sound','Lights','Makeup','Behind-the-Scenes','Post-Production','Other'];
+  const deptGroups = {};
+  deptOrder.forEach(d => deptGroups[d] = []);
+  
+  crew.forEach((cf, fi) => {
+    const dept = cf.dept || _getCrewDept(cf.label);
+    if (!deptGroups[dept]) deptGroups[dept] = [];
+    deptGroups[dept].push({ ...cf, _idx: fi });
+  });
+  
+  // Build department tables HTML
+  const deptTables = deptOrder
+    .filter(d => deptGroups[d].length > 0)
+    .map(dept => {
+      const members = deptGroups[dept];
+      return `
+        <div class="cs-dept-section">
+          <div class="cs-dept-header">${dept}</div>
+          <table class="cs-crew-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th class="pdf-hide"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.map(m => `
+                <tr>
+                  <td class="cs-crew-role-cell">${m.label || ''}</td>
+                  <td><input class="cs-crew-field" value="${m.value || ''}" placeholder="Name" data-crew-auto autocomplete="off" onchange="updateCSCustomField(${i},${m._idx},this.value)"></td>
+                  <td><input class="cs-crew-field cs-crew-phone" value="${m.phone || ''}" placeholder="Phone" onchange="updateCSCustomField(${i},${m._idx},this.value,'phone')"></td>
+                  <td class="pdf-hide"><button class="cs-section-btn cs-remove-btn" onclick="removeCSCustomField(${i},${m._idx})">✕</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }).join('');
+  
   return `
     <div class="cs-heading" draggable="false">
       <span class="cs-drag-handle pdf-hide" draggable="true" title="Drag to reorder">⠿</span>
@@ -626,19 +716,7 @@ function buildCrewSection(c, i) {
           return `<button class="cs-section-btn pdf-hide" onclick="fetchCallsheetWeather(${i})" style="margin-left:auto;white-space:nowrap;padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;">⛅ Get Weather</button>`;
         })()}
       </div>
-      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#888;margin-bottom:10px;">Key Crew Contacts</div>
-      <div class="cs-crew-grid">
-        ${(c.customFields || []).map((cf, fi) => `
-          <div class="cs-crew-item">
-            <div class="cs-crew-role" title="${cf.label}">${cf.label}</div>
-            <div class="cs-crew-inputs">
-              <input class="cs-crew-field" value="${cf.value || ''}" placeholder="Name" data-crew-auto autocomplete="off" onchange="updateCSCustomField(${i},${fi},this.value)">
-              <input class="cs-crew-field" value="${cf.phone || ''}" placeholder="Phone" onchange="updateCSCustomField(${i},${fi},this.value,'phone')">
-            </div>
-            <button class="cs-section-btn pdf-hide" style="flex-shrink:0;color:#c44444" onclick="removeCSCustomField(${i},${fi})">✕</button>
-          </div>
-        `).join('')}
-      </div>
+      ${deptTables}
       <button class="cs-add-row-btn pdf-hide" onclick="addCSCustomField(${i})" style="margin-top:10px;">+ Add Crew</button>
     </div>`;
 }

@@ -1988,6 +1988,77 @@
   .cs-crew-field:focus { border-bottom-color: #1a1a1a; }
   .cs-crew-field::placeholder { color: #bbb; font-style: italic; font-weight: 400; }
 
+  /* CREW DEPARTMENT TABLES */
+  .cs-dept-section {
+    margin-bottom: 16px;
+  }
+  .cs-dept-header {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #5bc0eb;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8e8e8;
+  }
+  .cs-crew-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .cs-crew-table th {
+    text-align: left;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    padding: 6px 8px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e8e8e8;
+  }
+  .cs-crew-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  .cs-crew-table tr:hover {
+    background: #fafafa;
+  }
+  .cs-crew-role-cell {
+    font-size: 10px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cs-crew-table .cs-crew-field {
+    width: 100%;
+    min-width: 80px;
+  }
+  .cs-crew-phone {
+    max-width: 100px;
+  }
+  .cs-remove-btn {
+    color: #c44444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  .cs-remove-btn:hover {
+    color: #a33;
+  }
+
+  @media print {
+    .cs-dept-header { color: #333; }
+    .cs-crew-table th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cs-crew-table td { border-bottom: 1px solid #ccc; }
+  }
+
   /* TABLES */
   .cs-table {
     width: 100%;

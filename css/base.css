@@ -567,5 +567,31 @@
   .skip-link:focus { top: 16px; }
 
   /* ── CONTENT ── */
-  #content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; }
+  #content { flex: 1; padding: 24px; overflow-y: auto; overflow-x: hidden; padding-bottom: 60px; }
+
+  /* ── FOOTER ── */
+  #app-footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border2);
+    padding: 10px 24px;
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #app-footer a {
+    color: var(--text2);
+    text-decoration: none;
+  }
+
+  #app-footer a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .footer-divider {
+    opacity: 0.5;
+  }
 
