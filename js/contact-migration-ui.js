@@ -7,8 +7,10 @@
 // ══════════════════════════════════════════
 
 function openContactMigrationModal() {
+  console.log('1. starting');
   const MODAL_ID = 'modal-contact-migration';
   document.getElementById(MODAL_ID)?.remove();
+  console.log('2. gathering unlinked');
 
   // Gather all unlinked rows with project context
   const unlinked = [];
@@ -33,7 +35,9 @@ function openContactMigrationModal() {
     });
   });
 
+  console.log('3. unlinked count:', unlinked.length);
   if (!unlinked.length) {
+    console.log('4. showing toast - all linked');
     showToast('All cast & crew are already linked to contacts ✓', 'success');
     return;
   }
@@ -115,6 +119,7 @@ function openContactMigrationModal() {
       </div>
     </div>`;
 
+  console.log('5. appending overlay');
   document.body.appendChild(overlay);
 
   // ── Internal helpers (scoped to this modal instance) ──────
