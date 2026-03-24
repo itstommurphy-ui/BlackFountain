@@ -11,40 +11,53 @@ async function generateScheduleFromShots() {
     showToast('No shots in shot list. Add shots first.', 'info');
     return;
   }
-  
+
   if (!p.schedule) p.schedule = [];
-  const existingShotRefs = new Set(p.schedule.map(s => `${s.sceneKey}-${s.shotNum}`).filter(Boolean));
-  let added = 0;
   
-  p.shots.forEach(shot => {
-    const ref = `${shot.sceneKey}-${shot.num}`;
-    if (existingShotRefs.has(ref)) return;
-    
+  // Get existing shot references to avoid duplicates
+  const existingRefs = new Set(
+    p.schedule
+      .filter(s => !s.isDayHeader && s.sceneId && s.shotRef)
+      .map(s => s.shotRef)
+  );
+
+  let added = 0;
+
+  p.shots.forEach((shot, idx) => {
+    // Unique ref per shot
+    const ref = shot.sceneId
+      ? `${shot.sceneId}::${shot.setup}::${shot.num}`
+      : `${shot.sceneKey}::${shot.setup}::${shot.num}`;
+
+    if (existingRefs.has(ref)) return;
+
     const totalTime = (parseInt(shot.setuptime) || 0) + (parseInt(shot.shoottime) || 0);
-    
+
     p.schedule.push({
-      time: '',
-      scene: shot.scene || '',
-      shot: shot.num || '',
-      shotNum: shot.num,
-      sceneKey: shot.sceneKey,
-      type: shot.type || '',
-      desc: shot.desc || '',
-      cast: shot.cast || '',
-      pages: shot.pages || '',
-      est: totalTime || 45,
+      time:     '',
+      scene:    shot.scene || shot.sceneKey || '',
+      shot:     shot.setup ? `${shot.setup}.${shot.num || ''}` : (shot.num || ''),
+      shotNum:  shot.num,
+      sceneKey: shot.sceneKey || '',
+      sceneId:  shot.sceneId || '',
+      shotRef:  ref,
+      type:     shot.type     || '',
+      desc:     shot.desc     || '',
+      cast:     shot.cast     || '',
+      pages:    shot.pages    || '',
+      est:      totalTime     || 45,
       location: shot.location || '',
-      extint: shot.extint || 'INT DAY',
+      extint:   shot.extint   || 'INT DAY',
       movement: shot.movement || 'Stationary',
     });
-    existingShotRefs.add(ref);
+    existingRefs.add(ref);
     added++;
   });
-  
+
   _applyProductionSort(p.schedule);
   await saveStore();
   await wrapScheduleDays();
-  showToast(`Generated ${added} entries`, 'success');
+  showToast(`Generated ${added} schedule entries from ${p.shots.length} shots`, 'success');
 }
 
 // ================================================================
@@ -58,75 +71,81 @@ async function wrapScheduleDays() {
   const p = currentProject();
   if (!p || !p.schedule) return;
 
-  // Use project-wide defaults or standard 10-hour day
   const DEFAULT_CALL = 420;  // 07:00
   const DEFAULT_WRAP = 1020; // 17:00
-  const BUFFER = 15; // 15 min buffer
+  const BUFFER = 15;
 
-  // Get existing day headers with their custom times
   const existingHeaders = p.schedule.filter(s => s.isDayHeader);
-  
-  // 1. Get ONLY the shots (ignore old headers) to keep user's custom order
   let shots = p.schedule.filter(s => !s.isDayHeader);
-  
-  const newSchedule = [];
-  let dayNum = 1;
-  let currentDayShots = [];
-  let currentMins = 0;
-  let dayCallTime = DEFAULT_CALL;
-  let dayWrapTime = DEFAULT_WRAP;
-  
-  // 2. Distribute shots into days based on the "Limit"
-  shots.forEach((shot, idx) => {
-    const duration = parseInt(shot.est) || 0;
-    
-    // Check if we need to use custom times for this day
-    const headerForDay = existingHeaders.find((h, i) => i + 1 === dayNum);
-    if (headerForDay) {
-      dayCallTime = headerForDay.callTime || DEFAULT_CALL;
-      dayWrapTime = headerForDay.wrapTime || DEFAULT_WRAP;
+
+  // Group shots by scene key so we never split a scene across days
+  // Preserve the existing sort order within each scene group
+  const sceneGroups = [];
+  const seenScenes  = new Map(); // sceneKey → group index
+
+  shots.forEach(shot => {
+    const key = shot.sceneId || shot.sceneKey || shot.scene || '';
+    if (!seenScenes.has(key)) {
+      seenScenes.set(key, sceneGroups.length);
+      sceneGroups.push([]);
     }
-    
-    const dayLimit = dayWrapTime - dayCallTime - BUFFER;
-    
-    // Check if this shot fits in the current day's window
-    if (currentDayShots.length > 0 && (currentMins + duration) > dayLimit) {
-      newSchedule.push({
-        isDayHeader: true,
-        desc: `DAY ${dayNum}`,
-        callTime: dayCallTime,
-        wrapTime: dayWrapTime,
-        totalEst: currentMins
-      });
-      newSchedule.push(...currentDayShots);
-      
-      dayNum++;
-      currentDayShots = [];
-      currentMins = 0;
-      
-      // Get times for next day
-      const nextHeader = existingHeaders.find((h, i) => i + 1 === dayNum);
-      dayCallTime = nextHeader?.callTime || DEFAULT_CALL;
-      dayWrapTime = nextHeader?.wrapTime || DEFAULT_WRAP;
-    }
-    currentDayShots.push(shot);
-    currentMins += duration;
+    sceneGroups[seenScenes.get(key)].push(shot);
   });
 
-  // Push the final remaining shots
-  if (currentDayShots.length > 0) {
-    newSchedule.push({ 
-      isDayHeader: true, 
-      desc: `DAY ${dayNum}`, 
-      callTime: dayCallTime, 
-      wrapTime: dayWrapTime, 
-      totalEst: currentMins 
+  const newSchedule = [];
+  let dayNum       = 1;
+  let currentShots = [];
+  let currentMins  = 0;
+
+  const getHeader = (num) => existingHeaders.find((h, i) => i + 1 === num);
+
+  const getDayLimits = (num) => {
+    const h = getHeader(num);
+    return {
+      call: h?.callTime ?? DEFAULT_CALL,
+      wrap: h?.wrapTime ?? DEFAULT_WRAP,
+    };
+  };
+
+  const flushDay = () => {
+    const { call, wrap } = getDayLimits(dayNum);
+    newSchedule.push({
+      isDayHeader: true,
+      desc:        `DAY ${dayNum}`,
+      callTime:    call,
+      wrapTime:    wrap,
+      totalEst:    currentMins,
     });
-    newSchedule.push(...currentDayShots);
+    newSchedule.push(...currentShots);
+    dayNum++;
+    currentShots = [];
+    currentMins  = 0;
+  };
+
+  sceneGroups.forEach(group => {
+    const groupMins = group.reduce((sum, s) => sum + (parseInt(s.est) || 0), 0);
+    const { call, wrap } = getDayLimits(dayNum);
+    const dayLimit = wrap - call - BUFFER;
+
+    // If adding this whole scene group would exceed the day limit,
+    // and we already have shots on this day, flush first
+    if (currentShots.length > 0 && currentMins + groupMins > dayLimit) {
+      flushDay();
+    }
+
+    // If the scene itself is longer than a full day, add it anyway
+    // (it'll show as overtime — better than infinite loop)
+    currentShots.push(...group);
+    currentMins += groupMins;
+  });
+
+  // Flush any remaining shots
+  if (currentShots.length > 0) {
+    flushDay();
   }
 
   p.schedule = newSchedule;
-  await rippleScheduleTimes(); 
+  await rippleScheduleTimes();
 }
 
 /**
@@ -358,7 +377,7 @@ function renderSchedule(p) {
       <tr class="sched-row" style="${rowStyle}" draggable="true" ondragstart="dragShot(event, ${i})" ondragover="allowDrop(event)" ondrop="dropShot(event, ${i})">
         <td class="drag-handle">⠿</td>
         <td style="color:#ffd700; font-weight:bold; width:90px;">${s.time||''}</td>
-        <td><b>SC ${s.scene||''}</b></td>
+        <td>${s.scene||''}</td>
         <td>${s.shot||''}</td>
         <td><span class="tag-type">${s.type||''}</span></td>
         <td class="cell-truncate" title="${s.desc||''}">${s.desc||''}</td>
@@ -385,8 +404,24 @@ function renderSchedule(p) {
       @keyframes glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; filter: drop-shadow(0 0 5px #ffd700); } }
       .actor-pill { background:#2a2a2a; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #444; }
       .est-input { width:45px; background:#000; border:1px solid #333; color:#fff; text-align:center; font-weight:bold; }
+      .sched-header { background:#1a1a1a; color:#888; font-weight:bold; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+      .sched-header th { padding:8px 4px; border-bottom:1px solid #333; }
     </style>
-    <table class="data-table" style="width:100%; border-collapse:collapse;">${rows}</table>`;
+    <table class="data-table" style="width:100%; border-collapse:collapse;">
+      <thead><tr class="sched-header">
+        <th></th>
+        <th>Time</th>
+        <th>Scene</th>
+        <th>Shot</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Cast</th>
+        <th>Pages</th>
+        <th>Est (mins)</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 /**
