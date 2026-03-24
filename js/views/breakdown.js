@@ -313,7 +313,7 @@ let _sbSelectMode   = false;
 let _sbSelectedDays = new Set();
 
 function renderStripboard(p) {
-  const el = document.getElementById('section-stripboard');
+  const el = document.getElementById('stripboard-content');
   if (!el) return;
   if (!p) { el.innerHTML = `<div class="empty-state"><div class="icon">🎞️</div><h4>No project selected</h4></div>`; return; }
   const bd = _getActiveBd(p);
@@ -340,7 +340,6 @@ function renderStripboard(p) {
        <span style="font-size:11px;color:var(--text3)">${scheduledSc} of ${allKeys.length} scenes scheduled · ${sb.days.length} day${sb.days.length!==1?'s':''} · ~${totalPages.toFixed(1)} pages total</span>
        ${sb.days.length ? `<button class="btn btn-sm" style="margin-left:auto" onclick="_sbToggleSelectMode()">Select days</button>` : ''}`;
   el.innerHTML = `
-    <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
     <div class="sb-wrap">
       <div class="sb-toolbar">${toolbar}</div>
       <div class="sb-area">

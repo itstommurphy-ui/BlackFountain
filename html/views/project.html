@@ -142,7 +142,14 @@ Priority colour bar shows urgency">?</span>
         <div id="section-breakdown" style="display:none"></div>
 
         <!-- SECTION: STRIPBOARD -->
-        <div id="section-stripboard" style="display:none"></div>
+        <div id="section-stripboard" style="display:none">
+          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading" style="margin:0">STRIPBOARD</h3>
+            <span class="goto-hook"></span>
+          </div>
+          <div id="stripboard-content"></div>
+        </div>
 
         <!-- SECTION: CALLSHEET -->
         <div id="section-callsheet" style="display:none">
@@ -190,7 +197,6 @@ Priority colour bar shows urgency">?</span>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">CAST</h3>
               <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-                <span class="goto-hook"></span>
                 <div class="dropdown" id="cast-bulk-dropdown" style="display:none">
                   <button class="dropdown-toggle">Actions</button>
                   <div class="dropdown-menu">
@@ -245,7 +251,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">CREW</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <div class="dropdown" id="crew-bulk-dropdown" style="display:none">
                 <button class="dropdown-toggle">Actions</button>
                 <div class="dropdown-menu">
@@ -273,7 +278,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">BUDGET</h3>
             <div style="display:flex;gap:6px;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <div class="dropdown" id="budget-bulk-dropdown" style="display:none">
                 <button class="dropdown-toggle">Actions</button>
                 <div class="dropdown-menu">
@@ -334,7 +338,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <div id="gear-toolbar" style="display:flex;gap:8px;align-items:center"></div>
               <button class="btn btn-sm btn-primary" onclick="addGearDay()">+ Add Gear Day</button>
             </div>
@@ -348,7 +351,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">LOCATIONS</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
               <div class="dropdown">
                 <button class="dropdown-toggle">More</button>
@@ -503,7 +505,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 class="section-heading">RELEASE FORMS</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <div class="dropdown">
                 <button class="btn btn-sm btn-primary dropdown-toggle">+ Add Release</button>
                 <div class="dropdown-menu">
@@ -522,7 +523,6 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h3 class="section-heading" style="margin:0">SCRIPT & DOCUMENTS</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="showSection('breakdown')">→ Script Breakdown</button>
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">
                 + Upload Document
@@ -537,13 +537,20 @@ Priority colour bar shows urgency">?</span>
         <!-- SECTION: PROJECT BRIEF -->
         <div id="section-brief" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-          <h3 class="section-heading" style="margin-bottom:20px">PROJECT BRIEF</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 class="section-heading" style="margin:0">PROJECT BRIEF</h3>
+            <span class="goto-hook"></span>
+          </div>
           <div id="brief-content"></div>
         </div>
 
         <!-- SECTION: PRODUCTION PLAN -->
         <div id="section-plan" style="display:none">
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 class="section-heading" style="margin:0">PRODUCTION PLAN</h3>
+            <span class="goto-hook"></span>
+          </div>
           <div id="plan-content"></div>
         </div>
 

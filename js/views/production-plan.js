@@ -104,7 +104,6 @@ function renderProductionPlan(p) {
   const hasTpl = !!store.productionPlanTemplate;
   document.getElementById('plan-content').innerHTML = `
     <div class="plan-toolbar">
-      <h3 class="section-heading">PRODUCTION PLAN</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="saveProductionPlanTemplate()">💾 Save as Template</button>
         <button class="btn btn-sm" onclick="loadProductionPlanTemplate()" ${hasTpl?'':'disabled title="No saved template yet"'}>📥 Load Template</button>

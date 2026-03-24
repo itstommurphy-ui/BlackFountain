@@ -62,14 +62,17 @@ function _renderMoodboardList(el) {
       ${projOptions}
     </select>`;
 
-  el.innerHTML = `
+  // Full-page view gets header with New Board button, project section uses the one in static HTML
+  const headerHtml = isProjectView ? '' : `
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
-        <h2 style="font-size:16px">${isProjectView ? 'PROJECT MOODBOARDS' : 'MOODBOARDS'}</h2>
-        <p style="font-size:12px">${isProjectView ? 'Visual inspiration for this project' : 'Visual inspiration boards for your projects'}</p>
+        <h2 style="font-size:16px">MOODBOARDS</h2>
+        <p style="font-size:12px">Visual inspiration boards for your projects</p>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openNewMoodboardModal()" style="margin-top:6px">+ New Board</button>
-    </div>
+    </div>`;
+
+  el.innerHTML = headerHtml + `
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px">
       <input class="form-input" placeholder="Search boards…" value="${search.replace(/"/g,'&quot;')}"
         oninput="document.getElementById('${el.id}')._mbSearch=this.value;${el.id === 'moodboards-container' ? 'renderMoodboards()' : 'renderProjectMoodboards(currentProject())'}" style="max-width:200px;font-size:12px">
@@ -78,11 +81,13 @@ function _renderMoodboardList(el) {
     </div>`;
 
   if (!filtered.length) {
+    // Full-page empty state gets button, project section uses static HTML button
+    const emptyButton = isProjectView ? '' : `<button class="btn btn-primary" onclick="openNewMoodboardModal()" style="margin-top:16px">+ New Board</button>`;
     el.innerHTML += `<div class="empty-state" style="padding:64px;text-align:center">
       <div style="font-size:52px;margin-bottom:16px">🎨</div>
       <h3>No moodboards yet</h3>
       <p style="color:var(--text2);margin-top:8px">Create a board to start collecting visual inspiration</p>
-      <button class="btn btn-primary" onclick="openNewMoodboardModal()" style="margin-top:16px">+ New Board</button>
+      ${emptyButton}
     </div>`;
     return;
   }

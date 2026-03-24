@@ -183,6 +183,7 @@ async function rippleScheduleTimes() {
 function getOptimizationSuggestion(shotIdx, schedule) {
   const shot = schedule[shotIdx];
   if (!shot || shot.isDayHeader) return null;
+  if (shot._nonShot) return null;
 
   const dayIndex = _findDayHeaderIndex(schedule, shotIdx);
   const dayShots = _getShotsForDay(schedule, dayIndex);
@@ -195,7 +196,17 @@ function getOptimizationSuggestion(shotIdx, schedule) {
     const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
 
     if (minGap > 1) { // There are unrelated shots between shots of the SAME scene
-      const targetPos = dayIndex + otherPositions[0] + 1;
+      // Count actual schedule index of the target shot
+      // by finding the otherPositions[0]-th non-nonShot row after dayIndex
+      let targetPos = dayIndex + 1;
+      let shotCount = 0;
+      while (targetPos < schedule.length && !schedule[targetPos].isDayHeader) {
+        if (!schedule[targetPos]._nonShot) {
+          if (shotCount === otherPositions[0]) break;
+          shotCount++;
+        }
+        targetPos++;
+      }
       return { 
         type: 'scene',
         targetPos, 
@@ -215,7 +226,17 @@ function getOptimizationSuggestion(shotIdx, schedule) {
       const minGap = Math.min(...otherPositions.map(p => Math.abs(p - myPosInDay)));
 
       if (minGap > 3) {
-        const targetPos = dayIndex + otherPositions[0] + 1;
+        // Count actual schedule index of the target shot
+        // by finding the otherPositions[0]-th non-nonShot row after dayIndex
+        let targetPos = dayIndex + 1;
+        let shotCount = 0;
+        while (targetPos < schedule.length && !schedule[targetPos].isDayHeader) {
+          if (!schedule[targetPos]._nonShot) {
+            if (shotCount === otherPositions[0]) break;
+            shotCount++;
+          }
+          targetPos++;
+        }
         const savings = (minGap - 1) * 45; // Estimate 45m per skipped shot
         return { 
           type: 'actor',
@@ -245,46 +266,44 @@ function showWandTooltip(el, message) {
   if (!wandTooltipEl) {
     wandTooltipEl = document.createElement('div');
     wandTooltipEl.className = 'wand-tooltip';
+    wandTooltipEl.style.cssText = [
+      'position:fixed',
+      'z-index:10000',
+      'background:#222',
+      'color:#fff',
+      'padding:10px 14px',
+      'border-radius:8px',
+      'max-width:260px',
+      'font-size:12px',
+      'line-height:1.4',
+      'border:1px solid #ffd700',
+      'box-shadow:0 4px 20px rgba(0,0,0,0.5)',
+      'pointer-events:none',
+      'white-space:normal',
+      'word-break:break-word',
+    ].join(';');
     document.body.appendChild(wandTooltipEl);
   }
+
   wandTooltipEl.textContent = message;
-  
-  const tooltipWidth = 200;
-  wandTooltipEl.style.width = tooltipWidth + 'px';
-  wandTooltipEl.style.maxWidth = tooltipWidth + 'px';
   wandTooltipEl.style.display = 'block';
-  
-  const rect = el.getBoundingClientRect();
-  const tooltipHeight = wandTooltipEl.offsetHeight;
-  
-  // Calculate horizontal position first
-  let left = rect.left + window.scrollX - (tooltipWidth / 2) + 10;
-  if (left < 10) left = 10;
-  if (left + tooltipWidth > window.innerWidth - 10) left = window.innerWidth - tooltipWidth - 10;
-  
-  // Check if it fits above - if not, show below
-  const spaceAbove = rect.top;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const neededSpace = tooltipHeight + 15;
-  
-  let top;
-  if (spaceAbove >= neededSpace) {
-    // Fit above
-    top = rect.top + window.scrollY - neededSpace;
-  } else if (spaceBelow >= neededSpace) {
-    // Fit below
-    top = rect.bottom + window.scrollY + 10;
-  } else {
-    // Fit where there's more space
-    if (spaceBelow > spaceAbove) {
-      top = rect.bottom + window.scrollY + 10;
-    } else {
-      top = window.scrollY + 10;
-    }
-  }
-  
+
+  const rect   = el.getBoundingClientRect();
+  const tipW   = 260;
+  const tipH   = wandTooltipEl.offsetHeight || 80;
+  const margin = 8;
+
+  // Prefer showing above, fall back to below
+  let top  = rect.top - tipH - 10;
+  let left = rect.left + rect.width / 2 - tipW / 2;
+
+  if (top < margin) top = rect.bottom + 10;
+  if (left < margin) left = margin;
+  if (left + tipW > window.innerWidth - margin) left = window.innerWidth - tipW - margin;
+  if (top + tipH > window.innerHeight - margin) top = window.innerHeight - tipH - margin;
+
+  wandTooltipEl.style.top  = top  + 'px';
   wandTooltipEl.style.left = left + 'px';
-  wandTooltipEl.style.top = top + 'px';
 }
 function hideWandTooltip() {
   if (wandTooltipEl) wandTooltipEl.style.display = 'none';
@@ -360,12 +379,13 @@ function renderSchedule(p) {
     }
 
     // If it's a scene fragment, highlight the row slightly
-    const suggestion = getOptimizationSuggestion(i, p.schedule);
+    // Skip _nonShot rows from optimization suggestions
+    const suggestion = (!s._nonShot) ? getOptimizationSuggestion(i, p.schedule) : null;
     const rowStyle = (suggestion && suggestion.type === 'scene') ? 'border-left: 4px solid #ff4d4d; background: rgba(255, 77, 77, 0.05);' : '';
     
     const wand = suggestion ? `
       <span class="magic-wand" 
-            onclick="moveShot(${i}, ${suggestion.targetPos})" 
+            onclick="event.stopPropagation();moveShot(${i}, ${suggestion.targetPos})" 
             onmouseover="showWandTooltip(this, '${suggestion.message.replace(/'/g, "\\'")}')" 
             onmouseout="hideWandTooltip()">
         🪄
