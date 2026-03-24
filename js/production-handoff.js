@@ -166,6 +166,8 @@
     if (added) {
       saveStore();
       showToast(`Added ${added} item${added !== 1 ? 's' : ''} to project sections`, 'success');
+    } else {
+      showToast('All items already exist in project sections', 'info');
     }
     _removeBanner();
   };
@@ -271,6 +273,8 @@
     if (added) {
       saveStore();
       showToast(`Added ${added} item${added !== 1 ? 's' : ''} to project sections`, 'success');
+    } else {
+      showToast('All selected items already exist in project sections', 'info');
     }
     _removeReviewPanel();
     _removeBanner();
