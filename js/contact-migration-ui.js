@@ -90,7 +90,7 @@ function openContactMigrationModal() {
   const totalSkip     = choices.filter(c => c.action === 'skip').length;
 
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
+  overlay.className = 'modal-overlay open';
   overlay.id = MODAL_ID;
   overlay.innerHTML = `
     <div class="modal" style="max-width:640px;display:flex;flex-direction:column;max-height:85vh">
