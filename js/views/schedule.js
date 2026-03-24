@@ -612,6 +612,23 @@ function addPersonnel(type) {
   _persSetCrewMode(type === 'unit');
   populateContactSelect('pers-contact-select');
   openModal('modal-personnel');
+  setTimeout(() => ContactAnchor.attachPicker(
+    document.getElementById('pers-name'),
+    contact => {
+      document.getElementById('pers-name').value   = contact.name;
+      document.getElementById('pers-number').value = contact.phone || '';
+      document.getElementById('pers-email').value  = contact.email || '';
+      window._persContactId = contact.id;
+      // Show badge
+      const badge = document.getElementById('_pers-linked-badge');
+      if (badge) badge.remove();
+      const b = document.createElement('div');
+      b.id = '_pers-linked-badge';
+      b.style.cssText = 'font-size:11px;color:var(--accent2);margin-top:4px';
+      b.innerHTML = `⚭ Linked to contact: <strong>${contact.name}</strong> <button onclick="window._persContactId=null;this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px">Unlink</button>`;
+      document.getElementById('pers-name').parentElement.appendChild(b);
+    }
+  ), 0);
 }
 function editPersonnel(type, i) {
   const p = currentProject();
@@ -664,6 +681,10 @@ function savePersonnel() {
     confirmed: document.getElementById('pers-confirmed').value,
     dept: document.getElementById('pers-dept').value
   };
+  if (window._persContactId) {
+    m.contactId = window._persContactId;
+    window._persContactId = null;
+  }
   if (idx !== '') p[type][parseInt(idx)] = m;
   else p[type].push(m);
   saveStore(); closeModal('modal-personnel');

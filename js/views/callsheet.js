@@ -1394,30 +1394,19 @@ function populateContactSelect(selectId) {
   if (!select) return;
   select.innerHTML = '<option value="">— Select existing contact —</option>';
   const seen = new Set();
-  // Get current project first for priority, then others
-  const currentP = currentProject();
-  if (currentP && currentP.contacts) {
-    currentP.contacts.forEach(c => {
-      if (c.name && !seen.has(c.name.toLowerCase())) {
-        seen.add(c.name.toLowerCase());
-        const opt = document.createElement('option');
-        opt.value = JSON.stringify({name:c.name, phone:c.phone||'', email:c.email||'', socials:c.socials||''});
-        opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '');
-        select.appendChild(opt);
-      }
-    });
-  }
+  const addPerson = (name, phone, email, socials, label) => {
+    if (!name || seen.has(name.toLowerCase())) return;
+    seen.add(name.toLowerCase());
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify({ name, phone: phone||'', email: email||'', socials: socials||'' });
+    opt.textContent = label ? `${name} - ${label}` : name;
+    select.appendChild(opt);
+  };
   store.projects.forEach(p => {
-    if (p.id === currentP?.id) return; // skip current project already added
-    (p.contacts || []).forEach(c => {
-      if (c.name && !seen.has(c.name.toLowerCase())) {
-        seen.add(c.name.toLowerCase());
-        const opt = document.createElement('option');
-        opt.value = JSON.stringify({name:c.name, phone:c.phone||'', email:c.email||'', socials:c.socials||''});
-        opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '') + ' - ' + p.title;
-        select.appendChild(opt);
-      }
-    });
+    (p.contacts || []).forEach(c => addPerson(c.name, c.phone, c.email, c.socials, p.title));
+    (p.cast     || []).forEach(r => addPerson(r.name, r.number, r.email, '', p.title));
+    (p.extras   || []).forEach(r => addPerson(r.name, r.number, r.email, '', p.title));
+    (p.unit     || []).forEach(r => addPerson(r.name, r.number, r.email, '', p.title));
   });
 }
 

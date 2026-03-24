@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v33';
+const CACHE_NAME = 'blackfountain-v34';
 const urlsToCache = [
   '/',
   '/index.html',
