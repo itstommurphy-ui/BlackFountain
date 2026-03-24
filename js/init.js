@@ -133,6 +133,11 @@ async function _startApp() {
       ContactAnchor.runSilentMigration();
     }
 
+    // Migrate all scene entities to new format
+    if (typeof SceneEntity !== 'undefined') {
+      SceneEntity.migrateAll();
+    }
+
     // Apply theme/font preferences from cloud store
     if (typeof loadTheme === 'function') {
       loadTheme();
