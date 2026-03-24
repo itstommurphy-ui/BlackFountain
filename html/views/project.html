@@ -95,7 +95,7 @@ Priority colour bar shows urgency">?</span>
 
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px">
             <h3 class="section-heading" style="margin:0">SECTIONS <span style="font-size:10px;font-weight:400;letter-spacing:0;color:var(--text3);text-transform:none">(cards can be dragged and rearranged)</span></h3>
-            <div id="ov-toolbar" style="display:flex;align-items:center;gap:8px;font-size:11px"></div>
+            <div id="ov-toolbar" style="display:flex;align-items:center;gap:8px;font-size:11px"><span class="goto-hook"></span></div>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
 
@@ -149,7 +149,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">CALLSHEET</h3>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="addCallsheet()">+ New Day</button>
               <button class="btn btn-sm" onclick="smartGenerateCallsheet()" title="Generate from schedule with smart timing">⚡ Smart Generate</button>
               <button class="btn btn-sm btn-primary" onclick="openExportModal()">⬇ Export PDF</button>
@@ -163,7 +163,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">ESTIMATED SCHEDULE</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <button class="btn btn-sm btn-ghost" onclick="wrapScheduleDays()" title="Wrap schedule with custom times">📅 Wrap Days</button>
               <button class="btn btn-sm btn-ghost" onclick="showSection('shotlist')" title="Go to Shot List">📋 Shot List</button>
               <button class="btn btn-sm btn-ghost" onclick="exportSchedule()" title="Export Schedule">📤 Export</button>
@@ -189,7 +189,7 @@ Priority colour bar shows urgency">?</span>
           <div style="margin-bottom:24px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">CAST</h3>
-              <div style="display:flex;gap:8px;align-items:center">
+              <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
                 <span class="goto-hook"></span>
                 <div class="dropdown" id="cast-bulk-dropdown" style="display:none">
                   <button class="dropdown-toggle">Actions</button>
@@ -218,7 +218,7 @@ Priority colour bar shows urgency">?</span>
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">SUPPORTING ARTISTS (EXTRAS)</h3>
-              <div style="display:flex;gap:8px;align-items:center">
+              <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
                 <button class="btn btn-sm btn-danger" id="extras-remove-sel-btn" style="display:none" onclick="removeSelectedPersonnel()">✕ Remove Selected</button>
                 <div class="dropdown">
                   <button class="btn btn-sm dropdown-toggle">✉️ Email</button>
@@ -244,7 +244,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">CREW</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <div class="dropdown" id="crew-bulk-dropdown" style="display:none">
                 <button class="dropdown-toggle">Actions</button>
@@ -272,7 +272,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">BUDGET</h3>
-            <div style="display:flex;gap:6px;align-items:center">
+            <div style="display:flex;gap:6px;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <div class="dropdown" id="budget-bulk-dropdown" style="display:none">
                 <button class="dropdown-toggle">Actions</button>
@@ -333,7 +333,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <div id="gear-toolbar" style="display:flex;gap:8px;align-items:center"></div>
               <button class="btn btn-sm btn-primary" onclick="addGearDay()">+ Add Gear Day</button>
@@ -347,7 +347,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">LOCATIONS</h3>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
               <div class="dropdown">
@@ -502,7 +502,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 class="section-heading">RELEASE FORMS</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <div class="dropdown">
                 <button class="btn btn-sm btn-primary dropdown-toggle">+ Add Release</button>
@@ -521,7 +521,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h3 class="section-heading" style="margin:0">SCRIPT & DOCUMENTS</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
               <span class="goto-hook"></span>
               <button class="btn btn-sm" onclick="showSection('breakdown')">→ Script Breakdown</button>
               <label class="btn btn-sm btn-primary" style="cursor:pointer;">
@@ -552,7 +552,7 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">MOODBOARDS</h3>
-            <button class="btn btn-sm btn-primary" onclick="openNewMoodboardModal()">+ New Board</button>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-sm btn-primary" onclick="openNewMoodboardModal()">+ New Board</button></div>
           </div>
           <div id="project-moodboards-container"></div>
         </div>

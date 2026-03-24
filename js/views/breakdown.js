@@ -871,9 +871,9 @@ function renderBreakdownEditor(el, p) {
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
         <span class="goto-hook"></span>
         <button class="btn btn-sm" onclick="showBdSuggestPanel()" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-color:#4a4a8a" title="Auto-detect characters, props, vehicles and more">✦ Auto-suggest</button>
-        <button class="btn btn-sm" onclick="importBdCastToSection()" title="Export tagged Cast and Extras to the Cast &amp; Extras section">→ Export Cast/Extras</button>
-        <button class="btn btn-sm" onclick="importBdPropsToSection()" title="Export tagged Props to the Props section">→ Export Props</button>
+
         <button class="btn btn-sm" onclick="viewBreakdownReport()">⊞ View Report</button>
+        <button class="btn btn-sm" onclick="_triggerHandoffCheck()" title="Add tagged items to project sections">+ Add to Project</button>
         <div class="dropdown">
           <button class="dropdown-toggle">↓ Export</button>
           <div class="dropdown-menu">
