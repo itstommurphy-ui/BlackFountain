@@ -146,7 +146,9 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">STRIPBOARD</h3>
-            <span class="goto-hook"></span>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportStripboardPDF()">⬇ Export PDF</button>
+            </div>
           </div>
           <div id="stripboard-content"></div>
         </div>
@@ -197,6 +199,8 @@ Priority colour bar shows urgency">?</span>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">CAST</h3>
               <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+                <button class="btn btn-sm" onclick="exportCastPDF()">⬇ Export PDF</button>
+                <button class="btn btn-sm" onclick="exportCastCSV()">📊 Export CSV</button>
                 <div class="dropdown" id="cast-bulk-dropdown" style="display:none">
                   <button class="dropdown-toggle">Actions</button>
                   <div class="dropdown-menu">
@@ -225,6 +229,8 @@ Priority colour bar shows urgency">?</span>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <h3 class="section-heading">SUPPORTING ARTISTS (EXTRAS)</h3>
               <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+                <button class="btn btn-sm" onclick="exportExtrasPDF()">⬇ Export PDF</button>
+                <button class="btn btn-sm" onclick="exportExtrasCSV()">📊 Export CSV</button>
                 <button class="btn btn-sm btn-danger" id="extras-remove-sel-btn" style="display:none" onclick="removeSelectedPersonnel()">✕ Remove Selected</button>
                 <div class="dropdown">
                   <button class="btn btn-sm dropdown-toggle">✉️ Email</button>
@@ -251,6 +257,8 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading" style="margin:0">CREW</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportCrewPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportCrewCSV()">📊 Export CSV</button>
               <div class="dropdown" id="crew-bulk-dropdown" style="display:none">
                 <button class="dropdown-toggle">Actions</button>
                 <div class="dropdown-menu">
@@ -338,6 +346,8 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">EQUIPMENT CHECKLIST</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportEquipmentPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportEquipmentCSV()">📊 Export CSV</button>
               <div id="gear-toolbar" style="display:flex;gap:8px;align-items:center"></div>
               <button class="btn btn-sm btn-primary" onclick="addGearDay()">+ Add Gear Day</button>
             </div>
@@ -351,6 +361,8 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">LOCATIONS</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportLocationsPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportLocationsCSV()">📊 Export CSV</button>
               <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
               <div class="dropdown">
                 <button class="dropdown-toggle">More</button>
@@ -427,7 +439,10 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">PROPS LIST</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addPropItem('props')">+ Add Prop</button></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportPropsPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportPropsCSV()">📊 Export CSV</button>
+              <button class="btn btn-primary btn-sm" onclick="addPropItem('props')">+ Add Prop</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -442,7 +457,10 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">WARDROBE / COSTUME / MAKE-UP</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addWardrobeItem()">+ Add Item</button></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportWardrobePDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportWardrobeCSV()">📊 Export CSV</button>
+              <button class="btn btn-primary btn-sm" onclick="addWardrobeItem()">+ Add Item</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -457,7 +475,10 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">SOUND LOG</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addSoundEntry()">+ Add Entry</button></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportSoundLogPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportSoundLogCSV()">📊 Export CSV</button>
+              <button class="btn btn-primary btn-sm" onclick="addSoundEntry()">+ Add Entry</button></div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -472,7 +493,10 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 class="section-heading">PRODUCTION RISK ASSESSMENT</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span><button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportRiskPDF()">⬇ Export PDF</button>
+              <button class="btn btn-sm" onclick="exportRiskCSV()">📊 Export CSV</button>
+              <button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button></div>
           </div>
           <div class="breakdown-card" style="margin-bottom:16px">
             <div class="form-row-3">
@@ -505,6 +529,7 @@ Priority colour bar shows urgency">?</span>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 class="section-heading">RELEASE FORMS</h3>
             <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportReleasesPDF()">⬇ Export PDF</button>
               <div class="dropdown">
                 <button class="btn btn-sm btn-primary dropdown-toggle">+ Add Release</button>
                 <div class="dropdown-menu">
@@ -539,7 +564,9 @@ Priority colour bar shows urgency">?</span>
           <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 class="section-heading" style="margin:0">PROJECT BRIEF</h3>
-            <span class="goto-hook"></span>
+            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
+              <button class="btn btn-sm" onclick="exportBriefPDF()">⬇ Export PDF</button>
+            </div>
           </div>
           <div id="brief-content"></div>
         </div>
