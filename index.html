@@ -1741,6 +1741,15 @@
 <script src="js/views/email.js"></script>
 <script src="js/views/script.js"></script>
 <script src="js/scene-entity.js"></script>
+<!-- compromise NLP — vendored local copy, CDN fallback -->
+<script src="js/lib/compromise.js"></script>
+<script>
+  if (!window.nlp) {
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/compromise@14.15.0/builds/compromise.js';
+    document.head.appendChild(s);
+  }
+</script>
 <script src="js/views/breakdown.js"></script>
 <script src="js/breakdown-scene-patch.js"></script>
 <script src="js/production-handoff.js"></script>
