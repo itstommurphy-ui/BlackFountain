@@ -32,6 +32,7 @@ function openModal(id) {
     });
   }
   overlay.classList.add('open');
+  overlay.style.display = 'flex';
   overlay.dataset.justOpened = Date.now();
   // focus first focusable element inside the modal
   setTimeout(() => {
@@ -44,6 +45,7 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (el) {
     el.classList.remove('open');
+    el.style.display = 'none';
   }
 }
 

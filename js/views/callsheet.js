@@ -9,9 +9,51 @@ function _csEscVal(v) {
   return (v || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+/**
+ * Normalise any time string to HH:mm (24-hour) for use in <input type="time">.
+ * Handles: "09:30", "9:30 AM", "9:30 PM", "9:30am", "9:30PM", "930", "" etc.
+ * Returns "" if unparseable.
+ */
+function _csTo24h(t) {
+  if (!t) return '';
+  t = String(t).trim();
+  // Already HH:mm 24-hour
+  if (/^\d{2}:\d{2}$/.test(t)) return t;
+  // H:mm 24-hour (no leading zero)
+  if (/^\d:\d{2}$/.test(t)) return t.padStart(5, '0');
+  // 12-hour with am/pm — e.g. "9:30 AM", "11:18 AM", "3:45PM"
+  const m12 = t.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (m12) {
+    let h = parseInt(m12[1]);
+    const min = m12[2];
+    const pm = m12[3].toLowerCase() === 'pm';
+    if (pm && h !== 12) h += 12;
+    if (!pm && h === 12) h = 0;
+    return String(h).padStart(2,'0') + ':' + min;
+  }
+  // 12-hour without colon — e.g. "930 AM"
+  const m12b = t.match(/^(\d{3,4})\s*(am|pm)$/i);
+  if (m12b) {
+    const raw = m12b[1].padStart(4, '0');
+    let h = parseInt(raw.slice(0,2));
+    const min = raw.slice(2);
+    const pm = m12b[2].toLowerCase() === 'pm';
+    if (pm && h !== 12) h += 12;
+    if (!pm && h === 12) h = 0;
+    return String(h).padStart(2,'0') + ':' + min;
+  }
+  // Plain digits like "0930"
+  if (/^\d{3,4}$/.test(t)) {
+    const padded = t.padStart(4,'0');
+    return padded.slice(0,2) + ':' + padded.slice(2);
+  }
+  return '';
+}
+
 function _parseTimeToMins(t) {
-  if (!t) return 0;
-  const m = String(t).match(/^(\d{1,2}):(\d{2})$/);
+  const norm = _csTo24h(t);
+  if (!norm) return 0;
+  const m = norm.match(/^(\d{2}):(\d{2})$/);
   return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 0;
 }
 
@@ -46,6 +88,9 @@ function _csNextTime(rows) {
   }
   return '';
 }
+
+// Round minutes value down to nearest 15-min boundary
+function _roundDownQtr(mins) { return Math.floor(mins / 15) * 15; }
 
 function _csRecalcTimes(csIdx, fromRow) {
   const p = currentProject();
@@ -144,6 +189,10 @@ function _migrateCallsheet(c) {
   if (!c.castRows)     c.castRows = [];
   if (!c.schedRows)    c.schedRows = [];
   if (!c.locRows)      c.locRows = [{ loc:'', city:'', parking:'', hospital:'' }];
+  if (!c.castHiddenCols)   c.castHiddenCols = [];
+  if (!c.extrasHiddenCols) c.extrasHiddenCols = [];
+  if (!c.scenesHiddenCols) c.scenesHiddenCols = [];
+  if (!c.weatherByLoc)     c.weatherByLoc = [];
   if (!c.customFields) c.customFields = [];
   if (c.hideStunts     === undefined) c.hideStunts = true;
   if (c.hideExtras     === undefined) c.hideExtras = false;
@@ -295,8 +344,16 @@ function _csSectionHead(label, csIdx, sectionKey, minimizedKey) {
   const p = currentProject();
   const c = p?.callsheets[csIdx];
   const isMin = c ? !!c[minimizedKey] : false;
+  const order = c?.sectionOrder || [];
+  const pos = order.indexOf(sectionKey);
+  const isFirst = pos <= 0;
+  const isLast  = pos >= order.length - 1;
   return `<div class="cs-heading" draggable="false">
     <span class="cs-drag-handle pdf-hide" draggable="true" title="Drag to reorder">⠿</span>
+    <span class="pdf-hide" style="display:inline-flex;gap:1px;margin-right:4px;">
+      ${isFirst ? '' : `<button class="cs-section-btn" title="Move up" onclick="csMoveSection(${csIdx},'${sectionKey}',-1)" style="padding:0 4px;font-size:10px;">↑</button>`}
+      ${isLast  ? '' : `<button class="cs-section-btn" title="Move down" onclick="csMoveSection(${csIdx},'${sectionKey}',1)"  style="padding:0 4px;font-size:10px;">↓</button>`}
+    </span>
     ${label}
     <div class="cs-section-actions pdf-hide">
       <button class="cs-section-btn" onclick="toggleSectionMinimize(${csIdx},'${sectionKey}');renderCallsheet(currentProject());">${isMin ? '+ Expand' : '− Hide'}</button>
@@ -313,10 +370,10 @@ function buildNoticesSection(c, i) {
       <div style="border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;margin-bottom:8px;">
         ${notices.map((n, ni) => `
           <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #f0f0f0;background:${ni % 2 === 0 ? '#fff' : '#fafafa'}">
-            <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:#888;flex-shrink:0;cursor:pointer;">
+            <label class="pdf-hide" style="display:flex;align-items:center;gap:4px;font-size:9px;color:#888;flex-shrink:0;cursor:pointer;">
               <input type="checkbox" ${n.bold ? 'checked' : ''} onchange="updateCSNotice(${i},${ni},'bold',this.checked)" style="width:12px;height:12px;"> Bold
             </label>
-            <input class="cs-table-input" style="flex:1;font-weight:${n.bold ? '700' : '400'};font-size:${n.bold ? '12px' : '11px'};text-transform:${n.bold ? 'uppercase' : 'none'}"
+            <input class="cs-table-input ${n.bold ? 'cs-notice-bold' : 'cs-notice-normal'}" style="flex:1;font-weight:${n.bold ? '700' : '400'};font-size:${n.bold ? '12px' : '11px'};text-transform:${n.bold ? 'uppercase' : 'none'}"
               value="${_csEscVal(n.text)}" placeholder="Notice text…"
               onchange="updateCSNotice(${i},${ni},'text',this.value)">
             <button class="cs-section-btn pdf-hide" style="color:#c44444;flex-shrink:0" onclick="removeCSNotice(${i},${ni})">✕</button>
@@ -329,49 +386,53 @@ function buildNoticesSection(c, i) {
 
 // SCENE SYNOPSIS STRIP
 function buildScenesSection(c, i) {
+  const hiddenCols = c.scenesHiddenCols || [];
+  const colVis = col => !hiddenCols.includes(col);
+  const colHead = (id, label, title, w) => colVis(id)
+    ? `<th style="${w?'width:'+w+';':''}" title="${title}" class="cs-col-head" data-csidx="${i}" data-arraykey="sceneRows" data-colid="${id}">${label} <span class="cs-col-hide pdf-hide" onclick="csHideCol(${i},'sceneRows','${id}')" title="Hide column">✕</span></th>`
+    : '';
   return `
     ${_csSectionHead('SCENES', i, 'scenes', 'minimizedScenes')}
     <div style="display:${c.minimizedScenes ? 'none' : 'block'}">
+      ${hiddenCols.length ? `<div class="pdf-hide" style="margin-bottom:8px"><button class="cs-section-btn" onclick="csRestoreCols(${i},'sceneRows')">↺ Restore hidden columns</button></div>` : ''}
       <table class="cs-table" style="font-size:11px;">
         <thead><tr>
-          <th style="width:48px">Sc.</th>
-          <th style="width:36px">I/E</th>
-          <th>Set / Location</th>
-          <th style="width:36px">D/N</th>
-          <th>Synopsis</th>
-          <th style="width:52px">Pages</th>
-          <th>Cast #</th>
+          ${colHead('sceneNum','Sc.','Scene number','48px')}
+          ${colHead('intExt','I/E','Interior or Exterior','36px')}
+          ${colHead('location','Set / Location','Set or location name','')}
+          ${colHead('dn','D/N','Day or Night','36px')}
+          ${colHead('synopsis','Synopsis','Brief description of the scene','')}
+          ${colHead('pages','Pages','Page count (e.g. 1⅛)','52px')}
+          ${colHead('castNums','Cast #','Cast numbers from cast section below','58px')}
           <th class="pdf-hide" style="width:32px"></th>
         </tr></thead>
         <tbody>
           ${(c.sceneRows || []).map((r, ri) => `
             <tr>
-              <td><input class="cs-table-input" value="${_csEscVal(r.sceneNum)}" placeholder="1A" style="width:40px" onchange="updateCSRow(${i},'sceneRows',${ri},'sceneNum',this.value)"></td>
-              <td>
+              ${colVis('sceneNum')  ? `<td><input class="cs-table-input" value="${_csEscVal(r.sceneNum)}" placeholder="1A" style="width:40px" onchange="updateCSRow(${i},'sceneRows',${ri},'sceneNum',this.value)"></td>` : ''}
+              ${colVis('intExt')   ? `<td>
                 <select class="cs-table-input" style="width:34px;padding:0;" onchange="updateCSRow(${i},'sceneRows',${ri},'intExt',this.value)">
                   <option value="" ${!r.intExt?'selected':''}>—</option>
                   <option value="INT" ${r.intExt==='INT'?'selected':''}>INT</option>
                   <option value="EXT" ${r.intExt==='EXT'?'selected':''}>EXT</option>
-                </select>
-              </td>
-              <td><input class="cs-table-input" value="${_csEscVal(r.location)}" placeholder="Location name" onchange="updateCSRow(${i},'sceneRows',${ri},'location',this.value)"></td>
-              <td>
+                </select></td>` : ''}
+              ${colVis('location') ? `<td><input class="cs-table-input" value="${_csEscVal(r.location)}" placeholder="Location name" onchange="updateCSRow(${i},'sceneRows',${ri},'location',this.value)"></td>` : ''}
+              ${colVis('dn')       ? `<td>
                 <select class="cs-table-input" style="width:34px;padding:0;" onchange="updateCSRow(${i},'sceneRows',${ri},'dn',this.value)">
                   <option value="" ${!r.dn?'selected':''}>—</option>
                   <option value="D" ${r.dn==='D'?'selected':''}>D</option>
                   <option value="N" ${r.dn==='N'?'selected':''}>N</option>
                   <option value="D/N" ${r.dn==='D/N'?'selected':''}>D/N</option>
-                </select>
-              </td>
-              <td><input class="cs-table-input" value="${_csEscVal(r.synopsis)}" placeholder="Brief scene description" onchange="updateCSRow(${i},'sceneRows',${ri},'synopsis',this.value)"></td>
-              <td><input class="cs-table-input" value="${_csEscVal(r.pages)}" placeholder="1⅛" style="width:46px" onchange="updateCSRow(${i},'sceneRows',${ri},'pages',this.value)"></td>
-              <td><input class="cs-table-input" value="${_csEscVal(r.castNums)}" placeholder="1,3,8" onchange="updateCSRow(${i},'sceneRows',${ri},'castNums',this.value)"></td>
+                </select></td>` : ''}
+              ${colVis('synopsis') ? `<td><input class="cs-table-input" value="${_csEscVal(r.synopsis)}" placeholder="Brief scene description" onchange="updateCSRow(${i},'sceneRows',${ri},'synopsis',this.value)"></td>` : ''}
+              ${colVis('pages')    ? `<td><input class="cs-table-input" value="${_csEscVal(r.pages)}" placeholder="1⅛" style="width:46px" onchange="updateCSRow(${i},'sceneRows',${ri},'pages',this.value)"></td>` : ''}
+              ${colVis('castNums') ? `<td><input class="cs-table-input" value="${_csEscVal(r.castNums)}" placeholder="1,3,8" onchange="updateCSRow(${i},'sceneRows',${ri},'castNums',this.value)"></td>` : ''}
               <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'sceneRows',${ri})">✕</button></td>
             </tr>`).join('')}
         </tbody>
       </table>
       <div class="pdf-hide" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-        <button class="cs-add-row-btn" onclick="addCSRow(${i},'sceneRows',{sceneNum:'',intExt:'',location:'',dn:'',synopsis:'',pages:'',castNums:''})">+ Add Scene</button>
+        <button class="cs-add-row-btn" onclick="_csAddSceneRow(${i})">+ Add Scene</button>
         <button class="cs-add-row-btn" onclick="csSmartSyncScenes(${i})" title="Sync scenes for this shoot day from Breakdown / Schedule">⚡ Sync Scenes</button>
       </div>
     </div>`;
@@ -420,12 +481,12 @@ function buildCastSection(c, i) {
               ${colVis('num')       ? `<td><input class="cs-table-input" value="${_csEscVal(r.num)}" placeholder="1" style="width:24px;text-align:center" onchange="updateCSRow(${i},'castRows',${ri},'num',this.value)"></td>` : ''}
               ${colVis('actor')     ? `<td><input class="cs-table-input" value="${_csEscVal(r.actor)}" placeholder="Name" data-actor-auto autocomplete="off" onchange="updateCSRow(${i},'castRows',${ri},'actor',this.value)"></td>` : ''}
               ${colVis('character') ? `<td><input class="cs-table-input" value="${_csEscVal(r.character)}" placeholder="Character" data-char-auto autocomplete="off" onchange="updateCSRow(${i},'castRows',${ri},'character',this.value)"></td>` : ''}
-              ${colVis('pu')        ? `<td><input class="cs-table-input" type="time" value="${r.pu||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'pu',this.value)"></td>` : ''}
-              ${colVis('arrive')    ? `<td><input class="cs-table-input" type="time" value="${r.arrive||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'arrive',this.value)"></td>` : ''}
-              ${colVis('mu')        ? `<td><input class="cs-table-input" type="time" value="${r.mu||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'mu',this.value)"></td>` : ''}
-              ${colVis('cos')       ? `<td><input class="cs-table-input" type="time" value="${r.cos||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'cos',this.value)"></td>` : ''}
-              ${colVis('onset')     ? `<td><input class="cs-table-input" type="time" value="${r.onset||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'onset',this.value)"></td>` : ''}
-              ${colVis('ready')     ? `<td><input class="cs-table-input" type="time" value="${r.ready||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'ready',this.value)"></td>` : ''}
+              ${colVis('pu')        ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.pu)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'pu',this.value)"></td>` : ''}
+              ${colVis('arrive')    ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.arrive)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'arrive',this.value)"></td>` : ''}
+              ${colVis('mu')        ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.mu)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'mu',this.value)"></td>` : ''}
+              ${colVis('cos')       ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.cos)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'cos',this.value)"></td>` : ''}
+              ${colVis('onset')     ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.onset)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'onset',this.value)"></td>` : ''}
+              ${colVis('ready')     ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.ready)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'castRows',${ri},'ready',this.value)"></td>` : ''}
               ${colVis('poc')       ? `<td><input class="cs-table-input" value="${_csEscVal(r.poc)}" placeholder="Name / Num" onchange="updateCSRow(${i},'castRows',${ri},'poc',this.value)"></td>` : ''}
               ${showContact && colVis('contact') ? `<td><input class="cs-table-input" value="${_csEscVal(r.contact)}" placeholder="Phone / Email" onchange="updateCSRow(${i},'castRows',${ri},'contact',this.value)"></td>` : ''}
               <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'castRows',${ri})">✕</button></td>
@@ -470,12 +531,12 @@ function buildExtrasSection(c, i) {
           ${(c.extrasRows || []).map((r, ri) => `
             <tr>
               ${colVis('description') ? `<td><input class="cs-table-input" value="${_csEscVal(r.description)}" placeholder="e.g. Government Officials" onchange="updateCSRow(${i},'extrasRows',${ri},'description',this.value)"></td>` : ''}
-              ${colVis('called')      ? `<td><input class="cs-table-input" type="time" value="${r.called||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'called',this.value)"></td>` : ''}
+              ${colVis('called')      ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.called)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'called',this.value)"></td>` : ''}
               ${colVis('holdingRoom') ? `<td><input class="cs-table-input" value="${_csEscVal(r.holdingRoom)}" placeholder="Holding room TBA" onchange="updateCSRow(${i},'extrasRows',${ri},'holdingRoom',this.value)"></td>` : ''}
-              ${colVis('mu')          ? `<td><input class="cs-table-input" type="time" value="${r.mu||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'mu',this.value)"></td>` : ''}
-              ${colVis('hair')        ? `<td><input class="cs-table-input" type="time" value="${r.hair||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'hair',this.value)"></td>` : ''}
-              ${colVis('ward')        ? `<td><input class="cs-table-input" type="time" value="${r.ward||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'ward',this.value)"></td>` : ''}
-              ${colVis('onSet')       ? `<td><input class="cs-table-input" type="time" value="${r.onSet||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'onSet',this.value)"></td>` : ''}
+              ${colVis('mu')          ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.mu)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'mu',this.value)"></td>` : ''}
+              ${colVis('hair')        ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.hair)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'hair',this.value)"></td>` : ''}
+              ${colVis('ward')        ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.ward)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'ward',this.value)"></td>` : ''}
+              ${colVis('onSet')       ? `<td><input class="cs-table-input" type="time" value="${_csTo24h(r.onSet)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'extrasRows',${ri},'onSet',this.value)"></td>` : ''}
               ${colVis('total')       ? `<td><input class="cs-table-input" value="${_csEscVal(r.total)}" placeholder="10" style="width:38px;text-align:center" onchange="updateCSRow(${i},'extrasRows',${ri},'total',this.value)"></td>` : ''}
               ${colVis('notes')       ? `<td><input class="cs-table-input" value="${_csEscVal(r.notes)}" placeholder="Notes…" onchange="updateCSRow(${i},'extrasRows',${ri},'notes',this.value)"></td>` : ''}
               <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'extrasRows',${ri})">✕</button></td>
@@ -517,8 +578,8 @@ function buildStuntsSection(c, i) {
                   <option value="N" ${r.dn==='N'?'selected':''}>N</option>
                 </select>
               </td>
-              <td><input class="cs-table-input" type="time" value="${r.pu||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'stuntRows',${ri},'pu',this.value)"></td>
-              <td><input class="cs-table-input" type="time" value="${r.arrive||''}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'stuntRows',${ri},'arrive',this.value)"></td>
+              <td><input class="cs-table-input" type="time" value="${_csTo24h(r.pu)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'stuntRows',${ri},'pu',this.value)"></td>
+              <td><input class="cs-table-input" type="time" value="${_csTo24h(r.arrive)}" style="width:60px;cursor:pointer" onchange="updateCSRow(${i},'stuntRows',${ri},'arrive',this.value)"></td>
               <td><input class="cs-table-input" value="${_csEscVal(r.notes)}" placeholder="Notes…" onchange="updateCSRow(${i},'stuntRows',${ri},'notes',this.value)"></td>
               <td class="pdf-hide"><button class="cs-section-btn" style="color:#c44444" onclick="removeCSRow(${i},'stuntRows',${ri})">✕</button></td>
             </tr>`).join('')}
@@ -589,35 +650,58 @@ function buildCrewSection(c, i) {
       <div class="cs-call-times">
         <div class="cs-call-card highlight">
           <div class="cs-call-label">Crew Call</div>
-          <input class="cs-call-input" type="time" value="${c.crewCall||''}" onchange="updateCSF(${i},'crewCall',this.value)">
+          <input class="cs-call-input" type="time" value="${_csTo24h(c.crewCall)}" onchange="updateCSF(${i},'crewCall',this.value)">
         </div>
         <div class="cs-call-card">
           <div class="cs-call-label">First Shot</div>
-          <input class="cs-call-input" type="time" value="${c.shootCall||''}" onchange="updateCSF(${i},'shootCall',this.value)">
+          <input class="cs-call-input" type="time" value="${_csTo24h(c.shootCall)}" onchange="updateCSF(${i},'shootCall',this.value);_csCascadeFirstShot(${i},this.value)">
         </div>
         <div class="cs-call-card">
           <div class="cs-call-label">Est. Wrap</div>
-          <input class="cs-call-input" type="time" value="${c.estWrap||''}" onchange="updateCSF(${i},'estWrap',this.value)">
+          <input class="cs-call-input" type="time" value="${_csTo24h(c.estWrap)}" onchange="updateCSF(${i},'estWrap',this.value)">
         </div>
         <div class="cs-call-card">
           <div class="cs-call-label">Daylight</div>
           <input class="cs-call-input" value="${_csEscVal(c.daylight)}" placeholder="07:04 – 18:35" onchange="updateCSF(${i},'daylight',this.value)">
         </div>
       </div>
-      <div class="cs-weather-row">
-        <div class="cs-weather-item">
-          <div class="cs-weather-icon">☁</div>
-          <input class="cs-weather-input" value="${_csEscVal(c.weather)}" placeholder="Weather forecast" onchange="updateCSF(${i},'weather',this.value)">
-        </div>
-        <div class="cs-weather-item">
-          <div class="cs-weather-icon">💧</div>
-          <input class="cs-weather-input" value="${_csEscVal(c.weatherDetail)}" placeholder="Rain / Wind / Temp" onchange="updateCSF(${i},'weatherDetail',this.value)">
-        </div>
+      <div class="cs-weather-row" style="flex-wrap:wrap;gap:8px;">
+        ${(() => {
+          const items = (c.weatherByLoc && c.weatherByLoc.length > 0) ? c.weatherByLoc : null;
+          if (items) {
+            // Multi-location: one column per location
+            return items.map((w, wi) => `
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:160px;">
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;">${_csEscVal(w.loc)}</div>
+                <div class="cs-weather-item" style="margin:0">
+                  <div class="cs-weather-icon">☁</div>
+                  <input class="cs-weather-input" value="${_csEscVal(w.summary)}" placeholder="Weather" onchange="_csUpdateWeatherLoc(${i},${wi},'summary',this.value)">
+                </div>
+                <div class="cs-weather-item" style="margin:0">
+                  <div class="cs-weather-icon">💧</div>
+                  <input class="cs-weather-input" value="${_csEscVal(w.detail)}" placeholder="Temp / Rain / Wind" onchange="_csUpdateWeatherLoc(${i},${wi},'detail',this.value)">
+                </div>
+              </div>`).join('');
+          }
+          // Single / no data
+          return `
+            <div class="cs-weather-item">
+              <div class="cs-weather-icon">☁</div>
+              <input class="cs-weather-input" value="${_csEscVal(c.weather)}" placeholder="Weather forecast" onchange="updateCSF(${i},'weather',this.value)">
+            </div>
+            <div class="cs-weather-item">
+              <div class="cs-weather-icon">💧</div>
+              <input class="cs-weather-input" value="${_csEscVal(c.weatherDetail)}" placeholder="Rain / Wind / Temp" onchange="updateCSF(${i},'weatherDetail',this.value)">
+            </div>`;
+        })()}
         ${(() => {
           if (!c.date) return `<span class="pdf-hide" style="margin-left:auto;font-size:11px;color:#aaa">Set a date to fetch weather</span>`;
           const daysAway = Math.round((new Date(c.date + 'T12:00:00') - new Date()) / 86400000);
           if (daysAway > 16) return `<span class="pdf-hide" style="margin-left:auto;font-size:11px;color:#aaa">Forecast available in ~${daysAway-16}d</span>`;
-          return `<button class="cs-section-btn pdf-hide" onclick="fetchCallsheetWeather(${i})" style="margin-left:auto;white-space:nowrap;padding:4px 10px">⛅ Get Weather</button>`;
+          return `<div class="pdf-hide" style="margin-left:auto;display:flex;gap:6px;flex-shrink:0;">
+            <button class="cs-section-btn" onclick="fetchCallsheetWeather(${i})" style="white-space:nowrap;padding:4px 10px">⛅ Get Weather</button>
+            <button class="cs-section-btn" onclick="fetchCallsheetDaylight(${i})" style="white-space:nowrap;padding:4px 10px">🌅 Get Daylight</button>
+          </div>`;
         })()}
       </div>
       ${deptTables}
@@ -668,7 +752,7 @@ function buildScheduleSection(c, i) {
         <tbody>
           ${(c.schedRows || []).map((r, ri) => `
             <tr>
-              <td><input class="cs-table-input" type="time" value="${r.time||''}" style="width:78px;cursor:pointer" onchange="updateCSRow(${i},'schedRows',${ri},'time',this.value);_csRecalcTimes(${i},${ri+1})"></td>
+              <td><input class="cs-table-input" type="time" value="${_csTo24h(r.time)}" style="width:78px;cursor:pointer" onchange="updateCSRow(${i},'schedRows',${ri},'time',this.value);_csRecalcTimes(${i},${ri+1})"></td>
               <td><input class="cs-table-input" value="${_csEscVal(r.scene)}" placeholder="1A" style="width:36px" onchange="updateCSRow(${i},'schedRows',${ri},'scene',this.value)"></td>
               <td><input class="cs-table-input" value="${_csEscVal(r.shot)}" placeholder="1" style="width:30px" onchange="updateCSRow(${i},'schedRows',${ri},'shot',this.value)"></td>
               <td><input class="cs-table-input" value="${_csEscVal(r.shotType)}" placeholder="WS" list="shot-types-datalist" style="width:68px" onchange="updateCSRow(${i},'schedRows',${ri},'shotType',this.value)"></td>
@@ -682,6 +766,7 @@ function buildScheduleSection(c, i) {
       <div class="pdf-hide" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
         <button class="cs-add-row-btn" onclick="_csAddSchedShot(${i})">+ Add Shot</button>
         <button class="cs-add-row-btn" onclick="addCSRow(${i},'schedRows',{time:_csNextTime(currentProject().callsheets[${i}].schedRows),scene:'',shot:'',shotType:'',desc:'BREAK',cast:'',est:'30'})">+ Break</button>
+        <button class="cs-add-row-btn" onclick="_csAddSchedOther(${i})" title="Add non-shot entry (lunch, unit breakdown, travel, etc.)">+ Other</button>
         <button class="cs-add-row-btn" onclick="csSmartSyncSchedule(${i})" title="Sync this day's schedule from the project Schedule section">⚡ Sync from Schedule</button>
       </div>
     </div>`;
@@ -887,7 +972,7 @@ function csSmartSyncSchedule(csIdx) {
   if (!rows.length) { showToast('No schedule entries found for this shoot day', 'info'); return; }
   const c = p.callsheets[csIdx];
   c.schedRows = rows.map(s => ({
-    time: s.time||'', scene: s.scene||'', shot: s.shot||'', shotType: s.type||'',
+    time: _csTo24h(s.time)||'', scene: s.scene||'', shot: s.shot||'', shotType: s.type||'',
     desc: s.desc||'', cast: s.cast||'', est: s.est||''
   }));
 
@@ -948,6 +1033,8 @@ function csSmartSyncCast(csIdx) {
     const castArrive = firstScene
       ? _minsToTimeStr(_parseTimeToMins(firstScene) - 30)
       : arriveTime;
+    // On Set = first scene time, rounded DOWN to nearest 15 min
+    const onSetMins = firstScene ? _roundDownQtr(_parseTimeToMins(firstScene)) : null;
     const existing = (c.castRows||[]).find(r => r.actor?.toLowerCase() === nameKey);
     return {
       num:       existing?.num || String(idx + 1),
@@ -957,7 +1044,7 @@ function csSmartSyncCast(csIdx) {
       arrive:    existing?.arrive || castArrive,
       mu:        existing?.mu || '',
       cos:       existing?.cos || '',
-      onset:     existing?.onset || firstScene || '',
+      onset:     existing?.onset || (onSetMins !== null ? _minsToTimeStr(onSetMins) : ''),
       ready:     existing?.ready || '',
       poc:       existing?.poc || '',
       contact:   existing?.contact || [m.number||m.phone, m.email].filter(Boolean).join(' / '),
@@ -1083,10 +1170,21 @@ function csSmartSyncScenes(csIdx) {
     if (scenes.length) {
       c.sceneRows = scenes.map(s => {
         const data = sceneData[s.heading] || {};
+        // Resolve cast names to their # in the callsheet cast table
+        const castNums = (data.cast || []).map(charName => {
+          const cr = (c.castRows || []).find(cr2 =>
+            cr2.character?.toLowerCase() === charName.toLowerCase() ||
+            cr2.actor?.toLowerCase() === charName.toLowerCase()
+          );
+          return cr?.num || '';
+        }).filter(Boolean).join(', ');
+        // Find the matching schedule row — try scene number, then heading/location match
+        const schedRow = dayRows.find(r => r.scene === s.sceneNumber)
+          || dayRows.find(r => r.desc && s.location && r.desc.toLowerCase().includes(s.location.toLowerCase()));
         return {
           sceneNum: s.sceneNumber || '', intExt: s.intExt || '', location: s.location || '',
-          dn: s.timeOfDay ? (s.timeOfDay.match(/night/i) ? 'N' : 'D') : '',
-          synopsis: s.heading || '', pages: s.pages || '', castNums: (data.cast||[]).join(', '),
+          dn: s.timeOfDay ? (s.timeOfDay.match(/night/i) ? 'N' : s.timeOfDay.match(/day/i) ? 'D' : '') : '',
+          synopsis: schedRow?.desc || '', pages: s.pages || '', castNums,
         };
       });
       saveStore(); renderCallsheet(p);
@@ -1098,7 +1196,28 @@ function csSmartSyncScenes(csIdx) {
   if (dayRows.length) {
     const seenScenes = new Set();
     c.sceneRows = dayRows.filter(r => r.scene && !seenScenes.has(r.scene) && seenScenes.add(r.scene))
-      .map(r => ({ sceneNum: r.scene, intExt:'', location: r.location||'', dn:'', synopsis: r.desc||'', pages:'', castNums: r.cast||'' }));
+      .map(r => {
+        const descUpper = (r.desc || '').toUpperCase();
+        let intExt = '';
+        if (descUpper.includes('INT.') || descUpper.startsWith('INT ')) intExt = 'INT';
+        else if (descUpper.includes('EXT.') || descUpper.startsWith('EXT ')) intExt = 'EXT';
+        let dn = '';
+        if (/\bDAY\b/i.test(r.desc)) dn = 'D';
+        else if (/\bNIGHT\b/i.test(r.desc)) dn = 'N';
+        // Cast #: map character names to their # in the cast table
+        const castNums = (r.cast || '').split(',').map(n => n.trim()).filter(Boolean)
+          .map(charName => {
+            const cr = (c.castRows || []).find(cr2 =>
+              cr2.character?.toLowerCase() === charName.toLowerCase() ||
+              cr2.actor?.toLowerCase() === charName.toLowerCase()
+            );
+            return cr?.num || '';
+          }).filter(Boolean).join(', ');
+        return {
+          sceneNum: r.scene, intExt, location: r.location || '',
+          dn, synopsis: r.desc || '', pages: '', castNums,
+        };
+      });
     saveStore(); renderCallsheet(p);
     showToast(`Scenes synced from schedule — ${c.sceneRows.length} scene${c.sceneRows.length !== 1 ? 's' : ''}`, 'success');
     return;
@@ -1114,7 +1233,9 @@ function csHideCol(csIdx, arrayKey, colId) {
   const p = currentProject();
   if (!p) return;
   const c = p.callsheets[csIdx];
-  const key = arrayKey.replace('Rows','HiddenCols');
+  // Key mapping: castRows→castHiddenCols, extrasRows→extrasHiddenCols, sceneRows→scenesHiddenCols
+  const keyMap = { castRows:'castHiddenCols', extrasRows:'extrasHiddenCols', sceneRows:'scenesHiddenCols' };
+  const key = keyMap[arrayKey] || (arrayKey.replace('Rows','') + 'HiddenCols');
   if (!c[key]) c[key] = [];
   if (!c[key].includes(colId)) c[key].push(colId);
   saveStore();
@@ -1124,7 +1245,8 @@ function csHideCol(csIdx, arrayKey, colId) {
 function csRestoreCols(csIdx, arrayKey) {
   const p = currentProject();
   if (!p) return;
-  const key = arrayKey.replace('Rows','HiddenCols');
+  const keyMap = { castRows:'castHiddenCols', extrasRows:'extrasHiddenCols', sceneRows:'scenesHiddenCols' };
+  const key = keyMap[arrayKey] || (arrayKey.replace('Rows','') + 'HiddenCols');
   p.callsheets[csIdx][key] = [];
   saveStore();
   renderCallsheet(p);
@@ -1166,20 +1288,26 @@ async function smartGenerateCallsheet() {
 
     // Schedule rows
     cs.schedRows = day.rows.map(s => ({
-      time: s.time||'', scene: s.scene||'', shot: s.shot||'', shotType: s.type||'',
+      time: _csTo24h(s.time)||'', scene: s.scene||'', shot: s.shot||'', shotType: s.type||'',
       desc: s.desc||'', cast: s.cast||'', est: s.est||''
     }));
 
     // Derive call times from schedule
     _csRecalcCallTimes(cs, -1); // -1 = use cs.schedRows directly (no csIdx needed)
 
-    // Cast: gather from schedule + project cast
+    // Cast: gather character names from schedule, look up actor names from project cast
     const castNames = new Set();
     day.rows.forEach(r => { (r.cast || '').split(',').forEach(n => { const t = n.trim(); if (t) castNames.add(t); }); });
-    cs.castRows = [...castNames].map((name, idx) => {
-      const pc = (p.cast || []).find(c => c.name && c.name.toLowerCase() === name.toLowerCase());
+    cs.castRows = [...castNames].map((characterName, idx) => {
+      // Schedule cast column holds character names — look up the actor by role
+      const pc = (p.cast || []).find(c =>
+        (c.role  && c.role.toLowerCase()  === characterName.toLowerCase()) ||
+        (c.name  && c.name.toLowerCase()  === characterName.toLowerCase())
+      );
       return {
-        num: String(idx+1), actor: pc?.name || name, character: pc?.role || '',
+        num: String(idx+1),
+        actor:     pc?.name      || '',          // real actor name
+        character: pc?.role      || characterName, // character name from schedule
         pu:'', arrive: cs.crewCall ? _minsToTimeStr(_parseTimeToMins(cs.crewCall) + 30) : '',
         mu:'', cos:'', onset:'', ready:'',
         poc:'', contact: pc ? [pc.number||pc.phone, pc.email].filter(Boolean).join(' / ') : '',
@@ -1196,17 +1324,48 @@ async function smartGenerateCallsheet() {
       label: m.role || 'Crew', value: m.name || '', phone: m.number||m.phone||'', email: m.email||''
     }));
 
-    // Locations from schedule rows
+    // Locations from schedule rows — only populate venue if project location has an address
     const locs = new Set();
     day.rows.forEach(r => { if (r.location) locs.add(r.location); });
-    cs.locRows = locs.size ? [...locs].map(loc => { const pl = (p.locations||[]).find(l => l.name === loc); return { loc: pl?.location || loc, city:'', parking: pl?.access||'', hospital:'' }; })
-      : [{ loc:'', city:'', parking:'', hospital:'' }];
+    cs.locRows = locs.size ? [...locs].map(loc => {
+      const pl = (p.locations||[]).find(l => l.name === loc);
+      // Only use address field — location name goes in parking/notes, not venue
+      return { loc: pl?.address || '', city: pl?.city || '', parking: pl?.access || loc, hospital:'' };
+    }) : [{ loc:'', city:'', parking:'', hospital:'' }];
 
     // Default notices
     cs.notices = [
       { text: 'ALL CREW TO WEAR ID BADGES AT ALL TIMES', bold: true },
       { text: 'NO PERSONAL CAMERAS OR VIDEO DEVICES ON SET', bold: false },
     ];
+
+    // Scenes: build from schedule rows for this day
+    // (deduplicated by scene number; synopsis from desc field, D/N from desc pattern)
+    const seenScNums = new Set();
+    cs.sceneRows = day.rows
+      .filter(r => r.scene && !seenScNums.has(r.scene) && seenScNums.add(r.scene))
+      .map(r => {
+        const descUpper = (r.desc || '').toUpperCase();
+        let intExt = '';
+        if (descUpper.includes('INT.') || descUpper.startsWith('INT ')) intExt = 'INT';
+        else if (descUpper.includes('EXT.') || descUpper.startsWith('EXT ')) intExt = 'EXT';
+        let dn = '';
+        if (/\bDAY\b/i.test(r.desc)) dn = 'D';
+        else if (/\bNIGHT\b/i.test(r.desc) || /\bNIGHT\b/i.test(r.desc)) dn = 'N';
+        // Cast #: look up cast row nums for this scene's characters
+        const castNums = (r.cast || '').split(',').map(n => n.trim()).filter(Boolean)
+          .map(charName => {
+            const cr = cs.castRows.find(cr2 =>
+              cr2.character?.toLowerCase() === charName.toLowerCase() ||
+              cr2.actor?.toLowerCase() === charName.toLowerCase()
+            );
+            return cr?.num || '';
+          }).filter(Boolean).join(', ');
+        return {
+          sceneNum: r.scene, intExt, location: r.location || '',
+          dn, synopsis: r.desc || '', pages: '', castNums,
+        };
+      });
 
     p.callsheets.push(cs);
   });
@@ -1321,8 +1480,60 @@ function openAddCastModal(csIdx) {
   document.getElementById('add-cast-calltime').value = '';
   document.getElementById('add-cast-wrap').value = '';
   document.getElementById('add-cast-poc').value = '';
-  populateContactSelect('add-cast-contact-select');
+
+  // Populate dropdown using ContactAnchor for reliability, fallback to populateContactSelect
+  _csPopulateAddCastSelect();
+
   openModal('modal-add-cast');
+
+  // Wire up autocomplete on the name field after modal opens
+  setTimeout(() => {
+    const nameInput = document.getElementById('add-cast-name');
+    if (nameInput && typeof ContactAnchor !== 'undefined') {
+      ContactAnchor.attachPicker(nameInput, contact => {
+        nameInput.value = contact.name;
+        document.getElementById('add-cast-phone').value = contact.phone || '';
+        document.getElementById('add-cast-email').value = contact.email || '';
+      });
+    }
+  }, 80);
+}
+
+function _csPopulateAddCastSelect() {
+  const select = document.getElementById('add-cast-contact-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">— Select existing contact —</option>';
+
+  // Use ContactAnchor if available — covers all projects
+  if (typeof ContactAnchor !== 'undefined') {
+    const contacts = ContactAnchor.searchContacts('', 200);
+    contacts.sort((a, b) => a.name.localeCompare(b.name));
+    contacts.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({ name: c.name, phone: c.phone||'', email: c.email||'', socials: '' });
+      opt.textContent = c.name + (c.phone ? ' — ' + c.phone : '');
+      select.appendChild(opt);
+    });
+    return;
+  }
+
+  // Fallback: scan projects manually
+  const seen = new Set();
+  const addPerson = (name, phone, email) => {
+    if (!name || seen.has(name.toLowerCase())) return;
+    seen.add(name.toLowerCase());
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify({ name, phone: phone||'', email: email||'', socials: '' });
+    opt.textContent = name + (phone ? ' — ' + phone : '');
+    select.appendChild(opt);
+  };
+  (store.projects || []).forEach(p => {
+    (p.contacts || []).forEach(c => addPerson(c.name, c.phone, c.email));
+    (p.cast     || []).forEach(r => addPerson(r.name, r.number||r.phone, r.email));
+    (p.extras   || []).forEach(r => addPerson(r.name, r.number||r.phone, r.email));
+    (p.unit     || []).forEach(r => addPerson(r.name, r.number||r.phone, r.email));
+  });
+  (store.contacts || []).forEach(c => addPerson(c.name, c.phone, c.email));
 }
 
 function saveAddCast() {
@@ -1383,9 +1594,37 @@ function addCSCustomField(csIdx) {
   sc.innerHTML = '';
   addSocialField('custom-field-socials-container', 'instagram', '');
   document.getElementById('custom-field-other-group').style.display = 'none';
-  populateContactSelect('custom-field-contact-select');
+
+  // Populate contact dropdown
+  const crewSelect = document.getElementById('custom-field-contact-select');
+  if (crewSelect) {
+    crewSelect.innerHTML = '<option value="">— Select existing contact —</option>';
+    if (typeof ContactAnchor !== 'undefined') {
+      ContactAnchor.searchContacts('', 200).sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify({ name: c.name, phone: c.phone||'', email: c.email||'', socials: '' });
+        opt.textContent = c.name + (c.phone ? ' — '+c.phone : '');
+        crewSelect.appendChild(opt);
+      });
+    } else {
+      populateContactSelect('custom-field-contact-select');
+    }
+  }
+
   document.getElementById('modal-customfield').dataset.csIdx = csIdx;
   openModal('modal-customfield');
+
+  // Wire autocomplete on name field
+  setTimeout(() => {
+    const nameInput = document.getElementById('custom-field-name');
+    if (nameInput && typeof ContactAnchor !== 'undefined') {
+      ContactAnchor.attachPicker(nameInput, contact => {
+        nameInput.value = contact.name;
+        document.getElementById('custom-field-phone').value = contact.phone || '';
+        document.getElementById('custom-field-email').value = contact.email || '';
+      });
+    }
+  }, 80);
 }
 
 function onCustomFieldSelectChange() {
@@ -1488,6 +1727,8 @@ function doExportPDF() {
   tmp.querySelectorAll('input, select').forEach(el => {
     const span = document.createElement('span');
     span.className = el.className;
+    // Preserve inline styles (e.g. font-weight on bold notices)
+    if (el.style.cssText) span.style.cssText = el.style.cssText;
     span.textContent = el.value || '';
     el.replaceWith(span);
   });
@@ -1683,6 +1924,10 @@ function handleSectionDrop(e) {
   order.splice(tgtIdx, 0, _dragSrcKey);
   saveStore();
   renderCallsheet(p);
+  // If there are multiple callsheets, offer to apply to all
+  if (p.callsheets.length > 1) {
+    setTimeout(() => _csMaybeApplyOrderToAll(_dragSrcCsIdx), 200);
+  }
 }
 
 function handleSectionDragEnd(e) {
@@ -1795,67 +2040,249 @@ function confirmOrphanRemove() {
   closeModal('modal-orphan-contact');
 }
 
-// ── Weather fetch (unchanged from original) ───────────────────────────────────
+// ── Weather fetch ─────────────────────────────────────────────────────────────
 
 async function fetchCallsheetWeather(csIdx) {
   const p = currentProject();
   const c = p.callsheets[csIdx];
   if (!c || !c.date) { showToast('Set a date first', 'info'); return; }
 
-  let lat, lon, resolvedName;
+  const WMO   = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
+  const EMOJI = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌦',81:'🌧',82:'⛈',95:'⛈',96:'⛈',99:'⛈'};
 
-  // Collect all location inputs that have geocoded lat/lon from the autocomplete
+  // Collect DOM-geocoded inputs for this callsheet
+  const locInputEls = document.querySelectorAll(`#cs-page-${csIdx} [data-loc-auto]`);
+  const domLocMap = {};
+  locInputEls.forEach(inp => {
+    if (inp.dataset.lat && inp.dataset.lon)
+      domLocMap[inp.value] = { lat: parseFloat(inp.dataset.lat), lon: parseFloat(inp.dataset.lon) };
+  });
+
+  // Unique location names from loc rows
+  const locRows = (c.locRows || []).filter(r => r.loc || r.city || r.parking);
+  const locNames = [...new Set(locRows.map(r => r.city || r.loc || r.parking).filter(Boolean))];
+  if (!locNames.length) { showToast('Add a location first so we know where to check', 'info'); return; }
+
+  // Helper: geocode one name, showing disambiguation if needed
+  async function resolveOne(name) {
+    if (domLocMap[name]) return { lat: domLocMap[name].lat, lon: domLocMap[name].lon, label: name };
+    try {
+      const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(name)}`);
+      const geoData = await geo.json();
+      if (!geoData.length) return null;
+      if (geoData.length === 1) {
+        const r = geoData[0]; const a = r.address;
+        return { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: [r.name, a?.county||a?.state_district, a?.country].filter(Boolean).join(', ') };
+      }
+      // Multiple results — show picker
+      const candidates = geoData.slice(0,5).map(r => {
+        const a = r.address;
+        return { label: [r.name, a?.county||a?.state_district, a?.state, a?.country].filter(Boolean).join(', '), lat: parseFloat(r.lat), lon: parseFloat(r.lon) };
+      });
+      return await confirmWeatherLocation(candidates, name);
+    } catch(e) { return null; }
+  }
+
+  // Fetch weather for one resolved location
+  async function fetchOne(lat, lon, label) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=auto&start_date=${c.date}&end_date=${c.date}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.daily?.weathercode) return null;
+    const code = data.daily.weathercode[0];
+    const tMax = Math.round(data.daily.temperature_2m_max[0]);
+    const tMin = Math.round(data.daily.temperature_2m_min[0]);
+    const rain = data.daily.precipitation_sum[0]?.toFixed(1);
+    const wind = Math.round(data.daily.windspeed_10m_max[0]);
+    return { loc: label, summary: `${EMOJI[code]||'🌡'} ${WMO[code]||'Unknown'}`, detail: `${tMin}°C – ${tMax}°C · Rain ${rain}mm · Wind ${wind}km/h` };
+  }
+
+  showToast(`Fetching weather for ${locNames.length} location${locNames.length > 1 ? 's' : ''}…`, 'info');
+
+  const weatherByLoc = [];
+  for (let i = 0; i < locNames.length; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 1100)); // Nominatim rate limit: 1 req/s
+    const resolved = await resolveOne(locNames[i]);
+    if (!resolved) continue;
+    const result = await fetchOne(resolved.lat, resolved.lon, resolved.label || locNames[i]);
+    if (result) weatherByLoc.push(result);
+  }
+
+  if (!weatherByLoc.length) { showToast('No forecast data available', 'info'); return; }
+
+  c.weatherByLoc  = weatherByLoc;
+  c.weather       = weatherByLoc[0].summary;
+  c.weatherDetail = weatherByLoc[0].detail;
+  saveStore(); renderCallsheet(p);
+  showToast(`Weather updated for ${weatherByLoc.length} location${weatherByLoc.length > 1 ? 's' : ''} ✓`, 'success');
+}
+
+function _csUpdateWeatherLoc(csIdx, wi, field, val) {
+  const p = currentProject();
+  if (!p) return;
+  const c = p.callsheets[csIdx];
+  if (!c.weatherByLoc?.[wi]) return;
+  c.weatherByLoc[wi][field] = val;
+  if (wi === 0) { if (field === 'summary') c.weather = val; else if (field === 'detail') c.weatherDetail = val; }
+  saveStore();
+}
+
+// ── Daylight (sunrise/sunset) fetch ──────────────────────────────────────────
+
+async function fetchCallsheetDaylight(csIdx) {
+  const p = currentProject();
+  const c = p.callsheets[csIdx];
+  if (!c || !c.date) { showToast('Set a date first', 'info'); return; }
+
+  let lat, lon;
+
+  // Try geocoded location from input data-lat/lon
   const locInputs = document.querySelectorAll(`#cs-page-${csIdx} [data-loc-auto]`);
   for (const inp of locInputs) {
     if (inp.dataset.lat && inp.dataset.lon) {
       lat = parseFloat(inp.dataset.lat);
       lon = parseFloat(inp.dataset.lon);
-      resolvedName = inp.value;
       break;
     }
   }
 
-  // Fallback: try to geocode the first non-empty location row
+  // Fallback: geocode first non-empty loc row
   if (!lat || !lon) {
     const locRows = c.locRows || [];
     const firstLocStr = locRows.find(r => r.city || r.loc)?.city || locRows.find(r => r.loc)?.loc || '';
     if (firstLocStr) {
       try {
-        showToast('Finding location…', 'info');
-        const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(firstLocStr)}`);
+        const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(firstLocStr)}`);
         const geoData = await geo.json();
-        if (!geoData.length) { showToast('Could not find that location', 'info'); return; }
-        const candidates = geoData.slice(0, 5).map(r => {
-          const a = r.address;
-          return { label: [r.name, a?.county||a?.state_district, a?.state, a?.country].filter(Boolean).join(', '), lat: parseFloat(r.lat), lon: parseFloat(r.lon) };
-        });
-        const confirmed = await confirmWeatherLocation(candidates, firstLocStr);
-        if (!confirmed) return;
-        lat = confirmed.lat; lon = confirmed.lon; resolvedName = confirmed.label;
-      } catch(e) { showToast('Could not find that location', 'info'); return; }
+        if (geoData.length) { lat = parseFloat(geoData[0].lat); lon = parseFloat(geoData[0].lon); }
+      } catch(e) {}
     }
   }
 
   if (!lat || !lon) { showToast('Add a location first so we know where to check', 'info'); return; }
 
   try {
-    showToast(`Fetching weather for ${resolvedName}…`, 'info');
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=auto&start_date=${c.date}&end_date=${c.date}`;
-    const res  = await fetch(url);
+    showToast('Fetching sunrise/sunset…', 'info');
+    const res = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${c.date}&formatted=0`);
     const data = await res.json();
-    if (!data.daily?.weathercode) { showToast('No forecast data for that date', 'info'); return; }
-    const code = data.daily.weathercode[0];
-    const tMax = Math.round(data.daily.temperature_2m_max[0]);
-    const tMin = Math.round(data.daily.temperature_2m_min[0]);
-    const rain = data.daily.precipitation_sum[0]?.toFixed(1);
-    const wind = Math.round(data.daily.windspeed_10m_max[0]);
-    const WMO = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
-    const EMOJI = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌦',81:'🌧',82:'⛈',95:'⛈',96:'⛈',99:'⛈'};
-    c.weather = `${EMOJI[code]||'🌡'} ${WMO[code]||'Unknown'}`;
-    c.weatherDetail = `${tMin}°C – ${tMax}°C · Rain ${rain}mm · Wind ${wind}km/h`;
+    if (data.status !== 'OK') { showToast('Could not get daylight data', 'info'); return; }
+    const fmt = iso => {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    };
+    const rise = fmt(data.results.sunrise);
+    const set  = fmt(data.results.sunset);
+    c.daylight = `${rise} – ${set}`;
     saveStore(); renderCallsheet(p);
-    showToast(`Weather updated for ${resolvedName} ✓`, 'success');
-  } catch(e) { showToast('Could not fetch weather — check connection', 'info'); }
+    showToast(`Daylight: ${c.daylight} ✓`, 'success');
+  } catch(e) { showToast('Could not fetch daylight data', 'info'); }
+}
+
+// ── Section move (up/down arrows) ─────────────────────────────────────────────
+
+function csMoveSection(csIdx, sectionKey, direction) {
+  const p = currentProject();
+  if (!p) return;
+  const order = p.callsheets[csIdx].sectionOrder;
+  const idx = order.indexOf(sectionKey);
+  if (idx === -1) return;
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= order.length) return;
+  order.splice(idx, 1);
+  order.splice(newIdx, 0, sectionKey);
+  saveStore();
+  renderCallsheet(p);
+  if (p.callsheets.length > 1) {
+    setTimeout(() => _csMaybeApplyOrderToAll(csIdx), 200);
+  }
+}
+
+// Apply one callsheet's section order to all callsheets in the project
+function csApplyOrderToAll(csIdx) {
+  const p = currentProject();
+  if (!p) return;
+  const order = [...p.callsheets[csIdx].sectionOrder];
+  p.callsheets.forEach((c, i) => { if (i !== csIdx) c.sectionOrder = [...order]; });
+  saveStore();
+  renderCallsheet(p);
+  showToast(`Section order applied to all ${p.callsheets.length} callsheets`, 'success');
+}
+
+// ── Scene row helpers ─────────────────────────────────────────────────────────
+
+function _csAddSceneRow(csIdx) {
+  const p = currentProject();
+  if (!p) return;
+  const c = p.callsheets[csIdx];
+  if (!c.sceneRows) c.sceneRows = [];
+  const nextNum = String(c.sceneRows.length + 1);
+  addCSRow(csIdx, 'sceneRows', { sceneNum: nextNum, intExt:'', location:'', dn:'', synopsis:'', pages:'', castNums:'' });
+}
+
+// ── Schedule: Add Other row ───────────────────────────────────────────────────
+
+function _csAddSchedOther(csIdx) {
+  const p = currentProject();
+  if (!p) return;
+  const rows = p.callsheets[csIdx]?.schedRows || [];
+  addCSRow(csIdx, 'schedRows', {
+    time: _csNextTime(rows), scene:'', shot:'', shotType:'OTHER',
+    desc:'', cast:'', est:'', isOther: true
+  });
+}
+
+// ── First Shot cascade: shift all schedule times ──────────────────────────────
+
+function _csCascadeFirstShot(csIdx, newFirstShot) {
+  const p = currentProject();
+  if (!p) return;
+  const c = p.callsheets[csIdx];
+  if (!c || !c.schedRows?.length) return;
+  const newFirstMins = _parseTimeToMins(newFirstShot);
+  if (!newFirstMins && newFirstMins !== 0) return;
+
+  // Find the current first timed row
+  const firstTimed = c.schedRows.find(r => r.time);
+  if (!firstTimed) {
+    c.schedRows[0].time = newFirstShot;
+    _csRecalcTimes(csIdx, 1);
+    saveStore();
+    return;
+  }
+
+  const oldFirstMins = _parseTimeToMins(firstTimed.time);
+  const delta = newFirstMins - oldFirstMins;
+  if (delta === 0) return;
+
+  // Shift every timed row by delta
+  c.schedRows.forEach(r => {
+    if (r.time) r.time = _minsToTimeStr(Math.max(0, _parseTimeToMins(r.time) + delta));
+  });
+
+  // Recalc crew call (first shot − 60m) and est. wrap (last row time + est)
+  c.crewCall = _minsToTimeStr(newFirstMins - 60);
+  const timedRows = c.schedRows.filter(r => r.time);
+  if (timedRows.length) {
+    const last = timedRows[timedRows.length - 1];
+    const lastMins = _parseTimeToMins(last.time);
+    const lastEst  = _parseEstMins(last.est) || 0;
+    c.estWrap = _minsToTimeStr(lastMins + lastEst);
+  }
+
+  saveStore();
+  renderCallsheet(p);
+}
+
+// ── handleSectionDrop extended: prompt to apply to all ───────────────────────
+
+function _csMaybeApplyOrderToAll(csIdx) {
+  const p = currentProject();
+  if (!p || p.callsheets.length <= 1) return;
+  showConfirmDialog(
+    `Apply this section order to all ${p.callsheets.length} callsheets?`,
+    'Apply to All',
+    () => csApplyOrderToAll(csIdx)
+  );
 }
 
 // ══════════════════════════════════════════

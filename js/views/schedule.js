@@ -629,6 +629,7 @@ function _persSetCrewMode(isUnit) {
   document.getElementById('pers-social-group').style.display = isUnit ? 'block' : 'none';
 }
 function addPersonnel(type) {
+  console.log('addPersonnel called with type:', type);
   document.getElementById('personnel-type').value = type;
   document.getElementById('personnel-edit-idx').value = '';
   document.getElementById('modal-personnel-title').textContent = 'ADD ' + type.toUpperCase();
@@ -637,7 +638,7 @@ function addPersonnel(type) {
   document.getElementById('pers-role-other').value = '';
   document.getElementById('pers-confirmed').value = 'green';
   _persSetCrewMode(type === 'unit');
-  populateContactSelect('pers-contact-select');
+  _populatePersonnelContactSelect();
   openModal('modal-personnel');
   setTimeout(() => ContactAnchor.attachPicker(
     document.getElementById('pers-name'),

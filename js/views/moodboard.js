@@ -1460,7 +1460,7 @@ function addNewContact() {
   ecToggleRoleSections();
   const socialsContainer = document.getElementById('edit-contact-socials-container');
   socialsContainer.innerHTML = '';
-  addSocialField('edit-contact-socials-container', 'instagram', '');
+  try { addSocialField('edit-contact-socials-container', 'instagram', ''); } catch(e) {}
   document.getElementById('edit-contact-projects-container').innerHTML = '';
   openModal('modal-edit-contact');
 }
@@ -1487,10 +1487,10 @@ function editContact(name) {
       const sepIdx = s.indexOf('||');
       const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'instagram';
       const handle   = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
-      addSocialField('edit-contact-socials-container', platform || 'instagram', handle || '');
+      try { addSocialField('edit-contact-socials-container', platform || 'instagram', handle || ''); } catch(e) {}
     });
   } else {
-    addSocialField('edit-contact-socials-container', 'instagram', '');
+    try { addSocialField('edit-contact-socials-container', 'instagram', ''); } catch(e) {}
   }
 
   // Populate project-role associations — all projects (manual + auto-detected)
