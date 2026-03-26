@@ -252,10 +252,11 @@ function _sbRenderStrip(sceneKey, data, sourceDayId) {
   const tod      = scene.tod ? `<span class="strip-tod">${_sbEsc(scene.tod)}</span>` : '';
   const castHtml = cast.length ? `<div class="strip-cast">${cast.map(c=>_sbEsc(c)).join(', ')}</div>` : '';
   const shotBadge= entry.shotCount ? `<span class="strip-shots">${entry.shotCount} shot${entry.shotCount>1?'s':''}</span>` : '';
+  const sbBadge = _sbSceneBadge(p, sceneKey);
   return `<div class="strip" ${drag} style="background:${bg}" title="${keyAttr}">
     <div class="strip-swatch" style="background:${swatch}"></div>
     <div class="strip-body">
-      <div class="strip-r1">${num}${loc}${ie}${shotBadge}</div>
+      <div class="strip-r1">${num}${loc}${ie}${shotBadge}${sbBadge}</div>
       <div class="strip-r2">${tod}${pages}</div>
       ${castHtml}
     </div>

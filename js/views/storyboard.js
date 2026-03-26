@@ -99,6 +99,7 @@ function renderStoryboard(p) {
             ${scenes.map(s => `<option value="${s.key.replace(/"/g,'&quot;')}" ${_sbSceneFilter===s.key?'selected':''}>${s.heading.replace(/</g,'&lt;').substring(0,50)}</option>`).join('')}
           </select>
         ` : ''}
+        <button class="btn btn-sm" onclick="_sbBatchAdd()">⚡ Batch Add</button>
         <button class="btn btn-sm" onclick="_sbExportPDF()">⬇ Export PDF</button>
         <button class="btn btn-sm btn-primary" onclick="_sbNewFrame()">+ Add Frame</button>
       </div>
@@ -113,23 +114,31 @@ function renderStoryboard(p) {
       </div>
     ` : groups.map(group => _sbGroupHtml(group, scenes)).join('')}
   `;
+  // Populate goto dropdown
+  el.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml('storyboard'); });
 }
 
 function _sbGroupHtml(group, scenes) {
   const isUnattached = group.key === '__unattached';
   const frameHtml = group.frames.map(f => _sbFrameCardHtml(f)).join('');
+  const safeKey = group.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const safeHead = group.heading.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const escKey = group.key.replace(/"/g,'&quot;');
 
   return `
-    <div class="sb-group" data-scene-key="${group.key.replace(/"/g,'&quot;')}" style="margin-bottom:32px">
+    <div class="sb-group" data-scene-key="${escKey}" style="margin-bottom:32px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)">
         <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--accent2);text-transform:uppercase;font-family:var(--font-mono)">${isUnattached ? '⬡ GENERAL' : '▸ SCENE'}</span>
         <span style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${group.heading.replace(/</g,'&lt;')}</span>
         <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${group.frames.length} frame${group.frames.length!==1?'s':''}</span>
-        <button onclick="_sbAddFrameToScene('${group.key.replace(/'/g,"\\'")}','${group.heading.replace(/'/g,"\\'")}')" style="background:none;border:1px dashed var(--border2);color:var(--text3);cursor:pointer;font-size:10px;padding:2px 8px;border-radius:var(--radius)">+ Frame</button>
+        <button onclick="_sbAddFrameToScene('${safeKey}','${safeHead}')" style="background:none;border:1px dashed var(--border2);color:var(--text3);cursor:pointer;font-size:10px;padding:2px 8px;border-radius:var(--radius)">+ Frame</button>
       </div>
-      <div class="sb-frames-grid">
+      <div class="sb-frames-grid sb-drop-target" data-scene-key="${escKey}"
+        ondragover="_sbGridDragOver(event,'${safeKey}')"
+        ondragleave="_sbGridDragLeave(event)"
+        ondrop="_sbGridDrop(event,'${safeKey}','${safeHead}')">
         ${frameHtml}
-        <div class="sb-add-card" onclick="_sbAddFrameToScene('${group.key.replace(/'/g,"\\'")}','${group.heading.replace(/'/g,"\\'")}')">
+        <div class="sb-add-card" onclick="_sbAddFrameToScene('${safeKey}','${safeHead}')">
           <span style="font-size:24px;color:var(--border2)">+</span>
           <span style="font-size:10px;color:var(--text3)">Add Frame</span>
         </div>
@@ -331,6 +340,15 @@ function _sbOpenFrame(id) {
 
         </div>
       </div>
+
+      <!-- Footer -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface2)">
+        <button class="btn btn-sm" onclick="_sbDeleteFrame('${id}')" style="color:var(--danger)">🗑 Delete</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="_sbAddNextFrame('${id}')">+ Add Next Frame</button>
+          <button class="btn btn-sm btn-primary" onclick="document.getElementById('${ovId}').remove();renderStoryboard(currentProject())">✓ Done</button>
+        </div>
+      </div>
     </div>
   `;
 
@@ -368,6 +386,113 @@ function _sbNewFrame() {
   saveStore();
   renderStoryboard(p);
   _sbOpenFrame(frame.id);
+}
+
+function _sbAddNextFrame(currentId) {
+  const p  = currentProject(); if (!p) return;
+  const sb = _getStoryboard(p);
+  const cur = sb.frames.find(x => x.id === currentId);
+  const frame = {
+    id: makeId(),
+    frameNumber: _sbNextFrameNum(sb),
+    sceneKey: cur?.sceneKey || null,
+    sceneHeading: cur?.sceneHeading || null,
+    shotType: '',
+    movement: '',
+    lens: '',
+    transition: '',
+    imageDataUrl: null,
+    action: '',
+    dialogue: '',
+    notes: '',
+    duration: '',
+  };
+  const idx = sb.frames.findIndex(x => x.id === currentId);
+  sb.frames.splice(idx + 1, 0, frame);
+  saveStore();
+  document.getElementById('_sb-frame-modal')?.remove();
+  renderStoryboard(p);
+  _sbOpenFrame(frame.id);
+}
+
+function _sbBatchAdd() {
+  const p      = currentProject(); if (!p) return;
+  const scenes = _sbScenes(p);
+  const ovId   = '_sb-batch-modal';
+  document.getElementById(ovId)?.remove();
+
+  const ov = document.createElement('div');
+  ov.id = ovId;
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(440px,94vw);padding:22px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0;font-size:14px;font-weight:700">⚡ Batch Add Frames</h3>
+        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1">✕</button>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:4px">How many frames?</label>
+        <input type="number" id="_sbBatchCount" value="6" min="1" max="100"
+          style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:4px">Attach to scene <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <select id="_sbBatchScene" style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
+          <option value="">— General / Unattached —</option>
+          ${scenes.map(s=>`<option value="${s.key.replace(/"/g,'&quot;')}">${s.heading.replace(/</g,'&lt;').substring(0,60)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:4px">Default shot type <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <select id="_sbBatchShot" style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
+          <option value="">— None —</option>
+          ${SB_SHOT_TYPES.map(t=>`<option>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:6px;border-top:1px solid var(--border)">
+        <button class="btn btn-sm" onclick="document.getElementById('${ovId}').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="_sbBatchConfirm('${ovId}')">Add Frames</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  setTimeout(() => document.getElementById('_sbBatchCount')?.select(), 50);
+}
+
+function _sbBatchConfirm(ovId) {
+  const p     = currentProject(); if (!p) return;
+  const sb    = _getStoryboard(p);
+  const count = Math.min(100, Math.max(1, parseInt(document.getElementById('_sbBatchCount')?.value) || 6));
+  const sceneEl = document.getElementById('_sbBatchScene');
+  const shotEl  = document.getElementById('_sbBatchShot');
+  const sceneKey = sceneEl?.value || null;
+  const sceneOpt = sceneEl?.options[sceneEl.selectedIndex];
+  const sceneHeading = sceneKey ? (sceneOpt?.textContent || null) : null;
+  const shotType = shotEl?.value || '';
+
+  for (let i = 0; i < count; i++) {
+    const frame = {
+      id: makeId(),
+      frameNumber: _sbNextFrameNum(sb),
+      sceneKey: sceneKey,
+      sceneHeading: sceneHeading,
+      shotType: shotType,
+      movement: '',
+      lens: '',
+      transition: '',
+      imageDataUrl: null,
+      action: '',
+      dialogue: '',
+      notes: '',
+      duration: '',
+    };
+    sb.frames.push(frame);
+  }
+  saveStore();
+  document.getElementById(ovId)?.remove();
+  renderStoryboard(p);
+  showToast(`${count} frame${count!==1?'s':''} added`, 'success');
 }
 
 function _sbAddFrameToScene(sceneKey, sceneHeading) {
@@ -508,15 +633,24 @@ function _sbDragOver(e, id) {
 
 function _sbDrop(e, targetId) {
   e.preventDefault();
+  e.stopPropagation();
   document.querySelectorAll('.sb-frame-card').forEach(c => { c.classList.remove('sb-drag-over','sb-dragging'); });
   if (!_sbDragFrame || _sbDragFrame === targetId) return;
   const p  = currentProject(); if (!p) return;
   const sb = _getStoryboard(p);
-  const from = sb.frames.findIndex(x => x.id === _sbDragFrame);
-  const to   = sb.frames.findIndex(x => x.id === targetId);
-  if (from === -1 || to === -1) return;
-  const [item] = sb.frames.splice(from, 1);
-  sb.frames.splice(to, 0, item);
+  const dragged = sb.frames.find(x => x.id === _sbDragFrame);
+  const target  = sb.frames.find(x => x.id === targetId);
+  if (!dragged || !target) { _sbDragFrame = null; return; }
+
+  // If different scene — reassign scene, then reorder
+  if (dragged.sceneKey !== target.sceneKey) {
+    dragged.sceneKey    = target.sceneKey;
+    dragged.sceneHeading = target.sceneHeading;
+  }
+  const from = sb.frames.indexOf(dragged);
+  const to   = sb.frames.indexOf(target);
+  sb.frames.splice(from, 1);
+  sb.frames.splice(to, 0, dragged);
   saveStore();
   renderStoryboard(p);
   _sbDragFrame = null;
@@ -525,6 +659,87 @@ function _sbDrop(e, targetId) {
 function _sbDragEnd() {
   document.querySelectorAll('.sb-frame-card').forEach(c => { c.classList.remove('sb-drag-over','sb-dragging'); });
   _sbDragFrame = null;
+}
+
+// ── GRID DROP (move frame to different scene) ─────────────────────────────────
+
+let _sbDragTargetKey = null;
+
+function _sbGridDragOver(e, sceneKey) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  if (_sbDragTargetKey !== sceneKey) {
+    document.querySelectorAll('.sb-drop-target').forEach(g => g.classList.remove('sb-grid-over'));
+    _sbDragTargetKey = sceneKey;
+    document.querySelectorAll(`.sb-drop-target[data-scene-key="${sceneKey.replace(/"/g,'&quot;')}"]`)
+      .forEach(g => g.classList.add('sb-grid-over'));
+  }
+}
+
+function _sbGridDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('sb-grid-over');
+    if (_sbDragTargetKey === e.currentTarget.dataset.sceneKey) _sbDragTargetKey = null;
+  }
+}
+
+function _sbGridDrop(e, sceneKey, sceneHeading) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.sb-drop-target').forEach(g => g.classList.remove('sb-grid-over'));
+  document.querySelectorAll('.sb-frame-card').forEach(c => c.classList.remove('sb-dragging'));
+  if (!_sbDragFrame) return;
+  const p  = currentProject(); if (!p) return;
+  const sb = _getStoryboard(p);
+  const f  = sb.frames.find(x => x.id === _sbDragFrame);
+  if (!f) { _sbDragFrame = null; return; }
+
+  const isUnattached = !sceneKey || sceneKey === '__unattached';
+  const newKey     = isUnattached ? null : sceneKey;
+  const newHeading = isUnattached ? null : sceneHeading;
+
+  if (f.sceneKey === newKey) { _sbDragFrame = null; _sbDragTargetKey = null; return; } // no-op
+
+  // Move frame to end of target group
+  sb.frames.splice(sb.frames.indexOf(f), 1);
+  let insertAt = sb.frames.length;
+  for (let i = sb.frames.length - 1; i >= 0; i--) {
+    const fk = sb.frames[i].sceneKey;
+    if (fk === newKey) { insertAt = i + 1; break; }
+  }
+  f.sceneKey     = newKey;
+  f.sceneHeading = newHeading;
+  sb.frames.splice(insertAt, 0, f);
+
+  saveStore();
+  _sbDragFrame = null;
+  _sbDragTargetKey = null;
+  renderStoryboard(p);
+  showToast(isUnattached ? 'Frame moved to General' : 'Frame moved to scene', 'success');
+}
+
+// ── INTEGRATION HELPERS ─────────────────────────────────────────────────────────────
+
+// Open storyboard filtered to a specific scene (called from Shot List / Breakdown)
+function _sbOpenForScene(sceneKey) {
+  _sbSceneFilter = sceneKey || 'all';
+  showSection('storyboard');
+}
+
+// Frame count badge for use in other sections
+function _sbFrameCountForScene(p, sceneKey) {
+  const sb = _getStoryboard(p);
+  return sb.frames.filter(f => f.sceneKey === sceneKey).length;
+}
+
+function _sbSceneBadge(p, sceneKey) {
+  const count = _sbFrameCountForScene(p, sceneKey);
+  if (!count) return '';
+  const safe = (sceneKey||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return `<button onclick="event.stopPropagation();_sbOpenForScene('${safe}')"
+    style="background:rgba(91,192,235,0.12);border:1px solid rgba(91,192,235,0.3);color:var(--accent2);border-radius:4px;cursor:pointer;font-size:10px;padding:2px 7px;font-family:var(--font-mono);white-space:nowrap"
+    title="${count} storyboard frame${count!==1?'s':''}">🎬 ${count}</button>`;
 }
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────
@@ -670,6 +885,17 @@ async function _sbExportPDF() {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 12px;
+      min-height: 60px;
+      border-radius: 8px;
+      padding: 8px;
+      transition: background .15s, box-shadow .15s;
+    }
+    .sb-frames-grid.sb-grid-over {
+      background: rgba(91,192,235,0.07);
+      box-shadow: inset 0 0 0 2px rgba(91,192,235,0.45);
+    }
+    .sb-drop-target {
+      min-height: 60px;
     }
     .sb-frame-card {
       background: var(--surface2);
