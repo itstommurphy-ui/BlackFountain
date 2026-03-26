@@ -236,6 +236,7 @@ function _sbBuildSceneData(p) {
 // KEY FIX: use data-key/data-src attributes instead of inline JSON params
 // (inline JSON in double-quoted attributes breaks on scene headings with quotes/commas)
 function _sbRenderStrip(sceneKey, data, sourceDayId) {
+  const p = currentProject(); if (!p) return '';
   const entry = data[sceneKey];
   const keyAttr = _sbEsc(sceneKey);
   const srcAttr = _sbEsc(sourceDayId || '');
