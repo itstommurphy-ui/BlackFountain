@@ -276,6 +276,7 @@ function renderSection(name) {
   else if (name === 'equipment') renderEquipment(p);
   else if (name === 'locations') renderProjectLocations(p);
   else if (name === 'moodboards') renderProjectMoodboards(p);
+  else if (name === 'storyboard') renderStoryboard(p);
   setTimeout(initTableScrollbars, 0);
 }
 
@@ -317,6 +318,7 @@ function getAllOverviewSections(p) {
     {name:'Script Breakdown',icon:'📄',  count: (() => { _migrateBreakdowns(p); const bds = p.scriptBreakdowns||[]; if (!bds.length) return 'No script loaded'; const bd = _getActiveBd(p); const n=(bd?.tags||[]).length; const sc=bd?.rawText?parseBreakdownScenes(bd.rawText).length:0; return bds.length + ' breakdown' + (bds.length!==1?'s':'') + ' · ' + sc + ' scene' + (sc!==1?'s':''); })(), tab:'breakdown'},
     {name:'Stripboard',      icon:'🎞️', count: (() => { const sb = p.stripboard; if (!sb?.days?.length) return 'No days scheduled'; const total = sb.days.reduce((a,d)=>a+(d.sceneKeys||[]).length,0); return sb.days.length + ' day' + (sb.days.length!==1?'s':'') + ' · ' + total + ' scene' + (total!==1?'s':'') + ' scheduled'; })(), tab:'stripboard'},
     {name:'Shot List',       icon:'🎬',  count: (p.shots||[]).length + ' shots',                                      tab:'shotlist'},
+    {name:'Storyboard',       icon:'🎬',  count: (() => { const sb = p.storyboard; if (!sb || !sb.frames || !sb.frames.length) return '0 frames'; return sb.frames.length + ' frame' + (sb.frames.length !== 1 ? 's' : ''); })(), tab:'storyboard'},
     {name:'Sound Log',       icon:'🎙️', count: (p.soundlog||[]).length + ' entries',                                 tab:'soundlog'},
     {name:'Crew',            icon:'👥',  count: p.unit.length + ' crew',                                              tab:'crew'},
     {name:'Production Plan', icon:'✅',  count: (() => { if(!p.productionPlan) return '0 tasks'; const t=p.productionPlan.sections.reduce((a,s)=>a+s.items.length,0), d=p.productionPlan.sections.reduce((a,s)=>a+s.items.filter(i=>i.checked).length,0); return `${d}/${t} complete`; })(), tab:'plan'},
@@ -333,6 +335,37 @@ function getAllOverviewSections(p) {
 function initOverviewLayout(p) {
   if (!p.overviewLayout) {
     p.overviewLayout = getAllOverviewSections(p).map(s => ({ tab: s.tab, visible: true }));
+  } else {
+    // Ensure all known sections are present - add any missing ones in alphabetical order
+    const allSections = getAllOverviewSections(p);
+    const existingTabs = new Set(p.overviewLayout.map(item => item.tab));
+    const newItems = [];
+    allSections.forEach(section => {
+      if (!existingTabs.has(section.tab)) {
+        newItems.push({ tab: section.tab, visible: true });
+      }
+    });
+    if (newItems.length > 0) {
+      // Sort new items alphabetically by their tab name
+      newItems.sort((a, b) => {
+        const aName = allSections.find(s => s.tab === a.tab)?.name || a.tab;
+        const bName = allSections.find(s => s.tab === b.tab)?.name || b.tab;
+        return aName.localeCompare(bName);
+      });
+      // Find the insertion point - where the first new item would fit alphabetically
+      let insertIndex = 0;
+      for (let i = 0; i < p.overviewLayout.length; i++) {
+        const existingName = allSections.find(s => s.tab === p.overviewLayout[i].tab)?.name || p.overviewLayout[i].tab;
+        const firstNewName = allSections.find(s => s.tab === newItems[0].tab)?.name || newItems[0].tab;
+        if (existingName.localeCompare(firstNewName) > 0) {
+          insertIndex = i;
+          break;
+        }
+        insertIndex = i + 1;
+      }
+      // Insert all new items at the correct position
+      p.overviewLayout.splice(insertIndex, 0, ...newItems);
+    }
   }
 }
 
