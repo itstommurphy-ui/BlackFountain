@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v34';
+const CACHE_NAME = 'blackfountain-v36';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -64,6 +64,12 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
+  // Bypass Supabase API requests - let them go directly to network without service worker handling
+  if (event.request.url.includes('supabase.co')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // For JS and HTML files, try network first to get updates
   const isJsOrHtml = event.request.url.endsWith('.js') || 
                      event.request.url.endsWith('.html') ||
