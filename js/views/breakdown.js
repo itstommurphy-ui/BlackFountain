@@ -176,12 +176,14 @@ function importBdPropsToSection() {
 }
 
 // Auto-export prop when tagged in breakdown
-function _bdAutoExportProp(tagText, bd) {
+// CHANGE [4]: Added `silent` parameter — when true, suppresses the individual toast.
+// Used during bulk apply (applySelectedBdSuggestions) to avoid toast flooding.
+function _bdAutoExportProp(tagText, bd, silent = false) {
   const text = bd.rawText;
   const propName = text.slice(tagText.start, tagText.end).trim();
   if (!propName) return;
   const added = _bdExportProp(propName);
-  if (added) {
+  if (added && !silent) {
     saveStore();
     showToast(`Prop "${propName}" added to Props section`, 'success');
   }
@@ -1264,14 +1266,12 @@ function executeTagAction(tagId, action, toCategory) {
   if (!tag) { hideBdPopover(); return; }
   if (action === 'move') {
     tag.category = toCategory;
-    // Auto-export prop to Props section when moved to props category
     if (toCategory === 'props') {
       _bdAutoExportProp(tag, bd);
     }
   } else if (action === 'add') {
     const newTag = { id: makeId(), category: toCategory, start: tag.start, end: tag.end };
     bd.tags.push(newTag);
-    // Auto-export prop to Props section when added to props category
     if (toCategory === 'props') {
       _bdAutoExportProp(newTag, bd);
     }
@@ -1290,7 +1290,6 @@ function applyBreakdownTag(category) {
   if (!bd.tags) bd.tags = [];
   const newTag = { id: makeId(), category, start, end };
   bd.tags.push(newTag);
-  // Auto-export prop to Props section when tagged
   if (category === 'props') {
     _bdAutoExportProp(newTag, bd);
   }
@@ -1507,13 +1506,11 @@ function exportBreakdownReport(format = 'txt') {
   const scenes = parseBreakdownScenes(text);
   
   if (format === 'pdf') {
-    // Use print-friendly HTML for PDF
     printBreakdownReport();
     return;
   }
   
   if (format === 'html') {
-    // Generate HTML breakdown
     const html = _generateBreakdownHtml(p, scenes, tags);
     const blob = new Blob([html], { type: 'text/html' });
     const a = document.createElement('a');
@@ -1525,7 +1522,6 @@ function exportBreakdownReport(format = 'txt') {
   }
   
   if (format === 'doc') {
-    // Generate DOC-compatible HTML
     const html = _generateBreakdownHtml(p, scenes, tags, true);
     const blob = new Blob([html], { type: 'application/msword' });
     const a = document.createElement('a');
@@ -1734,6 +1730,22 @@ function _bdInDialogue(pos, end, ranges) {
   return false;
 }
 
+// CHANGE [3]: Dialogue coverage safety valve.
+// If detected dialogue ranges cover more than 40% of the script, the heuristic
+// has likely misfired (e.g. inconsistent indentation in a pasted PDF). In that
+// case we fall back to an empty range set, which means nothing is suppressed —
+// a false positive tag is less harmful than silently killing half the suggestions.
+function _bdSafeDialogueRanges(text) {
+  const ranges = _bdDialogueRanges(text);
+  if (!ranges.length || !text.length) return ranges;
+  const covered = ranges.reduce((sum, [s, e]) => sum + (e - s), 0);
+  if (covered / text.length > 0.4) {
+    console.warn('[BF Breakdown] Dialogue range coverage', (covered / text.length * 100).toFixed(1) + '%', '> 40% — disabling dialogue suppression for this script');
+    return [];
+  }
+  return ranges;
+}
+
 function detectBreakdownSuggestions(text, existingTags) {
   if (!text) return [];
   const suggestions = [];
@@ -1744,7 +1756,10 @@ function detectBreakdownSuggestions(text, existingTags) {
   const wordBoundary = (str, idx, len) => {
     const before = idx > 0 ? str[idx - 1] : ' ';
     const after  = idx + len < str.length ? str[idx + len] : ' ';
-    return !/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after);
+    // Block if preceded or followed by a letter/digit,
+    // AND block if followed by any apostrophe variant or hyphen
+    // (catches DON'T, DON\u2019T, DON\u02bcT, DON-KEY etc.)
+    return !/[a-z0-9]/i.test(before) && !/[a-z0-9'\u2018\u2019\u02bc\u02b9-]/i.test(after);
   };
 
   // ── 1. Character detection ─────────────────────────────────
@@ -1789,6 +1804,9 @@ function detectBreakdownSuggestions(text, existingTags) {
     'FLASHBACK','FLASH CUT','SERIES OF SHOTS',
     // Sound / SFX direction
     'SFX','VFX','MOS','PLAYBACK',
+    // CHANGE [1a]: Additional short all-caps words commonly misread as character names
+    'HOLD','FREEZE','STOP','WAIT','LOOK','MOVE','STAY','COME','TURN',
+    'RUN','GET','GO','YES','NO','OK','HEY',
   ]);
   // Group-indicator words → Extras rather than Cast
   const groupWords = new Set(['ARTISTS','PEOPLE','CROWD','GROUP','OFFICERS','SOLDIERS','GUARDS','EXTRAS','AUDIENCE','SPECTATORS','MEMBERS','STUDENTS','WORKERS','PATRONS','GUESTS','BYSTANDERS','PEDESTRIANS','ONLOOKERS']);
@@ -1800,16 +1818,14 @@ function detectBreakdownSuggestions(text, existingTags) {
     && s.split(/\s+/).length <= 3
     && !nonCharWords.has(s);
 
-  // Precompute dialogue ranges once — used in character detection and keyword matching
-  const dialogueRanges = _bdDialogueRanges(text);
+  // CHANGE [3]: Use safety-valve dialogue ranges
+  const dialogueRanges = _bdSafeDialogueRanges(text);
 
   // Precompute scene heading ranges — nothing should be tagged inside a heading
   const headingRanges = scenes.map(s => [s.start, s.start + s.heading.length]);
   const inHeading = (pos, end) => headingRanges.some(([hs, he]) => pos < he && end > hs);
 
   // Pass A: standalone character cue lines (speakers)
-  // Use _bdIsCharCue (≥75% uppercase ratio) — same heuristic as _bdDialogueRanges,
-  // so the two systems stay in sync regardless of script indentation style.
   const charNames = new Set();
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
@@ -1819,7 +1835,6 @@ function detectBreakdownSuggestions(text, existingTags) {
   }
 
   // Pass B: ALL-CAPS words/phrases inside *mixed-case* action lines (non-speaking characters e.g. BARTENDER)
-  // Pure all-caps lines and dialogue lines are skipped — we don't want character mentions in speech tagged.
   const allCapsRe = /\b([A-Z]{2,}(?:\s[A-Z]{2,}){0,2})\b/g;
   const nameStopWords = new Set(['NO','NOT','THE','A','AN','OF','IN','TO','AT','BY','FOR','BUT','AND','OR','IS','IT','AS','BE','DO','GO','IF','ON','UP','SO','MY','WE']);
   let passBOffset = 0;
@@ -1842,9 +1857,23 @@ function detectBreakdownSuggestions(text, existingTags) {
     }
   }
 
+  // CHANGE [1]: Soft recurrence filter.
+  // Short names (≤4 chars) are more likely to be direction shorthand slipping through,
+  // so we require them to appear at least twice across the whole script before suggesting.
+  // Longer names (5+ chars) are trusted on a single occurrence (one-scene characters are valid).
+  const textLower = text.toLowerCase();
+  const nameOccurrences = name => {
+    const nl = name.toLowerCase();
+    let count = 0, idx = 0;
+    while ((idx = textLower.indexOf(nl, idx)) !== -1) { count++; idx += nl.length; }
+    return count;
+  };
+  const filteredCharNames = [...charNames].filter(name =>
+    name.length >= 5 || nameOccurrences(name) >= 2
+  );
+
   // Process longest names first per scene so "MIME ARTISTS" claims its position before "MIME" can.
-  // Within each name, prefer the first ALL-CAPS occurrence (character introduction) over mixed-case.
-  const sortedNames = [...charNames].sort((a, b) => b.length - a.length);
+  const sortedNames = filteredCharNames.sort((a, b) => b.length - a.length);
   for (const scene of scenes) {
     const st = text.slice(scene.start, scene.end).toLowerCase();
     const usedRanges = [];
@@ -1884,43 +1913,451 @@ function detectBreakdownSuggestions(text, existingTags) {
       const end = best + name.length;
       usedRanges.push([best, end]);
       if (!isTagged(best, end, cat)) {
-        suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: cat, text: text.slice(best, end), start: best, end, sceneHeading: scene.heading });
+        suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: cat, text: text.slice(best, end), start: best, end, sceneHeading: scene.heading,
+          // CHANGE [2]: confidence field — used in suggest panel to pre-check/uncheck
+          confidence: 'high' });
       }
     }
   }
 
-  // ── 2. Keyword matching ────────────────────────────────────
-  // Keywords are only matched in action lines — never inside dialogue or scene headings
-  for (const [category, keywords] of Object.entries(BD_SUGGEST_KEYWORDS)) {
+  // ── 2. Keyword matching ─────────────────────────────────────────────────────
+  // CHANGE [5]: Pre-compile one regex per category rather than iterating keyword-by-keyword.
+  // Each keyword is escaped and joined into a single alternation, longest first so that
+  // multi-word phrases match before their component words can.
+  // CHANGE [2]: Keywords split into high/medium confidence tiers.
+  //   high   — specific, unambiguous terms unlikely to be noise
+  //   medium — short/common words that may fire on almost any script
+  const BD_SUGGEST_KEYWORDS_HIGH = {
+    extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation'],
+    stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight'],
+    props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet'],
+    vehicles:    ['pickup truck','police car','fire truck','limousine','motorcycle','motorbike','helicopter','submarine','aircraft','bicycle','chopper','forklift','tractor','convertible','ambulance','sports car'],
+    sfx:         ['explosion','explodes','detonation','gunfire','gunshot','lightning','thunder','collision','blast','smoke','crash','alarm','siren'],
+    wardrobe:    ['wedding dress','tuxedo','uniform','disguise','costume','armour','jacket','helmet','gloves','armor','dress','coat','robe','vest'],
+    makeup:      ['face paint','black eye','greasepaint','aged makeup','prosthetic','prosthesis','bleeding','bruised','injured','wounded'],
+    setdressing: ['bookshelf','whiteboard','chalkboard','curtains','painting','portrait','cabinet','trophy'],
+    vfx:         ['force field','laser beam','materializes','hologram','invisible','teleports','digital screen','morphs','transforms','glows','portal','cgi'],
+    animals:     ['gorilla','elephant','parrot','chicken','rabbit','monkey','snake','horse','tiger','bear','wolf','deer','duck'],
+    sound:       ['phone rings','on the radio','voiceover','ringtone','doorbell','narration','singing','melody'],
+  };
+  const BD_SUGGEST_KEYWORDS_MEDIUM = {
+    extras:      ['crowd','extras','audience','mob'],
+    stunts:      ['punch','kick','leap','dive','roll'],
+    props:       ['bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map','glass','wine'],
+    vehicles:    ['train','truck','plane','yacht','boat','ship','taxi','limo','jeep','bus','van','suv','cab','jet','car'],
+    sfx:         ['storm','flood','fire'],
+    wardrobe:    ['mask','suit','hat','cap'],
+    makeup:      ['blood','bruise','wound','scar','burn'],
+    setdressing: ['mirror','table','couch','clock','sofa','desk','lamp','safe','bed'],
+    vfx:         [],
+    animals:     ['bird','fish','lion','fox','dog','cat','rat','pig','cow'],
+    sound:       ['music','song','v.o.','o.s.'],
+  };
+
+  // Helper: escape a keyword for use in a regex
+  const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Build compiled regex maps — longest keywords first within each category so phrases
+  // match before their component words.
+  const _buildCatRegex = kwMap => {
+    const out = {};
+    for (const [cat, kws] of Object.entries(kwMap)) {
+      if (!kws.length) { out[cat] = null; continue; }
+      const sorted = [...kws].sort((a, b) => b.length - a.length);
+      out[cat] = new RegExp('(?<![a-z0-9])(' + sorted.map(reEsc).join('|') + ')(?![a-z0-9])', 'gi');
+    }
+    return out;
+  };
+  const highRegexes   = _buildCatRegex(BD_SUGGEST_KEYWORDS_HIGH);
+  const mediumRegexes = _buildCatRegex(BD_SUGGEST_KEYWORDS_MEDIUM);
+
+  const _runKeywordRegex = (cat, re, confidence) => {
+    if (!re) return;
     for (const scene of scenes) {
-      const st     = text.slice(scene.start, scene.end);
-      const stLow  = st.toLowerCase();
-      const claimed = []; // avoid double-counting overlapping keywords in same scene+category
-      for (const kw of keywords) {
-        const kwLow = kw.toLowerCase();
-        let idx = stLow.indexOf(kwLow);
-        while (idx !== -1) {
-          const end = idx + kwLow.length;
-          if (wordBoundary(stLow, idx, kwLow.length)
-              && !claimed.some(r => r[0] < end && r[1] > idx)) {
-            const start = scene.start + idx;
-            const tagEnd = start + kw.length;
-            if (!isTagged(start, tagEnd, category)
-                && !_bdInDialogue(start, tagEnd, dialogueRanges)
-                && !inHeading(start, tagEnd)) {
-              claimed.push([idx, end]);
-              suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category, text: text.slice(start, tagEnd), start, end: tagEnd, sceneHeading: scene.heading });
-            }
-            break; // first match per keyword per scene
-          }
-          idx = stLow.indexOf(kwLow, idx + 1);
+      const sceneText = text.slice(scene.start, scene.end);
+      re.lastIndex = 0;
+      const claimed = []; // prevent double-counting overlapping matches within same scene
+      let m;
+      while ((m = re.exec(sceneText)) !== null) {
+        const idx    = m.index;
+        const kwText = m[0];
+        const end    = idx + kwText.length;
+        if (claimed.some(r => r[0] < end && r[1] > idx)) continue;
+        const absStart = scene.start + idx;
+        const absEnd   = absStart + kwText.length;
+        if (!isTagged(absStart, absEnd, cat)
+            && !_bdInDialogue(absStart, absEnd, dialogueRanges)
+            && !inHeading(absStart, absEnd)) {
+          claimed.push([idx, end]);
+          suggestions.push({
+            id: 's_' + Math.random().toString(36).slice(2),
+            category: cat,
+            text: text.slice(absStart, absEnd),
+            start: absStart,
+            end: absEnd,
+            sceneHeading: scene.heading,
+            confidence,
+          });
         }
       }
     }
+  };
+
+  for (const cat of Object.keys(BD_SUGGEST_KEYWORDS_HIGH)) {
+    _runKeywordRegex(cat, highRegexes[cat],   'high');
+    _runKeywordRegex(cat, mediumRegexes[cat], 'medium');
   }
 
   suggestions.sort((a, b) => a.start - b.start);
   return suggestions;
+}
+
+// ── NLP ENRICHMENT (compromise) ────────────────────────────────────────────
+// CHANGE [7]: Compromise-based noun phrase extraction to improve prop suggestions.
+// Runs AFTER the keyword scan. Role is strictly to EXPAND existing vague keyword
+// matches to their full noun phrase context — e.g. "bag" → "bag of cocaine".
+// It does NOT invent new prop suggestions from scratch; the keyword list acts as
+// the gate so we don't get hundreds of random nouns tagged as props.
+// Gracefully falls back to keyword-only results if compromise isn't available.
+
+// Relational head nouns that are not themselves physical objects.
+// "end of the gun" should not be suggested — "end" is relational, "gun" is incidental.
+const _BD_RELATIONAL_HEADS = new Set([
+  'end','back','side','top','bottom','front','middle','inside','outside',
+  'edge','corner','part','piece','bit','lot','rest','base','centre','center',
+  'surface','area','section','half','length','width','height','size','number',
+  'amount','kind','sort','type','pair','set','group','bunch','row','line',
+]);
+
+// Extract clean noun phrases from a single action line using compromise.
+// Splits on conjunctions so "shot glass and a bottle" → ["shot glass","bottle"].
+function _bdNlpExtractLine(line) {
+  if (!window.nlp) return [];
+  // Skip scene headings
+  if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s/i.test(line.trim())) return [];
+  // Skip pure ALL-CAPS lines (character cues / direction headers)
+  const letters = (line.match(/[a-zA-Z]/g) || []);
+  const uppers  = (line.match(/[A-Z]/g) || []);
+  if (letters.length > 3 && uppers.length / letters.length > 0.75) return [];
+
+  try {
+    const doc = window.nlp(line);
+    const raw = doc.nouns()
+      .not('#Pronoun')
+      .not('#Person')
+      .not('#Place')
+      .json({ normal: true, terms: false })
+      .map(n => (n.normal || '').trim().replace(/[.,!?;:''\u2018\u2019]+$/, '').trim())
+      .filter(p => p && p.length >= 3);
+
+    // Split any phrase that contains " and " or " or " into sub-phrases,
+    // then strip leading articles from each
+    const phrases = [];
+    for (const p of raw) {
+      const parts = p.split(/\s+(?:and|or)\s+/i);
+      for (const part of parts) {
+        const clean = part.replace(/^(the|a|an) /, '').trim();
+        if (clean.length >= 3) phrases.push(clean);
+      }
+    }
+
+    // Filter out phrases whose head noun (first word) is relational
+    return phrases.filter(phrase => {
+      const headWord = phrase.split(/\s+/)[0].toLowerCase();
+      return !_BD_RELATIONAL_HEADS.has(headWord);
+    });
+  } catch(e) {
+    return [];
+  }
+}
+
+// Main enrichment function: called after detectBreakdownSuggestions.
+// EXPANSION ONLY — finds existing keyword-matched prop suggestions and widens
+// them to their full NLP noun phrase if the phrases overlap meaningfully.
+function _bdEnrichWithNlp(suggestions, text, _unused, existingTags) {
+  if (!window.nlp) return suggestions;
+
+  // We only care about expanding existing prop suggestions
+  const propSuggestions = suggestions.filter(s => s.category === 'props');
+  if (!propSuggestions.length) return suggestions;
+
+  // Build dialogue ranges so we don't expand into dialogue
+  const dialogueRanges = _bdSafeDialogueRanges(text);
+
+  const lines = text.split('\n');
+  let offset = 0;
+
+  for (const line of lines) {
+    const lineEnd = offset + line.length;
+
+    // Only process lines that contain at least one existing prop suggestion
+    const lineProps = propSuggestions.filter(
+      s => s.start >= offset && s.end <= lineEnd
+    );
+
+    if (lineProps.length) {
+      const phrases = _bdNlpExtractLine(line);
+      const lineLower = line.toLowerCase();
+
+      for (const existing of lineProps) {
+        const existingText = existing.text.toLowerCase().trim();
+
+        // Find an NLP phrase that OVERLAPS with the keyword match:
+        // either the phrase contains the keyword, or the keyword contains the phrase,
+        // or they share a significant word. We prefer longer phrases.
+        const expansion = phrases
+          .filter(phrase => {
+            if (phrase.length <= existingText.length) return false; // must be longer
+            const phraseLower = phrase.toLowerCase();
+            // Direct containment
+            if (phraseLower.includes(existingText)) return true;
+            if (existingText.includes(phraseLower)) return false; // phrase is subset, skip
+            // Word overlap: any word from keyword appears in phrase
+            const kwWords = existingText.split(/\s+/).filter(w => w.length > 2);
+            return kwWords.some(w => phraseLower.includes(w));
+          })
+          .sort((a, b) => b.length - a.length)[0]; // prefer longest match
+
+        if (!expansion) continue;
+
+        // Find the expanded phrase's position in the original line
+        const expansionLower = expansion.toLowerCase();
+        const idx = lineLower.indexOf(expansionLower);
+        if (idx === -1) continue;
+
+        const newStart = offset + idx;
+        const newEnd   = newStart + expansion.length;
+
+        // Don't expand into dialogue or beyond line
+        if (_bdInDialogue(newStart, newEnd, dialogueRanges)) continue;
+        if (newStart < offset || newEnd > lineEnd) continue;
+
+        // Apply the expansion
+        existing.text       = text.slice(newStart, newEnd);
+        existing.start      = newStart;
+        existing.end        = newEnd;
+        existing.confidence = 'high';
+      }
+    }
+
+    offset += line.length + 1; // +1 for \n
+  }
+
+  return suggestions;
+}
+
+// CHANGE [8]: Community + personal keyword voting system
+// ══════════════════════════════════════════════════════
+// Votes are stored as: store.bdVotes["term:category"] = 1 (up) | -1 (down) | 0 (cleared)
+// Community scores are fetched from a hosted JSON file (stub URL — wire up later).
+// Local votes always override community scores for the individual user.
+
+let _bdCommunityScores = null;    // fetched once per session, null = not yet loaded
+let _bdCommunityFetching = false; // prevent duplicate fetches
+
+// STUB: Replace this URL with your actual hosted community scores JSON.
+// Format: { "cocaine:props": 47, "balloon:props": 31, "circus:props": -23 }
+const BD_COMMUNITY_SCORES_URL = 'https://zeojevfruuqjhwycnnan.supabase.co';
+const BD_SUPABASE_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inplb2pldmZydXVxamh3eWNubmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxOTI4MzEsImV4cCI6MjA4OTc2ODgzMX0.5_OPK0d_gwWgDzZ_dHwYjTQM_plftBr2XR14nzQoSh4';
+
+// Thresholds for community promotion/suppression
+const BD_COMMUNITY_PROMOTE_THRESHOLD  =  10; // net upvotes → high-confidence for everyone
+const BD_COMMUNITY_SUPPRESS_THRESHOLD = -10; // net downvotes → hidden for everyone
+
+function _bdGetVotes() {
+  if (!store.bdVotes) store.bdVotes = {};
+  return store.bdVotes;
+}
+
+function _bdVoteKey(text, category) {
+  return `${text.toLowerCase().trim()}:${category}`;
+}
+
+// Get the current local vote for a term+category: 1, -1, or 0
+function _bdGetLocalVote(text, category) {
+  return _bdGetVotes()[_bdVoteKey(text, category)] || 0;
+}
+
+// Cast or toggle a local vote. Clicking the same direction again clears it.
+function _bdVote(sugId, direction) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  const key      = _bdVoteKey(s.text, s.category);
+  const votes    = _bdGetVotes();
+  const prevVote = votes[key] || 0;
+  const cat      = BREAKDOWN_CATEGORIES.find(c => c.id === s.category);
+  const catLabel = cat ? cat.label : s.category;
+
+  // Toggle: clicking same direction clears the vote
+  const newVote = prevVote === direction ? 0 : direction;
+  votes[key] = newVote;
+  saveStore();
+
+  // Re-render just this row
+  const row = document.getElementById(`sug_row_${sugId}`);
+  if (row) {
+    const catObj = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#aaa' };
+    row.outerHTML = _bdRenderSuggestItem(s, catObj);
+  }
+
+  // Contextual toast
+  if (newVote === -1) {
+    showToast(`"${s.text}" won't be suggested to you again in ${catLabel}`, 'info');
+  } else if (newVote === 1) {
+    showToast(`"${s.text}" will always be suggested in ${catLabel} — thanks!`, 'success');
+  } else {
+    showToast(`Vote cleared for "${s.text}"`, 'info');
+  }
+
+  // Submit delta to community Supabase backend
+  _bdSubmitCommunityVote(s.text, s.category, newVote, prevVote);
+}
+
+// Submit a vote to Supabase via the bd_cast_vote RPC function.
+// p_delta: +1 (upvote), -1 (downvote), 0 (clear — subtracts previous vote)
+function _bdSubmitCommunityVote(text, category, newVote, previousVote) {
+  if (!BD_COMMUNITY_SCORES_URL) return;
+  const delta = newVote - (previousVote || 0);
+  if (delta === 0) return;
+  fetch(`${BD_COMMUNITY_SCORES_URL}/rest/v1/rpc/bd_cast_vote`, {
+    method: 'POST',
+    headers: {
+      'apikey': BD_SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${BD_SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_term: text.toLowerCase().trim(), p_category: category, p_delta: delta }),
+  }).then(async res => {
+    const body = await res.text();
+  }).catch(err => {
+  });
+}
+
+// Fetch community scores once per session, merge into _bdCommunityScores
+async function _bdLoadCommunityScores() {
+  if (_bdCommunityScores !== null || _bdCommunityFetching) return;
+  if (!BD_COMMUNITY_SCORES_URL) { _bdCommunityScores = {}; return; }
+  _bdCommunityFetching = true;
+  try {
+    const res  = await fetch(
+      `${BD_COMMUNITY_SCORES_URL}/rest/v1/bd_votes?select=term,category,score`,
+      { headers: {
+        'apikey': BD_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${BD_SUPABASE_ANON_KEY}`,
+      }}
+    );
+    const rows = await res.json();
+    // Convert array of {term, category, score} into flat key→score map
+    _bdCommunityScores = {};
+    if (Array.isArray(rows)) {
+      for (const row of rows) {
+        _bdCommunityScores[`${row.term}:${row.category}`] = row.score;
+      }
+    }
+  } catch(e) {
+    _bdCommunityScores = {}; // silently fall back to empty
+  }
+  _bdCommunityFetching = false;
+}
+
+// Apply votes to a suggestions array:
+// - Local downvote  → remove from list entirely (this user never sees it)
+// - Local upvote    → promote to high confidence (pre-checked)
+// - Community score below suppress threshold → remove for everyone
+// - Community score above promote threshold  → promote to high confidence for everyone
+function _bdApplyVotesToSuggestions(suggestions) {
+  const votes     = _bdGetVotes();
+  const community = _bdCommunityScores || {};
+  return suggestions.filter(s => {
+    const key          = _bdVoteKey(s.text, s.category);
+    const localVote    = votes[key] || 0;
+    const communityScore = community[key] || 0;
+    // Local downvote always suppresses for this user
+    if (localVote === -1) return false;
+    // Community suppression (enough users downvoted)
+    if (communityScore <= BD_COMMUNITY_SUPPRESS_THRESHOLD) return false;
+    // Promote if locally or community upvoted
+    if (localVote === 1 || communityScore >= BD_COMMUNITY_PROMOTE_THRESHOLD) {
+      s.confidence = 'high';
+    }
+    return true;
+  });
+}
+
+// Render a single suggestion row with vote buttons
+function _bdRenderSuggestItem(s, cat) {
+  const isMedium  = s.confidence === 'medium';
+  const isChecked = _bdSuggestSelected.has(s.id);
+  const localVote = _bdGetLocalVote(s.text, s.category);
+  const community = _bdCommunityScores || {};
+  const commScore = community[_bdVoteKey(s.text, s.category)] || 0;
+  const catLabel  = cat.label || s.category;
+
+  const upActive   = localVote === 1;
+  const downActive = localVote === -1;
+
+  const upBtn = `<button
+    onclick="event.stopPropagation();_bdVote('${s.id}',1)"
+    title="${upActive ? 'Click to clear — currently always suggested' : `Always suggest "${s.text}" in ${catLabel}`}"
+    style="background:${upActive ? 'rgba(95,196,96,0.18)' : 'none'};border:1px solid ${upActive ? '#5fc460' : 'rgba(95,196,96,0.25)'};border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:${upActive ? '#5fc460' : 'rgba(95,196,96,0.45)'};line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='#5fc460';this.style.color='#5fc460';this.style.background='rgba(95,196,96,0.12)'"
+    onmouseleave="this.style.borderColor='${upActive ? '#5fc460' : 'rgba(95,196,96,0.25)'}';this.style.color='${upActive ? '#5fc460' : 'rgba(95,196,96,0.45)'}';this.style.background='${upActive ? 'rgba(95,196,96,0.18)' : 'none'}'"
+  >👍</button>`;
+
+  const downBtn = `<button
+    onclick="event.stopPropagation();_bdVote('${s.id}',-1)"
+    title="${downActive ? 'Click to clear — currently never suggested' : `Never suggest "${s.text}" in ${catLabel} again`}"
+    style="background:${downActive ? 'rgba(231,76,60,0.13)' : 'none'};border:1px solid ${downActive ? '#E74C3C' : 'rgba(231,76,60,0.25)'};border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:${downActive ? '#E74C3C' : 'rgba(231,76,60,0.4)'};line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='#E74C3C';this.style.color='#E74C3C';this.style.background='rgba(231,76,60,0.1)'"
+    onmouseleave="this.style.borderColor='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.25)'}';this.style.color='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.4)'}';this.style.background='${downActive ? 'rgba(231,76,60,0.13)' : 'none'}'"
+  >👎</button>`;
+
+  const commBadge = commScore !== 0
+    ? `<span title="Community score" style="font-size:9px;color:${commScore>0?'#5fc460':'#E74C3C'};opacity:0.6;flex-shrink:0">${commScore>0?'+':''}${commScore}</span>`
+    : '';
+
+  return `<div id="sug_row_${s.id}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);${isMedium?'opacity:0.7':''}">
+    <input type="checkbox" id="sug_cb_${s.id}" ${isChecked?'checked':''} onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+    <span onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()" style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default">${s.text}</span>
+    ${isMedium ? `<span style="font-size:9px;color:var(--text3);background:var(--surface3);border-radius:3px;padding:1px 4px;flex-shrink:0">common</span>` : ''}
+    <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
+    ${commBadge}
+    <span style="display:flex;gap:3px;flex-shrink:0">${upBtn}${downBtn}</span>
+  </div>`;
+}
+function _bdSuggestSceneStats(suggestions) {
+  // Build a map: sceneHeading → { total, byCategory }
+  const sceneMap = new Map();
+  for (const s of suggestions) {
+    if (!sceneMap.has(s.sceneHeading)) sceneMap.set(s.sceneHeading, { total: 0, cats: new Map() });
+    const entry = sceneMap.get(s.sceneHeading);
+    entry.total++;
+    entry.cats.set(s.category, (entry.cats.get(s.category) || 0) + 1);
+  }
+  if (!sceneMap.size) return '';
+  const rows = [...sceneMap.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5) // show top 5 busiest scenes
+    .map(([heading, { total, cats }]) => {
+      const catPills = [...cats.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([catId, count]) => {
+          const cat = BREAKDOWN_CATEGORIES.find(c => c.id === catId);
+          if (!cat) return '';
+          return `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;white-space:nowrap">${count} ${cat.label}</span>`;
+        }).join('');
+      return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:10px;color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${heading.replace(/"/g,'&quot;')}">${heading}</span>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">${catPills}</div>
+      </div>`;
+    }).join('');
+
+  return `<details style="margin-top:8px;margin-bottom:2px">
+    <summary style="font-size:10px;color:var(--accent);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px">
+      <span>▸</span><span>Scene breakdown (top ${Math.min(5, sceneMap.size)} by suggestion count)</span>
+    </summary>
+    <div style="margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px">${rows}</div>
+  </details>`;
 }
 
 function showBdSuggestPanel() {
@@ -1929,9 +2366,17 @@ function showBdSuggestPanel() {
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
 
-  const all = detectBreakdownSuggestions(text, tags);
+  let all = detectBreakdownSuggestions(text, tags);
+  // CHANGE [7]: Enrich with compromise NLP — expands vague keyword matches to full noun phrases
+  all = _bdEnrichWithNlp(all, text, null, tags);
+  // CHANGE [8]: Load community scores (async, non-blocking) then apply local + community votes
+  _bdLoadCommunityScores();
+  all = _bdApplyVotesToSuggestions(all);
+  const nlpActive = !!window.nlp;
+
   _bdSuggestions = all;
-  _bdSuggestSelected = new Set(all.map(s => s.id));
+  // CHANGE [2]: Pre-check high confidence, leave medium unchecked by default
+  _bdSuggestSelected = new Set(all.filter(s => s.confidence === 'high').map(s => s.id));
 
   if (!all.length) {
     const m = document.createElement('div');
@@ -1947,11 +2392,19 @@ function showBdSuggestPanel() {
     return;
   }
 
+  const highCount   = all.filter(s => s.confidence === 'high').length;
+  const mediumCount = all.filter(s => s.confidence === 'medium').length;
+
   const byCat = {};
   for (const s of all) (byCat[s.category] = byCat[s.category] || []).push(s);
 
+  // CHANGE [2]: Render medium-confidence items with a distinct style and unchecked by default
+  // CHANGE [8]: renderItem now delegates to _bdRenderSuggestItem which includes vote arrows
   const catSections = BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => {
     const items = byCat[cat.id];
+    const highItems   = items.filter(s => s.confidence === 'high');
+    const mediumItems = items.filter(s => s.confidence === 'medium');
+
     return `<div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${cat.label}</span>
@@ -1960,27 +2413,38 @@ function showBdSuggestPanel() {
         <button onclick="toggleBdCatSuggestions('${cat.id}',false)" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0 4px">None</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
-        ${items.map(s => `<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--border)" onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()">
-          <input type="checkbox" id="sug_cb_${s.id}" checked onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
-          <span style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.text}</span>
-          <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
-        </label>`).join('')}
+        ${highItems.map(s => _bdRenderSuggestItem(s, cat)).join('')}
+        ${mediumItems.length ? `
+          <div style="font-size:9px;color:var(--text3);padding:4px 2px 2px;letter-spacing:0.04em;text-transform:uppercase">Common words — review carefully</div>
+          ${mediumItems.map(s => _bdRenderSuggestItem(s, cat)).join('')}
+        ` : ''}
       </div>
     </div>`;
   }).join('');
 
+  // CHANGE [6]: Scene stats summary
+  const sceneStatsHtml = _bdSuggestSceneStats(all);
+
   const existing = document.getElementById('bd-suggest-modal');
   if (existing) existing.remove();
 
+  const selectedCount = _bdSuggestSelected.size;
   const m = document.createElement('div');
   m.id = 'bd-suggest-modal';
   m.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center';
   m.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(640px,92vw);max-height:82vh;display:flex;flex-direction:column;overflow:hidden">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
-        <div>
-          <div style="font-size:15px;font-weight:700">✦ Auto-suggest Tags</div>
-          <div id="bd-sug-count" style="font-size:11px;color:var(--text3);margin-top:3px">${all.length} suggestion${all.length!==1?'s':''} found — deselect any you don't want</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:15px;font-weight:700">✦ Auto-suggest Tags</span>
+            ${nlpActive ? `<span style="font-size:9px;font-weight:700;background:rgba(91,179,240,0.15);color:#5bb3f0;border:1px solid rgba(91,179,240,0.4);border-radius:4px;padding:1px 6px;letter-spacing:0.04em">NLP</span>` : ''}
+          </div>
+          <div id="bd-sug-count" style="font-size:11px;color:var(--text3);margin-top:3px">
+            ${selectedCount} of ${all.length} selected
+            ${mediumCount ? `<span style="margin-left:6px;font-size:10px;color:var(--text3);opacity:0.7">(${highCount} high confidence pre-checked · ${mediumCount} common words unchecked)</span>` : ''}
+          </div>
+          ${sceneStatsHtml}
         </div>
         <button onclick="closeBdSuggestModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 16px;line-height:1">✕</button>
       </div>
@@ -1989,7 +2453,7 @@ function showBdSuggestPanel() {
         <button onclick="toggleAllBdSuggestions(true)" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:0">Select all</button>
         <div style="display:flex;gap:8px">
           <button class="btn btn-sm" style="opacity:0.7" onclick="closeBdSuggestModal()">Cancel</button>
-          <button class="btn btn-sm" id="bd-sug-apply-btn" onclick="applySelectedBdSuggestions()">Apply ${all.length} Tag${all.length!==1?'s':''}</button>
+          <button class="btn btn-sm" id="bd-sug-apply-btn" onclick="applySelectedBdSuggestions()">Apply ${selectedCount} Tag${selectedCount!==1?'s':''}</button>
         </div>
       </div>
     </div>`;
@@ -2024,8 +2488,13 @@ function updateBdSuggestCount() {
   const n = _bdSuggestSelected.size;
   const countEl = document.getElementById('bd-sug-count');
   const btnEl   = document.getElementById('bd-sug-apply-btn');
-  if (countEl) countEl.textContent = `${n} of ${_bdSuggestions.length} selected`;
-  if (btnEl)   btnEl.textContent   = `Apply ${n} Tag${n!==1?'s':''}`;
+  if (countEl) {
+    const highCount   = _bdSuggestions.filter(s => s.confidence === 'high').length;
+    const mediumCount = _bdSuggestions.filter(s => s.confidence === 'medium').length;
+    countEl.innerHTML = `${n} of ${_bdSuggestions.length} selected`
+      + (mediumCount ? ` <span style="margin-left:6px;font-size:10px;color:var(--text3);opacity:0.7">(${highCount} high confidence · ${mediumCount} common words)</span>` : '');
+  }
+  if (btnEl) btnEl.textContent = `Apply ${n} Tag${n!==1?'s':''}`;
 }
 
 function closeBdSuggestModal() {
@@ -2095,6 +2564,9 @@ function _bdHideSugTooltip() {
   if (tip) tip.style.display = 'none';
 }
 
+// CHANGE [4]: Batch prop export during bulk apply.
+// Individual _bdAutoExportProp toasts are suppressed (silent=true); instead we
+// collect the count and show one summary toast after all tags are applied.
 function applySelectedBdSuggestions() {
   const p = currentProject();
   if (!p) return;
@@ -2103,16 +2575,32 @@ function applySelectedBdSuggestions() {
   const bd = _getActiveBd(p);
   if (!bd) { closeBdSuggestModal(); return; }
   if (!bd.tags) bd.tags = [];
+
+  let propsAdded = 0;
   for (const s of toApply) {
-    bd.tags.push({ id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end });
+    const newTag = { id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end };
+    bd.tags.push(newTag);
+    // Prop export — silent during bulk, we'll show one summary toast below
+    if (s.category === 'props') {
+      const propName = (bd.rawText || '').slice(s.start, s.end).trim();
+      if (propName && _bdExportProp(propName)) propsAdded++;
+    }
   }
+
   saveStore();
   closeBdSuggestModal();
+
   const sv = document.getElementById('bd-script-view');
   if (sv) { const st = sv.scrollTop; sv.innerHTML = buildBreakdownHtml(bd.rawText, bd.tags); sv.scrollTop = st; }
   const rp = document.getElementById('bd-report');
   if (rp) rp.innerHTML = renderBreakdownReport(p);
   const ct = document.querySelector('[data-bd-counter]');
   if (ct) { const sc = parseBreakdownScenes(bd.rawText).length; const n = bd.tags.length; ct.textContent = sc+' scene'+(sc!==1?'s':'')+' · '+n+' tag'+(n!==1?'s':''); }
-}
 
+  // Single summary toast instead of one per prop
+  if (propsAdded > 0) {
+    showToast(`${toApply.length} tag${toApply.length!==1?'s':''} applied · ${propsAdded} prop${propsAdded!==1?'s':''} added to Props section`, 'success');
+  } else {
+    showToast(`${toApply.length} tag${toApply.length!==1?'s':''} applied`, 'success');
+  }
+}
