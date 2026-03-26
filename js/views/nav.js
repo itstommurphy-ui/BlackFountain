@@ -166,7 +166,7 @@ function _gotoHtml(skip) {
     ['equipment','Equipment'],['locations','Locations'],['moodboards','Moodboards'],['overview','Overview'],
     ['plan','Production Plan'],['brief','Project Brief'],['props','Props'],
     ['releases','Release Forms'],['riskassess','Risk Assessment'],['schedule','Schedule'],
-    ['breakdown','Script Breakdown'],['script','Script & Docs'],['shotlist','Shot List'],
+    ['storyboard','Storyboard'],['breakdown','Script Breakdown'],['script','Script & Docs'],['shotlist','Shot List'],
     ['soundlog','Sound Log'],['stripboard','Stripboard'],['wardrobe','Wardrobe'],
   ];
   return `<select class="btn btn-sm" onchange="if(this.value){showSection(this.value);this.value=''}" style="cursor:pointer" title="Go to section">
