@@ -49,15 +49,13 @@ function _sbMakeFrame(sb, sceneKey, sceneHeading) {
   };
 }
 
-function _sbGroupByScene(frames, scenes, removedScenes = []) {
+function _sbGroupByScene(frames, scenes) {
   const groups = [];
   const unattached = frames.filter(f => !f.sceneKey);
   if (unattached.length) groups.push({ key: '__unattached', heading: 'General / Unattached', frames: unattached });
   scenes.forEach(sc => {
-    // Skip scenes that have been removed from storyboard
-    if (removedScenes.includes(sc.key)) return;
     const scFrames = frames.filter(f => f.sceneKey === sc.key);
-    groups.push({ key: sc.key, heading: sc.heading, frames: scFrames });
+    if (scFrames.length) groups.push({ key: sc.key, heading: sc.heading, frames: scFrames });
   });
   // Orphaned frames (breakdown changed)
   const knownKeys = new Set(scenes.map(s => s.key));
@@ -78,20 +76,6 @@ function renderStoryboard(p) {
   const sb     = _getStoryboard(p);
   const scenes = _sbScenes(p);
   const hasBreakdown = scenes.length > 0;
-  const removedScenes = sb.removedScenes || [];
-
-  // Clean up selection - remove any IDs that no longer exist in frames
-  const frameIds = new Set(sb.frames.map(f => f.id));
-  let hadSelection = _sbSelected.size > 0;
-  for (const id of _sbSelected) {
-    if (!frameIds.has(id)) {
-      _sbSelected.delete(id);
-    }
-  }
-  // If selection was changed during cleanup, update the bulk bar
-  if (hadSelection && _sbSelected.size === 0) {
-    // Selection was cleared - bulk bar will be hidden by render below
-  }
 
   let frames = sb.frames;
   if (_sbSceneFilter !== 'all') {
@@ -100,7 +84,7 @@ function renderStoryboard(p) {
       : frames.filter(f => f.sceneKey === _sbSceneFilter);
   }
 
-  const groups    = _sbGroupByScene(frames, scenes, removedScenes);
+  const groups    = _sbGroupByScene(frames, scenes);
   const total     = sb.frames.length;
   const totalSecs = sb.frames.reduce((a, f) => a + (parseInt(f.duration) || 0), 0);
   const durStr    = totalSecs > 0 ? ` · ~${Math.floor(totalSecs/60)}m ${totalSecs%60}s` : '';
@@ -163,14 +147,14 @@ function _sbGroupHtml(group, scenes) {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border2)">
         <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--accent2);text-transform:uppercase;font-family:var(--font-mono)">${isUnattached?'⬡ GENERAL':'▸ SCENE'}</span>
         <span style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${group.heading.replace(/</g,'&lt;')}</span>
-        ${!isUnattached ? `<button onclick="event.stopPropagation();_sbRemoveScene('${safeKey}')" title="Remove scene from storyboard (frames move to General)" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:10px;padding:1px 5px;border-radius:4px;opacity:0.6" onmouseenter="this.style.opacity=1;this.style.borderColor='var(--danger,#e55)';this.style.color='var(--danger,#e55)'" onmouseleave="this.style.opacity=0.6;this.style.borderColor='var(--border)';this.style.color='var(--text3)'">✕ Remove</button>` : ''}
         <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${group.frames.length} frame${group.frames.length!==1?'s':''}</span>
         <button onclick="_sbAddFrameToScene('${safeKey}','${safeHead}')" style="background:none;border:1px dashed var(--border2);color:var(--text3);cursor:pointer;font-size:10px;padding:2px 8px;border-radius:var(--radius)">+ Frame</button>
         ${group.frames.length ? `<button onclick="event.stopPropagation();_sbDeleteScene('${safeKey}')" title="Delete all frames in this scene" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.5;line-height:1" onmouseenter="this.style.opacity=1;this.style.color='var(--danger,#e55)'" onmouseleave="this.style.opacity=0.5;this.style.color='var(--text3)'">🗑</button>` : ''}
       </div>
-      <div class="sb-frames-grid sb-drop-target" data-scene-key="${escKey}" ondragover="_sbGridDragOver(event)" ondragleave="_sbGridDragLeave(event)" ondrop="_sbGridDrop(event,'${safeKey}','${safeHead}')">
+      <div class="sb-frames-grid sb-drop-target" data-scene-key="${escKey}"
+        ondrop="_sbGridDrop(event,'${safeKey}','${safeHead}')">
         ${group.frames.map(f => _sbFrameCardHtml(f)).join('')}
-        <div class="sb-add-card" ondragover="event.stopPropagation();_sbGridDragOver(event)" ondragleave="event.stopPropagation();_sbGridDragLeave(event)" ondrop="event.stopPropagation();_sbGridDrop(event,'${safeKey}','${safeHead}')" onclick="_sbAddFrameToScene('${safeKey}','${safeHead}')">
+        <div class="sb-add-card" onclick="_sbAddFrameToScene('${safeKey}','${safeHead}')">
           <span style="font-size:24px;color:var(--border2)">+</span>
           <span style="font-size:10px;color:var(--text3)">Add Frame</span>
         </div>
@@ -267,6 +251,7 @@ function _sbOpenFrame(id, isDraft) {
         <div style="display:flex;gap:6px;align-items:center">
           <button onclick="_sbPrevFrame('${id}')" class="btn btn-sm" ${isFirst?'disabled':''} style="${isFirst?'opacity:0.3;cursor:not-allowed':''}">← Prev</button>
           <button onclick="_sbNextFrame('${id}')" class="btn btn-sm" ${isLast?'disabled':''} style="${isLast?'opacity:0.3;cursor:not-allowed':''}">Next →</button>
+          <button id="_sbTrayBtn_${id}" onclick="_sbToggleTray('${id}')" class="btn btn-sm" title="Toggle script view" style="font-size:10px;letter-spacing:0.5px">📄 SCRIPT</button>
           <button onclick="document.getElementById('${ovId}').remove();renderStoryboard(currentProject())" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:0 0 0 8px">✕</button>
         </div>
       </div>
@@ -399,6 +384,11 @@ function _sbOpenFrame(id, isDraft) {
         </div><!-- /fields -->
       </div><!-- /body -->
 
+      <!-- Script Tray — slides up from bottom -->
+      <div id="_sbTray_${id}" style="position:relative;flex-shrink:0;max-height:0;transition:max-height 0.3s cubic-bezier(0.4,0,0.2,1);border-top:0px solid var(--border);overflow:hidden">
+        <div style="background:var(--surface2);font-family:var(--font-mono,monospace);font-size:11px;line-height:1.7;color:var(--text2)" id="_sbTrayContent_${id}"></div>
+      </div>
+
       <!-- Footer -->
       <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 18px;border-top:1px solid var(--border);flex-shrink:0">
         ${isDraft
@@ -437,6 +427,142 @@ function _sbOpenFrame(id, isDraft) {
     if (e.key === 'ArrowLeft'  && !isFirst && !isDraft) { e.preventDefault(); _sbSaveSketch(id); _sbCleanupKb(); _sbPrevFrame(id); }
     if (e.key === 'ArrowRight' && !isLast  && !isDraft) { e.preventDefault(); _sbSaveSketch(id); _sbCleanupKb(); _sbNextFrame(id); }
   });
+}
+
+// ── SCRIPT TRAY ──────────────────────────────────────────────────────────────
+
+function _sbGetScriptForFrame(f) {
+  // Returns { text, scenes, isFullScript } or null
+  const p = currentProject(); if (!p) return null;
+  try {
+    const bd = _getActiveBd(p);
+    if (!bd?.rawText) return null;
+    const rawText = bd.rawText;
+    const allScenes = parseBreakdownScenes(rawText);
+    if (f.sceneKey) {
+      const scene = allScenes.find(s => s.heading === f.sceneKey);
+      if (scene) return { text: rawText.substring(scene.start, scene.end).trim(), scenes: [], isFullScript: false };
+    }
+    // No scene attached — return full script with scene nav
+    return { text: rawText.trim(), scenes: allScenes, isFullScript: true };
+  } catch(e) { return null; }
+}
+
+function _sbToggleTray(id) {
+  const tray    = document.getElementById('_sbTray_' + id);
+  const content = document.getElementById('_sbTrayContent_' + id);
+  const btn     = document.getElementById('_sbTrayBtn_' + id);
+  if (!tray) return;
+
+  const isOpen = tray.style.maxHeight !== '0px' && tray.style.maxHeight !== '';
+
+  if (isOpen) {
+    tray.style.maxHeight = '0px';
+    tray.style.borderTopWidth = '0px';
+    if (btn) { btn.style.background = ''; btn.style.color = ''; btn.classList.remove('sb-tool-active'); }
+  } else {
+    // Populate content lazily
+    if (!content.dataset.loaded) {
+      const p  = currentProject();
+      const sb = p ? _getStoryboard(p) : null;
+      const f  = (_sbDraftFrame?.frame?.id === id ? _sbDraftFrame.frame : null)
+              || sb?.frames.find(x => x.id === id);
+      const result = f ? _sbGetScriptForFrame(f) : null;
+      if (result) {
+        if (result.isFullScript && result.scenes.length) {
+          // Full script: fixed-height container, scrollable body, nav at bottom
+          // Heights: tray=340px, nav~36px, body gets the rest
+          const NAV_H = 36;
+          const BODY_H = 340 - NAV_H;
+
+          // Script body — fixed height, scrollable
+          const body = document.createElement('div');
+          body.id = '_sbTrayBody_' + id;
+          body.style.cssText = `height:${BODY_H}px;overflow-y:auto;padding:10px 12px 6px;white-space:pre-wrap;word-break:break-word`;
+          body.innerHTML = _sbFormatScriptText(result.text, result.scenes, id);
+
+          // Nav bar — fixed height at bottom
+          const nav = document.createElement('div');
+          nav.style.cssText = `height:${NAV_H}px;border-top:1px solid var(--border);padding:0 10px;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;align-items:center;flex-shrink:0`;
+          const label = document.createElement('span');
+          label.style.cssText = 'font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;margin-right:4px;flex-shrink:0';
+          label.textContent = 'JUMP TO:';
+          nav.appendChild(label);
+          result.scenes.forEach((sc, i) => {
+            const pill = document.createElement('button');
+            pill.style.cssText = 'background:rgba(91,192,235,0.08);border:1px solid rgba(91,192,235,0.25);color:var(--accent2);border-radius:4px;cursor:pointer;font-size:9px;padding:2px 7px;white-space:nowrap;font-family:var(--font-mono);flex-shrink:0';
+            pill.title = sc.heading;
+            pill.textContent = sc.heading.substring(0,35) + (sc.heading.length > 35 ? '…' : '');
+            pill.onclick = () => {
+              const anchor = document.getElementById('_sbTrayAnchor_' + id + '_' + i);
+              const bodyEl = document.getElementById('_sbTrayBody_' + id);
+              if (anchor && bodyEl) bodyEl.scrollTop = anchor.offsetTop - 8;
+            };
+            nav.appendChild(pill);
+          });
+
+          content.innerHTML = '';
+          content.appendChild(body);
+          content.appendChild(nav);
+        } else {
+          content.style.cssText += ';max-height:300px;overflow-y:auto;padding:10px 12px;white-space:pre-wrap;word-break:break-word';
+          content.innerHTML = _sbFormatScriptText(result.text, [], id);
+        }
+      } else {
+        content.innerHTML = '<span style="color:var(--text3);font-style:italic">No script text available — upload a script and create a breakdown to see it here.</span>';
+      }
+      content.dataset.loaded = '1';
+    }
+    tray.style.maxHeight = '340px';
+    tray.style.borderTopWidth = '1px';
+    if (btn) { btn.style.background = 'rgba(91,192,235,0.15)'; btn.style.color = 'var(--accent2)'; }
+  }
+}
+
+function _sbFormatScriptText(text, scenes, frameId) {
+  // Build ordered list of anchors keyed by scene index
+  // Walk scenes in order — for each scene, record which line number its heading is on
+  // This handles duplicate headings correctly since we match by position not text
+  const lineAnchors = {}; // lineIndex → scene array index
+  if (scenes && scenes.length && frameId) {
+    let offset = 0;
+    const lines = text.split('\n');
+    let sceneIdx = 0;
+    for (let li = 0; li < lines.length && sceneIdx < scenes.length; li++) {
+      if (offset === scenes[sceneIdx].start) {
+        lineAnchors[li] = sceneIdx;
+        sceneIdx++;
+      }
+      offset += lines[li].length + 1;
+    }
+  }
+  const lines = text.split('\n');
+  return lines.map((line, li) => {
+    const t = line.trim();
+    if (!t) return '<br>';
+    // Scene heading — add anchor if we have one for this line
+    if (/^(?:INT|EXT|I\/E)[\.\s]/i.test(t)) {
+      const anchorIdx = lineAnchors[li];
+      const anchorAttr = (anchorIdx !== undefined)
+        ? `id="_sbTrayAnchor_${frameId}_${anchorIdx}"`
+        : '';
+      return `<div ${anchorAttr} style="color:var(--accent2);font-weight:700;margin-top:10px;padding-top:4px;letter-spacing:0.5px">${_sbEscHtml(t)}</div>`;
+    }
+    // Character name (ALL CAPS, indented)
+    if (t === t.toUpperCase() && t.length < 40 && /[A-Z]/.test(t) && !/^[^A-Za-z]*$/.test(t) && line.startsWith('    ')) {
+      return `<div style="color:var(--accent);text-align:center;margin-top:4px">${_sbEscHtml(t)}</div>`;
+    }
+    // Dialogue (indented)
+    if (line.startsWith('    ') || line.startsWith('\t')) {
+      return `<div style="color:var(--text);padding-left:1em;font-style:italic">${_sbEscHtml(t)}</div>`;
+    }
+    // Action
+    return `<div style="color:var(--text2)">${_sbEscHtml(t)}</div>`;
+  }).join('');
+}
+
+function _sbEscHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── FRAME ACTIONS ─────────────────────────────────────────────────────────────
@@ -560,16 +686,31 @@ function _sbSyncScenes() {
 
   const sb = _getStoryboard(p);
 
-  // Work out which scenes already have frames
-  const scenesWithFrames = new Set(sb.frames.map(f => f.sceneKey).filter(Boolean));
-  const newScenes = scenes.filter(s => !scenesWithFrames.has(s.key));
+  // Count how many frames exist per heading, in order — so duplicate headings
+  // are tracked separately by their occurrence index
+  const headingCounts = {}; // heading → count of frames seen so far
+  sb.frames.forEach(f => {
+    if (f.sceneKey) headingCounts[f.sceneKey] = (headingCounts[f.sceneKey] || 0) + 1;
+  });
+
+  // For each scene (in order), check if its occurrence slot already has frames.
+  // e.g. two "EXT. BUS STOP - DAY" scenes: first needs ≥1 frame, second needs ≥1 frame separately.
+  const headingSeen = {};
+  const newScenes = scenes.filter(s => {
+    const occurrence = headingSeen[s.key] || 0;
+    headingSeen[s.key] = occurrence + 1;
+    // This occurrence slot has frames if total frames for this heading exceed occurrence
+    // i.e. first slot uses 1st frame, second slot uses 2nd, etc.
+    return (headingCounts[s.key] || 0) <= occurrence;
+  });
+
+  const skippedCount = scenes.length - newScenes.length;
 
   if (!newScenes.length) {
     showToast('All scenes already have frames', 'info');
     return;
   }
 
-  // Ask how many frames per new scene
   const ovId = '_sb-sync-modal';
   document.getElementById(ovId)?.remove();
   const ov = document.createElement('div');
@@ -583,7 +724,7 @@ function _sbSyncScenes() {
       </div>
       <div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:8px;padding:10px 12px;line-height:1.6">
         <strong>${newScenes.length}</strong> scene${newScenes.length!==1?'s':''} have no frames yet.
-        ${scenesWithFrames.size ? `<span style="color:var(--text3)"> (${scenesWithFrames.size} already have frames and will be skipped.)</span>` : ''}
+        ${skippedCount ? `<span style="color:var(--text3)"> (${skippedCount} already have frames and will be skipped.)</span>` : ''}
       </div>
       <div>
         <label class="form-label" style="margin-bottom:4px">Blank frames to create per scene</label>
@@ -614,8 +755,19 @@ function _sbSyncScenesConfirm(ovId) {
   const sb = _getStoryboard(p);
   const scenes = _sbScenes(p);
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('_sbSyncCount')?.value) || 1));
-  const scenesWithFrames = new Set(sb.frames.map(f => f.sceneKey).filter(Boolean));
-  const newScenes = scenes.filter(s => !scenesWithFrames.has(s.key));
+
+  // Same duplicate-aware logic as _sbSyncScenes
+  const headingCounts = {};
+  sb.frames.forEach(f => {
+    if (f.sceneKey) headingCounts[f.sceneKey] = (headingCounts[f.sceneKey] || 0) + 1;
+  });
+  const headingSeen = {};
+  const newScenes = scenes.filter(s => {
+    const occurrence = headingSeen[s.key] || 0;
+    headingSeen[s.key] = occurrence + 1;
+    return (headingCounts[s.key] || 0) <= occurrence;
+  });
+
   let added = 0;
   newScenes.forEach(scene => {
     for (let i = 0; i < count; i++) {
@@ -737,125 +889,16 @@ function _sbDeleteScene(sceneKey) {
   if (!frames.length) return;
   const label = isUnattached ? 'General / Unattached' : sceneKey;
   showConfirmDialog(
-    `Delete all ${frames.length} frame${frames.length!==1?'s':''} in scene "${label}"? This cannot be undone.`,
+    `Delete all ${frames.length} frame${frames.length!==1?'s':''} in scene "${label}"? The scene heading will also disappear from the storyboard.`,
     'Delete',
     () => {
       const ids = new Set(frames.map(f => f.id));
       sb.frames = sb.frames.filter(f => !ids.has(f.id));
-      // Clear selection for any deleted frames
-      frames.forEach(f => _sbSelected.delete(f.id));
-      // Also clear selection if it was scene-filtered
-      if (_sbSceneFilter === sceneKey || _sbSceneFilter === '__unattached') {
-        _sbSelected.clear();
-      }
       saveStore();
       renderStoryboard(p);
       showToast(`${frames.length} frame${frames.length!==1?'s':''} deleted`, 'success');
     }
   );
-}
-
-function _sbRemoveScene(sceneKey) {
-  // Remove the scene from storyboard view - frames become unattached but are not deleted
-  const p  = currentProject(); if (!p) return;
-  const sb = _getStoryboard(p);
-  const frames = sb.frames.filter(f => f.sceneKey === sceneKey);
-  const label = sceneKey;
-  
-  // Initialize removed scenes set if not present
-  if (!sb.removedScenes) sb.removedScenes = [];
-  
-  // If already removed, just re-render (shouldn't happen but handle it)
-  if (sb.removedScenes.includes(sceneKey)) {
-    renderStoryboard(p);
-    return;
-  }
-  
-  // If no frames, show simple confirm modal then mark as removed
-  if (!frames.length) {
-    const ovId = '_sb-remove-scene-' + makeId();
-    const modal = document.createElement('div');
-    modal.id = ovId;
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
-    modal.innerHTML = `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">Remove Scene "${label}"?</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.5">
-          This empty scene will be hidden from the storyboard. You can add frames to it again by attaching from the breakdown.
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px">Cancel</button>
-          <button onclick="_sbConfirmRemoveSceneEmpty('${sceneKey}','${ovId}')" style="background:var(--accent,#3498db);border:none;color:#fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">Remove</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    return;
-  }
-  
-  const ovId = '_sb-remove-scene-' + makeId();
-  const modal = document.createElement('div');
-  modal.id = ovId;
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
-  modal.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">Remove Scene "${label}"?</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.5">
-        ${frames.length} frame${frames.length!==1?'s':''} will become unattached and appear in the General section. The scene will no longer appear in the storyboard.
-      </div>
-      <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:16px;cursor:pointer">
-        <input type="checkbox" id="${ovId}-delete-frames" style="margin-top:2px">
-        <span style="font-size:12px;color:var(--text2)">Also delete all ${frames.length} frame${frames.length!==1?'s':''} from this scene (cannot be undone)</span>
-      </label>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px">Cancel</button>
-        <button onclick="_sbConfirmRemoveScene('${sceneKey}','${ovId}')" style="background:var(--accent,#3498db);border:none;color:#fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500">Remove</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-}
-
-function _sbConfirmRemoveSceneEmpty(sceneKey, ovId) {
-  document.getElementById(ovId)?.remove();
-  const p  = currentProject(); if (!p) return;
-  const sb = _getStoryboard(p);
-  if (!sb.removedScenes) sb.removedScenes = [];
-  if (!sb.removedScenes.includes(sceneKey)) {
-    sb.removedScenes.push(sceneKey);
-  }
-  saveStore();
-  renderStoryboard(p);
-  showToast(`Scene "${sceneKey}" removed from storyboard`, 'success');
-}
-
-function _sbConfirmRemoveScene(sceneKey, ovId) {
-  const modal = document.getElementById(ovId);
-  const deleteFrames = modal?.querySelector('#' + ovId + '-delete-frames')?.checked;
-  modal?.remove();
-  const p  = currentProject(); if (!p) return;
-  const sb = _getStoryboard(p);
-  const frames = sb.frames.filter(f => f.sceneKey === sceneKey);
-  if (!frames.length) return;
-  
-  // Clear selection for affected frames if we're filtering by this scene
-  if (_sbSceneFilter === sceneKey || _sbSceneFilter === '__unattached') {
-    _sbSelected.clear();
-  }
-  
-  if (deleteFrames) {
-    const ids = new Set(frames.map(f => f.id));
-    sb.frames = sb.frames.filter(f => !ids.has(f.id));
-    saveStore();
-    renderStoryboard(p);
-    showToast(`${frames.length} frame${frames.length!==1?'s':''} deleted`, 'success');
-  } else {
-    frames.forEach(f => {
-      f.sceneKey = null;
-      f.sceneHeading = null;
-    });
-    saveStore();
-    renderStoryboard(p);
-    showToast(`${frames.length} frame${frames.length!==1?'s':''} moved to General`, 'success');
-  }
 }
 
 function _sbDeleteFrameInline(id, btn) {
@@ -878,7 +921,7 @@ function _sbDeleteFrameInline(id, btn) {
   pop.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:5px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);font-size:11px;max-width:220px';
 
   const warning = isLastInScene && sceneLabel
-    ? `<div style="color:var(--text3);font-size:10px;line-height:1.4">Last frame in scene — scene will remain but be empty.</div>`
+    ? `<div style="color:var(--text3);font-size:10px;line-height:1.4">Last frame in scene — the scene group will also disappear.</div>`
     : '';
 
   pop.innerHTML = `
@@ -1385,22 +1428,18 @@ function _sbDeselectAll() {
 
 function _sbDeleteSelected() {
   const count = _sbSelected.size;
-  if (!count) { _sbSelected.clear(); _sbUpdateBulkBar(); return; }
+  if (!count) return;
   showConfirmDialog(
     `Delete ${count} selected frame${count!==1?'s':''}? This cannot be undone.`,
     'Delete',
     () => {
       const p  = currentProject(); if (!p) return;
       const sb = _getStoryboard(p);
-      // Filter out selected frames - if some are already deleted, that's fine
-      const beforeCount = sb.frames.length;
       sb.frames = sb.frames.filter(f => !_sbSelected.has(f.id));
-      const deletedCount = beforeCount - sb.frames.length;
-      // Clear selection first so bulk bar updates correctly
       _sbSelected.clear();
       saveStore();
       renderStoryboard(p);
-      showToast(`${deletedCount} frame${deletedCount!==1?'s':''} deleted`, 'success');
+      showToast(`${count} frame${count!==1?'s':''} deleted`, 'success');
     }
   );
 }
@@ -1513,28 +1552,6 @@ function _sbGetDragMode(e, id) {
 function _sbClearDragVisuals() {
   document.querySelectorAll('.sb-frame-card').forEach(c => c.classList.remove('sb-swap-over'));
   document.querySelectorAll('.sb-slot').forEach(s => s.classList.remove('sb-ins-left','sb-ins-right'));
-}
-
-// Handle drag over the empty grid area (no frames or "Add Frame" card)
-function _sbGridDragOver(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'move';
-  const grid = e.target.closest('.sb-drop-target');
-  if (grid && _sbDragTargetKey !== grid.dataset.sceneKey) {
-    _sbClearDragVisuals();
-    document.querySelectorAll('.sb-drop-target').forEach(g => g.classList.remove('sb-grid-over'));
-    grid.classList.add('sb-grid-over');
-    _sbDragTargetKey = grid.dataset.sceneKey;
-  }
-}
-
-function _sbGridDragLeave(e) {
-  const grid = e.target.closest('.sb-drop-target');
-  if (grid && !grid.contains(e.relatedTarget)) {
-    grid.classList.remove('sb-grid-over');
-    if (_sbDragTargetKey === grid.dataset.sceneKey) _sbDragTargetKey = null;
-  }
 }
 
 function _sbCardDragOver(e, id) {

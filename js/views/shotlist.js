@@ -670,7 +670,7 @@ function renderPropTable(type, tbodyId, p) {
       <td>${item.notes||'—'}</td>
       <td>
         <button class="btn btn-sm btn-ghost" onclick="editPropItem('${type}',${i})">✎</button>
-        <button class="btn btn-sm btn-ghost btn-danger" onclick="removePropItem('${type}',${i})">✕</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removePropItem('${type}',${i},event)">✕</button>
       </td>
     </tr>
   `).join('');
@@ -704,7 +704,8 @@ function savePropItem() {
   else renderPropTable('wardrobe','wardrobe-body',p);
   showToast('Saved','success');
 }
-function removePropItem(type,i) {
+function removePropItem(type,i,event) {
+  if(event) event.stopPropagation();
   showConfirmDialog('Remove this item?', 'Remove', () => {
     const p=currentProject(); p[type].splice(i,1); saveStore();
     if(type==='props') renderPropTable('props','props-body',p);
@@ -731,7 +732,7 @@ function renderWardrobeTable(p) {
       <td>${item.notes||'—'}</td>
       <td>
         <button class="btn btn-sm btn-ghost" onclick="editWardrobeItem(${i})">✎</button>
-        <button class="btn btn-sm btn-ghost btn-danger" onclick="removeWardrobeItem(${i})">✕</button>
+        <button class="btn btn-sm btn-ghost btn-danger" onclick="removeWardrobeItem(${i},event)">✕</button>
       </td>
     </tr>
   `).join('');
@@ -775,7 +776,8 @@ function saveWardrobeItem() {
   renderWardrobeTable(p);
   showToast('Saved','success');
 }
-function removeWardrobeItem(i) {
+function removeWardrobeItem(i,event) {
+  if(event) event.stopPropagation();
   showConfirmDialog('Remove this wardrobe item?', 'Remove', () => {
     const p=currentProject(); p.wardrobe.splice(i,1); saveStore();
     renderWardrobeTable(p);

@@ -1827,6 +1827,16 @@ function handleFileUpload(fileList, presetProjectId) {
   refreshRolesDatalist();
   _pendingFiles = [];
 
+  // ── SIZE CHECK ─────────────────────────────────────────────────────────────
+  const validFiles = Array.from(fileList).filter(file => {
+    return _bfCheckFileSize(file, _bfGetFileType(file));
+  });
+  if (validFiles.length === 0) return;
+  if (validFiles.length < fileList.length) {
+    showToast(`${fileList.length - validFiles.length} file${fileList.length - validFiles.length > 1 ? 's' : ''} skipped (too large)`, 'info', 4000);
+  }
+  // ── END SIZE CHECK ─────────────────────────────────────────────────────────
+
   // Populate project selector
   const projSelect = document.getElementById('upload-project-select');
   const currentProjId = presetProjectId ?? currentProject()?.id;
@@ -1837,7 +1847,7 @@ function handleFileUpload(fileList, presetProjectId) {
   const container = document.getElementById('upload-file-list');
   container.innerHTML = '';
 
-  Array.from(fileList).forEach((file, idx) => {
+  validFiles.forEach((file, idx) => {
     const suggestedCat = getFileCategory(file.name);
     const nameNoExt = file.name.replace(/\.[^.]+$/, '');
     _pendingFiles.push({ file, dataUrl: null });
@@ -2166,9 +2176,17 @@ function handleEditUpload(fileList) {
   if (!fileList || fileList.length === 0) return;
   const p = currentProject();
   if (!p) { showToast('Please select a project first', 'warning'); return; }
-  
+
+  // ── SIZE CHECK ─────────────────────────────────────────────────────────────
+  const validFiles = Array.from(fileList).filter(file => _bfCheckFileSize(file, 'video'));
+  if (validFiles.length === 0) return;
+  if (validFiles.length < fileList.length) {
+    showToast(`${fileList.length - validFiles.length} file${fileList.length - validFiles.length > 1 ? 's' : ''} skipped (too large)`, 'info', 4000);
+  }
+  // ── END SIZE CHECK ─────────────────────────────────────────────────────────
+
   // Process one file at a time via the modal
-  _editUploadQueue = Array.from(fileList);
+  _editUploadQueue = validFiles;
   _processNextEditUpload();
 }
 

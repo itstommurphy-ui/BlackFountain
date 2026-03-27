@@ -462,6 +462,7 @@ function handleMbImageUpload(files, dropPos) {
   if (!_currentMoodboardId || !files.length) return;
   const boardId = _currentMoodboardId;
   Array.from(files).forEach((file, i) => {
+    if (!_bfCheckFileSize(file, 'image')) return;
     const reader = new FileReader();
     reader.onload = e => {
       const pos = dropPos ? { x: dropPos.x + i * 20, y: dropPos.y + i * 20 } : null;
@@ -476,6 +477,7 @@ function handleMbAudioUpload(files, dropPos) {
   if (!_currentMoodboardId || !files.length) return;
   const boardId = _currentMoodboardId;
   Array.from(files).forEach((file, i) => {
+    if (!_bfCheckFileSize(file, 'audio')) return;
     const reader = new FileReader();
     reader.onload = e => {
       const pos = dropPos ? { x: dropPos.x + i * 20, y: dropPos.y + i * 20 } : null;
@@ -506,6 +508,7 @@ function handleMbVideoUpload(files, dropPos) {
   if (!_currentMoodboardId || !files.length) return;
   const boardId = _currentMoodboardId;
   Array.from(files).forEach((file, i) => {
+    if (!_bfCheckFileSize(file, 'video')) return;
     const reader = new FileReader();
     reader.onload = e => {
       const pos = dropPos ? { x: dropPos.x + i * 20, y: dropPos.y + i * 20 } : null;
