@@ -637,8 +637,15 @@ function addPersonnel(type) {
   document.getElementById('pers-role-select').value = '';
   document.getElementById('pers-role-other').value = '';
   document.getElementById('pers-confirmed').value = 'green';
+  // Clear contact dropdown and linked badge
+  const persContactSelect = document.getElementById('pers-contact-select');
+  if (persContactSelect) persContactSelect.value = '';
+  const badge = document.getElementById('_pers-linked-badge');
+  if (badge) badge.remove();
+  window._persContactId = null;
   _persSetCrewMode(type === 'unit');
   openModal('modal-personnel');
+  _persPopulateContactSelect();
   if (typeof ContactAnchor !== 'undefined') {
     setTimeout(() => ContactAnchor.attachPicker(
       document.getElementById('pers-name'),
@@ -673,6 +680,10 @@ function editPersonnel(type, i) {
   document.getElementById('pers-social').value = m.social||'';
   document.getElementById('pers-confirmed').value = m.confirmed||'green';
   if (m.dept) document.getElementById('pers-dept').value = m.dept;
+  // Clear any existing linked badge when editing
+  const existingBadge = document.getElementById('_pers-linked-badge');
+  if (existingBadge) existingBadge.remove();
+  window._persContactId = m.contactId || null;
   _persSetCrewMode(type === 'unit');
   if (type === 'unit') {
     const sel = document.getElementById('pers-role-select');
@@ -689,6 +700,7 @@ function editPersonnel(type, i) {
     }
   }
   openModal('modal-personnel');
+  _persPopulateContactSelect();
 }
 function savePersonnel() {
   const p = currentProject();
@@ -722,6 +734,27 @@ function savePersonnel() {
   showToast('Saved', 'success');
 }
 // removePersonnel defined above near removeCSRow
+function removePersonnel(type, idx) {
+  const p = currentProject();
+  if (!p) return;
+  const i = parseInt(idx);
+  const name = type === 'cast' ? p.cast[i]?.name : type === 'extras' ? p.extras[i]?.name : p.unit[i]?.name;
+  showConfirmDialog(`Remove ${name || 'this entry'}?`, 'Remove', () => {
+    if (type === 'cast') {
+      p.cast.splice(i, 1);
+      saveStore();
+      renderCast(p);
+    } else if (type === 'extras') {
+      p.extras.splice(i, 1);
+      saveStore();
+      renderCast(p);
+    } else if (type === 'unit') {
+      p.unit.splice(i, 1);
+      saveStore();
+      renderCrew(p);
+    }
+  });
+}
 
 // CREW
 function renderCrew(p) {
@@ -1207,4 +1240,74 @@ function exportStripboardPDF() {
   
   _openPrintWindow(`<h1>${p.title} — Stripboard</h1><p>Generated: ${new Date().toLocaleDateString()}</p>${html}`, p.title + ' - Stripboard');
 }
+
+// ═══════════════════════════════════════════════════════════════
+// CONTACT DROPDOWN FOR PERSONNEL MODAL
+// ═══════════════════════════════════════════════════════════════
+
+/** Populate the 'Select existing contact' dropdown in the personnel modal */
+function _persPopulateContactSelect() {
+  const select = document.getElementById('pers-contact-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">— Select existing contact —</option>';
+
+  // Use ContactAnchor if available — covers all projects
+  if (typeof ContactAnchor !== 'undefined') {
+    const contacts = ContactAnchor.searchContacts('', 200);
+    contacts.sort((a, b) => a.name.localeCompare(b.name));
+    contacts.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({ name: c.name, phone: c.phone || '', email: c.email || '' });
+      opt.textContent = c.name + (c.phone ? ' — ' + c.phone : '');
+      select.appendChild(opt);
+    });
+    return;
+  }
+
+  // Fallback: scan projects manually
+  const seen = new Set();
+  const addPerson = (name, phone, email) => {
+    if (!name || seen.has(name.toLowerCase())) return;
+    seen.add(name.toLowerCase());
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify({ name, phone: phone || '', email: email || '' });
+    opt.textContent = name + (phone ? ' — ' + phone : '');
+    select.appendChild(opt);
+  };
+  (store.projects || []).forEach(p => {
+    (p.contacts || []).forEach(c => addPerson(c.name, c.phone, c.email));
+    (p.cast || []).forEach(r => addPerson(r.name, r.number || r.phone, r.email));
+    (p.extras || []).forEach(r => addPerson(r.name, r.number || r.phone, r.email));
+    (p.unit || []).forEach(r => addPerson(r.name, r.number || r.phone, r.email));
+  });
+  (store.contacts || []).forEach(c => addPerson(c.name, c.phone, c.email));
+}
+
+/** Handle selection from the 'Select existing contact' dropdown */
+function autofillPersonnelFromContact() {
+  const select = document.getElementById('pers-contact-select');
+  const data = select?.value;
+  if (!data) return;
+
+  try {
+    const contact = JSON.parse(data);
+    document.getElementById('pers-name').value = contact.name || '';
+    document.getElementById('pers-number').value = contact.phone || '';
+    document.getElementById('pers-email').value = contact.email || '';
+
+    // Show linked badge
+    const badge = document.getElementById('_pers-linked-badge');
+    if (badge) badge.remove();
+    const b = document.createElement('div');
+    b.id = '_pers-linked-badge';
+    b.style.cssText = 'font-size:11px;color:var(--accent2);margin-top:4px';
+    b.innerHTML = `⚭ Linked to contact: <strong>${contact.name}</strong> <button onclick="window._persContactId=null;this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px">Unlink</button>`;
+    document.getElementById('pers-name').parentElement.appendChild(b);
+  } catch (e) {
+    console.error('Failed to parse contact data:', e);
+  }
+}
+
+window._persPopulateContactSelect = _persPopulateContactSelect;
+window.autofillPersonnelFromContact = autofillPersonnelFromContact;
 

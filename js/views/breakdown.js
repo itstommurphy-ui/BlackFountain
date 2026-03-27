@@ -1066,7 +1066,7 @@ function renderBreakdownReport(p, scenes) {
       : `<span style="font-size:11px;color:var(--text3);opacity:0.5">No elements tagged</span>`;
     const pageLen = _sbPageEighths(scene);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
-      <div onclick="scrollBreakdownToScene(${scene.start})" style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:5px" title="Jump to scene in script">
+      <div onclick="scrollBreakdownToScene(${scene.start}); event.preventDefault()" style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:5px" title="Jump to scene in script">
         <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}<span style="margin-left:auto;display:flex;align-items:center;gap:6px">${typeof _sbSceneBadge === 'function' ? _sbSceneBadge(p, scene.heading) : ''}<span style="font-size:10px;color:#E5C07B;font-weight:600">${pageLen} pgs</span></span>
       </div>
       <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">${body}</div>
@@ -1258,6 +1258,34 @@ function showTagCategoryPicker(tagId, action) {
   pop.style.display = 'flex';
 }
 
+// Helper to check if a cast tag already exists in the same scene
+function _isCastTagDuplicate(bd, start, end, excludeTagId = null) {
+  if (!bd.rawText || !bd.tags) return false;
+  const scenes = parseBreakdownScenes(bd.rawText);
+  const newTagText = bd.rawText.slice(start, end).trim().toLowerCase();
+  if (!newTagText) return false;
+  
+  // Find which scene this tag belongs to
+  const scene = scenes.find(s => start >= s.start && start < s.end);
+  if (!scene) return false;
+  
+  // Check all existing cast tags in the same scene
+  const existingCastTags = bd.tags.filter(t => 
+    t.category === 'cast' && 
+    t.id !== excludeTagId &&
+    t.start >= scene.start && 
+    t.start < scene.end
+  );
+  
+  for (const tag of existingCastTags) {
+    const existingText = bd.rawText.slice(tag.start, tag.end).trim().toLowerCase();
+    if (existingText === newTagText) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function executeTagAction(tagId, action, toCategory) {
   const p = currentProject();
   const bd = _getActiveBd(p);
@@ -1265,11 +1293,21 @@ function executeTagAction(tagId, action, toCategory) {
   const tag = bd.tags.find(t => t.id === tagId);
   if (!tag) { hideBdPopover(); return; }
   if (action === 'move') {
+    // Check for duplicate cast tag when moving to cast category
+    if (toCategory === 'cast' && _isCastTagDuplicate(bd, tag.start, tag.end, tag.id)) {
+      showToast('This cast member is already tagged in this scene', 'error');
+      return;
+    }
     tag.category = toCategory;
     if (toCategory === 'props') {
       _bdAutoExportProp(tag, bd);
     }
   } else if (action === 'add') {
+    // Check for duplicate cast tag when adding as cast
+    if (toCategory === 'cast' && _isCastTagDuplicate(bd, tag.start, tag.end)) {
+      showToast('This cast member is already tagged in this scene', 'error');
+      return;
+    }
     const newTag = { id: makeId(), category: toCategory, start: tag.start, end: tag.end };
     bd.tags.push(newTag);
     if (toCategory === 'props') {
@@ -1288,6 +1326,15 @@ function applyBreakdownTag(category) {
   if (!bd) return;
   const { start, end } = _bdPendingSelection;
   if (!bd.tags) bd.tags = [];
+  
+  // Check for duplicate cast tag when adding a cast tag
+  if (category === 'cast' && _isCastTagDuplicate(bd, start, end)) {
+    showToast('This cast member is already tagged in this scene', 'error');
+    window.getSelection()?.removeAllRanges();
+    hideBdPopover();
+    return;
+  }
+  
   const newTag = { id: makeId(), category, start, end };
   bd.tags.push(newTag);
   if (category === 'props') {
@@ -2645,6 +2692,10 @@ function applySelectedBdSuggestions() {
 
   let propsAdded = 0;
   for (const s of toApply) {
+    // Check for duplicate cast tag when applying a cast tag
+    if (s.category === 'cast' && _isCastTagDuplicate(bd, s.start, s.end)) {
+      continue; // Skip this tag, it's a duplicate
+    }
     const newTag = { id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2), category: s.category, start: s.start, end: s.end };
     bd.tags.push(newTag);
     // Prop export — silent during bulk, we'll show one summary toast below

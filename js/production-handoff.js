@@ -310,15 +310,29 @@
     if (!bd?.rawText || !bd?.tags) { showToast('No breakdown tags found', 'info'); return; }
     const text = bd.rawText;
     const tags = bd.tags;
-    const cast     = _uniqueTagTexts(tags, text, 'cast');
-    const extras   = _uniqueTagTexts(tags, text, 'extras');
-    const props    = _uniqueTagTexts(tags, text, 'props');
-    const wardrobe = _uniqueTagTexts(tags, text, 'wardrobe');
-    if (!cast.length && !extras.length && !props.length && !wardrobe.length) {
-      showToast('No cast, props or wardrobe tagged yet', 'info');
+    
+    // Get items already in project sections
+    const existingCast = new Set((p.cast || []).map(m => (m.role || m.name || '').toLowerCase()));
+    const existingExtras = new Set((p.extras || []).map(m => (m.role || m.name || '').toLowerCase()));
+    const existingProps = new Set((p.props || []).map(m => (m.name || '').toLowerCase()));
+    const existingWardrobe = new Set((p.wardrobe || []).map(m => (m.name || '').toLowerCase()));
+    
+    // Get tagged items and filter out those already in project
+    const allCast = _uniqueTagTexts(tags, text, 'cast');
+    const allExtras = _uniqueTagTexts(tags, text, 'extras');
+    const allProps = _uniqueTagTexts(tags, text, 'props');
+    const allWardrobe = _uniqueTagTexts(tags, text, 'wardrobe');
+    
+    const newCast = allCast.filter(t => !existingCast.has(t.toLowerCase()));
+    const newExtras = allExtras.filter(t => !existingExtras.has(t.toLowerCase()));
+    const newProps = allProps.filter(t => !existingProps.has(t.toLowerCase()));
+    const newWardrobe = allWardrobe.filter(t => !existingWardrobe.has(t.toLowerCase()));
+    
+    if (!newCast.length && !newExtras.length && !newProps.length && !newWardrobe.length) {
+      showToast('All tagged items are already in the project', 'info');
       return;
     }
-    _showHandoffBanner(cast, extras, props, wardrobe);
+    _showHandoffBanner(newCast, newExtras, newProps, newWardrobe);
   };
 
 })();
