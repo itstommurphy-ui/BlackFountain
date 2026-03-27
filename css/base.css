@@ -207,7 +207,34 @@
     -webkit-user-select: text;
   }
 
-  body.loading #app { opacity: 0; }
+  body.loading #app { visibility: hidden; }
+  body.loading::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: #0d0d12;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  body.loading::after {
+    content: 'The Fountain is Flowing…';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100000;
+    color: #e6bc3c;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    animation: bf-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes bf-pulse {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1; }
+  }
   #app { opacity: 1; transition: opacity 0.3s ease; }
 
   /* ── LAYOUT ── */

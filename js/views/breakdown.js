@@ -236,7 +236,6 @@ function _sbBuildSceneData(p) {
 // KEY FIX: use data-key/data-src attributes instead of inline JSON params
 // (inline JSON in double-quoted attributes breaks on scene headings with quotes/commas)
 function _sbRenderStrip(sceneKey, data, sourceDayId) {
-  const p = currentProject(); if (!p) return '';
   const entry = data[sceneKey];
   const keyAttr = _sbEsc(sceneKey);
   const srcAttr = _sbEsc(sourceDayId || '');
@@ -253,11 +252,10 @@ function _sbRenderStrip(sceneKey, data, sourceDayId) {
   const tod      = scene.tod ? `<span class="strip-tod">${_sbEsc(scene.tod)}</span>` : '';
   const castHtml = cast.length ? `<div class="strip-cast">${cast.map(c=>_sbEsc(c)).join(', ')}</div>` : '';
   const shotBadge= entry.shotCount ? `<span class="strip-shots">${entry.shotCount} shot${entry.shotCount>1?'s':''}</span>` : '';
-  const sbBadge = _sbSceneBadge(p, sceneKey);
   return `<div class="strip" ${drag} style="background:${bg}" title="${keyAttr}">
     <div class="strip-swatch" style="background:${swatch}"></div>
     <div class="strip-body">
-      <div class="strip-r1">${num}${loc}${ie}${shotBadge}${sbBadge}</div>
+      <div class="strip-r1">${num}${loc}${ie}${shotBadge}</div>
       <div class="strip-r2">${tod}${pages}</div>
       ${castHtml}
     </div>
@@ -1069,7 +1067,7 @@ function renderBreakdownReport(p, scenes) {
     const pageLen = _sbPageEighths(scene);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
       <div onclick="scrollBreakdownToScene(${scene.start})" style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:5px" title="Jump to scene in script">
-        <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}<span style="margin-left:auto;font-size:10px;color:#E5C07B;font-weight:600">${pageLen} pgs</span>
+        <span style="opacity:0.5;font-size:10px">↗</span>${esc(scene.heading)}<span style="margin-left:auto;display:flex;align-items:center;gap:6px">${typeof _sbSceneBadge === 'function' ? _sbSceneBadge(p, scene.heading) : ''}<span style="font-size:10px;color:#E5C07B;font-weight:600">${pageLen} pgs</span></span>
       </div>
       <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">${body}</div>
     </div>`;
@@ -2215,23 +2213,90 @@ function _bdVote(sugId, direction) {
   _bdSubmitCommunityVote(s.text, s.category, newVote, prevVote);
 }
 
-// Submit a vote to Supabase via the bd_cast_vote RPC function.
-// p_delta: +1 (upvote), -1 (downvote), 0 (clear — subtracts previous vote)
+// ── VOTE QUEUE: batch + throttle community submissions ───────────────────────
+// Votes accumulate in _bdVoteQueue (delta per key). Flushed:
+//   a) 5 minutes after the first queued vote (debounced timer)
+//   b) On page unload (beforeunload)
+// Per-term throttle: skip submitting a term if it was last sent < 24h ago.
+// This dramatically reduces Supabase Disk IO on the free tier.
+
+const BD_VOTE_THROTTLE_MS  = 24 * 60 * 60 * 1000; // 24 hours per term
+const BD_VOTE_FLUSH_DELAY  =  5 * 60 * 1000;       // flush queue after 5 min idle
+
+let _bdVoteQueue   = {};   // { "term:category": delta } accumulated since last flush
+let _bdFlushTimer  = null;
+
 function _bdSubmitCommunityVote(text, category, newVote, previousVote) {
   if (!BD_COMMUNITY_SCORES_URL) return;
   const delta = newVote - (previousVote || 0);
   if (delta === 0) return;
-  fetch(`${BD_COMMUNITY_SCORES_URL}/rest/v1/rpc/bd_cast_vote`, {
-    method: 'POST',
-    headers: {
-      'apikey': BD_SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${BD_SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ p_term: text.toLowerCase().trim(), p_category: category, p_delta: delta }),
-  }).then(async res => {
-    const body = await res.text();
-  }).catch(err => {
+  const key = `${text.toLowerCase().trim()}:${category}`;
+  // Accumulate delta — if user votes then unvotes, net delta is 0 → nothing sent
+  _bdVoteQueue[key] = (_bdVoteQueue[key] || 0) + delta;
+  // Schedule a flush in 5 minutes (reset timer each vote)
+  clearTimeout(_bdFlushTimer);
+  _bdFlushTimer = setTimeout(_bdFlushVoteQueue, BD_VOTE_FLUSH_DELAY);
+}
+
+async function _bdFlushVoteQueue() {
+  if (!BD_COMMUNITY_SCORES_URL) return;
+  const queue = _bdVoteQueue;
+  _bdVoteQueue = {};
+  clearTimeout(_bdFlushTimer);
+  _bdFlushTimer = null;
+  if (!Object.keys(queue).length) return;
+
+  // Per-term throttle: skip terms submitted too recently
+  if (!store.bdVoteSubmitted) store.bdVoteSubmitted = {};
+  const now      = Date.now();
+  const toSend   = {};
+  for (const [key, delta] of Object.entries(queue)) {
+    if (delta === 0) continue; // net zero — skip
+    const lastSent = store.bdVoteSubmitted[key] || 0;
+    if (now - lastSent < BD_VOTE_THROTTLE_MS) continue; // throttled
+    toSend[key] = delta;
+  }
+  if (!Object.keys(toSend).length) return;
+
+  // Send one RPC call per unique term (still far fewer than one-per-click)
+  const promises = Object.entries(toSend).map(([key, delta]) => {
+    const [term, category] = key.split(':');
+    return fetch(`${BD_COMMUNITY_SCORES_URL}/rest/v1/rpc/bd_cast_vote`, {
+      method: 'POST',
+      headers: {
+        'apikey': BD_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${BD_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_term: term, p_category: category, p_delta: delta }),
+    }).then(res => {
+      if (res.ok) store.bdVoteSubmitted[key] = Date.now();
+    }).catch(() => {
+      // On failure, put back in queue for next flush
+      _bdVoteQueue[key] = (_bdVoteQueue[key] || 0) + delta;
+    });
+  });
+  await Promise.allSettled(promises);
+  saveStore(); // persist bdVoteSubmitted timestamps
+}
+
+// Flush on page unload — sendBeacon for reliability
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (!BD_COMMUNITY_SCORES_URL || !Object.keys(_bdVoteQueue).length) return;
+    if (!store.bdVoteSubmitted) store.bdVoteSubmitted = {};
+    const now = Date.now();
+    for (const [key, delta] of Object.entries(_bdVoteQueue)) {
+      if (delta === 0) continue;
+      const lastSent = store.bdVoteSubmitted[key] || 0;
+      if (now - lastSent < BD_VOTE_THROTTLE_MS) continue;
+      const [term, category] = key.split(':');
+      const payload = JSON.stringify({ p_term: term, p_category: category, p_delta: delta });
+      navigator.sendBeacon(
+        `${BD_COMMUNITY_SCORES_URL}/rest/v1/rpc/bd_cast_vote`,
+        new Blob([payload], { type: 'application/json' })
+      );
+    }
   });
 }
 

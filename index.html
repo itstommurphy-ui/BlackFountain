@@ -11,7 +11,7 @@
 <body class="loading">
 <script>
   // Emergency fallback to remove loading screen if JS fails
-  setTimeout(() => document.body.classList.remove('loading'), 4000);
+  setTimeout(() => document.body.classList.remove('loading'), 8000);
 </script>
 <a href="#content" class="skip-link">Skip to main content</a>
 <div id="app">
@@ -1860,7 +1860,7 @@ function triggerPWAInstall() {
 // Register Service Worker for offline usage
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('sw.js?t=' + Date.now())
       .then(reg => console.log('Service Worker registered - app works offline!'))
       .catch(err => console.log('Service Worker registration failed:', err));
   });

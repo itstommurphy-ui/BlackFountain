@@ -1,3 +1,4 @@
+document.body.classList.add('loading');
 // ══════════════════════════════════════════
 // IMPORTANT: All new features should be WCAG 2.2 AA compliant
 // - Ensure color contrast ratios are at least 4.5:1 for normal text
