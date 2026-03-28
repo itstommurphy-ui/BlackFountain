@@ -103,9 +103,11 @@ function showProjectView(id) {
   sel.value = p.status;
   sel.className = 'proj-status-select ' + badgeClass[p.status];
 
+  const directors = Array.isArray(p.directors) && p.directors.length ? p.directors.join(', ') : (p.director || '—');
+  const producers = Array.isArray(p.producers) && p.producers.length ? p.producers.join(', ') : (p.producer || '—');
   document.getElementById('proj-meta').innerHTML = `
-    <span>🎬 ${p.director || '—'}</span>
-    <span>🎥 ${p.producer || '—'}</span>
+    <span>🎬 ${directors}</span>
+    <span>🎥 ${producers}</span>
     <span>🏢 ${p.company || '—'}</span>
     ${p.genre ? `<span>🎭 ${p.genre}</span>` : ''}
   `;
@@ -347,7 +349,7 @@ function renderDashboard() {
         <span class="status-badge ${badgeClass[p.status]}">${statusMap[p.status]}</span>
       </div>
       <div class="project-card-meta" onclick="showProjectView('${p.id}')">
-        ${p.director ? `<div>Dir: ${p.director}</div>` : ''}
+        ${(p.directors?.length || p.director) ? `<div>Dir: ${Array.isArray(p.directors) ? p.directors.join(', ') : p.director}</div>` : ''}
         ${p.company ? `<div>${p.company}</div>` : ''}
         ${p.notes ? `<div style="margin-top:6px;color:var(--text3)">${p.notes.substring(0,80)}${p.notes.length>80?'…':''}</div>` : ''}
       </div>

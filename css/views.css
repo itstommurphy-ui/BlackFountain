@@ -2,6 +2,23 @@
   .view { display: none; }
   .view.active { display: block; }
 
+  /* Sortable table headers */
+  .sortable-header {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .sortable-header:hover {
+    color: #f0cf70;
+  }
+
+  .sort-indicator {
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.7;
+  }
+
   /* ── DASHBOARD ── */
   .page-header { margin-bottom: 22px; overflow: hidden; }
   .page-header h2 {
@@ -1529,6 +1546,7 @@
   .bd-script-view {
     flex: 1;
     min-height: 0;
+    max-height: 842px;
     white-space: pre-wrap;
     font-family: 'Courier New', Courier, monospace;
     font-size: 12px;
@@ -2605,6 +2623,79 @@
     color: var(--text2);
   }
 
+  /* Tag input for project modal */
+  .tag-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 38px;
+    align-items: center;
+  }
+  .tag-input-container:focus-within {
+    border-color: var(--accent);
+    outline: 1px solid var(--accent);
+  }
+  .tag-input-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tag-input-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 6px;
+    background: rgba(56,168,212,0.15);
+    color: var(--accent2);
+    border-radius: 10px;
+    border: 1px solid rgba(56,168,212,0.2);
+  }
+  .tag-input-tag-remove {
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 10px;
+    line-height: 1;
+  }
+  .tag-input-tag-remove:hover {
+    color: var(--text);
+  }
+  .tag-input-field {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    padding: 2px 4px;
+  }
+  .tag-input-field::placeholder {
+    color: var(--text3);
+  }
+  .tag-input-add-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: var(--accent);
+    color: var(--surface);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0;
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+  .tag-input-add-btn:hover {
+    background: var(--accent2);
+  }
+
   /* Tag styles */
   .tag-cast {
     background: rgba(91,192,235,0.15);
@@ -2700,6 +2791,45 @@
 
   /* Budget quick-add bars - allow wrapping at 2x zoom */
   [data-font-size="double"] .bud-quick-add-bar { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* Storyboard frame modal - counter-zoom for 2x site view */
+  [data-font-size="double"] #_sb-frame-modal { zoom: 0.5; }
+  [data-font-size="double"] #_sb-frame-modal > div { zoom: 2; max-height: 45vh !important; }
+
+  /* Storyboard bulk action bar - allow wrapping at 2x zoom */
+  [data-font-size="double"] #sb-bulk-bar { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* Storyboard toolbar - allow wrapping at 2x zoom */
+  [data-font-size="double"] #section-storyboard > div:nth-child(1) { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* Storyboard frame cards - ensure proper sizing at 2x */
+  [data-font-size="double"] .sb-frames-grid { gap: 8px; }
+  [data-font-size="double"] .sb-frame-card { min-width: 140px; }
+
+  /* Storyboard frame image zone - adjust height at 2x */
+  [data-font-size="double"] .sb-frame-image-zone { height: 100px; }
+
+  /* Storyboard add card - adjust min-height at 2x */
+  [data-font-size="double"] .sb-add-card { min-height: 130px; }
+
+  /* Storyboard group - allow wrapping at 2x */
+  [data-font-size="double"] .sb-group > div:first-child { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* Storyboard batch add modal - counter-zoom for 2x site view */
+  [data-font-size="double"] #_sb-batch-modal { zoom: 0.5; }
+  [data-font-size="double"] #_sb-batch-modal > div { zoom: 2; max-height: 45vh !important; }
+
+  /* Storyboard custom scene modal - counter-zoom for 2x site view */
+  [data-font-size="double"] #_sb-custom-scene-modal { zoom: 0.5; }
+  [data-font-size="double"] #_sb-custom-scene-modal > div { zoom: 2; max-height: 45vh !important; }
+
+  /* Storyboard sync modal - counter-zoom for 2x site view */
+  [data-font-size="double"] #_sb-sync-modal { zoom: 0.5; }
+  [data-font-size="double"] #_sb-sync-modal > div { zoom: 2; max-height: 45vh !important; }
+
+  /* Storyboard move modal - counter-zoom for 2x site view */
+  [data-font-size="double"] #_sb-move-modal { zoom: 0.5; }
+  [data-font-size="double"] #_sb-move-modal > div { zoom: 2; max-height: 45vh !important; }
   [data-font-size="double"] .bud-quick-add-bar > * { flex-shrink: 0; }
 
   .script-editor-topbar {

@@ -197,13 +197,20 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
-function showToast(msg, type='info') {
+function showToast(msg, type='info', persistent=false) {
   const el=document.getElementById('toast');
   el.className='toast '+type;
-  el.innerHTML=(type==='success'?'✓ ':'ℹ ')+msg;
+  let icon = type==='success'?'✓ ':(type==='error'?'✕ ':'ℹ ');
+  if (persistent) {
+    el.innerHTML = `<span>${icon}${msg}</span><button class="toast-close" onclick="document.getElementById('toast').style.display='none'" aria-label="Close">✕</button>`;
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(()=>el.style.display='none', 30000); // Auto-hide after 30 seconds for persistent toasts
+  } else {
+    el.innerHTML = icon + msg;
+    clearTimeout(window._toastTimer);
+    window._toastTimer=setTimeout(()=>el.style.display='none',2800);
+  }
   el.style.display='flex';
-  clearTimeout(window._toastTimer);
-  window._toastTimer=setTimeout(()=>el.style.display='none',2800);
 }
 
 // ══════════════════════════════════════════

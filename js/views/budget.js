@@ -1128,7 +1128,7 @@ function exportBudgetPrint() {
   </style></head><body>
     <div class="no-print" style="margin-bottom:16px"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;cursor:pointer">🖨 Print / Save PDF</button></div>
     <h1>${p.title.replace(/</g,'&lt;')} — Budget</h1>
-    <div class="meta">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}${p.director?' · Director: '+p.director.replace(/</g,'&lt;'):''}${p.company?' · '+p.company.replace(/</g,'&lt;'):''}</div>
+    <div class="meta">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}${(Array.isArray(p.directors) && p.directors.length) || p.director ? ' · Director: '+(Array.isArray(p.directors) ? p.directors.join(', ') : p.director).replace(/</g,'&lt;'):''}${p.company?' · '+p.company.replace(/</g,'&lt;'):''}</div>
     ${tablesHtml}
     <div class="summary">
       <table>

@@ -1,4 +1,29 @@
 // LOCATIONS
+// Sorting state for location contacts
+let _locContactSort = { column: null, direction: null };
+
+function _sortLocationContacts(column) {
+  if (_locContactSort.column === column) {
+    if (_locContactSort.direction === 'asc') {
+      _locContactSort.direction = 'desc';
+    } else if (_locContactSort.direction === 'desc') {
+      _locContactSort.column = null;
+      _locContactSort.direction = null;
+    }
+  } else {
+    _locContactSort.column = column;
+    _locContactSort.direction = 'asc';
+  }
+  renderContacts();
+}
+
+function _getLocContactSortIndicator(col) {
+  if (_locContactSort.column === col) {
+    return _locContactSort.direction === 'asc' ? ' ▲' : ' ▼';
+  }
+  return '';
+}
+
 function renderProjectLocations(p) {
   const tbody = document.getElementById('locations-body');
   const suitMap = {suitable:'loc-suitable',possible:'loc-possible',unsuitable:'loc-unsuitable'};
@@ -878,6 +903,9 @@ function renderContacts() {
       }
     } else if (contactSort.col === 'photos') {
       av = getFilesForPerson(a.name).length; bv = getFilesForPerson(b.name).length;
+    } else if (contactSort.col === 'projects') {
+      av = Array.isArray(a.projects) ? a.projects.join(', ').toLowerCase() : (a.projects || '').toLowerCase();
+      bv = Array.isArray(b.projects) ? b.projects.join(', ').toLowerCase() : (b.projects || '').toLowerCase();
     } else {
       av = parseInt((store.contactCustomData[a.name.toLowerCase()] || {})[contactSort.col]) || 0;
       bv = parseInt((store.contactCustomData[b.name.toLowerCase()] || {})[contactSort.col]) || 0;
@@ -1024,10 +1052,10 @@ function renderContacts() {
 
   el.innerHTML += `<div class="table-container"><table class="data-table contacts-table"><thead><tr>
     <th style="width:32px;padding:6px 4px"><input type="checkbox" title="Select all" ${_contactAllSel ? 'checked' : ''} onchange="_contactNavSelectAll(this.checked)" onclick="event.stopPropagation()"></th>
-    <th style="${thStyle}" onclick="setContactSort('name')">Name${sortIcon('name')}</th>
+    <th style="${thStyle}" onclick="setContactSort('name')" class="sortable-header">Name${sortIcon('name')}</th>
     ${vis('type') ? `<th data-ctx="col-contact:type">Type${colHideBtn('type')}</th>` : ''}
     ${vis('role') ? `<th data-ctx="col-contact:role">Role / Dept${colHideBtn('role')}</th>` : ''}
-    ${vis('projects') ? `<th data-ctx="col-contact:projects">Projects${colHideBtn('projects')}</th>` : ''}
+    ${vis('projects') ? `<th data-ctx="col-contact:projects" onclick="setContactSort('projects')" style="cursor:pointer" class="sortable-header">Projects${sortIcon('projects', contactSort)}${colHideBtn('projects')}</th>` : ''}
     ${vis('phone') ? `<th data-ctx="col-contact:phone">Phone${colHideBtn('phone')}</th>` : ''}
     ${vis('email') ? `<th data-ctx="col-contact:email">Email${colHideBtn('email')}</th>` : ''}
     ${vis('socials') ? `<th data-ctx="col-contact:socials">Socials${colHideBtn('socials')}</th>` : ''}
@@ -1360,6 +1388,30 @@ function renderLocationContactsSection(el) {
     return;
   }
 
+  // Apply sorting
+  if (_locContactSort.column && _locContactSort.direction) {
+    allEntries.sort((a, b) => {
+      let valA = '';
+      let valB = '';
+      if (_locContactSort.column === 'name') {
+        valA = (a.name || '').toLowerCase();
+        valB = (b.name || '').toLowerCase();
+      } else if (_locContactSort.column === 'role') {
+        valA = (a.role || '').toLowerCase();
+        valB = (b.role || '').toLowerCase();
+      } else if (_locContactSort.column === 'location') {
+        valA = (a.locationName || '').toLowerCase();
+        valB = (b.locationName || '').toLowerCase();
+      } else if (_locContactSort.column === 'project') {
+        valA = (a.project || '').toLowerCase();
+        valB = (b.project || '').toLowerCase();
+      }
+      if (valA < valB) return _locContactSort.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return _locContactSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   const allKeys = allEntries.map(e => `${e.projectId}|${e.locIdx}|${e.id}`);
   const allSel = allKeys.length > 0 && allKeys.every(k => _locContactSel.has(k));
   const allKeysJson = JSON.stringify(allKeys).replace(/"/g, '&quot;');
@@ -1374,7 +1426,11 @@ function renderLocationContactsSection(el) {
     ${header}
     <div class="table-container"><table class="data-table"><thead><tr>
       <th style="width:32px;padding:6px 4px"><input type="checkbox" ${allSel ? 'checked' : ''} onchange="_locContactSelectAll(this.checked, JSON.parse(this.dataset.keys))" data-keys="${allKeysJson}"></th>
-      <th>Name</th><th>Role</th><th>Location</th><th>Project</th><th>Phone</th><th>Email</th><th></th>
+      <th onclick="_sortLocationContacts('name')" style="cursor:pointer" class="sortable-header">Name${_getLocContactSortIndicator('name')}</th>
+      <th onclick="_sortLocationContacts('role')" style="cursor:pointer" class="sortable-header">Role${_getLocContactSortIndicator('role')}</th>
+      <th onclick="_sortLocationContacts('location')" style="cursor:pointer" class="sortable-header">Location${_getLocContactSortIndicator('location')}</th>
+      <th onclick="_sortLocationContacts('project')" style="cursor:pointer" class="sortable-header">Project${_getLocContactSortIndicator('project')}</th>
+      <th>Phone</th><th>Email</th><th></th>
     </tr></thead><tbody>` +
     allEntries.map(e => {
       const key = `${e.projectId}|${e.locIdx}|${e.id}`;

@@ -235,7 +235,7 @@ function renderScript(p) {
                 </div>
               </td>
               <td><input class="form-input form-input-sm" style="width:100%" value="${(s.label||'').replace(/"/g,'&quot;')}" placeholder="e.g. Draft 3, Sides for Scene 12..." onchange="updateScriptLabel('${s.id}',this.value)"></td>
-              <td style="white-space:nowrap">${formatFileSize(s.size)}</td>
+              <td style="white-space:nowrap">${formatFileSize(s.size || 0)}</td>
               <td style="white-space:nowrap;font-size:11px">${tsLabel}${new Date(ts).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'})}</td>
               <td style="display:flex;gap:5px;flex-wrap:nowrap">
                 ${false && editable ? `<button class="btn btn-sm btn-primary" onclick="openScriptEditor('${s.id}')" title="Edit in browser">✏ Edit</button>` : ''}
@@ -977,11 +977,11 @@ function openScriptPreview(id) {
   overlay.className = 'script-preview-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
 
-  const isPdf  = s.type.includes('pdf');
-  const isImg  = s.type.startsWith('image/');
+  const isPdf  = (s.type && s.type.includes('pdf')) || s.name.toLowerCase().endsWith('.pdf');
+  const isImg  = s.type && s.type.startsWith('image/');
   const textExts = ['txt', 'fountain', 'fdx', 'md', 'rtf'];
   const fileExt = s.name.split('.').pop().toLowerCase();
-  const isText = s.type.includes('text') || s.type.includes('xml') || s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx') || textExts.includes(fileExt) || textExts.includes(s.origExt || '');
+  const isText = (s.type && (s.type.includes('text') || s.type.includes('xml'))) || (s.name && (s.name.endsWith('.txt') || s.name.endsWith('.fountain') || s.name.endsWith('.fdx'))) || textExts.includes(fileExt) || textExts.includes(s.origExt || '');
 
   let previewHtml = '';
   if (isPdf) {
@@ -990,10 +990,15 @@ function openScriptPreview(id) {
     previewHtml = `<img src="${s.dataUrl}" alt="${s.altText || s.name}" style="max-width:min(820px,90vw);max-height:80vh;border-radius:8px;object-fit:contain">`;
   } else if (isText) {
     let text = '';
-    try {
-      text = decodeURIComponent(escape(atob(s.dataUrl.split(',')[1])));
-    } catch(e) {
-      try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = '(Cannot decode file)'; }
+    // Support both dataUrl (base64) and text property (plain text)
+    if (s.dataUrl) {
+      try {
+        text = decodeURIComponent(escape(atob(s.dataUrl.split(',')[1])));
+      } catch(e) {
+        try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = '(Cannot decode file)'; }
+      }
+    } else if (s.text) {
+      text = s.text;
     }
     // Parse Final Draft XML to extract readable text
     const fname = s.name.toLowerCase();
@@ -1176,7 +1181,7 @@ const BREAKDOWN_CATEGORIES = [
 const BD_SUGGEST_KEYWORDS = {
   extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation','crowd','extras','audience','mob'],
   stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight','punch','kick','leap','dive','roll'],
-  props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map','glass','wine'],
+  props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','key','bag','bat','map','glass','wine'],
   vehicles:    ['pickup truck','police car','fire truck','limousine','motorcycle','motorbike','helicopter','submarine','aircraft','bicycle','chopper','forklift','tractor','convertible','ambulance','sports car','train','truck','plane','yacht','boat','ship','taxi','limo','jeep','bus','van','suv','cab','jet','car'],
   sfx:         ['explosion','explodes','detonation','gunfire','gunshot','lightning','thunder','collision','blast','smoke','crash','alarm','siren','storm','flood','fire'],
   wardrobe:    ['wedding dress','tuxedo','uniform','disguise','costume','armour','jacket','helmet','gloves','armor','dress','coat','robe','vest','mask','suit','hat','cap'],

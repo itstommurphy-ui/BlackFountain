@@ -45,7 +45,7 @@ function _sbMakeFrame(sb, sceneKey, sceneHeading) {
     sceneKey: sceneKey || null,
     sceneHeading: sceneHeading || null,
     shotType: '', movement: '', lens: '', transition: '',
-    imageDataUrl: null, action: '', dialogue: '', notes: '', duration: '',
+    imageDataUrl: null, bgColor: '#1a1a1a', action: '', dialogue: '', notes: '', duration: '',
   };
 }
 
@@ -260,7 +260,7 @@ function _sbOpenFrame(id, isDraft) {
       <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0">
 
         <!-- Sketch / Image Panel — landscape, fixed height -->
-        <div id="_sbPanel_${id}" style="flex-shrink:0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;background:#1a1a1a;height:400px">
+        <div id="_sbPanel_${id}" style="flex-shrink:0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;background:${f.bgColor || '#1a1a1a'};height:400px">
           <!-- Canvas toolbar -->
           <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap;flex-shrink:0">
             <!-- Tools -->
@@ -285,8 +285,8 @@ function _sbOpenFrame(id, isDraft) {
             <!-- BG colour -->
             <label title="Background colour" style="position:relative;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px">
               <span style="font-size:9px;color:#888">BG</span>
-              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:#1a1a1a;cursor:pointer"></div>
-              <input type="color" id="_sbBgPicker_${id}" value="#1a1a1a"
+              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:${f.bgColor || '#1a1a1a'};cursor:pointer"></div>
+              <input type="color" id="_sbBgPicker_${id}" value="${f.bgColor || '#1a1a1a'}"
                 style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer"
                 oninput="_sbSetBgLive('${id}',this.value)" onchange="_sbSetBg('${id}',this.value)">
             </label>
@@ -856,12 +856,15 @@ function _sbBatchConfirm(ovId) {
 // ── SAVE HELPERS ──────────────────────────────────────────────────────────────
 
 function _sbSaveField(id, field, value) {
+  console.log('[DEBUG] _sbSaveField called, id=', id, 'field=', field, 'value=', value);
   // Check draft first — draft frames aren't in sb.frames yet
   const draft = _sbDraftFrame?.frame?.id === id ? _sbDraftFrame.frame : null;
   const p  = currentProject(); if (!p) return;
   const sb = _getStoryboard(p);
-  const f  = draft || sb.frames.find(x => x.id === id); if (!f) return;
+  const f  = draft || sb.frames.find(x => x.id === id); if (!f) { console.log('[DEBUG] no frame found!'); return; }
+  console.log('[DEBUG] frame found, f.id=', f.id, 'f.bgColor before=', f.bgColor);
   f[field] = value;
+  console.log('[DEBUG] f.bgColor after=', f.bgColor);
   if (!draft) saveStore(); // only persist if already committed
   const card = document.getElementById('sb-card-' + id);
   if (card) card.outerHTML = _sbFrameCardHtml(f);
@@ -1010,14 +1013,28 @@ function _sbInitCanvas(id) {
     const W = wrap.clientWidth  || 600;
     const H = wrap.clientHeight || 220;
 
+    // Get frame data first (needed for bgColor)
+    const p  = currentProject();
+    const sb = p ? _getStoryboard(p) : null;
+    const f  = sb?.frames.find(x => x.id === id);
+    console.log('[DEBUG] _sbInitCanvas, id=', id, ', f.bgColor=', f?.bgColor);
+
     // Persist state across prev/next navigation
     if (!_sbSketchState[id]) {
+      // Get saved bgColor from frame, default to #1a1a1a if not set
+      const savedBg = f?.bgColor || '#1a1a1a';
+      console.log('[DEBUG] creating new state, savedBg=', savedBg);
       _sbSketchState[id] = {
         tool: 'pen', color: '#ffffff', size: 3,
-        bg: '#1a1a1a', drawing: false, lastX: 0, lastY: 0,
+        bg: savedBg, drawing: false, lastX: 0, lastY: 0,
         history: [], // undo stack of dataUrls
         favs: [..._sbDefaultFavs],
       };
+    } else {
+      // State already exists - sync bg from saved frame to ensure consistency
+      const savedBg = f?.bgColor || '#1a1a1a';
+      console.log('[DEBUG] state exists, syncing bg to savedBg=', savedBg);
+      _sbSketchState[id].bg = savedBg;
     }
     const state = _sbSketchState[id];
 
@@ -1040,9 +1057,6 @@ function _sbInitCanvas(id) {
     const panel = document.getElementById('_sbPanel_' + id);
     if (panel) panel.style.background = state.bg;
 
-    const p  = currentProject();
-    const sb = p ? _getStoryboard(p) : null;
-    const f  = sb?.frames.find(x => x.id === id);
     if (f?.imageDataUrl) {
       const img = new Image();
       img.onload = () => {
@@ -1272,7 +1286,8 @@ function _sbSetBgLive(id, color) {
 }
 
 function _sbSetBg(id, color) {
-  const state = _sbSketchState[id]; if (!state) return;
+  console.log('[DEBUG] _sbSetBg called, id=', id, 'color=', color);
+  const state = _sbSketchState[id]; if (!state) { console.log('[DEBUG] no state!'); return; }
   state.bg = color;
   // Update both the canvas wrap and the outer panel div
   const wrap  = document.getElementById('_sbCanvasWrap_' + id);
@@ -1280,6 +1295,9 @@ function _sbSetBg(id, color) {
   if (wrap)  wrap.style.background  = color;
   if (panel) panel.style.background = color;
   _sbSyncToolbar(id);
+  // Save bgColor to the frame for persistence
+  console.log('[DEBUG] calling _sbSaveField for bgColor');
+  _sbSaveField(id, 'bgColor', color);
   clearTimeout(state._saveTimer);
   state._saveTimer = setTimeout(() => _sbSaveSketch(id), 300);
 }

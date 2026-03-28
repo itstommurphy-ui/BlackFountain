@@ -593,13 +593,97 @@ function renderCast(p) {
   const btn = document.getElementById('cast-email-sel-btn');
   if (btn) btn.style.display = 'none';
 }
+
+// Sorting state for personnel tables
+let _sortState = {
+  cast: { column: null, direction: null },
+  extras: { column: null, direction: null },
+  crew: { column: null, direction: null },
+  props: { column: null, direction: null },
+  wardrobe: { column: null, direction: null }
+};
+
+// Sort table function
+function _sortTable(tableType, column) {
+  const state = _sortState[tableType];
+  if (!state) return;
+  
+  // Cycle through: null -> asc -> desc -> null
+  if (state.column === column) {
+    if (state.direction === 'asc') {
+      state.direction = 'desc';
+    } else if (state.direction === 'desc') {
+      state.column = null;
+      state.direction = null;
+    }
+  } else {
+    state.column = column;
+    state.direction = 'asc';
+  }
+  
+  // Update sort indicators
+  _updateSortIndicators(tableType);
+  
+  // Re-render the table
+  const p = currentProject();
+  if (tableType === 'cast') renderPersonnelTable(p.cast, 'cast-body', 'cast');
+  else if (tableType === 'extras') renderPersonnelTable(p.extras, 'extras-body', 'extras');
+  else if (tableType === 'crew') renderCrew(p);
+  else if (tableType === 'props') renderPropTable('props', 'props-body', p);
+  else if (tableType === 'wardrobe') renderWardrobeTable(p);
+}
+
+function _updateSortIndicators(tableType) {
+  const state = _sortState[tableType];
+  if (!state) return;
+  
+  // Get all sort indicators for this table type
+  const indicators = document.querySelectorAll(`#${tableType}-table .sort-indicator, #${tableType}-body .sort-indicator, .team-section .sort-indicator`);
+  const allIndicators = document.querySelectorAll('.sort-indicator');
+  
+  allIndicators.forEach(ind => {
+    const id = ind.id;
+    if (id && id.startsWith(`${tableType}-sort-`)) {
+      const col = id.replace(`${tableType}-sort-`, '');
+      if (state.column === col) {
+        ind.textContent = state.direction === 'asc' ? '▲' : '▼';
+      } else {
+        ind.textContent = '';
+      }
+    }
+  });
+}
+
+function _getSortedList(list, tableType) {
+  const state = _sortState[tableType];
+  if (!state.column || !state.direction) return list;
+  
+  return [...list].sort((a, b) => {
+    let valA = a[state.column] || '';
+    let valB = b[state.column] || '';
+    
+    // Handle string columns specifically (case-insensitive)
+    const stringColumns = ['name', 'role', 'chars', 'scenes', 'locs', 'loc', 'pgs'];
+    if (stringColumns.includes(state.column)) {
+      valA = (a[state.column] || '').toLowerCase();
+      valB = (b[state.column] || '').toLowerCase();
+    }
+    
+    if (valA < valB) return state.direction === 'asc' ? -1 : 1;
+    if (valA > valB) return state.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
 function renderPersonnelTable(list, tbodyId, type) {
   const tbody = document.getElementById(tbodyId);
-  if (!list.length) {
+  // Apply sorting
+  const sortedList = _getSortedList(list, type);
+  if (!sortedList.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state" style="padding:20px"><h4>No entries</h4></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map((m,i) => `
+  tbody.innerHTML = sortedList.map((m,i) => `
     <tr data-ctx="personnel:${type}:${i}" onclick="editPersonnel('${type}',${i})" style="cursor:pointer">
       <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="cast-cb" data-type="${type}" data-idx="${i}" onchange="_updateCastEmailSelBtn()" style="cursor:pointer"></td>
       <td><strong>${m.name}</strong></td>
@@ -762,7 +846,9 @@ function renderCrew(p) {
   if (!el) return;
   const grouped = {};
   UNIT_DEPTS.forEach(d => grouped[d] = []);
-  p.unit.forEach((m,i) => { const d = m.dept||'Other'; if (!grouped[d]) grouped[d]=[]; grouped[d].push({...m,_i:i}); });
+  // Get sorted list if sorting is active
+  const sortedUnit = _getSortedList(p.unit || [], 'crew');
+  sortedUnit.forEach((m,i) => { const d = m.dept||'Other'; if (!grouped[d]) grouped[d]=[]; grouped[d].push({...m,_i:i}); });
   el.innerHTML = UNIT_DEPTS.filter(d => grouped[d].length).map(dept => `
     <div class="team-section">
       <div class="team-section-header">
@@ -776,7 +862,7 @@ function renderCrew(p) {
         <table class="data-table">
           <thead><tr>
             <th style="width:28px;padding:6px 4px"><input type="checkbox" onchange="_crewSelectAll(this,'${dept.replace(/'/g,"\\'")}')"></th>
-            <th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Social</th><th>Confirmed</th><th></th>
+            <th onclick="_sortTable('crew','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="crew-sort-name"></span></th><th onclick="_sortTable('crew','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="crew-sort-role"></span></th><th>Number</th><th>Email</th><th>Social</th><th>Confirmed</th><th></th>
           </tr></thead>
           <tbody>
             ${grouped[dept].map(m => `

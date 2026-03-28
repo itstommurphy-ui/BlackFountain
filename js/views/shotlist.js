@@ -655,11 +655,13 @@ function _doExport(type, fmt, p) {
 function renderPropTable(type, tbodyId, p) {
   const list = p[type] || [];
   const tbody = document.getElementById(tbodyId);
-  if (!list.length) {
+  // Apply sorting
+  const sortedList = _getSortedList(list, type);
+  if (!sortedList.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state" style="padding:20px"><h4>No items yet</h4></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map((item,i) => `
+  tbody.innerHTML = sortedList.map((item,i) => `
     <tr data-ctx="prop:${type}:${i}" onclick="editPropItem('${type}',${i})" style="cursor:pointer">
       <td><strong>${item.name}</strong></td>
       <td>${item.qty||1}</td>
@@ -717,11 +719,13 @@ function removePropItem(type,i,event) {
 function renderWardrobeTable(p) {
   const list = p.wardrobe || [];
   const tbody = document.getElementById('wardrobe-body');
-  if (!list.length) {
+  // Apply sorting
+  const sortedList = _getSortedList(list, 'wardrobe');
+  if (!sortedList.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state" style="padding:20px"><h4>No items yet</h4></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map((item,i) => `
+  tbody.innerHTML = sortedList.map((item,i) => `
     <tr data-ctx="wardrobe:${i}">
       <td><strong>${item.name}</strong></td>
       <td>${item.chars||'—'}</td>

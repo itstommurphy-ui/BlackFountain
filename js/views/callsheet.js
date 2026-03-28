@@ -113,10 +113,12 @@ function _csRecalcTimes(csIdx, fromRow) {
 // ── Default callsheet factory ─────────────────────────────────────────────────
 
 function _defaultCallsheet(p, i) {
+  const directors = Array.isArray(p.directors) && p.directors.length ? p.directors[0] : (p.director || '');
+  const producers = Array.isArray(p.producers) && p.producers.length ? p.producers[0] : (p.producer || '');
   return {
     id: makeId(),
     date: '', prodNum: p.num || '', prodTitle: p.title || '',
-    company: p.company || '', dirProd: p.director || '', producer: p.producer || '',
+    company: p.company || '', dirProd: directors, producer: producers,
     shootDay: i + 1,
     crewCall: '', shootCall: '', estWrap: '', daylight: '',
     weather: '', weatherDetail: '',
@@ -306,11 +308,11 @@ function buildCallsheetCard(p, c, i) {
               </div>
               <div class="cs-meta-item">
                 <span class="cs-meta-label">Director</span>
-                <input class="cs-meta-input" style="width:110px" value="${_csEscVal(c.dirProd || p.director || '')}" placeholder="Director" onchange="updateCSF(${i},'dirProd',this.value)">
+                <input class="cs-meta-input" style="width:110px" value="${_csEscVal(c.dirProd || (Array.isArray(p.directors) && p.directors.length ? p.directors[0] : p.director) || '')}" placeholder="Director" onchange="updateCSF(${i},'dirProd',this.value)">
               </div>
               <div class="cs-meta-item">
                 <span class="cs-meta-label">Producer</span>
-                <input class="cs-meta-input" style="width:110px" value="${_csEscVal(c.producer || p.producer || '')}" placeholder="Producer" onchange="updateCSF(${i},'producer',this.value)">
+                <input class="cs-meta-input" style="width:110px" value="${_csEscVal(c.producer || (Array.isArray(p.producers) && p.producers.length ? p.producers[0] : p.producer) || '')}" placeholder="Producer" onchange="updateCSF(${i},'producer',this.value)">
               </div>
             </div>
           </div>
@@ -1855,8 +1857,8 @@ function renderSingleCallsheet(c, idx) {
           <div class="cs-meta-item"><span class="cs-meta-label">Call Sheet</span><span class="cs-meta-value">#${c.callSheetNum||idx+1}</span></div>
           <div class="cs-meta-item"><span class="cs-meta-label">Shoot Day</span><span class="cs-meta-value">Day ${c.shootDay||idx+1}</span></div>
           <div class="cs-meta-item"><span class="cs-meta-label">Date</span><span class="cs-meta-value">${d ? d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}) : 'TBD'}</span></div>
-          <div class="cs-meta-item"><span class="cs-meta-label">Director</span><span class="cs-meta-value">${_csEscVal(c.dirProd||p.director||'—')}</span></div>
-          <div class="cs-meta-item"><span class="cs-meta-label">Producer</span><span class="cs-meta-value">${_csEscVal(c.producer||p.producer||'—')}</span></div>
+          <div class="cs-meta-item"><span class="cs-meta-label">Director</span><span class="cs-meta-value">${_csEscVal(c.dirProd || (Array.isArray(p.directors) && p.directors.length ? p.directors.join(', ') : p.director) || '—')}</span></div>
+          <div class="cs-meta-item"><span class="cs-meta-label">Producer</span><span class="cs-meta-value">${_csEscVal(c.producer || (Array.isArray(p.producers) && p.producers.length ? p.producers.join(', ') : p.producer) || '—')}</span></div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center">

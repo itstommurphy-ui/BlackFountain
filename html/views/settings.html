@@ -77,6 +77,22 @@
       <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>blackfountain_v1</code></p>
       <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
     </div>
+    <!-- SAMPLE PROJECT CARD -->
+    <div class="card" style="margin-top:20px">
+      <h3 style="margin-top:0">Sample Project</h3>
+      <p style="color:var(--text2);margin-bottom:16px">
+        Black Fountain includes a sample project ("The Cake Man") to help you explore the app. 
+        You can load it or reset it to its original state at any time.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" style="background:#6366f1;border:none;color:white" onclick="injectSampleProject(true)">
+          <span class="icon">📂</span> Load Sample Project
+        </button>
+        <button class="btn" onclick="resetSampleProject()">
+          <span class="icon">🔄</span> Reset
+        </button>
+      </div>
+    </div>
     <div class="card" style="border:2px solid #ff4444;margin-top:20px">
       <h3 style="margin-top:0;color:#ff4444">Danger Zone</h3>
       <p style="color:var(--text2);margin-bottom:16px">Permanently delete all data from this browser. This action cannot be undone.</p>

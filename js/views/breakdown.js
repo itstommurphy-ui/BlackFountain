@@ -765,7 +765,7 @@ async function importBreakdownFromScript(scriptId) {
   _migrateBreakdowns(p);
   const name    = s.name.replace(/\.[^.]+$/, ''); // strip extension
   const version = s.label || '';
-  const ext     = s.name.toLowerCase().split('.').pop();
+  const ext     = (s.origExt || s.name.toLowerCase().split('.').pop() || 'txt');
 
   // Check if a breakdown already exists for this script (by id or by name fallback for older entries)
   const existing = (p.scriptBreakdowns || []).find(b => b.scriptId === scriptId || (!b.scriptId && b.name === name));
@@ -785,13 +785,31 @@ async function importBreakdownFromScript(scriptId) {
 
 async function _doCreateBreakdown(p, s, name, version, ext, scriptId) {
   // PDF: convert stored dataUrl back to a File object then reuse existing extractor
-  if (ext === 'pdf' || s.type.includes('pdf')) {
+  if (ext === 'pdf' || (s.type && s.type.includes('pdf'))) {
     showToast('Reading PDF for breakdown…', 'info');
     try {
       const res  = await fetch(s.dataUrl);
       const blob = await res.blob();
       const file = new File([blob], s.name, { type: s.type || 'application/pdf' });
-      await _extractTextForBreakdown(p, file, name, version, scriptId);
+      
+      // For large files, warn user and set a longer timeout
+      if (file.size > 1024 * 1024) {
+        showToast('Processing large PDF - please wait…', 'info');
+      }
+      
+      // Use timeout for large files
+      const timeoutMs = file.size > 5 * 1024 * 1024 ? 120000 : 60000; // 2 min for files >5MB, 1 min otherwise
+      
+      try {
+        await Promise.race([
+          _extractTextForBreakdown(p, file, name, version, scriptId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('PDF processing timed out - file may be too large or complex')), timeoutMs))
+        ]);
+      } catch (timeoutError) {
+        showToast('PDF processing is taking too long. Try using a smaller file or converting to text format.', 'error');
+        return;
+      }
+      
       showSection('breakdown');
     } catch(e) {
       showToast('Could not read PDF: ' + e.message, 'error');
@@ -799,13 +817,17 @@ async function _doCreateBreakdown(p, s, name, version, ext, scriptId) {
     return;
   }
 
-  // Text-based formats: decode base64
+  // Text-based formats: decode base64 or use text property
   let text = '';
-  try {
-    const b64 = s.dataUrl.split(',')[1];
-    text = decodeURIComponent(escape(atob(b64)));
-  } catch(e) {
-    try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = ''; }
+  if (s.dataUrl) {
+    try {
+      const b64 = s.dataUrl.split(',')[1];
+      text = decodeURIComponent(escape(atob(b64)));
+    } catch(e) {
+      try { text = atob(s.dataUrl.split(',')[1]); } catch(e2) { text = ''; }
+    }
+  } else if (s.text) {
+    text = s.text;
   }
 
   if (!text.trim()) { showToast('Could not extract text from this file', 'error'); return; }
@@ -1188,7 +1210,6 @@ function scrollBreakdownToScene(sceneStart) {
     console.warn('Scene heading not found for sceneStart:', sceneStart);
     return;
   }
-  // Use scrollIntoView to properly handle container padding and alignment
   heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1390,12 +1411,28 @@ async function loadBreakdownFile(input) {
         window.pdfjsLib.GlobalWorkerOptions.workerSrc =
           'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       }
+      // For large files, show progress
+      if (file.size > 1024 * 1024) {
+        showToast('Processing large PDF (this may take a while)…', 'info');
+      }
       const arrayBuffer = await file.arrayBuffer();
+      if (file.size > 1024 * 1024) {
+        showToast('Extracting text from PDF…', 'info');
+      }
       const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let text = '';
+      let hasTextContent = false;
       for (let i = 1; i <= pdf.numPages; i++) {
+        // Show progress every 10 pages for large PDFs
+        if (file.size > 1024 * 1024 && i % 10 === 0) {
+          showToast(`Processing page ${i} of ${pdf.numPages}…`, 'info');
+        }
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
+        // Check if this page has any text content (indicates not a scanned doc)
+        if (content.items && content.items.length > 0) {
+          hasTextContent = true;
+        }
         let lastY = null;
         let line = '';
         for (const item of content.items) {
@@ -1408,6 +1445,15 @@ async function loadBreakdownFile(input) {
         }
         if (line.trim()) text += line.trimEnd() + '\n';
         text += '\n';
+      }
+      // If no text content found at all, it's likely a scanned document
+      if (!hasTextContent) {
+        showToast('This PDF appears to be a scanned document (no text layer found). The breakdown tool requires PDFs with selectable text. Please convert to a text-based PDF or use a plain text file (.fountain, .fdx, .txt).', 'error', true);
+        return;
+      }
+      if (!text.trim()) {
+        showToast('No text could be extracted from this PDF. It may be a scanned document or image-only PDF.', 'error');
+        return;
       }
       _pendingBdText = text.trim();
       // Also read as dataUrl for storage in Script & Docs
@@ -1975,6 +2021,7 @@ function detectBreakdownSuggestions(text, existingTags) {
   //   high   — specific, unambiguous terms unlikely to be noise
   //   medium — short/common words that may fire on almost any script
   const BD_SUGGEST_KEYWORDS_HIGH = {
+    cast:        ['man with a gun','woman with a gun','man with a knife','woman with a knife','kid with a gun','boy with a gun','girl with a gun','man in suit','woman in dress','man in coat','woman in coat','police officer','detective','detective with badge','doctor','nurse','waiter','bartender','waitress'],
     extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation'],
     stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight'],
     props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet'],
@@ -1990,7 +2037,7 @@ function detectBreakdownSuggestions(text, existingTags) {
   const BD_SUGGEST_KEYWORDS_MEDIUM = {
     extras:      ['crowd','extras','audience','mob'],
     stunts:      ['punch','kick','leap','dive','roll'],
-    props:       ['bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','gun','key','bag','bat','map','glass','wine'],
+    props:       ['bottle','letter','radio','flask','badge','torch','money','chain','photo','knife','rope','book','cash','axe','key','bag','bat','map','glass','wine'],
     vehicles:    ['train','truck','plane','yacht','boat','ship','taxi','limo','jeep','bus','van','suv','cab','jet','car'],
     sfx:         ['storm','flood','fire'],
     wardrobe:    ['mask','suit','hat','cap'],
@@ -2018,24 +2065,27 @@ function detectBreakdownSuggestions(text, existingTags) {
   const highRegexes   = _buildCatRegex(BD_SUGGEST_KEYWORDS_HIGH);
   const mediumRegexes = _buildCatRegex(BD_SUGGEST_KEYWORDS_MEDIUM);
 
+  const claimed = []; // prevent double-counting overlapping matches within same scene (any category)
+
   const _runKeywordRegex = (cat, re, confidence) => {
     if (!re) return;
     for (const scene of scenes) {
       const sceneText = text.slice(scene.start, scene.end);
       re.lastIndex = 0;
-      const claimed = []; // prevent double-counting overlapping matches within same scene
+      const sceneClaimed = []; // track claimed ranges within this scene
       let m;
       while ((m = re.exec(sceneText)) !== null) {
         const idx    = m.index;
-        const kwText = m[0];
+        const kwText = m[0].toLowerCase();
         const end    = idx + kwText.length;
-        if (claimed.some(r => r[0] < end && r[1] > idx)) continue;
+        // Skip if any part of this match overlaps with already-claimed text in this scene
+        if (sceneClaimed.some(r => r.start < end && r.end > idx)) continue;
         const absStart = scene.start + idx;
-        const absEnd   = absStart + kwText.length;
+        const absEnd   = absStart + m[0].length;
         if (!isTagged(absStart, absEnd, cat)
             && !_bdInDialogue(absStart, absEnd, dialogueRanges)
             && !inHeading(absStart, absEnd)) {
-          claimed.push([idx, end]);
+          sceneClaimed.push({text: kwText, start: idx, end, category: cat});
           suggestions.push({
             id: 's_' + Math.random().toString(36).slice(2),
             category: cat,

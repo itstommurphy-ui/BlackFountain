@@ -221,7 +221,7 @@ Priority colour bar shows urgency">?</span>
             </div>
             <div class="table-container">
               <table class="data-table" id="cast-table">
-                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="cast-select-all" onchange="_castSelectAll('cast',this.checked)" title="Select all" style="cursor:pointer"></th><th>Name</th><th>Role/Character</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="cast-select-all" onchange="_castSelectAll('cast',this.checked)" title="Select all" style="cursor:pointer"></th><th onclick="_sortTable('cast','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="cast-sort-name"></span></th><th onclick="_sortTable('cast','role')" style="cursor:pointer" class="sortable-header">Role/Character <span class="sort-indicator" id="cast-sort-role"></span></th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
                 <tbody id="cast-body"></tbody>
               </table>
             </div>
@@ -245,7 +245,7 @@ Priority colour bar shows urgency">?</span>
             </div>
             <div class="table-container">
               <table class="data-table" id="extras-table">
-                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="extras-select-all" onchange="_castSelectAll('extras',this.checked)" title="Select all" style="cursor:pointer"></th><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
+                <thead><tr><th style="width:28px;padding:6px 4px"><input type="checkbox" id="extras-select-all" onchange="_castSelectAll('extras',this.checked)" title="Select all" style="cursor:pointer"></th><th onclick="_sortTable('extras','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="extras-sort-name"></span></th><th onclick="_sortTable('extras','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="extras-sort-role"></span></th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th><th></th></tr></thead>
                 <tbody id="extras-body"></tbody>
               </table>
             </div>
@@ -447,7 +447,7 @@ Priority colour bar shows urgency">?</span>
           </div>
           <div class="table-container">
             <table class="data-table">
-              <thead><tr><th>Prop</th><th>Quantity</th><th>Character/s</th><th>Scene/s</th><th>Location/s</th><th>Page/s</th><th>Notes</th><th></th></tr></thead>
+              <thead><tr><th onclick="_sortTable('props','name')" style="cursor:pointer" class="sortable-header">Prop <span class="sort-indicator" id="props-sort-name"></span></th><th>Quantity</th><th onclick="_sortTable('props','chars')" style="cursor:pointer" class="sortable-header">Character/s <span class="sort-indicator" id="props-sort-chars"></span></th><th onclick="_sortTable('props','scenes')" style="cursor:pointer" class="sortable-header">Scene/s <span class="sort-indicator" id="props-sort-scenes"></span></th><th onclick="_sortTable('props','locs')" style="cursor:pointer" class="sortable-header">Location/s <span class="sort-indicator" id="props-sort-locs"></span></th><th onclick="_sortTable('props','pgs')" style="cursor:pointer" class="sortable-header">Page/s <span class="sort-indicator" id="props-sort-pgs"></span></th><th>Notes</th><th></th></tr></thead>
               <tbody id="props-body"></tbody>
             </table>
           </div>
@@ -465,7 +465,7 @@ Priority colour bar shows urgency">?</span>
           </div>
           <div class="table-container">
             <table class="data-table">
-              <thead><tr><th>Item</th><th>Character/s</th><th>Scene/s</th><th>Size</th><th>Condition</th><th>Location</th><th>Notes</th><th></th></tr></thead>
+              <thead><tr><th onclick="_sortTable('wardrobe','name')" style="cursor:pointer" class="sortable-header">Item <span class="sort-indicator" id="wardrobe-sort-name"></span></th><th onclick="_sortTable('wardrobe','chars')" style="cursor:pointer" class="sortable-header">Character/s <span class="sort-indicator" id="wardrobe-sort-chars"></span></th><th onclick="_sortTable('wardrobe','scenes')" style="cursor:pointer" class="sortable-header">Scene/s <span class="sort-indicator" id="wardrobe-sort-scenes"></span></th><th>Size</th><th>Condition</th><th onclick="_sortTable('wardrobe','loc')" style="cursor:pointer" class="sortable-header">Location <span class="sort-indicator" id="wardrobe-sort-loc"></span></th><th>Notes</th><th></th></tr></thead>
               <tbody id="wardrobe-body"></tbody>
             </table>
           </div>

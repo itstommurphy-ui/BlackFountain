@@ -27,7 +27,9 @@
 
     // ── Projects ─────────────────────────────────────────────
     (store.projects || []).forEach(p => {
-      const haystack = [p.title, p.director, p.producer, p.genre, p.notes, p.logline].join(' ').toLowerCase();
+      const directors = Array.isArray(p.directors) ? p.directors.join(' ') : (p.director || '');
+      const producers = Array.isArray(p.producers) ? p.producers.join(' ') : (p.producer || '');
+      const haystack = [p.title, directors, producers, p.genre, p.notes, p.logline].join(' ').toLowerCase();
       if (!haystack.includes(q)) return;
       const statusLabels = { pre: 'Pre-Production', prod: 'Production', post: 'Post-Production', done: 'Complete', released: 'Released' };
       add({
