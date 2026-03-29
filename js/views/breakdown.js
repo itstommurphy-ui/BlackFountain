@@ -1843,8 +1843,10 @@ function detectBreakdownSuggestions(text, existingTags) {
   if (!text) return [];
   const suggestions = [];
   const scenes = parseBreakdownScenes(text);
-  const isTagged = (start, end, cat) =>
-    (existingTags || []).some(t => t.category === cat && t.start <= start && t.end >= end);
+  const isTagged = (start, end, cat) => {
+    const suggestionText = text.slice(start, end);
+    return (existingTags || []).some(t => t.category === cat && (t.start < end && t.end > start || t.text === suggestionText));
+  };
 
   const wordBoundary = (str, idx, len) => {
     const before = idx > 0 ? str[idx - 1] : ' ';
@@ -1970,8 +1972,10 @@ function detectBreakdownSuggestions(text, existingTags) {
   for (const scene of scenes) {
     const st = text.slice(scene.start, scene.end).toLowerCase();
     const usedRanges = [];
+    const suggestedNames = { cast: new Set(), extras: new Set() };
     for (const name of sortedNames) {
       const cat = charCategory(name);
+      if (suggestedNames[cat].has(name)) continue;
       const nameLower = name.toLowerCase();
       const nameUpper = name.toUpperCase();
 
@@ -2006,6 +2010,7 @@ function detectBreakdownSuggestions(text, existingTags) {
       const end = best + name.length;
       usedRanges.push([best, end]);
       if (!isTagged(best, end, cat)) {
+        suggestedNames[cat].add(name);
         suggestions.push({ id: 's_' + Math.random().toString(36).slice(2), category: cat, text: text.slice(best, end), start: best, end, sceneHeading: scene.heading,
           // CHANGE [2]: confidence field — used in suggest panel to pre-check/uncheck
           confidence: 'high' });
@@ -2024,7 +2029,7 @@ function detectBreakdownSuggestions(text, existingTags) {
     cast:        ['man with a gun','woman with a gun','man with a knife','woman with a knife','kid with a gun','boy with a gun','girl with a gun','man in suit','woman in dress','man in coat','woman in coat','police officer','detective','detective with badge','doctor','nurse','waiter','bartender','waitress'],
     extras:      ['background artists','passersby','pedestrians','bystanders','spectators','onlookers','commuters','congregation'],
     stunts:      ['car chase','gun fight','fist fight','hand to hand','shootout','gunfight','fistfight','brawl','combat','struggle','wrestle','tackle','stunt','chase','fight'],
-    props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet'],
+    props:       ['mobile phone','police badge','id card','gun holster','wedding ring','debit card','credit card','wine glass','shot glass','wine bottle','cigarette pack','briefcase','suitcase','backpack','flashlight','handcuffs','cigarette','newspaper','document','passport','crowbar','lockpick','syringe','camera','lighter','wallet','laptop','tablet','acorn','action figure','air conditioner','air purifier','amulet','anklet','armor','arrowhead','ashtray','automaton','baby carriage','backpack','backsaw','bag','balloon','ball','bamboo stick','bangle','bar stool','bar','baseball bat & cricket bat','baseball cap','basket','bath mat','battery','bead','bean bag','beauty supply','bedding','bed','beehive','bell','belt buckle','bench','beverage','bicycle','bike','binder clip','binder','binocular','birdhouse','blanket & comforter','board game','boat','bobsled','bolt cutter','bookcase','bookend','bookmark','book','bottle cap','bottle opener','bottle','bowl & dish','bracelet','brochure','brooch','broom','bucket','bullet train','bunk bed','buoy','bus','button','cd player','cd','cabinet','cable car','calendar','calligraphy','camera','candlestick','cane','canoe','caravan','card','carpenter\'s square','car','cart','carving','cash & payment card','cassette tape','ceramic','chainsaw','chair','chalkboard','champagne glass','chandelier','charm bracelet','chess set','chest of drawers & dresser','chest','chisel','clamp','clipboard','clock','clothesline','clothing','coaster','coat rack','coffee maker','coffee table','coffeepot','coin bank','coin','colored pencil','comb & hairbrush','comic book','compass','coral fragment','cord','corkscrew','cosmetic','costume','cowboy boot','cowboy hat','crayon','crib & cradle','crown','crystal','cufflink','cutlery','cutting board','dvd player','dart','data storage device','decanter','decoy','desk','desktop computer','diamond','dining table','dinosaur bone','divider','dollhouse','doll','doorbell','doorstop','driftwood','drill & drill bit','drone','earring','electric bike','envelope','eraser','extension cord','fan','fashion accessory','feather','ferry','figurine','file','filing cabinet','fire detector','fire extinguisher','firewood','fishing rod','fishing tackle','flag','flashlight','flask','flint','flower vase','flower','folder','footwear','forklift','fossil','fridge magnet','furniture','futon','game & card','gaming console','garden shear','gem','geode','glass & mug','glass & sunglass','glider','globe','glove','glue stick','goblet','goggle','guitar pick','hacksaw','hailstone','hairband','hairpin','hammer','hammock','hand fan','handbag','handsaw','hanger','hard hat','hat','hay bale','headphone & earphone','heater','helicopter','helmet','highlighter','hopper','horseshoe','hose','hot air balloon','humidifier & dehumidifier','icicle','jet aircraft','journal & planner','jump rope','kettle','key chain','keyboard','kimono','kitchen cabinet','kitchen shear','kitchen table','kite','ladder','ladle','lamp','lantern','lapel pin','laptop','laundry hamper','lava rock','lawn mower','leaf','letter opener','level','lifejacket','light bulb','lighter','light','locket','lock','log','loveseat','luggage','magazine','mail','mailbox','mallet','map','marble','marker','mask','match book','match','mat','mechanical pencil','meteorite','microphone','microscope','mirror','model train','monitor','monorail','moped','motorcycle','music box','nail & screw','necklace','nest','net','newspaper','nightstand','nose ring','notebook','notepad','nutcracker','office chair','paddle','paint palette','painting','paper','paper clip','paperweight','pastel','pebble','pencil case','pencil sharpener','pencil','pendant','pen','perfume bottle','phonograph & gramophone','picture frame','piggy bank','pillow cover','pillow','pine needle','pinecone','pin','pitchfork','pizza pan','plate','pliers','plunger','pocket watch','pocketknife','pole','postcard','poster','pot & pan','pottery','printer & 3d printer','projector','protractor','pry bar','puck','punch bowl','puppet','purse','puzzle','quilt','racquet','radio','raft','rain barrel','raincoat','rake','recycling box','remote control','ribbon','rickshaw','ring','robot','rocket','rocking chair','rock','rope','rowboat','rubber band','rug','ruler','saddle','safe','sailboat','sail','salt & pepper shaker','satellite','scale','scissor','scooter','screwdriver','sculpture','seal stamp','seashell','security camera','sensor','sewing machine','sheet','shelf','shelving','ship','shovel','shower curtain','sign','skateboard','skate','sketchbook','ski','sledgehammer','sled','sleeping bag','smart speaker','smartphone','smartwatch','smoke detector','snack','snowflake','snowmobile','snowshoe','sofa','spaceship','spade','spatula','speaker','spinning top','spittoon','spoon','stamp','stapler','statue','stein','stencil','stepladder','stereo system','sticker','stick','stirrup','stool','stove','straw hat','streaming device','stuffed animal','submarine','suitcase','surfboard','swimwear','tv','table','tablet','tack & push pin','tape','tape measure','tapestry','tea towel','teapot','telescope','tent','thermometer','thermostat','thimble','throw pillow','tiara','tie clip','tie','timer','toaster','tongs','toolbox','towel','tractor','trading card','train set','train','trampoline','tram','trash can','tricycle','trowel','truck','trunk','turntable & record player','tweezers','twig','typewriter','umbrella stand','umbrella','unicycle','uniform','utensil','vacuum cleaner','vase','video game cartridge','vine','vinyl record','wagon','walkie-talkie','wallet','wardrobe','watch','water bottle','weather instrument','weather vane','welcome mat','wetsuit','wheelbarrow','whistle','wifi router','wine glass','wood stove','woodcraft','workbench','wristband','yo-yo'],
     vehicles:    ['pickup truck','police car','fire truck','limousine','motorcycle','motorbike','helicopter','submarine','aircraft','bicycle','chopper','forklift','tractor','convertible','ambulance','sports car'],
     sfx:         ['explosion','explodes','detonation','gunfire','gunshot','lightning','thunder','collision','blast','smoke','crash','alarm','siren'],
     wardrobe:    ['wedding dress','tuxedo','uniform','disguise','costume','armour','jacket','helmet','gloves','armor','dress','coat','robe','vest'],
@@ -2058,7 +2063,15 @@ function detectBreakdownSuggestions(text, existingTags) {
     for (const [cat, kws] of Object.entries(kwMap)) {
       if (!kws.length) { out[cat] = null; continue; }
       const sorted = [...kws].sort((a, b) => b.length - a.length);
-      out[cat] = new RegExp('(?<![a-z0-9])(' + sorted.map(reEsc).join('|') + ')(?![a-z0-9])', 'gi');
+      const expanded = [];
+      for (const kw of sorted) {
+        expanded.push(reEsc(kw));
+        // Add plural form if not already ending with s
+        if (!kw.endsWith('s')) {
+          expanded.push(reEsc(kw + 's'));
+        }
+      }
+      out[cat] = new RegExp('(?<![a-z0-9])(' + expanded.join('|') + ')(?![a-z0-9])', 'gi');
     }
     return out;
   };
@@ -2073,6 +2086,7 @@ function detectBreakdownSuggestions(text, existingTags) {
       const sceneText = text.slice(scene.start, scene.end);
       re.lastIndex = 0;
       const sceneClaimed = []; // track claimed ranges within this scene
+      const suggestedTexts = new Set(); // track suggested texts to prevent duplicates
       let m;
       while ((m = re.exec(sceneText)) !== null) {
         const idx    = m.index;
@@ -2080,12 +2094,15 @@ function detectBreakdownSuggestions(text, existingTags) {
         const end    = idx + kwText.length;
         // Skip if any part of this match overlaps with already-claimed text in this scene
         if (sceneClaimed.some(r => r.start < end && r.end > idx)) continue;
+        // Skip if this text has already been suggested in this scene
+        if (suggestedTexts.has(kwText)) continue;
         const absStart = scene.start + idx;
         const absEnd   = absStart + m[0].length;
         if (!isTagged(absStart, absEnd, cat)
-            && !_bdInDialogue(absStart, absEnd, dialogueRanges)
-            && !inHeading(absStart, absEnd)) {
+             && !_bdInDialogue(absStart, absEnd, dialogueRanges)
+             && !inHeading(absStart, absEnd)) {
           sceneClaimed.push({text: kwText, start: idx, end, category: cat});
+          suggestedTexts.add(kwText);
           suggestions.push({
             id: 's_' + Math.random().toString(36).slice(2),
             category: cat,
