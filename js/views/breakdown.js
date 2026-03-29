@@ -1844,8 +1844,15 @@ function detectBreakdownSuggestions(text, existingTags) {
   const suggestions = [];
   const scenes = parseBreakdownScenes(text);
   const isTagged = (start, end, cat) => {
-    const suggestionText = text.slice(start, end);
-    return (existingTags || []).some(t => t.category === cat && (t.start < end && t.end > start || t.text === suggestionText));
+    const suggestionText = text.slice(start, end).trim().toLowerCase();
+    return (existingTags || []).some(t => {
+      if (t.category !== cat) return false;
+      // Exact offset match
+      if (t.start === start && t.end === end) return true;
+      // Same text content anywhere in the script (catches all occurrences)
+      const taggedText = text.slice(t.start, t.end).trim().toLowerCase();
+      return taggedText === suggestionText;
+    });
   };
 
   const wordBoundary = (str, idx, len) => {
