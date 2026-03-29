@@ -2455,7 +2455,7 @@ async function _bdLoadCommunityScores() {
 // - Community score below suppress threshold → remove for everyone
 // - Community score above promote threshold  → promote to high confidence for everyone
 function _bdApplyVotesToSuggestions(suggestions) {
-  const votes     = _bdGetVotes();
+  const votes     = store.bdVotes || {};
   const community = _bdCommunityScores || {};
   return suggestions.filter(s => {
     const key          = _bdVoteKey(s.text, s.category);
@@ -2554,6 +2554,7 @@ function showBdSuggestPanel() {
   const bd = _getActiveBd(p);
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
+  console.log('[BD Suggest] bdVotes at panel open:', JSON.stringify(store.bdVotes));
 
   let all = detectBreakdownSuggestions(text, tags);
   // CHANGE [7]: Enrich with compromise NLP — expands vague keyword matches to full noun phrases
