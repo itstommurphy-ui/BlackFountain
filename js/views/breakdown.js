@@ -2554,6 +2554,12 @@ function showBdSuggestPanel() {
   const bd = _getActiveBd(p);
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
+  // Clean up zero-value votes (these are "cleared" votes, not suppressions)
+  if (store.bdVotes) {
+    for (const k of Object.keys(store.bdVotes)) {
+      if (store.bdVotes[k] === 0) delete store.bdVotes[k];
+    }
+  }
   console.log('[BD Suggest] bdVotes at panel open:', JSON.stringify(store.bdVotes));
 
   let all = detectBreakdownSuggestions(text, tags);
@@ -2562,6 +2568,14 @@ function showBdSuggestPanel() {
   // CHANGE [8]: Load community scores (async, non-blocking) then apply local + community votes
   _bdLoadCommunityScores();
   all = _bdApplyVotesToSuggestions(all);
+  // Deduplicate by vote key — prevents same-key double-downvote cancellation
+  const seenVoteKeys = new Set();
+  all = all.filter(s => {
+    const k = _bdVoteKey(s.text, s.category);
+    if (seenVoteKeys.has(k)) return false;
+    seenVoteKeys.add(k);
+    return true;
+  });
   const nlpActive = !!window.nlp;
 
   _bdSuggestions = all;
