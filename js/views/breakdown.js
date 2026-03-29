@@ -2101,15 +2101,16 @@ function detectBreakdownSuggestions(text, existingTags) {
         const end    = idx + kwText.length;
         // Skip if any part of this match overlaps with already-claimed text in this scene
         if (sceneClaimed.some(r => r.start < end && r.end > idx)) continue;
-        // Skip if this text has already been suggested in this scene
-        if (suggestedTexts.has(kwText)) continue;
         const absStart = scene.start + idx;
         const absEnd   = absStart + m[0].length;
+        const matchedText = text.slice(absStart, absEnd).trim().toLowerCase();
+        // Skip if this normalised text has already been suggested in this scene
+        if (suggestedTexts.has(matchedText)) continue;
         if (!isTagged(absStart, absEnd, cat)
              && !_bdInDialogue(absStart, absEnd, dialogueRanges)
              && !inHeading(absStart, absEnd)) {
           sceneClaimed.push({text: kwText, start: idx, end, category: cat});
-          suggestedTexts.add(kwText);
+          suggestedTexts.add(matchedText);
           suggestions.push({
             id: 's_' + Math.random().toString(36).slice(2),
             category: cat,
