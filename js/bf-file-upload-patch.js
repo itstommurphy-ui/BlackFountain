@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════
 // BF-FILE-UPLOAD-PATCH
-// Placeholder for any file upload tier patches
-// TODO: Implement if needed based on Supabase auth integration
+// Fixed: File uploads now respect current folder context
+// Files uploaded in a folder are placed in that folder instead of root
 // ══════════════════════════════════════════
 
-// Currently no patches needed - bf-tiers.js handles all tier logic
+// Fixed in confirmFileUpload() - folderId now set to currentFolderId

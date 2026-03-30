@@ -2113,7 +2113,7 @@ function confirmFileUpload() {
       type: pending.file.type,
       size: pending.file.size,
       data: pending.dataUrl,
-      folderId: null,
+      folderId: currentFolderId,
       projectIds: [projectId],
       uploadedAt: new Date().toISOString(),
     });
