@@ -159,12 +159,28 @@ function moveFileToFolder(fileId, folderId) {
 function moveFolderToProject(folderId, projectId) {
   const folder = getFolderById(folderId);
   if (folder) {
+    // If parent folder exists but is in a different project, move to root of new project
+    if (folder.parentId) {
+      const parentFolder = getFolderById(folder.parentId);
+      if (parentFolder && parentFolder.projectId !== projectId) {
+        folder.parentId = null;
+      }
+    }
+    
     // Move folder to new project
     folder.projectId = projectId;
     
     // Also attach all files in this folder to the new project
     const folderFiles = getFolderFiles(folderId);
     folderFiles.forEach(file => {
+      // If file is in a folder that isn't in this project, move file to root
+      if (file.folderId) {
+        const fileFolder = getFolderById(file.folderId);
+        if (fileFolder && fileFolder.projectId !== projectId) {
+          file.folderId = null;
+        }
+      }
+      
       if (!Array.isArray(file.projectIds)) {
         file.projectIds = file.projectId ? [file.projectId] : [];
       }
