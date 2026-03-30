@@ -559,20 +559,23 @@
     max-width: 100%;
   }
   .file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
     background: var(--surface);
     border: 1px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 14px;
+    border-radius: var(--radius);
+    font-size: 11px;
+    position: relative;
     cursor: pointer;
     transition: all 0.14s;
-    position: relative;
-    overflow: hidden;
   }
   .file-card:hover {
     border-color: var(--border);
     background: var(--surface2);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
   }
   .file-card-preview {
     width: 100%;
@@ -683,64 +686,74 @@
 
   /* Folder styles */
   .folder-card {
-    background: var(--surface);
+    aspect-ratio: 1 / 0.85;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--surface2);
     border: 1px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 14px;
+    border-radius: var(--radius);
     cursor: pointer;
-    transition: all 0.14s;
+    font-size: 12px;
+    color: var(--text2);
+    transition: background 0.15s, border-color 0.15s;
     position: relative;
     overflow: hidden;
   }
   .folder-card:hover {
     border-color: var(--border);
-    background: var(--surface2);
+    background: color-mix(in srgb, var(--surface2) 80%, var(--accent) 5%);
     transform: translateY(-2px);
     box-shadow: var(--shadow);
   }
   .folder-card.drop-target {
     border-color: var(--accent);
     border-style: dashed;
-    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface2));
+  }
+  .folder-icon {
+    font-size: 48px;
+    line-height: 1;
   }
   .folder-card-preview {
     width: 100%;
-    height: 100px;
-    background: var(--surface2);
-    border-radius: var(--radius);
-    margin-bottom: 10px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px;
+    background: transparent;
   }
   .folder-card-name {
     font-size: 12px;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: center;
+    padding: 0 8px;
   }
   .folder-card-meta {
     font-size: 10px;
     color: var(--text3);
-    font-family: var(--font-mono);
+    text-align: center;
   }
   .folder-card-actions {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
     display: flex;
-    gap: 4px;
+    gap: 3px;
     opacity: 0;
     transition: opacity 0.12s;
   }
   .folder-card:hover .folder-card-actions { opacity: 1; }
   .folder-card .file-action-btn {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 4px;
     border: none;
     background: var(--surface3);
@@ -748,7 +761,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 10px;
   }
   .folder-card .file-action-btn:hover {
     background: var(--surface);

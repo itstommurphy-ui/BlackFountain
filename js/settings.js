@@ -1213,7 +1213,7 @@ function _folderCard(folder) {
       <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToParent('${folder.id}')" title="Move to subfolder">📁</button>
       <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
     </div>
-    <div class="folder-card-preview">📁</div>
+    <div class="folder-icon">📁</div>
     <div class="folder-card-name" title="${folder.name}">${folder.name}</div>
     <div class="folder-card-meta">
       ${fileCount} file${fileCount !== 1 ? 's' : ''}${subfolderCount > 0 ? `, ${subfolderCount} folder${subfolderCount !== 1 ? 's' : ''}` : ''}
