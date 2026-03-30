@@ -159,7 +159,21 @@ function moveFileToFolder(fileId, folderId) {
 function moveFolderToProject(folderId, projectId) {
   const folder = getFolderById(folderId);
   if (folder) {
+    // Move folder to new project
     folder.projectId = projectId;
+    
+    // Also attach all files in this folder to the new project
+    const folderFiles = getFolderFiles(folderId);
+    folderFiles.forEach(file => {
+      if (!Array.isArray(file.projectIds)) {
+        file.projectIds = file.projectId ? [file.projectId] : [];
+      }
+      // Add new project if not already present
+      if (!file.projectIds.includes(projectId)) {
+        file.projectIds.push(projectId);
+      }
+    });
+    
     saveStore();
   }
 }
