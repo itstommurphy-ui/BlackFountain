@@ -954,8 +954,11 @@ function getStarredFiles() {
 
 function getRecentFiles(limit = 20) {
   return (store.files || [])
-    .filter(f => f.modifiedAt)
-    .sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt))
+    .sort((a, b) => {
+      const aDate = new Date(a.modifiedAt || a.uploadedAt);
+      const bDate = new Date(b.modifiedAt || b.uploadedAt);
+      return bDate - aDate;
+    })
     .slice(0, limit);
 }
 
@@ -2131,6 +2134,8 @@ function confirmFileUpload() {
 function downloadFile(id) {
   const file = (store.files || []).find(f => f.id === id);
   if (!file) return;
+  file.modifiedAt = new Date().toISOString();
+  saveStore();
   const link = document.createElement('a');
   link.href = file.data;
   link.download = file.name;
@@ -2140,6 +2145,8 @@ function downloadFile(id) {
 function viewFile(id) {
   const file = (store.files || []).find(f => f.id === id);
   if (!file) return;
+  file.modifiedAt = new Date().toISOString();
+  saveStore();
   const win = window.open();
   const ext = file.name.split('.').pop().toLowerCase();
   const isVideo = file.data.startsWith('data:video') || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
