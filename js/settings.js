@@ -657,7 +657,7 @@ function renderOverviewFiles() {
         <span class="file-card-type">${catBadge}</span>
         <span>${formatFileSize(file.size)}</span>
       </div>
-      <div class="file-card-time" style="font-size:9px;color:var(--text3);margin-top:2px;">${formatRelativeTime(lastInteraction)}</div>
+      <div class="file-card-time" style="font-size:10px;color:var(--text2);margin-top:4px;">${formatRelativeTime(lastInteraction)}</div>
       ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
       ${peopleTags}
     </div>`;
