@@ -209,6 +209,44 @@
         </div>
       </div>
 
+      <!-- MOVE FOLDER TO PROJECT MODAL -->
+      <div class="modal-overlay" id="modal-move-folder-to-project">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>MOVE FOLDER TO PROJECT</h3>
+            <button class="modal-close" onclick="closeModal('modal-move-folder-to-project')">✕</button>
+          </div>
+          <div id="move-folder-to-project-id-store" style="display:none"></div>
+          <div class="form-group" style="margin:16px 0 14px;">
+            <label class="form-label">Select project</label>
+            <select class="form-select" id="move-folder-to-project-target" style="font-size:12px;"></select>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-move-folder-to-project')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmMoveFolderToProject()">Move</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVE FOLDER TO PARENT MODAL -->
+      <div class="modal-overlay" id="modal-move-folder-to-parent">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3>MOVE FOLDER TO SUBFOLDER</h3>
+            <button class="modal-close" onclick="closeModal('modal-move-folder-to-parent')">✕</button>
+          </div>
+          <div id="move-folder-to-parent-id-store" style="display:none"></div>
+          <div class="form-group" style="margin:16px 0 14px;">
+            <label class="form-label">Select parent folder (or root)</label>
+            <select class="form-select" id="move-folder-to-parent-target" style="font-size:12px;"></select>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-move-folder-to-parent')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmMoveFolderToParent()">Move</button>
+          </div>
+        </div>
+      </div>
+
       <!-- REMOVE / DELETE FILE(S) MODAL -->
       <div class="modal-overlay" id="modal-remove-file">
         <div class="modal" style="max-width:420px">

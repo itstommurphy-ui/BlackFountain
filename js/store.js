@@ -156,6 +156,31 @@ function moveFileToFolder(fileId, folderId) {
   }
 }
 
+function moveFolderToProject(folderId, projectId) {
+  const folder = getFolderById(folderId);
+  if (folder) {
+    folder.projectId = projectId;
+    saveStore();
+  }
+}
+
+function moveFolderToParent(folderId, parentFolderId) {
+  const folder = getFolderById(folderId);
+  if (folder) {
+    // Prevent moving folder into itself or its own children
+    if (parentFolderId === folderId) return;
+    if (parentFolderId) {
+      let check = getFolderById(parentFolderId);
+      while (check && check.parentId) {
+        if (check.parentId === folderId) return; // Would create circular reference
+        check = getFolderById(check.parentId);
+      }
+    }
+    folder.parentId = parentFolderId;
+    saveStore();
+  }
+}
+
 // ══════════════════════════════════════════
 // DEBOUNCED SAVE
 // ══════════════════════════════════════════

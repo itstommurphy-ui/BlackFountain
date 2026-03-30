@@ -1019,12 +1019,23 @@ function showFileContextMenu(e, targetId, targetType) {
       </div>
     `;
   } else if (targetType === 'folder') {
+    const folder = getFolderById(targetId);
+    const filterSel = document.getElementById('files-project-filter');
+    const projectFilter = filterSel ? filterSel.value : 'all';
+    
     menu.innerHTML = `
       <div class="context-menu-item" onclick="contextOpenFile()">
         <span class="context-menu-icon">📂</span> Open Folder
       </div>
       <div class="context-menu-item" onclick="contextRename()">
         <span class="context-menu-icon">✏️</span> Rename
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item" onclick="openMoveFolderToProject('${targetId}', ${projectFilter !== 'all' ? `'${projectFilter}'` : 'null'});hideContextMenu()">
+        <span class="context-menu-icon">🔀</span> Move to Project
+      </div>
+      <div class="context-menu-item" onclick="openMoveFolderToParent('${targetId}');hideContextMenu()">
+        <span class="context-menu-icon">📁</span> Move to Subfolder
       </div>
       <div class="context-menu-sep"></div>
       <div class="context-menu-item danger" onclick="contextDelete()">
@@ -1198,6 +1209,8 @@ function _folderCard(folder) {
        oncontextmenu="showFileContextMenu(event,'${folder.id}','folder')">
     <div class="folder-card-actions">
       <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
+      <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToProject('${folder.id}', ${projectFilter !== 'all' ? `'${projectFilter}'` : 'null'})" title="Move to project">🔀</button>
+      <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToParent('${folder.id}')" title="Move to subfolder">📁</button>
       <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
     </div>
     <div class="folder-card-preview">📁</div>
@@ -1227,6 +1240,8 @@ function _folderListItem(folder) {
     <div class="folder-list-date">${dateStr}</div>
     <div class="folder-list-actions">
       <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
+      <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToProject('${folder.id}', ${projectFilter !== 'all' ? `'${projectFilter}'` : 'null'})" title="Move to project">🔀</button>
+      <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToParent('${folder.id}')" title="Move to subfolder">📁</button>
       <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
     </div>
   </div>`;
@@ -1297,6 +1312,92 @@ function openDeleteFolder(folderId) {
     renderFiles();
     showToast('Folder deleted', 'success');
   });
+}
+
+// Move folder to a different project
+function openMoveFolderToProject(folderId, currentProjectId) {
+  if (!folderId) return;
+  if (!store.projects || store.projects.length === 0) { showToast('No projects exist', 'error'); return; }
+  
+  document.getElementById('move-folder-to-project-id-store').dataset.folderId = folderId;
+  
+  // Build project options (exclude current project)
+  const targetOptions = store.projects
+    .map((p, i) => {
+      const isCurrent = currentProjectId && p.id === currentProjectId;
+      return isCurrent ? '' : `<option value="${i}">${p.title || 'Untitled Project'}</option>`;
+    })
+    .filter(Boolean).join('');
+  
+  if (!targetOptions) { showToast('No other projects to move to', 'info'); return; }
+  
+  document.getElementById('move-folder-to-project-target').innerHTML = targetOptions;
+  openModal('modal-move-folder-to-project');
+}
+
+function confirmMoveFolderToProject() {
+  const folderId = document.getElementById('move-folder-to-project-id-store').dataset.folderId;
+  const targetIdx = parseInt(document.getElementById('move-folder-to-project-target').value);
+  if (isNaN(targetIdx) || !store.projects[targetIdx]) return;
+  
+  const targetPid = store.projects[targetIdx].id;
+  moveFolderToProject(folderId, targetPid);
+  
+  closeModal('modal-move-folder-to-project');
+  renderFiles();
+  showToast(`Folder moved to ${store.projects[targetIdx].title || 'project'}`, 'success');
+}
+
+// Move folder to a subfolder (parent folder)
+function openMoveFolderToParent(folderId) {
+  if (!folderId) return;
+  
+  document.getElementById('move-folder-to-parent-id-store').dataset.folderId = folderId;
+  
+  // Build folder tree options, excluding the folder itself and its descendants
+  const filterSel = document.getElementById('files-project-filter');
+  const projectFilter = filterSel ? filterSel.value : 'all';
+  
+  let folders = (store.folders || []).filter(f => {
+    if (projectFilter !== 'all' && f.projectId !== projectFilter) return false;
+    return true;
+  });
+  
+  // Build tree, excluding self and children
+  const buildTree = (parentId, indent = '', depth = 0) => {
+    let options = '';
+    folders
+      .filter(f => f.parentId === parentId && f.id !== folderId)
+      .forEach(folder => {
+        // Check if this folder is a descendant of the folder being moved
+        let isDescendant = false;
+        let check = folder;
+        while (check && check.parentId) {
+          if (check.parentId === folderId) { isDescendant = true; break; }
+          check = folders.find(f => f.id === check.parentId);
+        }
+        if (isDescendant) return;
+        
+        options += `<option value="${folder.id}">${indent}📁 ${folder.name}</option>`;
+        options += buildTree(folder.id, indent + '  ', depth + 1);
+      });
+    return options;
+  };
+  
+  const folderOptions = buildTree(null) + '<option value="">📁 Root / No parent</option>';
+  document.getElementById('move-folder-to-parent-target').innerHTML = folderOptions;
+  openModal('modal-move-folder-to-parent');
+}
+
+function confirmMoveFolderToParent() {
+  const folderId = document.getElementById('move-folder-to-parent-id-store').dataset.folderId;
+  const targetParentId = document.getElementById('move-folder-to-parent-target').value || null;
+  
+  moveFolderToParent(folderId, targetParentId);
+  
+  closeModal('modal-move-folder-to-parent');
+  renderFiles();
+  showToast('Folder moved', 'success');
 }
 
 // Drag and drop for moving files to folders
