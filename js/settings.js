@@ -436,7 +436,8 @@ function renderFiles() {
     const pFilter = (document.getElementById('files-project-filter')?.value === 'all') ? null : document.getElementById('files-project-filter')?.value;
     const starIcon = file.starred ? '⭐' : '☆';
     const starClass = file.starred ? 'starred' : '';
-    
+    const lastInteraction = file.modifiedAt || file.uploadedAt || file.createdAt;
+
     // Grid view template
     const gridTemplate = `
     <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" 
@@ -466,7 +467,6 @@ function renderFiles() {
     </div>`;
     
     // List view template
-    const lastInteraction = file.modifiedAt || file.uploadedAt || file.createdAt;
     const dateStr = formatRelativeTime(lastInteraction);
     const listTemplate = `
     <div class="file-list-item${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" 
@@ -657,6 +657,7 @@ function renderOverviewFiles() {
         <span class="file-card-type">${catBadge}</span>
         <span>${formatFileSize(file.size)}</span>
       </div>
+      <div class="file-card-time" style="font-size:9px;color:var(--text3);margin-top:2px;">${formatRelativeTime(lastInteraction)}</div>
       ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
       ${peopleTags}
     </div>`;
