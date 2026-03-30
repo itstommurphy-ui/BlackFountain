@@ -437,17 +437,19 @@ function renderFiles() {
     const starIcon = file.starred ? '⭐' : '☆';
     const starClass = file.starred ? 'starred' : '';
     const lastInteraction = file.modifiedAt || file.uploadedAt || file.createdAt;
+    const dateStr = formatRelativeTime(lastInteraction);
 
     // Grid view template
     const gridTemplate = `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" 
-         onclick="fileCardClick(event,'${file.id}','files')" 
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" 
+         onclick="fileCardClick(event,'${file.id}','files')"
          draggable="true"
          ondragstart="handleFileDragStart(event,'${file.id}')"
          ondragend="handleFileDragEnd(event)"
-         oncontextmenu="showContextMenu(event,'${file.id}','file')">
+         oncontextmenu="showFileContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
+
       <div class="file-card-actions">
         <button class="file-action-btn" onclick="event.stopPropagation();openManageFile('${file.id}')" title="Rename">✏️</button>
         <button class="file-action-btn" onclick="event.stopPropagation();openMoveFile(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Move to project">🔀</button>
@@ -460,21 +462,21 @@ function renderFiles() {
       <div class="file-card-meta">
         <span class="file-card-type">${catBadge}</span>
         <span>${formatFileSize(file.size)}</span>
+        <span class="file-card-date">${dateStr}</span>
       </div>
       ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
       ${peopleTags}
       ${projectBadge}
     </div>`;
-    
+
     // List view template
-    const dateStr = formatRelativeTime(lastInteraction);
     const listTemplate = `
     <div class="file-list-item${selectedFileIds.has(file.id) ? ' selected' : ''}${starClass}" data-file-id="${file.id}" 
-         onclick="fileCardClick(event,'${file.id}','files')" 
+         onclick="fileCardClick(event,'${file.id}','files')"
          draggable="true"
          ondragstart="handleFileDragStart(event,'${file.id}')"
          ondragend="handleFileDragEnd(event)"
-         oncontextmenu="showContextMenu(event,'${file.id}','file')">
+         oncontextmenu="showFileContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-list-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
       <div class="file-list-icon">${getFileIcon(file)}</div>
@@ -591,6 +593,7 @@ function renderFiles() {
     if (currentFileView === 'list') {
       // List view header
       const listHeader = `<div class="file-list-header">
+        <div></div>
         <div class="file-list-header-star"></div>
         <div class="file-list-header-name">Name</div>
         <div class="file-list-header-type">Type</div>
@@ -642,7 +645,7 @@ function renderOverviewFiles() {
     const isVideo = (file.data && file.data.startsWith('data:video')) || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
     const playBtn = isVideo ? `<button class="file-action-btn" onclick="event.stopPropagation();openVideoPlayer('${file.id}')" title="Play video">▶</button>` : '';
     return `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" data-ctx="file-card:${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" style="font-size:11px;">
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" oncontextmenu="showFileContextMenu(event,'${file.id}','file')" style="font-size:11px;">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','overview')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
         ${playBtn}
@@ -846,6 +849,10 @@ function setFileView(view) {
   currentFileView = view;
   document.getElementById('view-grid-btn')?.classList.toggle('active', view === 'grid');
   document.getElementById('view-list-btn')?.classList.toggle('active', view === 'list');
+  const grid = document.getElementById('file-grid');
+  if (grid) {
+    grid.className = view === 'list' ? 'file-list' : 'file-grid';
+  }
   renderFiles();
 }
 
@@ -968,28 +975,71 @@ function getRecentFiles(limit = 20) {
 let contextTargetId = null;
 let contextTargetType = null; // 'file' or 'folder'
 
-function showContextMenu(e, targetId, targetType) {
+function showFileContextMenu(e, targetId, targetType) {
   e.preventDefault();
+  e.stopPropagation(); // Prevent global init.js handler from also firing
   contextTargetId = targetId;
   contextTargetType = targetType;
   
   const menu = document.getElementById('context-menu');
   if (!menu) return;
   
-  // Update star label
   if (targetType === 'file') {
     const file = (store.files || []).find(f => f.id === targetId);
-    const starLabel = document.getElementById('context-star-label');
-    if (starLabel) {
-      starLabel.textContent = file?.starred ? 'Remove from Starred' : 'Add to Starred';
-    }
+    const starLabel = file?.starred ? 'Remove from Starred' : 'Add to Starred';
+    const starIcon = file?.starred ? '⭐' : '☆';
+    const filterSel = document.getElementById('files-project-filter');
+    const projectFilter = filterSel ? filterSel.value : 'all';
+    
+    menu.innerHTML = `
+      <div class="context-menu-item" onclick="contextOpenFile()">
+        <span class="context-menu-icon">📂</span> Open / Preview
+      </div>
+      <div class="context-menu-item" onclick="contextRename()">
+        <span class="context-menu-icon">✏️</span> Rename
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item" onclick="contextStar();hideContextMenu()">
+        <span class="context-menu-icon">${starIcon}</span> <span id="context-star-label">${starLabel}</span>
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item" onclick="openMoveFile(['${targetId}'], ${projectFilter !== 'all' ? `'${projectFilter}'` : 'null'});hideContextMenu()">
+        <span class="context-menu-icon">🔀</span> Move to Project
+      </div>
+      <div class="context-menu-item" onclick="contextMoveToFolder()">
+        <span class="context-menu-icon">📁</span> Move to Folder
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item" onclick="contextDownload()">
+        <span class="context-menu-icon">⬇️</span> Download
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item danger" onclick="contextDelete()">
+        <span class="context-menu-icon">🗑️</span> Delete
+      </div>
+    `;
+  } else if (targetType === 'folder') {
+    menu.innerHTML = `
+      <div class="context-menu-item" onclick="contextOpenFile()">
+        <span class="context-menu-icon">📂</span> Open Folder
+      </div>
+      <div class="context-menu-item" onclick="contextRename()">
+        <span class="context-menu-icon">✏️</span> Rename
+      </div>
+      <div class="context-menu-sep"></div>
+      <div class="context-menu-item danger" onclick="contextDelete()">
+        <span class="context-menu-icon">🗑️</span> Delete
+      </div>
+    `;
   }
   
   menu.style.display = 'block';
-  menu.style.left = e.pageX + 'px';
-  menu.style.top = e.pageY + 'px';
+  const menuH = menu.offsetHeight || 200;
+  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const y = Math.min(e.clientY, window.innerHeight - menuH - 4);
+  menu.style.left = Math.max(4, x) + 'px';
+  menu.style.top = Math.max(4, y) + 'px';
   
-  // Close on click outside
   setTimeout(() => {
     document.addEventListener('click', hideContextMenu, { once: true });
   }, 10);
@@ -1045,7 +1095,10 @@ function contextDelete() {
     const projectFilter = filterSel ? filterSel.value : 'all';
     openRemoveFiles([contextTargetId], projectFilter === 'all' ? null : projectFilter);
   } else if (contextTargetType === 'folder') {
-    deleteFolder(contextTargetId);
+    if (confirm('Delete this folder? Files inside will be moved to the root folder.')) {
+      deleteFolder(contextTargetId);
+      renderFiles(); // Refresh the view
+    }
   }
   hideContextMenu();
 }
@@ -1054,14 +1107,14 @@ function contextDelete() {
 function _addContextMenuToFileCard(fileId) {
   const card = document.querySelector(`[data-file-id="${fileId}"]`);
   if (card) {
-    card.addEventListener('contextmenu', (e) => showContextMenu(e, fileId, 'file'));
+    card.addEventListener('contextmenu', (e) => showFileContextMenu(e, fileId, 'file'));
   }
 }
 
 function _addContextMenuToFolderCard(folderId) {
   const card = document.querySelector(`[data-folder-id="${folderId}"]`);
   if (card) {
-    card.addEventListener('contextmenu', (e) => showContextMenu(e, folderId, 'folder'));
+    card.addEventListener('contextmenu', (e) => showFileContextMenu(e, folderId, 'folder'));
   }
 }
 
@@ -1142,7 +1195,7 @@ function _folderCard(folder) {
 
   return `
   <div class="folder-card" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
-       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
+       oncontextmenu="showFileContextMenu(event,'${folder.id}','folder')">
     <div class="folder-card-actions">
       <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
       <button class="file-action-btn delete" onclick="event.stopPropagation();openDeleteFolder('${folder.id}')" title="Delete">🗑</button>
@@ -1164,7 +1217,8 @@ function _folderListItem(folder) {
 
   return `
   <div class="folder-list-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
-       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
+       oncontextmenu="showFileContextMenu(event,'${folder.id}','folder')">
+    <div></div>
     <div class="folder-list-star"></div>
     <div class="folder-list-icon">📁</div>
     <div class="folder-list-name" title="${folder.name}">${folder.name}</div>
@@ -1308,41 +1362,50 @@ function moveSelectedToFolder(folderId) {
 // Open modal to select folder for moving files
 function openMoveFileToFolder(fileIds) {
   if (!fileIds || fileIds.length === 0) return;
-  
+
   const filterSel = document.getElementById('files-project-filter');
   const projectFilter = filterSel ? filterSel.value : 'all';
-  
+
   // Get all folders that are relevant to the project filter
   let folders = (store.folders || []).filter(f => {
     if (projectFilter !== 'all' && f.projectId !== projectFilter) return false;
     return true;
   });
-  
-  // Build folder list for prompt
-  let folderList = 'Available folders:\n';
+
   if (folders.length === 0) {
-    folderList += '(none)\n';
-  } else {
-    const buildTree = (parentId, indent = '') => {
-      folders.filter(f => f.parentId === parentId).forEach(folder => {
-        folderList += `${indent}📁 ${folder.name} (ID: ${folder.id})\n`;
-        buildTree(folder.id, indent + '  ');
-      });
-    };
-    buildTree(null);
+    showToast('No folders available', 'info');
+    return;
   }
-  folderList += '\n📁 Root / No folder (leave ID empty)'; 
-  
-  const folderId = prompt(`Move ${fileIds.length} file(s) to which folder?\n\n${folderList}`);
-  
-  if (folderId !== null) {
-    const targetFolderId = folderId === '' ? null : folderId;
-    fileIds.forEach(fileId => {
-      moveFileToFolder(fileId, targetFolderId);
+
+  // Build folder options
+  const buildTree = (parentId, indent = '') => {
+    let options = '';
+    folders.filter(f => f.parentId === parentId).forEach(folder => {
+      options += `<option value="${folder.id}">${indent}📁 ${folder.name}</option>`;
+      options += buildTree(folder.id, indent + '  ');
     });
-    renderFiles();
-    showToast(`${fileIds.length} file(s) moved`, 'success');
-  }
+    return options;
+  };
+
+  const folderOptions = buildTree(null) + '<option value="">📁 Root / No folder</option>';
+
+  document.getElementById('move-file-to-folder-ids-store').dataset.ids = JSON.stringify(fileIds);
+  document.getElementById('move-file-to-folder-target').innerHTML = folderOptions;
+  document.getElementById('move-file-to-folder-title').textContent = fileIds.length > 1 ? `MOVE ${fileIds.length} FILES TO FOLDER` : 'MOVE TO FOLDER';
+  openModal('modal-move-file-to-folder');
+}
+
+function confirmMoveFileToFolder() {
+  const ids = JSON.parse(document.getElementById('move-file-to-folder-ids-store').dataset.ids || '[]');
+  const targetFolderId = document.getElementById('move-file-to-folder-target').value;
+  const finalFolderId = targetFolderId === '' ? null : targetFolderId;
+
+  ids.forEach(fileId => {
+    moveFileToFolder(fileId, finalFolderId);
+  });
+  renderFiles();
+  showToast(`${ids.length} file(s) moved`, 'success');
+  closeModal('modal-move-file-to-folder');
 }
 
 // Open folder selection for selected files (from bulk bar)

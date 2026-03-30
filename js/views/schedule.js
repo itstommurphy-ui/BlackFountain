@@ -43,7 +43,7 @@ async function generateScheduleFromShots() {
       shotRef:  ref,
       type:     shot.type     || '',
       desc:     shot.desc     || '',
-      cast:     shot.cast     || '',
+      cast:     Array.isArray(shot.cast) ? shot.cast.join(', ') : (shot.cast || ''),
       pages:    shot.pages    || '',
       est:      totalTime     || 45,
       location: shot.location || '',
@@ -76,7 +76,7 @@ async function wrapScheduleDays() {
   const BUFFER = 15;
 
   const existingHeaders = p.schedule.filter(s => s.isDayHeader);
-  let shots = p.schedule.filter(s => !s.isDayHeader && !s._nonShot);
+  let shots = p.schedule.filter(s => !s.isDayHeader && !s._nonShot && !s.isWrap);
 
   // Group shots by scene key so we never split a scene across days
   // Preserve the existing sort order within each scene group
@@ -117,6 +117,10 @@ async function wrapScheduleDays() {
       totalEst:    currentMins,
     });
     newSchedule.push(...currentShots);
+    newSchedule.push({
+      isWrap: true,
+      desc:   'WRAP',
+    });
     dayNum++;
     currentShots = [];
     currentMins  = 0;
@@ -152,25 +156,42 @@ async function wrapScheduleDays() {
  * 2. THE RIPPLE: Recalculates every timestamp in the project.
  */
 async function rippleScheduleTimes() {
-  const p = currentProject();
-  if (!p.schedule) return;
-  
-  let runningTime = 420;
+   const p = currentProject();
+   if (!p.schedule) return;
 
-  p.schedule.forEach((item, idx) => {
-    if (item.isDayHeader) {
-      runningTime = item.callTime || 420;
-      // Re-sum the day's total for the UI
-      const dayShots = _getShotsForDay(p.schedule, idx);
-      item.totalEst = dayShots.reduce((sum, s) => sum + (parseInt(s.est) || 0), 0);
-    } else {
-      item.time = _formatTime(runningTime);
-      runningTime += (parseInt(item.est) || 0);
-    }
-  });
-  await saveStore();
-  renderSchedule(p);
-}
+   let runningTime = 420;
+   let currentDayHeader = null;
+   let lastDayWrap = 0;
+
+   p.schedule.forEach((item, idx) => {
+     if (item.isDayHeader) {
+       // Before moving to new day, set the previous day's wrapTime if there was one
+       if (currentDayHeader) {
+         currentDayHeader.wrapTime = lastDayWrap;
+       }
+       currentDayHeader = item;
+       runningTime = item.callTime || 420;
+       lastDayWrap = runningTime;
+       // Re-sum the day's total for the UI
+       const dayShots = _getShotsForDay(p.schedule, idx);
+       item.totalEst = dayShots.reduce((sum, s) => sum + (parseInt(s.est) || 0), 0);
+     } else if (item.isWrap) {
+       item.time = _formatTime(lastDayWrap);
+     } else {
+       item.time = _formatTime(runningTime);
+       runningTime += (parseInt(item.est) || 0);
+       lastDayWrap = runningTime;
+     }
+   });
+
+   // Set wrapTime for the last day
+   if (currentDayHeader) {
+     currentDayHeader.wrapTime = lastDayWrap;
+   }
+
+   await saveStore();
+   renderSchedule(p);
+ }
 
 // ================================================================
 // THE BRAIN: Optimization & Conflict Detection
@@ -181,9 +202,10 @@ async function rippleScheduleTimes() {
  * Checks for both Actor Downtime and Scene Fragmentation.
  */
 function getOptimizationSuggestion(shotIdx, schedule) {
-  const shot = schedule[shotIdx];
-  if (!shot || shot.isDayHeader) return null;
-  if (shot._nonShot) return null;
+   const shot = schedule[shotIdx];
+   if (!shot || shot.isDayHeader) return null;
+   if (shot._nonShot) return null;
+   if (shot.isWrap) return null;
 
   const dayIndex = _findDayHeaderIndex(schedule, shotIdx);
   const dayShots = _getShotsForDay(schedule, dayIndex);
@@ -208,9 +230,13 @@ function getOptimizationSuggestion(shotIdx, schedule) {
 
   // --- LOGIC B: Actor Downtime (The "Downtime" Suggestion) ---
   if (shot.cast) {
-    const actors = shot.cast.split(',').map(a => a.trim());
+    const castStr = Array.isArray(shot.cast) ? shot.cast.join(', ') : (shot.cast || '');
+    const actors = castStr.split(',').map(a => a.trim());
     for (const actor of actors) {
-      const actorShots = dayShots.filter(s => s.cast && s.cast.includes(actor));
+      const actorShots = dayShots.filter(s => {
+        const sCastStr = Array.isArray(s.cast) ? s.cast.join(', ') : (s.cast || '');
+        return sCastStr && sCastStr.includes(actor);
+      });
       if (actorShots.length <= 1) continue;
 
       const otherPositions = actorShots.map(s => dayShots.indexOf(s)).filter(p => p !== myPosInDay);
@@ -237,7 +263,8 @@ function getOptimizationSuggestion(shotIdx, schedule) {
  */
 function _renderCastPills(cast) {
   if (!cast) return '';
-  return cast.split(',').map(c => `<span class="actor-pill">${c.trim()}</span>`).join('');
+  const castStr = Array.isArray(cast) ? cast.join(', ') : cast;
+  return castStr.split(',').map(c => `<span class="actor-pill">${c.trim()}</span>`).join('');
 }
 
 /**
@@ -340,6 +367,17 @@ function renderSchedule(p) {
   }
 
   const rows = p.schedule.map((s, i) => {
+    if (s.isWrap) {
+      return `
+        <tr class="wrap-row" onclick="editScheduleRow(${i})">
+          <td></td>
+          <td style="color:#ff4d4d; font-weight:bold; width:90px;">${s.time||''}</td>
+          <td><input type="text" class="desc-input" value="${s.desc||''}" onchange="updateWrapDesc(${i}, this.value)"></td>
+          <td colspan="6"></td>
+          <td><button class="btn-delete" onclick="removeScheduleRow(${i})">✕</button></td>
+        </tr>`;
+    }
+
     if (s.isDayHeader) {
       const isOvertime = (s.totalEst || 0) > 600;
       return `
@@ -376,7 +414,7 @@ function renderSchedule(p) {
     const castHtml = _renderCastPills(s.cast);
 
     return `
-      <tr class="sched-row" style="${rowStyle}" draggable="true" ondragstart="dragShot(event, ${i})" ondragover="allowDrop(event)" ondrop="dropShot(event, ${i})">
+      <tr class="sched-row" style="${rowStyle}" onclick="editScheduleRow(${i})" draggable="true" ondragstart="dragShot(event, ${i})" ondragover="allowDrop(event)" ondrop="dropShot(event, ${i})">
         <td class="drag-handle">⠿</td>
         <td style="color:#ffd700; font-weight:bold; width:90px;">${s.time||''}</td>
         <td>${s.scene||''}</td>
@@ -495,6 +533,13 @@ async function moveShot(from, to) {
   showToast('Optimized Location', 'success');
 }
 
+async function updateWrapDesc(idx, val) {
+  const p = currentProject();
+  p.schedule[idx].desc = val;
+  await saveStore();
+  renderSchedule(p);
+}
+
 // 6. ACTIONS & HELPERS
 
 // Export function for schedule
@@ -556,9 +601,7 @@ function _formatTime(minutes) {
   let m = minutes % 1440;
   const h = Math.floor(m / 60);
   const mins = m % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return `${h12}:${mins.toString().padStart(2, '0')} ${ampm}`;
+  return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
 function _minToInput(mins) {
@@ -566,7 +609,66 @@ function _minToInput(mins) {
   const m = ((mins || 0) % 60).toString().padStart(2, '0');
   return `${h}:${m}`;
 }
+
+function _timeToMin(timeStr) {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h * 60) + m;
+}
+
+function _parseTimeToMin(timeStr) {
+  if (!timeStr) return 0;
+  // Assume HH:MM or H:MM
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0]) || 0;
+  const m = parseInt(parts[1]) || 0;
+  return (h * 60) + m;
+}
+
+function _sortDayShotsByTime(schedule, shotIdx) {
+  // Find the day header for this shot
+  let dayStart = -1;
+  for (let i = shotIdx; i >= 0; i--) {
+    if (schedule[i].isDayHeader) {
+      dayStart = i;
+      break;
+    }
+  }
+  if (dayStart === -1) return;
+
+  // Collect shots until next day header or wrap
+  const shots = [];
+  const indices = [];
+  for (let i = dayStart + 1; i < schedule.length; i++) {
+    if (schedule[i].isDayHeader) break;
+    if (!schedule[i].isWrap) {
+      shots.push(schedule[i]);
+      indices.push(i);
+    }
+  }
+
+  // Sort shots by time
+  shots.sort((a, b) => _parseTimeToMin(a.time) - _parseTimeToMin(b.time));
+
+  // Replace in schedule
+  indices.forEach((idx, pos) => {
+    schedule[idx] = shots[pos];
+  });
+}
 function addScheduleRow() { document.getElementById('sched-edit-idx').value=''; ['time','scene','shot','desc','cast','pages','est'].forEach(f => document.getElementById('sched-'+f).value=''); openModal('modal-schedule'); }
+function editScheduleRow(idx) {
+  const p = currentProject();
+  const row = p.schedule[idx];
+  document.getElementById('sched-edit-idx').value = idx;
+  document.getElementById('sched-time').value = row.time || '';
+  document.getElementById('sched-scene').value = row.scene || '';
+  document.getElementById('sched-shot').value = row.shot || '';
+  document.getElementById('sched-desc').value = row.desc || '';
+  document.getElementById('sched-cast').value = row.cast || '';
+  document.getElementById('sched-pages').value = row.pages || '';
+  document.getElementById('sched-est').value = row.est || '';
+  openModal('modal-schedule');
+}
 function removeScheduleRow(i) { showConfirmDialog('Remove this schedule entry?', 'Remove', () => { const p=currentProject(); p.schedule.splice(i,1); saveStore(); renderSchedule(p); }); }
 function saveScheduleRow() {
   const p=currentProject();
@@ -581,8 +683,17 @@ function saveScheduleRow() {
     est: document.getElementById('sched-est').value,
   };
   const idx = document.getElementById('sched-edit-idx').value;
-  if (idx !== '') p.schedule[parseInt(idx)] = row;
-  else p.schedule.push(row);
+  if (idx !== '') {
+    const editIdx = parseInt(idx);
+    const wasWrap = p.schedule[editIdx].isWrap;
+    p.schedule[editIdx] = { ...row, isWrap: wasWrap };
+    // Sort the day's shots by time, unless it was a wrap row
+    if (!wasWrap) {
+      _sortDayShotsByTime(p.schedule, editIdx);
+    }
+  } else {
+    p.schedule.push(row);
+  }
   saveStore(); closeModal('modal-schedule'); renderSchedule(p);
 }
 

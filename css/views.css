@@ -617,6 +617,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+  .file-card-date {
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: auto;
+  }
   .file-card-actions {
     position: absolute;
     top: 8px;
@@ -875,7 +880,7 @@
   }
   .file-list-header {
     display: grid;
-    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    grid-template-columns: 30px 30px 20px 1fr 80px 80px 100px 80px;
     gap: 8px;
     padding: 8px 12px;
     font-size: 11px;
@@ -894,7 +899,7 @@
   
   .file-list-item {
     display: grid;
-    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    grid-template-columns: 30px 30px 20px 1fr 80px 80px 100px 80px;
     gap: 8px;
     align-items: center;
     padding: 8px 12px;
@@ -972,7 +977,7 @@
   /* Folder list item (same as file-list-item) */
   .folder-list-item {
     display: grid;
-    grid-template-columns: 30px 30px 1fr 80px 80px 100px;
+    grid-template-columns: 30px 30px 20px 1fr 80px 80px 100px 80px;
     gap: 8px;
     align-items: center;
     padding: 8px 12px;

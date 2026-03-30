@@ -190,6 +190,25 @@
         </div>
       </div>
 
+      <!-- MOVE TO FOLDER MODAL -->
+      <div class="modal-overlay" id="modal-move-file-to-folder">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-header">
+            <h3 id="move-file-to-folder-title">MOVE TO FOLDER</h3>
+            <button class="modal-close" onclick="closeModal('modal-move-file-to-folder')">✕</button>
+          </div>
+          <div id="move-file-to-folder-ids-store" style="display:none"></div>
+          <div class="form-group" style="margin:16px 0 14px;">
+            <label class="form-label">Select folder</label>
+            <select class="form-select" id="move-file-to-folder-target" style="font-size:12px;"></select>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeModal('modal-move-file-to-folder')">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmMoveFileToFolder()">Move</button>
+          </div>
+        </div>
+      </div>
+
       <!-- REMOVE / DELETE FILE(S) MODAL -->
       <div class="modal-overlay" id="modal-remove-file">
         <div class="modal" style="max-width:420px">
@@ -219,17 +238,17 @@
         <div class="context-menu-item" onclick="contextRename()">
           <span class="context-menu-icon">✏️</span> Rename
         </div>
-        <div class="context-menu-item" onclick="contextStar()">
+        <div class="context-menu-item" id="context-star-item" onclick="contextStar()">
           <span class="context-menu-icon">⭐</span> <span id="context-star-label">Add to Starred</span>
         </div>
-        <div class="context-menu-sep"></div>
-        <div class="context-menu-item" onclick="contextDownload()">
+        <div class="context-menu-sep" id="context-sep1"></div>
+        <div class="context-menu-item" id="context-download-item" onclick="contextDownload()">
           <span class="context-menu-icon">⬇️</span> Download
         </div>
-        <div class="context-menu-item" onclick="contextMoveToFolder()">
+        <div class="context-menu-item" id="context-move-item" onclick="contextMoveToFolder()">
           <span class="context-menu-icon">📁</span> Move to folder
         </div>
-        <div class="context-menu-sep"></div>
+        <div class="context-menu-sep" id="context-sep2"></div>
         <div class="context-menu-item danger" onclick="contextDelete()">
           <span class="context-menu-icon">🗑️</span> Delete
         </div>

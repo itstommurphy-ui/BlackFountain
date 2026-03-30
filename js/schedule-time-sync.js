@@ -67,7 +67,7 @@
         total = timeByRef.get(row.shotRef);
       } else {
         // Build fallback key from row's scene + shot number
-        const shotParts = (row.shot || '').split('.');
+        const shotParts = String(row.shot || '').split('.');
         const setup = shotParts[0] || '1';
         const num   = shotParts[1] || '1';
         const fallbackKey = `${_norm(row.scene||'')}::${setup}::${num}`;
