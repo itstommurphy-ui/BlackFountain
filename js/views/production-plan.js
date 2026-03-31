@@ -372,7 +372,7 @@ function initOverviewLayout(p) {
 function renderOverview(p) {
   document.getElementById('ov-shoot-days-header').textContent = p.callsheets.length || '0';
   renderOverviewDocs(p);
-  renderOverviewFiles();
+  ovFilesRender();
   if (typeof renderOverviewEdits === 'function') renderOverviewEdits();
   if (typeof renderQuickTasks === 'function') renderQuickTasks(p);
 }

@@ -438,6 +438,38 @@ function renderFiles() {
     const starClass = file.starred ? 'starred' : '';
     const lastInteraction = file.modifiedAt || file.uploadedAt || file.createdAt;
     const dateStr = formatRelativeTime(lastInteraction);
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isImg = file.data?.startsWith('data:image');
+    const isVid = file.data?.startsWith('data:video') || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
+
+    const TYPE_META = {
+      script:     { colour: '#4a9eff', bg: '#1a2535', iconCol: '#4a9eff' },
+      edits:      { colour: '#e74c3c', bg: '#251515', iconCol: '#e74c3c' },
+      location:   { colour: '#4caf7d', bg: '#152520', iconCol: '#4caf7d' },
+      stills:     { colour: '#f5a623', bg: '#252015', iconCol: '#f5a623' },
+      bts:        { colour: '#f5a623', bg: '#252015', iconCol: '#f5a623' },
+      moodboard:  { colour: '#9b59b6', bg: '#201525', iconCol: '#9b59b6' },
+      storyboard: { colour: '#9b59b6', bg: '#201525', iconCol: '#9b59b6' },
+      contract:   { colour: '#607d8b', bg: '#181e22', iconCol: '#90a4ae' },
+      other:      { colour: '#555',    bg: 'var(--surface2)', iconCol: 'var(--text3)' },
+    };
+    const cat = cats[0] || 'other';
+    const meta = TYPE_META[cat] || TYPE_META.other;
+
+    const FILE_SVG = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="${meta.iconCol}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
+
+    const PLAY_SVG = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#666" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="#666" stroke="none"/></svg>`;
+
+    const thumbInner = isImg
+      ? `<img src="${file.data}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;">`
+      : isVid
+      ? `<div style="position:absolute;inset:0;background:#111;display:flex;align-items:center;justify-content:center;">${PLAY_SVG}</div>`
+      : `<div style="position:absolute;inset:0;background:${meta.bg};display:flex;align-items:center;justify-content:center;">
+           <div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">${FILE_SVG}</div>
+         </div>`;
+
+    const catLabel = cats.map(c => FILE_CATEGORIES[c]?.label || c).join(', ');
 
     // Grid view template
     const gridTemplate = `
@@ -446,7 +478,7 @@ function renderFiles() {
          draggable="true"
          ondragstart="handleFileDragStart(event,'${file.id}')"
          ondragend="handleFileDragEnd(event)"
-         oncontextmenu="showFileContextMenu(event,'${file.id}','file')">
+         oncontextmenu="showContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
 
@@ -457,12 +489,15 @@ function renderFiles() {
         <button class="file-action-btn" onclick="event.stopPropagation();downloadFile('${file.id}')" title="Download">⬇</button>
         <button class="file-action-btn delete" onclick="event.stopPropagation();openRemoveFiles(['${file.id}'], ${pFilter ? `'${pFilter}'` : 'null'})" title="Remove / delete">🗑</button>
       </div>
-      <div class="file-card-preview">${getFileIcon(file)}</div>
-      <div class="file-card-name" title="${file.name}">${file.name}</div>
-      <div class="file-card-meta">
-        <span class="file-card-type">${catBadge}</span>
+      <div style="position:relative;width:100%;height:110px;overflow:hidden;flex-shrink:0;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${meta.colour};z-index:1;"></div>
+      ${thumbInner}
+      </div>
+      <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.name}">${file.name}</div>
+      <div style="display:flex;gap:6px;" style="display:flex;gap:6px;">
+        <span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;background:${meta.bg}; color:${meta.iconCol};">${catLabel}</span>
+        <span>·</span>
         <span>${formatFileSize(file.size)}</span>
-        <span class="file-card-date">${dateStr}</span>
       </div>
       ${file.description ? `<div style="margin-top:4px;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${file.description}">${file.description}</div>` : ''}
       ${peopleTags}
@@ -476,11 +511,11 @@ function renderFiles() {
          draggable="true"
          ondragstart="handleFileDragStart(event,'${file.id}')"
          ondragend="handleFileDragEnd(event)"
-         oncontextmenu="showFileContextMenu(event,'${file.id}','file')">
+         oncontextmenu="showContextMenu(event,'${file.id}','file')">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','files')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-list-star" onclick="event.stopPropagation();toggleStarFile('${file.id}')" title="${file.starred ? 'Remove from starred' : 'Add to starred'}">${starIcon}</div>
-      <div class="file-list-icon">${getFileIcon(file)}</div>
-      <div class="file-list-name" title="${file.name}">${file.name}</div>
+      <div class="file-list-icon" style="flex-shrink:0;margin-right:8px;">${isImg ? `<img src="${file.data}" style="width:auto;height:40px;object-fit:contain;border-radius:4px;">` : isVid ? `<div style="width:40px;height:40px;background:#111;display:flex;align-items:center;justify-content:center;border-radius:4px;">${PLAY_SVG}</div>` : getFileIcon(file)}</div>
+      <div class="file-list-name" style="flex:1;overflow:hidden;" title="${file.name}">${file.name}</div>
       <div class="file-list-meta">
         <span class="file-list-type">${catBadge}</span>
       </div>
@@ -645,7 +680,7 @@ function renderOverviewFiles() {
     const isVideo = (file.data && file.data.startsWith('data:video')) || ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
     const playBtn = isVideo ? `<button class="file-action-btn" onclick="event.stopPropagation();openVideoPlayer('${file.id}')" title="Play video">▶</button>` : '';
     return `
-    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" oncontextmenu="showFileContextMenu(event,'${file.id}','file')" style="font-size:11px;">
+    <div class="file-card${selectedFileIds.has(file.id) ? ' selected' : ''}" data-file-id="${file.id}" onclick="fileCardClick(event,'${file.id}','overview')" oncontextmenu="showContextMenu(event,'${file.id}','file')" style="font-size:11px;">
       <div class="file-select-check" onclick="event.stopPropagation();toggleFileSelect('${file.id}','overview')">${selectedFileIds.has(file.id) ? '✓' : ''}</div>
       <div class="file-card-actions">
         ${playBtn}
@@ -657,7 +692,7 @@ function renderOverviewFiles() {
       <div class="file-card-preview">${getFileIcon(file)}</div>
       <div class="file-card-name" title="${file.name}">${file.name}</div>
       <div class="file-card-meta">
-        <span class="file-card-type">${catBadge}</span>
+        <span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;background:${meta.bg}; color:${meta.iconCol};">${catLabel}</span>
         <span>${formatFileSize(file.size)}</span>
       </div>
       <div class="file-card-time" style="font-size:10px;color:var(--text2);margin-top:4px;">${formatRelativeTime(lastInteraction)}</div>
@@ -673,7 +708,7 @@ function toggleFileSelect(id, context) {
   if (selectedFileIds.has(id)) selectedFileIds.delete(id);
   else selectedFileIds.add(id);
   if (context === 'files') renderFiles();
-  else renderOverviewFiles();
+  else ovFilesRender();
 }
 
 function fileCardClick(event, id, context) {
@@ -706,7 +741,7 @@ function getSelectedInContext(context) {
 function clearFileSelection() {
   selectedFileIds.clear();
   renderFiles();
-  renderOverviewFiles();
+  ovFilesRender();
 }
 
 function updateBulkBars() {
@@ -1206,7 +1241,7 @@ function _folderCard(folder) {
 
   return `
   <div class="folder-card" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
-       oncontextmenu="showFileContextMenu(event,'${folder.id}','folder')">
+       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
     <div class="folder-card-actions">
       <button class="file-action-btn" onclick="event.stopPropagation();openRenameFolder('${folder.id}')" title="Rename">✏️</button>
       <button class="file-action-btn" onclick="event.stopPropagation();openMoveFolderToProject('${folder.id}', ${projectFilter !== 'all' ? `'${projectFilter}'` : 'null'})" title="Move to project">🔀</button>
@@ -1230,7 +1265,7 @@ function _folderListItem(folder) {
 
   return `
   <div class="folder-list-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')"
-       oncontextmenu="showFileContextMenu(event,'${folder.id}','folder')">
+       oncontextmenu="showContextMenu(event,'${folder.id}','folder')">
     <div></div>
     <div class="folder-list-star"></div>
     <div class="folder-list-icon">📁</div>
@@ -1822,7 +1857,7 @@ function confirmManageFile() {
 
   saveStore();
   closeModal('modal-manage-file');
-  renderFiles(); renderOverviewFiles();
+  renderFiles(); ovFilesRender();
   showToast('File updated', 'success');
 }
 
@@ -2293,7 +2328,7 @@ function confirmFileUpload() {
   _pendingFiles = [];
   closeModal('modal-upload-file');
   renderFiles();
-  renderOverviewFiles();
+  ovFilesRender();
   showToast(`${saved} file${saved !== 1 ? 's' : ''} uploaded`, 'success');
 }
 
@@ -2644,11 +2679,11 @@ function toggleVideoFullscreen() {
 
 // Main file upload zone (Files tab) - now attached in renderFiles() after view is loaded
 
-// Overview project files area
-const ovFilesGrid = document.getElementById('overview-files-grid');
-if (ovFilesGrid) {
-  ovFilesGrid.classList.add('drop-zone');
-  _makeDrop(ovFilesGrid, handleFileUploadFromOverview);
+// Overview project files area (drop zone now on #ov-files-list)
+const ovFilesList = document.getElementById('ov-files-list');
+if (ovFilesList) {
+  ovFilesList.classList.add('drop-zone');
+  _makeDrop(ovFilesList, files => ovFilesUpload(files));
 }
 
 // Script & Docs section
@@ -3040,3 +3075,162 @@ async function loadStore() {
 }
 
 // ══════════════════════════════════════════
+
+function ovFilesUpload(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const p = currentProject();
+  if (!p) return;
+  store.files = store.files || [];
+  let count = 0;
+  const readers = Array.from(fileList).map(file => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      store.files.push({
+        id: makeId(),
+        name: file.name,
+        categories: ['other'],
+        people: [],
+        description: '',
+        type: file.type,
+        size: file.size,
+        data: e.target.result,
+        folderId: null,
+        projectIds: [p.id],
+        uploadedAt: new Date().toISOString(),
+      });
+      count++;
+      resolve();
+    };
+    reader.readAsDataURL(file);
+  }));
+  Promise.all(readers).then(() => {
+    saveStore();
+    ovFilesRender();
+    showToast(`${count} file${count !== 1 ? 's' : ''} uploaded`, 'success');
+  });
+}
+
+function ovFilesRender() {
+  const p = currentProject();
+  const el = document.getElementById('ov-files-list');
+  const storageEl = document.getElementById('ov-files-storage');
+  if (!el || !p) return;
+
+  const files = (store.files || []).filter(f =>
+    (f.projectIds || []).includes(p.id)
+  );
+
+  // Storage bar
+  if (storageEl) {
+    const used = files.reduce((sum, f) => sum + (f.size || 0), 0);
+    const maxBytes = 100 * 1024 * 1024; // 100MB
+    const pct = Math.min((used / maxBytes) * 100, 100).toFixed(1);
+    const usedStr = formatFileSize(used);
+    storageEl.innerHTML = `
+      <span style="color:var(--text3);">${usedStr} of 100 MB</span>
+      <span style="display:inline-block;width:80px;height:4px;background:var(--surface3);border-radius:2px;vertical-align:middle;margin-left:6px;overflow:hidden;">
+        <span style="display:block;height:100%;width:${pct}%;background:${pct > 85 ? 'var(--red)' : 'var(--accent)'};border-radius:2px;"></span>
+      </span>`;
+  }
+
+  if (files.length === 0) {
+    el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border2);border-radius:var(--radius);">No files yet — upload scripts, photos, contracts and more</div>`;
+    return;
+  }
+
+  const EXT_ICON = {
+    pdf: '📄', doc: '📝', docx: '📝', txt: '📃', fdx: '🎬', fountain: '🎬',
+    mp4: '🎞', mov: '🎞', avi: '🎞', mkv: '🎞', webm: '🎞',
+    jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', webp: '🖼',
+    mp3: '🎵', wav: '🎵', zip: '📦', rar: '📦',
+  };
+
+  el.innerHTML = files.map(f => {
+    const ext = (f.name || '').split('.').pop().toLowerCase();
+    const icon = EXT_ICON[ext] || '📁';
+    const date = f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid var(--border2);font-size:12px;" id="ovf-${f.id}">
+      <span style="font-size:18px;flex-shrink:0;">${icon}</span>
+      <span id="ovf-name-${f.id}" style="flex:1;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onclick="ovFilesView('${f.id}')" title="${f.name}">${f.name}</span>
+      <span style="color:var(--text3);flex-shrink:0;">${formatFileSize(f.size)}</span>
+      <span style="color:var(--text3);flex-shrink:0;font-size:11px;">${date}</span>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-sm" onclick="ovFilesRename('${f.id}')" title="Rename">✏️</button>
+        <button class="btn btn-sm" onclick="ovFilesDownload('${f.id}')" title="Download">⬇</button>
+        <button class="btn btn-sm btn-danger" onclick="ovFilesDelete('${f.id}')" title="Delete">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function ovFilesView(id) {
+  const f = (store.files || []).find(f => f.id === id);
+  if (!f || !f.data) return;
+  const win = window.open();
+  const ext = (f.name || '').split('.').pop().toLowerCase();
+  if (f.data.startsWith('data:image')) {
+    win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${f.data}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
+  } else if (ext === 'pdf') {
+    win.document.write(`<!DOCTYPE html><html><head><style>*{margin:0;padding:0;}html,body{height:100%;overflow:hidden;}iframe{width:100%;height:100%;border:none;}</style></head><body><iframe src="${f.data}"></iframe></body></html>`);
+  } else {
+    win.document.write(`<html><body style="margin:20px;font-family:sans-serif;"><h2>${f.name}</h2><p style="color:#666;">${formatFileSize(f.size)}</p><a href="${f.data}" download="${f.name}" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#e6bc3c;color:#000;text-decoration:none;border-radius:4px;font-weight:600;">Download</a></body></html>`);
+  }
+  win.document.close();
+}
+
+function ovFilesRename(id) {
+  const f = (store.files || []).find(f => f.id === id);
+  if (!f) return;
+  const nameEl = document.getElementById(`ovf-name-${id}`);
+  const current = f.name;
+  // Inline edit
+  if (nameEl) {
+    nameEl.contentEditable = 'true';
+    nameEl.focus();
+    const range = document.createRange();
+    range.selectNodeContents(nameEl);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    const finish = () => {
+      nameEl.contentEditable = 'false';
+      const newName = nameEl.textContent.trim();
+      if (newName && newName !== current) {
+        f.name = newName;
+        saveStore();
+        showToast('Renamed', 'success');
+      } else {
+        nameEl.textContent = current;
+      }
+      nameEl.removeEventListener('blur', finish);
+      nameEl.removeEventListener('keydown', keyHandler);
+    };
+    const keyHandler = e => {
+      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+      if (e.key === 'Escape') { nameEl.textContent = current; nameEl.blur(); }
+    };
+    nameEl.addEventListener('blur', finish);
+    nameEl.addEventListener('keydown', keyHandler);
+  }
+}
+
+function ovFilesDownload(id) {
+  const f = (store.files || []).find(f => f.id === id);
+  if (!f) return;
+  const a = document.createElement('a');
+  a.href = f.data;
+  a.download = f.name;
+  a.click();
+}
+
+function ovFilesDelete(id) {
+  const f = (store.files || []).find(f => f.id === id);
+  if (!f) return;
+  showConfirmDialog(`Delete "${f.name}"? This cannot be undone.`, 'Delete File', () => {
+    store.files = (store.files || []).filter(f => f.id !== id);
+    saveStore();
+    ovFilesRender();
+    showToast('File deleted', 'success');
+  });
+}
+

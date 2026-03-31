@@ -100,8 +100,8 @@ Priority colour bar shows urgency">?</span>
           </div>
           <div class="documents-grid" id="overview-docs"></div>
 
-          <!-- EDITS / CUTS WIDGET -->
-          <div style="margin-top:28px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:16px;">
+          <!-- EDITS / CUTS WIDGET (hidden)
+          <div style="margin-top:28px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:16px;display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:10px">
                 <h3 class="section-heading" style="margin:0;">🎞️ EDITS</h3>
@@ -119,24 +119,19 @@ Priority colour bar shows urgency">?</span>
           </div>
 
           <!-- PROJECT FILES WIDGET -->
-          <div style="margin-top:28px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-              <h3 class="section-heading" style="margin:0;">PROJECT FILES</h3>
-              <label class="btn btn-sm btn-primary" style="cursor:pointer;">
-                + Upload File
-                <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.fdx,.mp4,.mov,.avi,.mkv,.webm,.m4v" style="display:none" onchange="handleFileUploadFromOverview(this.files)">
-              </label>
-            </div>
-            <div id="overview-files-bulk-bar" class="file-bulk-bar">
-              <span class="file-bulk-bar-count" id="overview-bulk-count"></span>
-              <span>files selected</span>
-              <div class="file-bulk-sep"></div>
-              <button class="btn btn-sm" onclick="openMoveFile(getSelectedInContext('overview'),getActivePid())">🔀 Move</button>
-              <button class="btn btn-sm btn-danger" onclick="openRemoveFiles(getSelectedInContext('overview'),getActivePid())">🗑 Remove</button>
-              <span class="file-bulk-clear" onclick="clearFileSelection()">Clear</span>
-            </div>
-            <div id="overview-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
-          </div>
+<div style="margin-top:28px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <h3 class="section-heading" style="margin:0;">PROJECT FILES</h3>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="ov-files-storage" style="font-size:11px;font-family:var(--font-mono);color:var(--text3);"></span>
+      <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+        + Upload File
+        <input type="file" multiple style="display:none" onchange="ovFilesUpload(this.files);this.value=''">
+      </label>
+    </div>
+  </div>
+  <div id="ov-files-list"></div>
+</div>
         </div>
 
         <!-- SECTION: BREAKDOWN -->

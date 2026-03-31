@@ -256,7 +256,6 @@ function deleteCustomSection(id) {
     if (p.overviewLayout) p.overviewLayout = p.overviewLayout.filter(x => x.tab !== tab);
     saveStore();
     showSection('overview');
-    renderOverview(p);
     showToast('Section deleted', 'success');
   });
 }
