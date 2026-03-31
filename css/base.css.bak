@@ -1,33 +1,61 @@
-:root {
-  --bg: #f5f0e8;
-  --surface: #faf7f2;
-  --surface2: #f0ebe0;
-  --surface3: #e8e2d5;
-  --surface4: #ddd6c8;
-  --border: #c8c0b0;
-  --border2: #ddd6c8;
-  --accent: #c8a830;
-  --accent-dim: rgba(200,168,48,0.12);
-  --accent2: #2a7a9a;
-  --accent2-dim: rgba(42,122,154,0.1);
-  --accent3: #8a3048;
-  --text: #1a1814;
-  --text2: #3a3530;
-  --text3: #7a7268;
-  --green: #2a7a4a;
-  --orange: #9a5828;
-  --red: #8a2828;
-  --font-display: 'DM Sans', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --radius: 5px;
-  --radius-lg: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 3px 10px rgba(0,0,0,0.05);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.12), 0 12px 48px rgba(0,0,0,0.08);
-  --topbar-bg: rgba(245,240,232,0.95);
-}
+  :root {
+    --bg: #0a0a10;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #222230;
+    --surface4: #32324a;
+    --border: #3a3a52;
+    --border2: #282838;
+    --accent: #e6bc3c;
+    --accent-dim: rgba(230,188,60,0.15);
+    --accent2: #5bc0eb;
+    --accent2-dim: rgba(91,192,235,0.12);
+    --accent3: #c4566e;
+    --text: #f0f0f5;
+    --text2: #c8c8d8;
+    --text3: #9090a8;
+    --green: #2ea864;
+    --orange: #d4883a;
+    --red: #c44444;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 5px;
+    --radius-lg: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.6), 0 3px 10px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.7), 0 12px 48px rgba(0,0,0,0.4);
+    --topbar-bg: rgba(13,13,18,0.95);
+  }
 
-/* Light mode removed — now the default theme */
+  /* Light mode */
+  [data-theme="light"] {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f0f2;
+    --surface3: #e8e8ec;
+    --surface4: #d8d8de;
+    --border: #d0d0d8;
+    --border2: #e0e0e8;
+    --accent: #c9a833;
+    --accent-dim: rgba(201,168,51,0.12);
+    --accent2: #3a9cc4;
+    --accent2-dim: rgba(58,156,196,0.1);
+    --accent3: #a84860;
+    --text: #1a1a20;
+    --text2: #484850;
+    --text3: #6a6a78;
+    --green: #248a50;
+    --orange: #b87030;
+    --red: #a83838;
+    --shadow: 0 1px 2px rgba(0,0,0,0.08), 0 3px 10px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.1), 0 12px 48px rgba(0,0,0,0.08);
+    --topbar-bg: rgba(245,245,247,0.95);
+    --font-scale: 1;
+  }
+  [data-theme="light"] ::-webkit-scrollbar-track { background: var(--surface2); }
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--text3); }
+  [data-theme="light"] ::-webkit-scrollbar-corner { background: var(--surface2); }
+  [data-theme="light"] #topbar { background: var(--topbar-bg); }
   
   /* Font size scales — applied as zoom on <html> so all px values scale uniformly */
   [data-font-size="bigger"]     { zoom: 1.1; }
@@ -196,21 +224,23 @@
     content: '';
     position: fixed;
     inset: 0;
-    background: #f5f0e8;
+    background: #0d0d12;
     z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   body.loading::after {
-    content: 'Black Fountain';
+    content: 'The Fountain is Flowing…';
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 100000;
-    color: #1a1814;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 22px;
-    font-weight: 400;
-    letter-spacing: 0.05em;
+    color: #e6bc3c;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
     animation: bf-pulse 1.8s ease-in-out infinite;
   }
   @keyframes bf-pulse {
@@ -251,32 +281,34 @@
     overflow: hidden;
   }
   .sidebar-logo h1 {
-    font-family: var(--font-body);
-    font-size: 18px;
-    letter-spacing: 0;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.2;
+    font-family: var(--font-display);
+    font-size: 27px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
     margin-bottom: 4px;
-    text-shadow: none;
+    text-shadow: 0 0 40px rgba(212,170,44,0.3);
   }
   .sidebar-logo span {
-    font-size: 9px;
+    font-size: 8.5px;
     color: var(--text3);
-    letter-spacing: 1px;
-    text-transform: none;
-    font-family: var(--font-body);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
   }
 
   .sidebar-section { padding: 16px 8px 4px; overflow: hidden; }
   .sidebar-section-label {
-    font-size: 10px;
-    letter-spacing: 0.5px;
-    text-transform: none;
+    font-size: 8.5px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
     color: var(--text3);
-    font-family: var(--font-body);
+    font-family: var(--font-mono);
     padding: 0 10px;
     margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nav-item {
