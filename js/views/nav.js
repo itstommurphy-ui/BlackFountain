@@ -87,35 +87,35 @@ function showView(name) {
   }
 
   if (name === 'dashboard') {
-    document.getElementById('topbar-title').textContent = 'Dashboard';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain';
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Dashboard';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain';
     renderDashboard();
   } else if (name === 'team') {
-    document.getElementById('topbar-title').textContent = 'Team';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Team';
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Team';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Team';
     renderTeam();
   } else if (name === 'contacts') {
     const subLabel = contactSubView === 'crew' ? 'Crew' : contactSubView === 'talent' ? 'Talent' : contactSubView === 'locations' ? 'Location Contacts' : '';
-    document.getElementById('topbar-title').textContent = subLabel || 'Contacts';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Contacts' + (subLabel ? ' / ' + subLabel : '');
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = subLabel || 'Contacts';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Contacts' + (subLabel ? ' / ' + subLabel : '');
     renderContacts();
   } else if (name === 'locations') {
-    document.getElementById('topbar-title').textContent = 'Locations';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Locations';
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Locations';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Locations';
     renderLocations();
   } else if (name === 'files') {
-    document.getElementById('topbar-title').textContent = 'Files';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Files';
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Files';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Files';
     selectedFileIds.clear();
     renderFiles();
   } else if (name === 'moodboards') {
     const mb = _currentMoodboardId ? (store.moodboards||[]).find(b => b.id === _currentMoodboardId) : null;
-    document.getElementById('topbar-title').textContent = mb ? mb.title : 'Moodboards';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Moodboards' + (mb ? ' / ' + mb.title : '');
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = mb ? mb.title : 'Moodboards';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Moodboards' + (mb ? ' / ' + mb.title : '');
     renderMoodboards();
   } else if (name === 'settings') {
-    document.getElementById('topbar-title').textContent = 'Settings';
-    document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Settings';
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Settings';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Settings';
     renderSettings();
   }
 // Update top nav active state
@@ -145,11 +145,11 @@ function showProjectView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-project').classList.add('active');
 
-  document.getElementById('topbar-title').textContent = p.title.toUpperCase();
+  const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = p.title.toUpperCase();
   const projNameEl = document.getElementById('topbar-project-name');
   if (projNameEl) projNameEl.textContent = p.title;
-  document.getElementById('topbar-breadcrumb').textContent = `Black Fountain / ${p.title}`;
-  document.getElementById('proj-title').textContent = p.title.toUpperCase();
+  const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = `Black Fountain / ${p.title}`;
+  const pt = document.getElementById('proj-title'); if (pt) pt.textContent = p.title.toUpperCase();
 
   const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
   const sel = document.getElementById('proj-status-select');
