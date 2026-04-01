@@ -27,6 +27,30 @@ function _setTopNavActive(viewName, sectionName) {
   }
 }
 
+// Get human-readable section label
+function _getSectionLabel(name) {
+  const labels = {
+    overview: 'Overview', script: 'Script & Docs', breakdown: 'Script Breakdown', stripboard: 'Stripboard', storyboard: 'Storyboard', moodboards: 'Moodboards', brief: 'Project Outline',
+    cast: 'Cast & Extras', crew: 'Crew',
+    locations: 'Locations', riskassess: 'Risk Assessment',
+    schedule: 'Schedule', callsheet: 'Callsheet', shotlist: 'Shot List', props: 'Props', wardrobe: 'Wardrobe', soundlog: 'Sound Log', equipment: 'Equipment', releases: 'Release Forms',
+    budget: 'Budget', plan: 'Production Plan'
+  };
+  return labels[name] || name;
+}
+
+// Get nav group for a section
+function _getNavGroup(name) {
+  const sectionToNav = {
+    overview: 'story', script: 'story', breakdown: 'story', stripboard: 'story', storyboard: 'story', moodboards: 'story', brief: 'story',
+    cast: 'people', crew: 'people',
+    locations: 'locations', riskassess: 'locations',
+    schedule: 'production', callsheet: 'production', shotlist: 'production', props: 'production', wardrobe: 'production', soundlog: 'production', equipment: 'production', releases: 'production',
+    budget: 'finance', plan: 'finance'
+  };
+  return sectionToNav[name] || null;
+}
+
 function showView(name) {
   // Check if view element exists - if not, the view hasn't been loaded yet
   const viewEl = document.getElementById('view-' + name);
@@ -197,17 +221,13 @@ function showSection(name) {
 
   // Update section bar and nav active state
   const sectionBar = document.getElementById('topbar-section-bar');
-  if (sectionBar) {
-    const sectionNameEl = document.getElementById('topbar-section-name');
-    if (sectionNameEl) sectionNameEl.textContent = name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1');
-    const projectNameEl = document.getElementById('topbar-project-name');
-    if (projectNameEl) {
-      const proj = currentProject();
-      projectNameEl.textContent = proj ? proj.title : '';
-    }
+  const sectionNameEl = document.getElementById('topbar-section-name');
+  if (sectionBar && sectionNameEl) {
     sectionBar.classList.add('visible');
+    sectionNameEl.textContent = _getSectionLabel(name);
   }
-  _setTopNavActive(null, name);
+  // Highlight correct nav group
+  _setTopNavActive(_getNavGroup(name));
 }
 
 function _gotoHtml(skip) {
