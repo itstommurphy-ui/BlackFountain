@@ -165,15 +165,14 @@
           <input type="search" id="global-search" placeholder="Search…" autocomplete="off"
             style="padding:5px 12px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);width:160px;outline:none;">
           <div class="dropdown">
-            <button class="dropdown-toggle" id="topbar-actions-btn">Actions</button>
+            <button class="dropdown-toggle" id="topbar-actions-btn" style="letter-spacing:2px;">···</button>
             <div class="dropdown-menu" id="topbar-actions-menu">
-              <div class="dropdown-item" onclick="openNewProjectModal()">+ New Project</div>
-              <div class="dropdown-divider"></div>
               <div class="dropdown-item" onclick="exportStore()">⬇ Export Data</div>
               <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import Data</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
             </div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">+ New Project</button>
         </div>
 
       </div>
@@ -2050,6 +2049,21 @@ if ('serviceWorker' in navigator) {
       <span class="footer-divider">·</span>
       <a href="mailto:support@blackfountain.io">support@blackfountain.io</a>
     </footer>
+  </div>
+
+  <div id="fab-menu" style="position:fixed;bottom:28px;left:28px;z-index:9000;">
+    <div id="fab-items" style="display:none;flex-direction:column-reverse;gap:8px;margin-bottom:10px;">
+      <div class="fab-item" onclick="showView('settings');closeFab()">
+        ⚙ Preferences
+      </div>
+      <div class="fab-item" onclick="window.open('https://blackfountain.io','_blank');closeFab()">
+        ◈ My Fountain
+      </div>
+      <div class="fab-item" onclick="openNewProjectModal();closeFab()">
+        + New Project
+      </div>
+    </div>
+    <button id="fab-btn" onclick="toggleFab()" title="Menu">+</button>
   </div>
 </body>
 </html>

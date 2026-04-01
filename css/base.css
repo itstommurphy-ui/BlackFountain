@@ -446,6 +446,39 @@
   flex-shrink: 0;
 }
 
+/* ── FAB (floating action button) ── */
+#fab-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#fab-btn:hover { transform: scale(1.08); background: var(--accent-hover, var(--accent)); }
+#fab-btn.open { transform: rotate(45deg); }
+.fab-item {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--surface3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: background 0.15s ease;
+}
+.fab-item:hover { background: var(--surface4); }
+
 /* Legacy — keep these so existing topbar JS still works */
 .topbar-title { display: none; }
 .topbar-breadcrumb { display: none; }

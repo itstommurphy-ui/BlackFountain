@@ -1,5 +1,20 @@
 // ══════════════════════════════════════════
 
+function toggleFab() {
+  const items = document.getElementById('fab-items');
+  const btn = document.getElementById('fab-btn');
+  const open = items.style.display === 'flex';
+  items.style.display = open ? 'none' : 'flex';
+  btn.classList.toggle('open', !open);
+}
+
+function closeFab() {
+  const items = document.getElementById('fab-items');
+  const btn = document.getElementById('fab-btn');
+  items.style.display = 'none';
+  btn.classList.remove('open');
+}
+
 function _getSectionLabel(name) {
   const labels = {
     script: 'Script & Docs', breakdown: 'Script Breakdown',
