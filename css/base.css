@@ -431,10 +431,11 @@
 
 .topbar-project-name {
   font-size: 11px;
-  color: var(--text3);
+  color: var(--accent);
   font-family: var(--font-mono);
   margin-left: auto;
   flex-shrink: 0;
+  letter-spacing: 0.5px;
 }
 
 /* Right side of topbar */

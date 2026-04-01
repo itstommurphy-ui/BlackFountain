@@ -44,6 +44,13 @@ function _setTopNavActive(group) {
     const el = document.getElementById('nav-' + group);
     if (el) el.classList.add('active');
   }
+
+  // Show project name in nav when in project context
+  const projEl = document.getElementById('topbar-project-name');
+  if (projEl) {
+    const p = currentProject();
+    projEl.textContent = p ? p.title : '';
+  }
 }
 
 function navToSection(sectionName) {
@@ -135,7 +142,11 @@ function showView(name) {
     renderSettings();
   }
 // Update top nav active state
-_setTopNavActive(name === 'dashboard' ? 'dashboard' : null);
+_setTopNavActive(name === 'dashboard' ? 'dashboard' : 
+                 name === 'contacts' ? 'assets' :
+                 name === 'locations' ? 'assets' :
+                 name === 'moodboards' ? 'assets' :
+                 name === 'settings' ? 'assets' : null);
 // Hide section bar on global views
 const sectionBar = document.getElementById('topbar-section-bar');
 if (sectionBar) sectionBar.classList.remove('visible');
