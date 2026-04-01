@@ -1,54 +1,49 @@
-// VIEWS
 // ══════════════════════════════════════════
-// Update top nav active state based on current view/section
-function _setTopNavActive(viewName, sectionName) {
-  // Clear all nav items
-  document.querySelectorAll('.topbar-nav-item').forEach(item => item.classList.remove('active'));
-  
-  if (viewName) {
-    // Global view active
-    const navItem = document.getElementById('nav-' + viewName);
-    if (navItem) navItem.classList.add('active');
-  } else if (sectionName) {
-    // Map section to parent nav category
-    const sectionToNav = {
-      overview: 'story', script: 'story', breakdown: 'story', stripboard: 'story', storyboard: 'story', moodboards: 'story', brief: 'story',
-      cast: 'people', crew: 'people',
-      locations: 'locations', riskassess: 'locations',
-      schedule: 'production', callsheet: 'production', shotlist: 'production', props: 'production', wardrobe: 'production', soundlog: 'production', equipment: 'production', releases: 'production',
-      budget: 'finance', plan: 'finance',
-      contacts: 'assets'
-    };
-    const navKey = sectionToNav[sectionName];
-    if (navKey) {
-      const navItem = document.getElementById('nav-' + navKey);
-      if (navItem) navItem.classList.add('active');
-    }
-  }
-}
 
-// Get human-readable section label
 function _getSectionLabel(name) {
   const labels = {
-    overview: 'Overview', script: 'Script & Docs', breakdown: 'Script Breakdown', stripboard: 'Stripboard', storyboard: 'Storyboard', moodboards: 'Moodboards', brief: 'Project Outline',
+    script: 'Script & Docs', breakdown: 'Script Breakdown',
+    stripboard: 'Stripboard', storyboard: 'Storyboard',
+    moodboards: 'Moodboards', brief: 'Project Outline',
     cast: 'Cast & Extras', crew: 'Crew',
     locations: 'Locations', riskassess: 'Risk Assessment',
-    schedule: 'Schedule', callsheet: 'Callsheet', shotlist: 'Shot List', props: 'Props', wardrobe: 'Wardrobe', soundlog: 'Sound Log', equipment: 'Equipment', releases: 'Release Forms',
-    budget: 'Budget', plan: 'Production Plan'
+    schedule: 'Schedule', callsheet: 'Callsheet',
+    shotlist: 'Shot List', props: 'Props',
+    wardrobe: 'Wardrobe', soundlog: 'Sound Log',
+    equipment: 'Equipment', releases: 'Release Forms',
+    budget: 'Budget', plan: 'Production Plan',
+    overview: 'Overview',
   };
+  if (name.startsWith('custom_')) {
+    const p = currentProject();
+    const cs = (p?.customSections || []).find(s => 'custom_' + s.id === name);
+    return cs?.name || 'Custom Section';
+  }
   return labels[name] || name;
 }
 
-// Get nav group for a section
-function _getNavGroup(name) {
-  const sectionToNav = {
-    overview: 'story', script: 'story', breakdown: 'story', stripboard: 'story', storyboard: 'story', moodboards: 'story', brief: 'story',
-    cast: 'people', crew: 'people',
-    locations: 'locations', riskassess: 'locations',
-    schedule: 'production', callsheet: 'production', shotlist: 'production', props: 'production', wardrobe: 'production', soundlog: 'production', equipment: 'production', releases: 'production',
-    budget: 'finance', plan: 'finance'
+function _getNavGroup(section) {
+  const groups = {
+    story:      ['script','breakdown','stripboard','storyboard','moodboards','brief'],
+    people:     ['cast','crew'],
+    locations:  ['locations','riskassess'],
+    production: ['schedule','callsheet','shotlist','props','wardrobe','soundlog','equipment','releases'],
+    finance:    ['budget','plan'],
   };
-  return sectionToNav[name] || null;
+  for (const [group, sections] of Object.entries(groups)) {
+    if (sections.includes(section)) return group;
+  }
+  return null;
+}
+
+function _setTopNavActive(group) {
+  document.querySelectorAll('.topbar-nav-item').forEach(el => {
+    el.classList.remove('active');
+  });
+  if (group) {
+    const el = document.getElementById('nav-' + group);
+    if (el) el.classList.add('active');
+  }
 }
 
 function showView(name) {
