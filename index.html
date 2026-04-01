@@ -74,31 +74,117 @@
   <!-- MAIN -->
   <div id="main">
     <header id="topbar">
-      <div>
-        <div class="topbar-title" id="topbar-title">Dashboard</div>
-        <div class="topbar-breadcrumb" id="topbar-breadcrumb">Black Fountain</div>
-      </div>
-      <div class="topbar-right">
-        <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
-        <span id="sb-auth-indicator" style="font-size:11px;font-family:var(--font-mono);color:var(--text3)" title=""></span>
-        <div style="position:relative;">
-          <input type="text" id="global-search" aria-label="Search projects and data" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
-          <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-sm dropdown-toggle">⚙ Actions</button>
-          <div class="dropdown-menu" style="right:0;left:auto">
-            <div class="dropdown-item" onclick="manualSave()">💾 Save Data</div>
-            <div class="dropdown-item" onclick="exportData()">⬇ Export Data</div>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
-            <div class="dropdown-item" onclick="sbSignOut()">🚪 Sign Out</div>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</div>
+      <div class="topbar-main">
+
+        <!-- Logo -->
+        <div class="topbar-logo" onclick="showView('dashboard')">BLACK FOUNTAIN</div>
+
+        <!-- Centred nav -->
+        <nav class="topbar-nav" id="topbar-nav">
+
+          <div class="topbar-nav-item" id="nav-dashboard">
+            <span onclick="showView('dashboard')">Dashboard</span>
           </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-story">
+            <span>Story</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showSection('script')">Script &amp; Docs</div>
+              <div class="nav-dropdown-item" onclick="showSection('breakdown')">Script Breakdown</div>
+              <div class="nav-dropdown-item" onclick="showSection('stripboard')">Stripboard</div>
+              <div class="nav-dropdown-item" onclick="showSection('storyboard')">Storyboard</div>
+              <div class="nav-dropdown-item" onclick="showSection('moodboards')">Moodboards</div>
+              <div class="nav-dropdown-item" onclick="showSection('brief')">Project Outline</div>
+            </div>
+          </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-people">
+            <span>People</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showSection('cast')">Cast &amp; Extras</div>
+              <div class="nav-dropdown-item" onclick="showSection('crew')">Crew</div>
+            </div>
+          </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-locations">
+            <span>Locations</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showSection('locations')">Locations</div>
+              <div class="nav-dropdown-item" onclick="showSection('riskassess')">Risk Assessment</div>
+            </div>
+          </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-production">
+            <span>Production</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showSection('schedule')">Schedule</div>
+              <div class="nav-dropdown-item" onclick="showSection('callsheet')">Callsheet</div>
+              <div class="nav-dropdown-item" onclick="showSection('shotlist')">Shot List</div>
+              <div class="nav-dropdown-item" onclick="showSection('props')">Props</div>
+              <div class="nav-dropdown-item" onclick="showSection('wardrobe')">Wardrobe</div>
+              <div class="nav-dropdown-item" onclick="showSection('soundlog')">Sound Log</div>
+              <div class="nav-dropdown-item" onclick="showSection('equipment')">Equipment</div>
+              <div class="nav-dropdown-item" onclick="showSection('releases')">Release Forms</div>
+            </div>
+          </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-finance">
+            <span>Finance</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showSection('budget')">Budget</div>
+              <div class="nav-dropdown-item" onclick="showSection('plan')">Production Plan</div>
+            </div>
+          </div>
+
+          <span class="topbar-nav-sep">|</span>
+
+          <div class="topbar-nav-item" id="nav-assets">
+            <span>Assets</span>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown-item" onclick="showView('contacts')">Contacts</div>
+              <div class="nav-dropdown-item" onclick="showView('locations')">All Locations</div>
+              <div class="nav-dropdown-item" onclick="showView('moodboards')">All Moodboards</div>
+              <div class="nav-dropdown-item" onclick="showView('settings')">Settings</div>
+            </div>
+          </div>
+
+        </nav>
+
+        <!-- Right side -->
+        <div class="topbar-right">
+          <span id="topbar-save-status" style="font-size:11px;color:var(--text3);font-family:var(--font-mono);"></span>
+          <input type="search" id="global-search" placeholder="Search…" autocomplete="off"
+            style="padding:5px 12px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);width:160px;outline:none;">
+          <div class="dropdown">
+            <button class="dropdown-toggle" id="topbar-actions-btn">Actions</button>
+            <div class="dropdown-menu" id="topbar-actions-menu">
+              <div class="dropdown-item" onclick="openNewProjectModal()">+ New Project</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" onclick="exportStore()">⬇ Export Data</div>
+              <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import Data</div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">+ New Project</button>
         </div>
-        <button class="btn btn-sm btn-primary" onclick="openNewProjectModal()">+ New Project</button>
+
       </div>
+
+      <!-- Section label bar — visible when inside a project section -->
+      <div class="topbar-section-bar" id="topbar-section-bar">
+        <span class="topbar-section-name" id="topbar-section-name"></span>
+        <span class="topbar-project-name" id="topbar-project-name"></span>
+      </div>
+
     </header>
 
     <div id="content">
