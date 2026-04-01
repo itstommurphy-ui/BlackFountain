@@ -312,14 +312,27 @@
 }
 
 .topbar-logo {
-  font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 3px;
   color: var(--accent);
-  text-decoration: none;
   flex-shrink: 0;
   cursor: pointer;
+  text-decoration: none;
 }
+.topbar-logo-text {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  line-height: 1;
+}
+.topbar-logo-sub {
+  font-size: 7.5px;
+  color: var(--text3);
+  letter-spacing: 2.5px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+[data-theme="light"] .topbar-logo { color: var(--text); }
+[data-theme="light"] .topbar-logo-text { color: var(--text); }
 
 .topbar-nav {
   display: flex;
