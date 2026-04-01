@@ -446,38 +446,42 @@
   flex-shrink: 0;
 }
 
-/* ── FAB (floating action button) ── */
+/* ── FLOATING ACTION BUTTON ── */
 #fab-btn {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: #0a0a10;
   border: none;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 300;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-  transition: transform 0.2s ease, background 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.2s, background 0.15s;
+  line-height: 1;
 }
-#fab-btn:hover { transform: scale(1.08); background: var(--accent-hover, var(--accent)); }
+#fab-btn:hover { background: #f5cc50; }
 #fab-btn.open { transform: rotate(45deg); }
+
 .fab-item {
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  background: var(--surface3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px 14px;
+  font-size: 12px;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  transition: background 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: background 0.12s, color 0.12s;
 }
-.fab-item:hover { background: var(--surface4); }
+.fab-item:hover { background: var(--accent); color: #0a0a10; }
+
+#fab-items.open { display: flex !important; }
 
 /* Legacy — keep these so existing topbar JS still works */
 .topbar-title { display: none; }

@@ -1,19 +1,27 @@
 // ══════════════════════════════════════════
 
 function toggleFab() {
-  const items = document.getElementById('fab-items');
   const btn = document.getElementById('fab-btn');
-  const open = items.style.display === 'flex';
-  items.style.display = open ? 'none' : 'flex';
-  btn.classList.toggle('open', !open);
+  const items = document.getElementById('fab-items');
+  const isOpen = items.classList.contains('open');
+  if (isOpen) {
+    items.classList.remove('open');
+    btn.classList.remove('open');
+  } else {
+    items.classList.add('open');
+    btn.classList.add('open');
+  }
 }
 
 function closeFab() {
-  const items = document.getElementById('fab-items');
-  const btn = document.getElementById('fab-btn');
-  items.style.display = 'none';
-  btn.classList.remove('open');
+  document.getElementById('fab-items')?.classList.remove('open');
+  document.getElementById('fab-btn')?.classList.remove('open');
 }
+
+// Close fab when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('#fab-menu')) closeFab();
+});
 
 function _getSectionLabel(name) {
   const labels = {
