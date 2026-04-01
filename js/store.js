@@ -625,7 +625,7 @@ const SaveFeedback = (function() {
   let indicator = null;
   
   function init() {
-    indicator = document.getElementById('save-indicator');
+    indicator = document.getElementById('topbar-save-status') || document.getElementById('save-indicator');
   }
   
   function showSaving() {
