@@ -46,6 +46,22 @@ function _setTopNavActive(group) {
   }
 }
 
+function navToSection(sectionName) {
+  const p = currentProject();
+  if (!p) {
+    // No project loaded — if only one project exists open it, otherwise go to dashboard
+    if (store.projects && store.projects.length === 1) {
+      showProjectView(store.projects[0].id);
+      setTimeout(() => showSection(sectionName), 100);
+    } else {
+      showView('dashboard');
+      showToast('Select a project first', 'info');
+    }
+    return;
+  }
+  showSection(sectionName);
+}
+
 function showView(name) {
   // Check if view element exists - if not, the view hasn't been loaded yet
   const viewEl = document.getElementById('view-' + name);
@@ -178,6 +194,13 @@ function showProjectView(id) {
   renderSidebarProjects();
 
   showSection('overview');
+
+  // Set topbar project name
+  const projNameEl2 = document.getElementById('topbar-project-name');
+  if (projNameEl2) projNameEl2.textContent = p.title;
+
+  // Show the nav as project-mode
+  document.getElementById('topbar-nav')?.classList.add('project-mode');
 }
 
 function showSection(name) {

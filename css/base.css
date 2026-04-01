@@ -87,18 +87,22 @@
   [data-font-size="bigger"]     #ctx-menu,
   [data-font-size="bigger"]     #global-tip,
   [data-font-size="bigger"]     #toast,
+  [data-font-size="bigger"]     #save-toast,
   [data-font-size="bigger"]     .script-preview-overlay { zoom: 0.9091; }
   [data-font-size="evenbigger"] #ctx-menu,
   [data-font-size="evenbigger"] #global-tip,
   [data-font-size="evenbigger"] #toast,
+  [data-font-size="evenbigger"] #save-toast,
   [data-font-size="evenbigger"] .script-preview-overlay { zoom: 0.8333; }
   [data-font-size="huge"]       #ctx-menu,
   [data-font-size="huge"]       #global-tip,
   [data-font-size="huge"]       #toast,
+  [data-font-size="huge"]       #save-toast,
   [data-font-size="huge"]       .script-preview-overlay { zoom: 0.7407; }
   [data-font-size="double"]     #ctx-menu,
   [data-font-size="double"]     #global-tip,
   [data-font-size="double"]     #toast,
+  [data-font-size="double"]     #save-toast,
   [data-font-size="double"]     .script-preview-overlay { zoom: 0.5;    }
 
   /* ── TOAST ── */
@@ -138,6 +142,32 @@
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+
+  /* ── SAVE TOAST (floating mid-bottom) ── */
+  #save-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: var(--radius-lg);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2);
+  }
+  #save-toast.visible { opacity: 1; }
+  #save-toast.saving  { background: var(--surface4); color: var(--text); border: 1px solid var(--border); }
+  #save-toast.saved   { background: var(--green);     color: #fff; }
+  #save-toast.error   { background: var(--red);       color: #fff; }
 
   /* Breakdown auto-suggest modal — built via createElement with inline styles,
      no .modal-overlay class, so needs its own counter-zoom rules.

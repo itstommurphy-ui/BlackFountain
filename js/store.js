@@ -622,76 +622,73 @@ function subscribeToData(eventName, callback) {
 const SaveFeedback = (function() {
   let pendingChanges = 0;
   let lastSaveTime = null;
-  let indicator = null;
-  
+  let toast = null;
+  let fadeTimer = null;
+
   function init() {
-    indicator = document.getElementById('topbar-save-status') || document.getElementById('save-indicator');
+    toast = document.getElementById('save-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'save-toast';
+      document.body.appendChild(toast);
+    }
   }
-  
+
+  function show(text, state) {
+    if (!toast) init();
+    clearTimeout(fadeTimer);
+    toast.className = 'visible ' + state;
+    toast.textContent = text;
+  }
+
+  function hide() {
+    if (!toast) return;
+    toast.className = toast.className.replace('visible', '').trim();
+  }
+
   function showSaving() {
-    if (!indicator) init();
-    if (!indicator) return;
-    indicator.textContent = '💾 Saving...';
-    indicator.style.opacity = '1';
-    indicator.style.color = 'var(--warning)';
+    show('Saving...', 'saving');
   }
-  
+
   function showSaved() {
-    if (!indicator) init();
-    if (!indicator) return;
-    indicator.textContent = '✓ Saved';
-    indicator.style.opacity = '1';
-    indicator.style.color = 'var(--green)';
+    show('Saved ✓', 'saved');
     lastSaveTime = Date.now();
-    
-    // Fade out after 3 seconds
-    setTimeout(() => {
-      if (pendingChanges === 0) {
-        indicator.style.opacity = '0';
-      }
-    }, 3000);
+    fadeTimer = setTimeout(hide, 2500);
   }
-  
+
   function showPending() {
-    if (!indicator) init();
-    if (!indicator) return;
     pendingChanges++;
-    indicator.textContent = '● Pending';
-    indicator.style.opacity = '1';
-    indicator.style.color = 'var(--warning)';
+    show('Pending...', 'saving');
   }
-  
+
   function showError(msg) {
-    if (!indicator) init();
-    if (!indicator) return;
-    indicator.textContent = '✕ Error';
-    indicator.style.opacity = '1';
-    indicator.style.color = 'var(--red)';
-    showToast('Save error: ' + msg, 'error');
+    show('Save failed', 'error');
+    fadeTimer = setTimeout(hide, 4000);
+    if (typeof showToast === 'function') showToast('Save error: ' + msg, 'error');
   }
-  
+
   function decrementPending() {
     pendingChanges = Math.max(0, pendingChanges - 1);
     if (pendingChanges === 0) {
       showSaved();
     }
   }
-  
+
   function getPendingCount() {
     return pendingChanges;
   }
-  
+
   function getLastSaveTime() {
     return lastSaveTime;
   }
-  
+
   // Auto-init when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-  
+
   return {
     showSaving,
     showSaved,
