@@ -622,28 +622,31 @@ function subscribeToData(eventName, callback) {
 const SaveFeedback = (function() {
   let pendingChanges = 0;
   let lastSaveTime = null;
-  let toast = null;
+  let el = null;
   let fadeTimer = null;
 
   function init() {
-    toast = document.getElementById('save-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'save-toast';
-      document.body.appendChild(toast);
-    }
+    el = document.getElementById('topbar-save-status');
   }
 
   function show(text, state) {
-    if (!toast) init();
+    if (!el) init();
+    if (!el) return;
     clearTimeout(fadeTimer);
-    toast.className = 'visible ' + state;
-    toast.textContent = text;
+    el.textContent = text;
+    if (state === 'saving') {
+      el.style.color = 'var(--accent)';
+    } else if (state === 'saved') {
+      el.style.color = 'var(--green)';
+    } else {
+      el.style.color = 'var(--red)';
+    }
+    el.style.opacity = '1';
   }
 
   function hide() {
-    if (!toast) return;
-    toast.className = toast.className.replace('visible', '').trim();
+    if (!el) return;
+    el.style.opacity = '0';
   }
 
   function showSaving() {

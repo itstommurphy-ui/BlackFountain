@@ -1,6 +1,9 @@
 // ══════════════════════════════════════════
 // SETTINGS - EXPORT/IMPORT
 // ══════════════════════════════════════════
+let _lastCloudPush = 0;
+const CLOUD_PUSH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
 function renderSettings() {
   const statsEl = document.getElementById('storage-stats');
   if (statsEl) {
@@ -2807,11 +2810,14 @@ async function saveStore() {
   // 4. SECONDARY SAVE: Supabase Cloud (The "Backup")
   // We only run this if we are logged in.
   if (typeof sbPushStore === 'function') {
-    try {
-      await sbPushStore(); 
-      console.log('[saveStore] Cloud sync successful');
-    } catch (e) {
-      console.warn('[saveStore] Cloud sync failed:', e);
+    const now = Date.now();
+    if (now - _lastCloudPush > CLOUD_PUSH_INTERVAL) {
+      _lastCloudPush = now;
+      try {
+        await sbPushStore();
+      } catch(e) {
+        console.warn('[saveStore] Cloud sync failed:', e);
+      }
     }
   }
 
