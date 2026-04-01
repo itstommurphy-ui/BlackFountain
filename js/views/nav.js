@@ -127,6 +127,8 @@ function showProjectView(id) {
   document.getElementById('view-project').classList.add('active');
 
   document.getElementById('topbar-title').textContent = p.title.toUpperCase();
+  const projNameEl = document.getElementById('topbar-project-name');
+  if (projNameEl) projNameEl.textContent = p.title;
   document.getElementById('topbar-breadcrumb').textContent = `Black Fountain / ${p.title}`;
   document.getElementById('proj-title').textContent = p.title.toUpperCase();
 
