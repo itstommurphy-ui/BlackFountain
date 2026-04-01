@@ -1,5 +1,32 @@
 // VIEWS
 // ══════════════════════════════════════════
+// Update top nav active state based on current view/section
+function _setTopNavActive(viewName, sectionName) {
+  // Clear all nav items
+  document.querySelectorAll('.topbar-nav-item').forEach(item => item.classList.remove('active'));
+  
+  if (viewName) {
+    // Global view active
+    const navItem = document.getElementById('nav-' + viewName);
+    if (navItem) navItem.classList.add('active');
+  } else if (sectionName) {
+    // Map section to parent nav category
+    const sectionToNav = {
+      overview: 'story', script: 'story', breakdown: 'story', stripboard: 'story', storyboard: 'story', moodboards: 'story', brief: 'story',
+      cast: 'people', crew: 'people',
+      locations: 'locations', riskassess: 'locations',
+      schedule: 'production', callsheet: 'production', shotlist: 'production', props: 'production', wardrobe: 'production', soundlog: 'production', equipment: 'production', releases: 'production',
+      budget: 'finance', plan: 'finance',
+      contacts: 'assets'
+    };
+    const navKey = sectionToNav[sectionName];
+    if (navKey) {
+      const navItem = document.getElementById('nav-' + navKey);
+      if (navItem) navItem.classList.add('active');
+    }
+  }
+}
+
 function showView(name) {
   // Check if view element exists - if not, the view hasn't been loaded yet
   const viewEl = document.getElementById('view-' + name);
@@ -72,6 +99,11 @@ function showView(name) {
     document.getElementById('topbar-breadcrumb').textContent = 'Black Fountain / Settings';
     renderSettings();
   }
+// Update top nav active state
+_setTopNavActive(name === 'dashboard' ? 'dashboard' : null);
+// Hide section bar on global views
+const sectionBar = document.getElementById('topbar-section-bar');
+if (sectionBar) sectionBar.classList.remove('visible');
   setTimeout(initTableScrollbars, 0);
 }
 
@@ -160,6 +192,20 @@ function showSection(name) {
   // Inject Go To dropdown into any hooks in the active section
   const sectionEl = document.getElementById(sectionId);
   if (sectionEl) sectionEl.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml(name); });
+
+  // Update section bar and nav active state
+  const sectionBar = document.getElementById('topbar-section-bar');
+  if (sectionBar) {
+    const sectionNameEl = document.getElementById('topbar-section-name');
+    if (sectionNameEl) sectionNameEl.textContent = name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1');
+    const projectNameEl = document.getElementById('topbar-project-name');
+    if (projectNameEl) {
+      const proj = currentProject();
+      projectNameEl.textContent = proj ? proj.title : '';
+    }
+    sectionBar.classList.add('visible');
+  }
+  _setTopNavActive(null, name);
 }
 
 function _gotoHtml(skip) {
