@@ -533,14 +533,13 @@ function renderDashboard() {
     return `
     <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
       <div class="project-card-top">
-        <span class="project-card-num">#${String(p.num).padStart(3,'0')}</span>
+        <span class="project-card-timestamp" style="color:${lastEdit.color}">${lastEdit.text || ''}</span>
         <span class="status-badge ${badgeClass[p.status]}">${statusLabel[p.status]}</span>
       </div>
       <div class="project-card-title">${p.title}</div>
       ${dirName ? `<div class="project-card-dir">${dirName}</div>` : ''}
       ${p.company ? `<div class="project-card-company">${p.company}</div>` : ''}
       <div class="project-card-footer">
-        ${lastEdit.text ? `<span class="project-card-lastedit" style="color:${lastEdit.color}">${lastEdit.text}</span>` : ''}
         ${castCount ? `<span class="project-card-tag">${castCount} cast</span>` : ''}
         ${crewCount ? `<span class="project-card-tag">${crewCount} crew</span>` : ''}
         ${p.genre   ? `<span class="project-card-tag">${p.genre}</span>` : ''}

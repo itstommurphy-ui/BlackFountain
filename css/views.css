@@ -171,9 +171,8 @@
     justify-content: space-between;
     margin-bottom: 8px;
   }
-  .project-card-num {
+  .project-card-timestamp {
     font-size: 10px;
-    color: var(--text3);
     font-family: var(--font-mono);
   }
   .project-card-title {
