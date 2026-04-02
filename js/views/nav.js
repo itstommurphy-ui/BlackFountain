@@ -423,70 +423,104 @@ function saveLastActive(projectId, section) {
 
 function renderDashboard() {
   const projects = store.projects || [];
-  const statTotal = document.getElementById('stat-total');
-  if (statTotal) statTotal.textContent = projects.length;
-  const statPre = document.getElementById('stat-pre');
-  if (statPre) statPre.textContent = projects.filter(p => p.status === 'pre').length;
-  const statProd = document.getElementById('stat-prod');
-  if (statProd) statProd.textContent = projects.filter(p => p.status === 'prod').length;
-  const statPost = document.getElementById('stat-post');
-  if (statPost) statPost.textContent = projects.filter(p => p.status === 'post').length;
-  const statDone = document.getElementById('stat-done');
-  if (statDone) statDone.textContent = projects.filter(p => p.status === 'done').length;
-  const statReleased = document.getElementById('stat-released');
-  if (statReleased) statReleased.textContent = projects.filter(p => p.status === 'released').length;
 
-  // Highlight active filter card
-  ['pre','prod','post','done','released'].forEach(s => {
-    const el = document.getElementById('stat-' + s);
-    if (el) el.closest('.stat-card').classList.toggle('active', dashboardStatusFilter === s);
-  });
-  const totalCard = document.getElementById('stat-total');
-  if (totalCard) totalCard.closest('.stat-card').classList.toggle('active', !dashboardStatusFilter);
+  const counts = {
+    pre:      projects.filter(p => p.status === 'pre').length,
+    prod:     projects.filter(p => p.status === 'prod').length,
+    post:     projects.filter(p => p.status === 'post').length,
+    done:     projects.filter(p => p.status === 'done').length,
+    released: projects.filter(p => p.status === 'released').length,
+  };
+  const total = projects.length;
 
+  // Stats line
+  const statsEl = document.getElementById('dashboard-stats-line');
+  if (statsEl) {
+    statsEl.innerHTML = total === 0
+      ? `<span class="dash-stat-empty">No projects yet</span>`
+      : `<span class="dash-stat-total">${total} project${total !== 1 ? 's' : ''}</span>
+         <span class="dash-stat-sep">—</span>
+         ${counts.pre      ? `<span class="dash-stat-item pre">${counts.pre} pre-prod</span>` : ''}
+         ${counts.prod     ? `<span class="dash-stat-item prod">${counts.prod} in production</span>` : ''}
+         ${counts.post     ? `<span class="dash-stat-item post">${counts.post} post</span>` : ''}
+         ${counts.done     ? `<span class="dash-stat-item done">${counts.done} complete</span>` : ''}
+         ${counts.released ? `<span class="dash-stat-item released">${counts.released} released</span>` : ''}`;
+  }
+
+  // Filter pills
+  const filtersEl = document.getElementById('dashboard-filters');
+  if (filtersEl) {
+    const filters = [
+      { key: null,       label: 'All' },
+      { key: 'pre',      label: 'Pre-prod' },
+      { key: 'prod',     label: 'Production' },
+      { key: 'post',     label: 'Post' },
+      { key: 'done',     label: 'Complete' },
+      { key: 'released', label: 'Released' },
+    ];
+    filtersEl.innerHTML = filters
+      .filter(f => f.key === null || counts[f.key] > 0)
+      .map(f => `<button class="dash-filter-pill${dashboardStatusFilter === f.key ? ' active' : ''}"
+          onclick="setDashboardFilter(${f.key ? `'${f.key}'` : 'null'})">${f.label}</button>`)
+      .join('');
+  }
+
+  // Project cards
   const visibleProjects = dashboardStatusFilter
     ? projects.filter(p => p.status === dashboardStatusFilter)
     : projects;
 
-  const grid = document.getElementById('projects-grid');
-  const statusMap = {pre:'PRE-PROD',prod:'PRODUCTION',post:'POST-PROD',done:'COMPLETE',released:'RELEASED'};
-  const badgeClass = {pre:'badge-pre',prod:'badge-prod',post:'badge-post',done:'badge-done',released:'badge-released'};
+  const statusLabel = { pre:'Pre-prod', prod:'Production', post:'Post-prod', done:'Complete', released:'Released' };
+  const badgeClass  = { pre:'badge-pre', prod:'badge-prod', post:'badge-post', done:'badge-done', released:'badge-released' };
 
-  grid.innerHTML = visibleProjects.map(p => `
-    <div class="project-card status-${p.status}">
-      <div class="project-card-header">
-        <div onclick="showProjectView('${p.id}')" style="flex:1;min-width:0;cursor:pointer">
-          <div class="project-card-num">#${p.num}</div>
-          <div class="project-card-title">${p.title}</div>
+  const grid = document.getElementById('projects-grid');
+  if (!grid) return;
+
+  if (projects.length === 0) {
+    grid.innerHTML = `
+      <div class="dashboard-empty">
+        <div class="dashboard-empty-icon">
+          <svg width="40" height="54" viewBox="0 0 48 64" fill="none">
+            <ellipse cx="24" cy="56" rx="20" ry="5" fill="currentColor" opacity="0.3"/>
+            <rect x="22" y="36" width="4" height="20" fill="currentColor" opacity="0.5"/>
+            <ellipse cx="24" cy="36" rx="10" ry="3" fill="currentColor" opacity="0.5"/>
+            <rect x="23" y="20" width="2" height="16" fill="currentColor" opacity="0.6"/>
+            <path d="M24 16 Q14 10 10 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+            <path d="M24 16 Q34 10 38 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+            <path d="M24 16 Q23 6 24 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+          </svg>
         </div>
-        <div class="dropdown" style="flex-shrink:0">
-          <button class="dropdown-toggle project-card-menu" style="padding:4px 8px;background:transparent;border:none;font-size:16px;color:var(--text3)" onclick="event.stopPropagation()">⋮</button>
-          <div class="dropdown-menu" style="right:0;left:auto">
-            <div class="dropdown-item" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')">✎ Edit Project</div>
-            <div class="dropdown-item danger" onclick="event.stopPropagation();deleteProjectFromDashboard('${p.id}')">🗑 Delete Project</div>
-          </div>
-        </div>
-        <span class="status-badge ${badgeClass[p.status]}">${statusMap[p.status]}</span>
+        <p class="dashboard-empty-title">No projects yet</p>
+        <p class="dashboard-empty-sub">Use the + button to create your first project</p>
+      </div>`;
+    renderSidebarProjects();
+    return;
+  }
+
+  grid.innerHTML = visibleProjects.map(p => {
+    const dirName = Array.isArray(p.directors) && p.directors.length
+      ? p.directors.join(', ')
+      : (p.director || '');
+    const castCount = p.cast?.length || 0;
+    const crewCount = p.unit?.length || 0;
+
+    return `
+    <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
+      <div class="project-card-top">
+        <span class="project-card-num">#${String(p.num).padStart(3,'0')}</span>
+        <span class="status-badge ${badgeClass[p.status]}">${statusLabel[p.status]}</span>
       </div>
-      <div class="project-card-meta" onclick="showProjectView('${p.id}')">
-        ${(p.directors?.length || p.director) ? `<div>Dir: ${Array.isArray(p.directors) ? p.directors.join(', ') : p.director}</div>` : ''}
-        ${p.company ? `<div>${p.company}</div>` : ''}
-        ${p.notes ? `<div style="margin-top:6px;color:var(--text3)">${p.notes.substring(0,80)}${p.notes.length>80?'…':''}</div>` : ''}
+      <div class="project-card-title">${p.title}</div>
+      ${dirName ? `<div class="project-card-dir">${dirName}</div>` : ''}
+      ${p.company ? `<div class="project-card-company">${p.company}</div>` : ''}
+      <div class="project-card-footer">
+        ${castCount ? `<span class="project-card-tag">${castCount} cast</span>` : ''}
+        ${crewCount ? `<span class="project-card-tag">${crewCount} crew</span>` : ''}
+        ${p.genre   ? `<span class="project-card-tag">${p.genre}</span>` : ''}
+        <button class="project-card-edit" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')" title="Edit project">✎</button>
       </div>
-      <div class="project-card-footer" onclick="showProjectView('${p.id}')">
-        <div class="project-card-tags">
-          <span class="tag">${p.cast.length} cast</span>
-          <span class="tag">${p.unit.length} crew</span>
-          ${p.genre ? `<span class="tag">${p.genre}</span>` : ''}
-        </div>
-      </div>
-    </div>
-  `).join('') + `
-    <div class="new-project-card" onclick="openNewProjectModal()">
-      <div class="plus">＋</div>
-      <span>New Project</span>
-    </div>
-  `;
+    </div>`;
+  }).join('');
 
   renderSidebarProjects();
 }
