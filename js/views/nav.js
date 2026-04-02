@@ -494,23 +494,17 @@ function renderDashboard() {
       const dirName = Array.isArray(p.directors) && p.directors.length
         ? p.directors.join(', ')
         : (p.director || '');
-      const castCount = p.cast?.length || 0;
-      const crewCount = p.unit?.length || 0;
       const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
 
       return `
       <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
         <div class="project-card-top">
           <span class="project-card-timestamp" style="color:${lastEdit.color}">${lastEdit.text || ''}</span>
-          <span class="status-badge ${badgeClass[p.status]}">${statusLabel[p.status]}</span>
         </div>
         <div class="project-card-title">${p.title}</div>
         ${dirName ? `<div class="project-card-dir">${dirName}</div>` : ''}
         ${p.company ? `<div class="project-card-company">${p.company}</div>` : ''}
         <div class="project-card-footer">
-          ${castCount ? `<span class="project-card-tag">${castCount} cast</span>` : ''}
-          ${crewCount ? `<span class="project-card-tag">${crewCount} crew</span>` : ''}
-          ${p.genre   ? `<span class="project-card-tag">${p.genre}</span>` : ''}
           <button class="project-card-edit" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')" title="Edit project">✎</button>
         </div>
       </div>`;
