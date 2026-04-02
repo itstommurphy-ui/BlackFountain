@@ -200,6 +200,10 @@ function showProjectView(id) {
   const p = currentProject();
   if (!p) return;
 
+  // Update last opened timestamp
+  p.updatedAt = new Date().toISOString();
+  try { saveStore(); } catch(e) {}
+
   // Save current view to localStorage for persistence across refreshes
   try {
     localStorage.setItem('bf_currentView', JSON.stringify({ type: 'project', projectId: id }));
@@ -524,7 +528,7 @@ function renderDashboard() {
       : (p.director || '');
     const castCount = p.cast?.length || 0;
     const crewCount = p.unit?.length || 0;
-    const lastEdit = formatRelativeTime(p.updatedAt);
+    const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
 
     return `
     <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">

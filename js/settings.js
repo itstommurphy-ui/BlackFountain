@@ -2742,7 +2742,8 @@ function defaultProject(data) {
     scripts: [],
     brief: { template: null, fields: {}, removedKeys: [], customFields: [] },
     customSections: [],
-    createdAt: Date.now()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 }
 
