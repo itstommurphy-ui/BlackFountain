@@ -207,6 +207,10 @@
     padding: 2px 8px;
     border-radius: 3px;
   }
+  .project-card-lastedit {
+    font-size: 10px;
+    font-family: var(--font-mono);
+  }
   .project-card-edit {
     margin-left: auto;
     background: transparent;

@@ -1,5 +1,24 @@
 // ══════════════════════════════════════════
 
+function formatRelativeTime(timestamp) {
+  if (!timestamp) return '';
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffMins < 1) return { text: 'Just now', color: 'var(--green)' };
+  if (diffMins < 60) return { text: `${diffMins}m ago`, color: 'var(--green)' };
+  if (diffHours < 24) return { text: `${diffHours}h ago`, color: 'var(--green)' };
+  if (diffWeeks < 1) return { text: `${diffDays}d ago`, color: 'var(--accent)' };
+  if (diffMonths < 3) return { text: `${diffWeeks}w ago`, color: 'var(--accent)' };
+  return { text: `${diffMonths}mo ago`, color: 'var(--text3)' };
+}
+
 function toggleFab() {
   const btn = document.getElementById('fab-btn');
   const items = document.getElementById('fab-items');
@@ -505,6 +524,7 @@ function renderDashboard() {
       : (p.director || '');
     const castCount = p.cast?.length || 0;
     const crewCount = p.unit?.length || 0;
+    const lastEdit = formatRelativeTime(p.updatedAt);
 
     return `
     <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
@@ -516,6 +536,7 @@ function renderDashboard() {
       ${dirName ? `<div class="project-card-dir">${dirName}</div>` : ''}
       ${p.company ? `<div class="project-card-company">${p.company}</div>` : ''}
       <div class="project-card-footer">
+        ${lastEdit.text ? `<span class="project-card-lastedit" style="color:${lastEdit.color}">${lastEdit.text}</span>` : ''}
         ${castCount ? `<span class="project-card-tag">${castCount} cast</span>` : ''}
         ${crewCount ? `<span class="project-card-tag">${crewCount} crew</span>` : ''}
         ${p.genre   ? `<span class="project-card-tag">${p.genre}</span>` : ''}
