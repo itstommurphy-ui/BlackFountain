@@ -303,7 +303,9 @@ function _gotoHtml(skip) {
 let dashboardStatusFilter = null;
 
 function setDashboardFilter(status) {
-  dashboardStatusFilter = dashboardStatusFilter === status ? null : status;
+  dashboardStatusFilter = (status === null || status === 'null' || dashboardStatusFilter === status)
+    ? null
+    : status;
   renderDashboard();
 }
 
