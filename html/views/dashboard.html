@@ -1,11 +1,50 @@
-Replace the dashboard HTML entirely:
-html<div class="view active" id="view-dashboard">
+<div class="view active" id="view-dashboard">
 
   <div class="dashboard-header">
     <div class="dashboard-stats-line" id="dashboard-stats-line"></div>
-    <div class="dashboard-filters" id="dashboard-filters"></div>
   </div>
 
-  <div class="projects-grid" id="projects-grid"></div>
+  <div class="projects-trays" id="projects-trays">
+    <div class="tray" data-status="pre">
+      <div class="tray-header" onclick="toggleTray('pre')">
+        <span class="tray-title">Pre-Production</span>
+        <span class="tray-count" id="tray-count-pre"></span>
+        <span class="tray-arrow">▾</span>
+      </div>
+      <div class="tray-content" id="tray-content-pre"></div>
+    </div>
+    <div class="tray" data-status="prod">
+      <div class="tray-header" onclick="toggleTray('prod')">
+        <span class="tray-title">Production</span>
+        <span class="tray-count" id="tray-count-prod"></span>
+        <span class="tray-arrow">▾</span>
+      </div>
+      <div class="tray-content" id="tray-content-prod"></div>
+    </div>
+    <div class="tray" data-status="post">
+      <div class="tray-header" onclick="toggleTray('post')">
+        <span class="tray-title">Post-Production</span>
+        <span class="tray-count" id="tray-count-post"></span>
+        <span class="tray-arrow">▾</span>
+      </div>
+      <div class="tray-content" id="tray-content-post"></div>
+    </div>
+    <div class="tray" data-status="done">
+      <div class="tray-header" onclick="toggleTray('done')">
+        <span class="tray-title">Complete</span>
+        <span class="tray-count" id="tray-count-done"></span>
+        <span class="tray-arrow">▾</span>
+      </div>
+      <div class="tray-content" id="tray-content-done"></div>
+    </div>
+    <div class="tray" data-status="released">
+      <div class="tray-header" onclick="toggleTray('released')">
+        <span class="tray-title">Released</span>
+        <span class="tray-count" id="tray-count-released"></span>
+        <span class="tray-arrow">▾</span>
+      </div>
+      <div class="tray-content" id="tray-content-released"></div>
+    </div>
+  </div>
 
 </div>

@@ -132,6 +132,72 @@
   }
   .stat-card .sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
 
+  /* ── DASHBOARD TRAYS ── */
+  .projects-trays {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tray {
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .tray-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .tray-header:hover { background: var(--surface2); }
+
+  .tray-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .tray-count {
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+
+  .tray-arrow {
+    font-size: 10px;
+    color: var(--text3);
+    transition: transform 0.2s;
+  }
+
+  .tray.open .tray-arrow { transform: rotate(180deg); }
+
+  .tray-content {
+    display: none;
+    padding: 0 12px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tray.open .tray-content {
+    display: flex;
+  }
+
+  /* Tray status colors */
+  .tray[data-status="pre"] .tray-title { color: #7dd0f5; }
+  .tray[data-status="prod"] .tray-title { color: var(--accent); }
+  .tray[data-status="post"] .tray-title { color: #e08095; }
+  .tray[data-status="done"] .tray-title { color: var(--green); }
+  .tray[data-status="released"] .tray-title { color: #b88af0; }
+
   /* ── PROJECT CARDS ── */
   .projects-grid {
     display: grid;
