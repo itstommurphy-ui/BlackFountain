@@ -57,6 +57,9 @@
       <div class="nav-item" onclick="showView('settings')">
         <span class="icon">⚙️</span> Settings
       </div>
+      <div class="nav-item" onclick="showView('myfountain')">
+        <span class="icon">⛲</span> My Fountain
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -109,15 +112,15 @@
           </div>
           <div class="dropdown">
             <button class="dropdown-toggle" id="topbar-actions-btn">⚙</button>
-            <div class="dropdown-menu" id="topbar-actions-menu">
-              <div class="dropdown-item" onclick="openNewProjectModal()">+ New project</div>
-              <div class="dropdown-item" onclick="window.open('https://blackfountain.io','_blank')">◈ My Fountain</div>
-              <div class="dropdown-divider"></div>
-              <div class="dropdown-item" onclick="exportStore()">⬇ Export data</div>
-              <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import data</div>
-              <div class="dropdown-divider"></div>
-              <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
-            </div>
+              <div class="dropdown-menu" id="topbar-actions-menu">
+                <div class="dropdown-item" onclick="openNewProjectModal()">+ New project</div>
+                <div class="dropdown-item" onclick="showView('myfountain')">◈ My Fountain</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="exportStore()">⬇ Export data</div>
+                <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import data</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
+              </div>
           </div>
         </div>
 
@@ -1851,6 +1854,7 @@
 <script src="js/view-loader.js"></script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/production-plan.js"></script>
+<script src="js/views/my-fountain.js"></script>
 <script src="js/views/email.js"></script>
 <script src="js/views/script.js"></script>
 <script src="js/scene-entity.js"></script>

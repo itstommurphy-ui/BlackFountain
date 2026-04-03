@@ -242,7 +242,7 @@ function showView(name) {
   if (navItem) navItem.classList.add('active');
   
   // Clear project highlighting for global views (not project-specific)
-  const globalViews = ['dashboard', 'team', 'contacts', 'locations', 'moodboards', 'files', 'settings'];
+  const globalViews = ['dashboard', 'team', 'contacts', 'locations', 'moodboards', 'files', 'settings', 'myfountain'];
   if (globalViews.includes(name)) {
     store.currentProjectId = null;
     renderSidebarProjects();
@@ -279,13 +279,18 @@ function showView(name) {
     const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Settings';
     const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Settings';
     renderSettings();
+  } else if (name === 'myfountain') {
+    const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'My Fountain';
+    const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / My Fountain';
+    renderMyFountain();
   }
 // Update top nav active state
 _setTopNavActive(name === 'dashboard' ? 'dashboard' : 
                  name === 'contacts' ? 'assets' :
                  name === 'locations' ? 'assets' :
                  name === 'moodboards' ? 'assets' :
-                 name === 'settings' ? 'assets' : null);
+                 name === 'settings' ? 'assets' :
+                 name === 'myfountain' ? 'assets' : null);
 // Hide section bar on global views
 const sectionBar = document.getElementById('topbar-section-bar');
 if (sectionBar) sectionBar.classList.remove('visible');
