@@ -670,6 +670,7 @@ function addQuickTask() {
   if (!p.quickTasks) p.quickTasks = [];
   
   p.quickTasks.push({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
     text: text,
     deadline: deadlineInput.value || null,
     priority: prioritySelect.value || 'medium',

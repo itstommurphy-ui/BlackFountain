@@ -101,13 +101,15 @@ const AutoComplete = (function() {
       (p.unit || []).forEach(r => { if (r.role) roles.add(r.role); });
       (p.contacts || []).forEach(c => {
         if ((c.type || '').includes('cast') && !(c.type || '').includes('crew')) return;
-        (c.crewRoles || []).forEach(r => { if (r) roles.add(r); });
+        const crewRoles = Array.isArray(c.crewRoles) ? c.crewRoles : [];
+        crewRoles.forEach(r => { if (r) roles.add(r); });
       });
     });
     
     store.contacts?.forEach(c => {
       if ((c.type || '').includes('cast') && !(c.type || '').includes('crew')) return;
-      (c.crewRoles || []).forEach(r => { if (r) roles.add(r); });
+      const crewRoles = Array.isArray(c.crewRoles) ? c.crewRoles : [];
+      crewRoles.forEach(r => { if (r) roles.add(r); });
       if (c.defaultRole && !(c.type || '').includes('cast')) roles.add(c.defaultRole);
     });
     

@@ -93,6 +93,253 @@
     font-weight: 600;
   }
 
+  /* ── DASHBOARD NEW UI ── */
+  .dash-greeting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 24px;
+    gap: 16px;
+  }
+  .dash-greeting {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .dash-sub { font-size: 12px; color: var(--text3); }
+  .dash-resume-btn {
+    background: var(--accent-dim);
+    border: 1px solid rgba(230,188,60,0.3);
+    color: var(--accent);
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: background 0.12s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .dash-resume-btn:hover { background: rgba(230,188,60,0.2); }
+
+  /* Pipeline */
+  .dash-pipeline {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .dash-pipe-stage {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+  .dash-pipe-stage:hover { border-color: var(--border); }
+  .dash-pipe-stage.active { border-color: var(--sc); }
+  .dash-pipe-label {
+    font-size: 9px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: var(--font-mono);
+    margin-bottom: 6px;
+  }
+  .dash-pipe-count {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+  .dash-pipe-stage.active .dash-pipe-count { color: var(--sc); }
+  .dash-pipe-bar {
+    height: 2px;
+    border-radius: 1px;
+    margin-top: 10px;
+    background: var(--sc);
+    opacity: 0.3;
+  }
+  .dash-pipe-stage.active .dash-pipe-bar { opacity: 1; }
+
+  /* Section labels */
+  .dash-section-label {
+    font-size: 10px;
+    color: var(--sc);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: var(--font-mono);
+    margin-bottom: 12px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dash-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+  }
+
+  /* Featured card (prod/post) */
+  .dash-featured-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-featured-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--sc);
+    border-radius: 0;
+  }
+  .dash-featured-card:hover { border-color: var(--border); }
+  .dash-featured-eyebrow {
+    font-size: 9px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .dash-featured-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+  .dash-featured-meta { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+  .dash-featured-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dash-tag {
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .dash-featured-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .dash-featured-badge {
+    font-size: 9px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--sc) 15%, transparent);
+    color: var(--sc);
+    border: 1px solid color-mix(in srgb, var(--sc) 25%, transparent);
+  }
+  .dash-featured-time { font-size: 10px; }
+
+  /* Card grid (pre/done/released) */
+  .dash-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .dash-proj-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-proj-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--sc);
+  }
+  .dash-proj-card:hover { border-color: var(--border); transform: translateY(-1px); }
+  .dash-proj-num {
+    font-size: 9px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    margin-bottom: 5px;
+  }
+  .dash-proj-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 1.5px;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 3px;
+  }
+  .dash-proj-dir { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+  .dash-proj-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dash-proj-time { font-size: 10px; }
+  .dash-edit-btn {
+    background: transparent;
+    border: none;
+    color: var(--border);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    transition: color 0.1s;
+    margin-left: auto;
+  }
+  .dash-proj-card:hover .dash-edit-btn,
+  .dash-featured-card:hover .dash-edit-btn { color: var(--text3); }
+  .dash-edit-btn:hover { color: var(--accent) !important; }
+
+  .dash-new-card {
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text3);
+    transition: border-color 0.12s, background 0.12s, color 0.12s;
+  }
+  .dash-new-card:hover { border-color: var(--border); background: var(--surface); color: var(--text2); }
+
+  .dash-empty {
+    padding: 80px 24px;
+    text-align: center;
+  }
+  .dash-empty-title { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+  .dash-empty-sub { font-size: 13px; color: var(--text3); }
+
   /* ── DASHBOARD STAT CARDS ── */
   .stat-card {
     background: var(--surface);

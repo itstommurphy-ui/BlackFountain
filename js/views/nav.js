@@ -19,6 +19,94 @@ function formatRelativeTime(timestamp) {
   return { text: `${diffMonths}mo ago`, color: 'var(--text3)' };
 }
 
+// ═══ PROJECT SWITCHER ═══
+
+let _psSortMode = 'recent';
+let _psSortAsc = false;
+
+function toggleProjectSwitcher(e) {
+  e.stopPropagation();
+  const d = document.getElementById('ps-dropdown');
+  const isOpen = d.classList.contains('open');
+  document.getElementById('ps-sort-menu')?.classList.remove('open');
+  if (isOpen) { d.classList.remove('open'); return; }
+  renderProjectSwitcher();
+  d.classList.add('open');
+}
+
+function closeProjectSwitcher() {
+  document.getElementById('ps-dropdown')?.classList.remove('open');
+  document.getElementById('ps-sort-menu')?.classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ps-btn') && !e.target.closest('#ps-dropdown')) {
+    closeProjectSwitcher();
+  }
+});
+
+function togglePsSort(e) {
+  e.stopPropagation();
+  document.getElementById('ps-sort-menu')?.classList.toggle('open');
+}
+
+function togglePsDir(e) {
+  e.stopPropagation();
+  _psSortAsc = !_psSortAsc;
+  const dirBtn = document.getElementById('ps-dir-btn');
+  if (dirBtn) dirBtn.textContent = _psSortAsc ? '↑' : '↓';
+  renderProjectSwitcher();
+}
+
+function setPsSort(mode, el) {
+  _psSortMode = mode;
+  document.querySelectorAll('.ps-sort-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ps-sort-menu')?.classList.remove('open');
+  renderProjectSwitcher();
+}
+
+function renderProjectSwitcher() {
+  const list = document.getElementById('ps-list');
+  if (!list) return;
+  const projects = [...(store.projects || [])];
+  const statusOrder = { pre:0, prod:1, post:2, done:3, released:4 };
+  const statusLabel  = { pre:'Pre-prod', prod:'Production', post:'Post-prod', done:'Complete', released:'Released' };
+  const dotColor     = { pre:'#7dd0f5', prod:'#e6bc3c', post:'#e08095', done:'#2ea864', released:'#b88af0' };
+
+  if (_psSortMode === 'recent') {
+    projects.sort((a,b) => _psSortAsc 
+      ? new Date(a.updatedAt||0) - new Date(b.updatedAt||0)
+      : new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+  } else if (_psSortMode === 'status') {
+    projects.sort((a,b) => _psSortAsc
+      ? (statusOrder[a.status]||0) - (statusOrder[b.status]||0)
+      : (statusOrder[b.status]||0) - (statusOrder[a.status]||0));
+  } else {
+    projects.sort((a,b) => _psSortAsc 
+      ? a.title.localeCompare(b.title)
+      : b.title.localeCompare(a.title));
+  }
+
+  list.innerHTML = projects.map(p => `
+    <div class="psd-item${p.id === store.currentProjectId ? ' active' : ''}"
+         onclick="switchProject('${p.id}')">
+      <div class="psd-dot" style="background:${dotColor[p.status]||'#9090a8'};"></div>
+      <div>
+        <div class="psd-title">${p.title}</div>
+        <div class="psd-status">${statusLabel[p.status]||p.status}</div>
+      </div>
+    </div>`).join('');
+}
+
+function switchProject(id) {
+  closeProjectSwitcher();
+  showProjectView(id);
+  qtDrawerSync();
+}
+
+// ═══ FAB ─────────────────────
+
 function toggleFab() {
   const btn = document.getElementById('fab-btn');
   const items = document.getElementById('fab-items');
@@ -79,19 +167,21 @@ function _getNavGroup(section) {
 }
 
 function _setTopNavActive(group) {
-  document.querySelectorAll('.topbar-nav-item').forEach(el => {
-    el.classList.remove('active');
-  });
-  if (group) {
-    const el = document.getElementById('nav-' + group);
-    if (el) el.classList.add('active');
-  }
+  document.querySelectorAll('.dock-item').forEach(el => el.classList.remove('active'));
+  const map = {
+    dashboard:  'dock-overview',
+    story:      'dock-story',
+    people:     'dock-people',
+    locations:  'dock-locations',
+    production: 'dock-production',
+    finance:    'dock-finance',
+  };
+  if (map[group]) document.getElementById(map[group])?.classList.add('active');
 
-  // Show project name in nav when in project context
-  const projEl = document.getElementById('topbar-project-name');
+  const projEl = document.getElementById('ps-current-name');
   if (projEl) {
     const p = currentProject();
-    projEl.textContent = p ? p.title : '';
+    projEl.textContent = p ? p.title : '—';
   }
 }
 
@@ -126,6 +216,12 @@ function showView(name) {
     return;
   }
 
+  if (name === 'dashboard') {
+    setTimeout(() => qtDrawerRender(null), 50);
+  } else {
+    setTimeout(qtDrawerSync, 50);
+  }
+
   // Save current view to localStorage for persistence across refreshes
   try {
     localStorage.setItem('bf_currentView', JSON.stringify({ type: 'global', name: name }));
@@ -137,6 +233,7 @@ function showView(name) {
     document.getElementById('content')?.classList.remove('mb-content-canvas');
     document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
   }
+  document.body.classList.remove('project-mode');
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   viewEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -257,7 +354,11 @@ function showProjectView(id) {
   if (projNameEl2) projNameEl2.textContent = p.title;
 
   // Show the nav as project-mode
-  document.getElementById('topbar-nav')?.classList.add('project-mode');
+  document.body.classList.add('project-mode');
+  const psName = document.getElementById('ps-current-name');
+  if (psName) psName.textContent = p.title;
+
+  setTimeout(qtDrawerSync, 50);
 }
 
 function showSection(name) {
@@ -449,6 +550,26 @@ function saveLastActive(projectId, section) {
 function renderDashboard() {
   const projects = store.projects || [];
 
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greetEl = document.getElementById('dash-greeting');
+  if (greetEl) {
+    const name = store.preferences?.name || store.userProfile?.name || '';
+    greetEl.textContent = name ? `${greeting}, ${name}.` : `${greeting}.`;
+  }
+
+  // Sub line
+  const subEl = document.getElementById('dash-sub');
+  if (subEl) {
+    const recent = getMostRecentProject();
+    const totalStr = `${projects.length} project${projects.length !== 1 ? 's' : ''}`;
+    subEl.innerHTML = recent
+      ? `${totalStr} &nbsp;<span style="color:#3a3a52">·</span>&nbsp; Last active: ${recent.title}`
+      : totalStr;
+  }
+
+  // Pipeline bar
   const counts = {
     pre:      projects.filter(p => p.status === 'pre').length,
     prod:     projects.filter(p => p.status === 'prod').length,
@@ -456,61 +577,117 @@ function renderDashboard() {
     done:     projects.filter(p => p.status === 'done').length,
     released: projects.filter(p => p.status === 'released').length,
   };
-  const total = projects.length;
-
-  // Stats line
-  const statsEl = document.getElementById('dashboard-stats-line');
-  if (statsEl) {
-    statsEl.innerHTML = total === 0
-      ? `<span class="dash-stat-empty">No projects yet</span>`
-      : `<span class="dash-stat-total">${total} project${total !== 1 ? 's' : ''}</span>
-         <span class="dash-stat-sep">—</span>
-         ${counts.pre      ? `<span class="dash-stat-item pre">${counts.pre} pre-prod</span>` : ''}
-         ${counts.prod     ? `<span class="dash-stat-item prod">${counts.prod} in production</span>` : ''}
-         ${counts.post     ? `<span class="dash-stat-item post">${counts.post} post</span>` : ''}
-         ${counts.done     ? `<span class="dash-stat-item done">${counts.done} complete</span>` : ''}
-         ${counts.released ? `<span class="dash-stat-item released">${counts.released} released</span>` : ''}`;
+  const pipelineEl = document.getElementById('dash-pipeline');
+  if (pipelineEl) {
+    const stages = [
+      { key:'pre',      label:'Pre-production',  color:'#7dd0f5' },
+      { key:'prod',     label:'In production',   color:'#e6bc3c' },
+      { key:'post',     label:'Post-production', color:'#e08095' },
+      { key:'done',     label:'Complete',        color:'#2ea864' },
+      { key:'released', label:'Released',        color:'#b88af0' },
+    ];
+    pipelineEl.innerHTML = stages.map(s => `
+      <div class="dash-pipe-stage${dashboardStatusFilter === s.key ? ' active' : ''}"
+           style="--sc:${s.color}"
+           onclick="setDashboardFilter('${s.key}')">
+        <div class="dash-pipe-label">${s.label}</div>
+        <div class="dash-pipe-count">${counts[s.key]}</div>
+        <div class="dash-pipe-bar"></div>
+      </div>`).join('');
   }
 
-  // Render projects into trays by status
-  const statusOrder = ['pre', 'prod', 'post', 'done', 'released'];
-  const statusLabel = { pre:'Pre-prod', prod:'Production', post:'Post-prod', done:'Complete', released:'Released' };
-  const badgeClass  = { pre:'badge-pre', prod:'badge-prod', post:'badge-post', done:'badge-done', released:'badge-released' };
+  // Sections
+  const sectionsEl = document.getElementById('dash-sections');
+  if (!sectionsEl) return;
+
+  const statusOrder = ['prod','post','pre','done','released'];
+  const statusConfig = {
+    prod:     { label:'In production',   color:'#e6bc3c',  featured: true },
+    post:     { label:'Post-production', color:'#e08095',  featured: true },
+    pre:      { label:'Pre-production',  color:'#7dd0f5',  featured: false },
+    done:     { label:'Complete',        color:'#2ea864',  featured: false },
+    released: { label:'Released',        color:'#b88af0',  featured: false },
+  };
+
+  const visibleProjects = dashboardStatusFilter
+    ? projects.filter(p => p.status === dashboardStatusFilter)
+    : projects;
+
+  if (projects.length === 0) {
+    sectionsEl.innerHTML = `
+      <div class="dash-empty">
+        <div class="dash-empty-title">No projects yet</div>
+        <div class="dash-empty-sub">Use the + button to create your first project</div>
+      </div>`;
+    renderSidebarProjects();
+    return;
+  }
+
+  let html = '';
 
   statusOrder.forEach(status => {
-    const statusProjects = projects.filter(p => p.status === status);
-    const countEl = document.getElementById(`tray-count-${status}`);
-    if (countEl) countEl.textContent = statusProjects.length;
+    const cfg = statusConfig[status];
+    const group = visibleProjects.filter(p => p.status === status);
+    if (!group.length) return;
 
-    const contentEl = document.getElementById(`tray-content-${status}`);
-    if (!contentEl) return;
+    html += `<div class="dash-section-label" style="--sc:${cfg.color}">${cfg.label}</div>`;
 
-    if (statusProjects.length === 0) {
-      contentEl.innerHTML = '';
-      return;
+    if (cfg.featured) {
+      // Featured card for prod/post
+      group.forEach(p => {
+        const dir = Array.isArray(p.directors) && p.directors.length
+          ? p.directors.join(', ') : (p.director || '');
+        const castCount = p.cast?.length || 0;
+        const crewCount = p.unit?.length || 0;
+        const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
+        const tags = [
+          castCount ? `${castCount} cast` : null,
+          crewCount ? `${crewCount} crew` : null,
+          p.genre || null,
+        ].filter(Boolean);
+
+        html += `
+        <div class="dash-featured-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')">
+          <div class="dash-featured-main">
+            <div class="dash-featured-eyebrow">#${String(p.num).padStart(3,'0')}${p.company ? ' · ' + p.company : ''}</div>
+            <div class="dash-featured-title">${p.title}</div>
+            ${dir ? `<div class="dash-featured-meta">${dir}${p.genre ? ' · ' + p.genre : ''}</div>` : ''}
+            ${tags.length ? `<div class="dash-featured-tags">${tags.map(t => `<span class="dash-tag">${t}</span>`).join('')}</div>` : ''}
+          </div>
+          <div class="dash-featured-side">
+            <div class="dash-featured-badge" style="--sc:${cfg.color}">${cfg.label}</div>
+            ${lastEdit ? `<div class="dash-featured-time" style="color:${lastEdit.color}">${lastEdit.text}</div>` : ''}
+            <button class="dash-edit-btn" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')" title="Edit">✎</button>
+          </div>
+        </div>`;
+      });
+    } else {
+      // Card grid for pre/done/released
+      html += `<div class="dash-card-grid">`;
+      group.forEach(p => {
+        const dir = Array.isArray(p.directors) && p.directors.length
+          ? p.directors.join(', ') : (p.director || '');
+        const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
+        html += `
+        <div class="dash-proj-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')">
+          <div class="dash-proj-num">#${String(p.num).padStart(3,'0')}</div>
+          <div class="dash-proj-title">${p.title}</div>
+          ${dir ? `<div class="dash-proj-dir">${dir}</div>` : ''}
+          <div class="dash-proj-footer">
+            ${lastEdit ? `<span class="dash-proj-time" style="color:${lastEdit.color}">${lastEdit.text}</span>` : ''}
+            <button class="dash-edit-btn" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')" title="Edit">✎</button>
+          </div>
+        </div>`;
+      });
+
+      if (!dashboardStatusFilter) {
+        html += `<div class="dash-new-card" onclick="openNewProjectModal()">+ New project</div>`;
+      }
+      html += `</div>`;
     }
-
-    contentEl.innerHTML = statusProjects.map(p => {
-      const dirName = Array.isArray(p.directors) && p.directors.length
-        ? p.directors.join(', ')
-        : (p.director || '');
-      const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
-
-      return `
-      <div class="project-card status-${p.status}" onclick="showProjectView('${p.id}')">
-        <div class="project-card-top">
-          <span class="project-card-timestamp" style="color:${lastEdit.color}">${lastEdit.text || ''}</span>
-        </div>
-        <div class="project-card-title">${p.title}</div>
-        ${dirName ? `<div class="project-card-dir">${dirName}</div>` : ''}
-        ${p.company ? `<div class="project-card-company">${p.company}</div>` : ''}
-        <div class="project-card-footer">
-          <button class="project-card-edit" onclick="event.stopPropagation();editProjectFromDashboard('${p.id}')" title="Edit project">✎</button>
-        </div>
-      </div>`;
-    }).join('');
   });
 
+  sectionsEl.innerHTML = html;
   renderSidebarProjects();
 }
 
@@ -558,6 +735,295 @@ function renderSidebarProjects() {
     }
   });
   el.innerHTML = html || '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No projects yet</div>';
+}
+
+// ── QUICK TASKS DRAWER ──────────────────────────────────────
+
+let _qtDrawerOpen = false;
+let _qtDeleteConfirmOpen = false;
+
+function toggleQtDrawer() {
+  _qtDrawerOpen = !_qtDrawerOpen;
+  document.getElementById('qt-drawer').classList.toggle('open', _qtDrawerOpen);
+}
+
+document.addEventListener('click', e => {
+  console.log('click handler', _qtDrawerOpen, _qtDeleteConfirmOpen);
+  const drawer = document.getElementById('qt-drawer');
+  const tab = document.querySelector('.qt-drawer-tab');
+  
+  // If delete confirm was recently shown, don't close drawer
+  if (_qtDeleteConfirmOpen) {
+    console.log('skipping due to confirm open');
+    return;
+  }
+  
+  if (_qtDrawerOpen && drawer && 
+      !drawer.contains(e.target) && 
+      (!tab || !tab.contains(e.target))) {
+    console.log('closing drawer');
+    _qtDrawerOpen = false;
+    drawer.classList.remove('open');
+  }
+});
+
+function qtDrawerSortChanged() {
+  const sort = document.getElementById('qt-drawer-sort').value;
+  const oldSort = document.getElementById('qt-sort');
+  if (oldSort) oldSort.value = sort;
+  const p = currentProject();
+  if (p) qtDrawerRender(p);
+}
+
+function qtDrawerAddTask() {
+  const input = document.getElementById('qt-drawer-input');
+  const priority = document.getElementById('qt-drawer-priority');
+  const deadline = document.getElementById('qt-drawer-deadline');
+  const val = input.value.trim();
+  if (!val) return;
+
+  const p = currentProject();
+  if (!p) {
+    showToast('Open a project to add tasks', 'info');
+    return;
+  }
+
+  if (!p.quickTasks) p.quickTasks = [];
+  p.quickTasks.push({
+    id: Date.now().toString(),
+    text: val,
+    done: false,
+    priority: priority.value || '',
+    deadline: deadline.value || '',
+    order: p.quickTasks.length,
+  });
+
+  input.value = '';
+  priority.value = '';
+  deadline.value = '';
+
+  saveStore();
+  qtDrawerRender(p);
+}
+
+function qtDrawerRender(p) {
+  const list = document.getElementById('qt-drawer-list');
+  const progress = document.getElementById('qt-drawer-progress');
+  const tabCount = document.getElementById('qt-tab-count');
+  const context = document.getElementById('qt-drawer-context');
+  if (!list) return;
+
+  if (!p) {
+    const context = document.getElementById('qt-drawer-context');
+    if (context) context.textContent = 'All projects';
+
+    const allTasks = [];
+    (store.projects || []).forEach(proj => {
+      (proj.quickTasks || []).forEach(t => {
+        allTasks.push({ ...t, _projTitle: proj.title, _projId: proj.id });
+      });
+    });
+
+    const total = allTasks.length;
+    const done = allTasks.filter(t => t.done).length;
+    const outstanding = total - done;
+
+    if (progress) progress.textContent = total ? `${done}/${total}` : '—';
+    if (tabCount) {
+      tabCount.textContent = outstanding || (total ? '✓' : '0');
+      tabCount.className = 'qt-tab-count' + (outstanding === 0 && total > 0 ? ' zero' : '');
+    }
+
+    const priorityColor = { low:'#2ea864', medium:'#d4883a', high:'#c44444', urgent:'#b88af0', '':'#3a3a52' };
+
+    if (!allTasks.length) {
+      list.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--text3);">No tasks across any project.</div>';
+      return;
+    }
+
+    const byProject = {};
+    allTasks.forEach(t => {
+      if (!byProject[t._projId]) byProject[t._projId] = { title: t._projTitle, tasks: [] };
+      byProject[t._projId].tasks.push(t);
+    });
+
+    list.innerHTML = Object.values(byProject).map(group => `
+      <div style="font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--font-mono);padding:8px 4px 4px;">${group.title}</div>
+      ${group.tasks.map(t => {
+        const pc = priorityColor[t.priority || ''];
+        const dl = t.deadline ? _qtFormatDeadline(t.deadline) : '';
+        return `
+        <div class="quick-task-item" data-id="${t.id}" style="--pc:${pc};opacity:${t.done?'0.5':'1'}">
+          <div class="qt-priority-bar" style="background:${pc}"></div>
+          <input type="checkbox" class="qt-checkbox" ${t.done ? 'checked' : ''}
+                 onchange="qtDashboardToggle('${t._projId}','${t.id}')">
+          <span class="qt-text${t.done ? ' done' : ''}">${t.text}</span>
+          ${dl ? `<span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0">${dl}</span>` : ''}
+        </div>`;
+      }).join('')}
+    `).join('');
+    return;
+  }
+
+  if (context) context.textContent = p.title;
+
+  const tasks = p.quickTasks || [];
+  const sortVal = document.getElementById('qt-drawer-sort')?.value || 'custom';
+  const sorted = [...tasks];
+
+  if (sortVal === 'priority') {
+    const order = { urgent:0, high:1, medium:2, low:3, '':4 };
+    sorted.sort((a,b) => (order[a.priority]??4) - (order[b.priority]??4));
+  } else if (sortVal === 'deadline') {
+    sorted.sort((a,b) => {
+      if (!a.deadline && !b.deadline) return 0;
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return a.deadline.localeCompare(b.deadline);
+    });
+  }
+
+  const done = tasks.filter(t => t.done).length;
+  const total = tasks.length;
+  const outstanding = total - done;
+
+  if (progress) progress.textContent = `${done}/${total}`;
+  if (tabCount) {
+    tabCount.textContent = outstanding || '✓';
+    tabCount.className = 'qt-tab-count' + (outstanding === 0 && total > 0 ? ' zero' : '');
+  }
+
+  const priorityColor = { low:'#2ea864', medium:'#d4883a', high:'#c44444', urgent:'#b88af0', '':'#3a3a52' };
+  const priorityLabel = { low:'🟢', medium:'🟠', high:'🔴', urgent:'🟣' };
+
+  if (!sorted.length) {
+    list.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--text3);">No tasks yet.</div>';
+    return;
+  }
+
+  list.innerHTML = sorted.map(t => {
+    const pc = priorityColor[t.priority || ''];
+    const dl = t.deadline ? _qtFormatDeadline(t.deadline) : '';
+    const taskId = t.id ? `'${t.id}'` : 'null';
+    return `
+    <div class="quick-task-item" data-id="${t.id || ''}" style="--pc:${pc}">
+      <div class="qt-priority-bar" style="background:${pc}"></div>
+      <input type="checkbox" class="qt-checkbox" ${t.done ? 'checked' : ''}
+             onchange="qtDrawerToggleDone(${taskId})">
+      <span class="qt-text${t.done ? ' done' : ''}"
+            ondblclick="qtDrawerRename(this,${taskId})"
+            title="Double-click to rename">${t.text}</span>
+      ${dl ? `<span class="qt-deadline" style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0">${dl}</span>` : ''}
+      <button onclick="qtDrawerDeleteConfirm(this,${taskId})"
+              style="background:none;border:none;color:var(--border);font-size:11px;cursor:pointer;padding:0 4px;flex-shrink:0;transition:color 0.1s"
+              onmouseover="this.style.color='var(--red)'"
+              onmouseout="this.style.color='var(--border)'">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function qtDrawerToggleDone(id) {
+  if (!id) return;
+  const p = currentProject(); if (!p) return;
+  const t = (p.quickTasks||[]).find(t => t.id === id);
+  if (t) { t.done = !t.done; saveStore(); qtDrawerRender(p); }
+}
+
+function qtDashboardToggle(projId, taskId) {
+  const p = store.projects?.find(p => p.id === projId);
+  if (!p) return;
+  const t = (p.quickTasks||[]).find(t => t.id === taskId);
+  if (t) { t.done = !t.done; saveStore(); qtDrawerRender(null); }
+}
+
+function qtDrawerDeleteConfirm(btn, id) {
+  const rect = btn.getBoundingClientRect();
+  const existing = document.getElementById('qt-delete-confirm');
+  if (existing) existing.remove();
+  
+  _qtDeleteConfirmOpen = true;
+  
+  const p = currentProject(); if (!p) return;
+  
+  const taskItem = btn.closest('.quick-task-item');
+  const taskText = taskItem?.querySelector('.qt-text')?.textContent || 'this task';
+  const truncate = taskText.length > 20 ? taskText.substring(0,20) + '...' : taskText;
+  
+  const drawer = document.getElementById('qt-drawer');
+  const confirmDiv = document.createElement('div');
+  confirmDiv.id = 'qt-delete-confirm';
+  confirmDiv.style.cssText = `
+    position:absolute;top:${rect.bottom + 5}px;right:0;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:8px 10px;z-index:10000;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:11px;display:flex;flex-direction:column;gap:6px;
+  `;
+  confirmDiv.innerHTML = `
+    <div style="color:var(--text3);white-space:nowrap;">Delete "${truncate}"?</div>
+    <div style="display:flex;gap:6px;">
+      <button id="qt-confirm-btn" onclick="event.stopPropagation();qtDrawerDelete(${id ? "'"+id+"'" : "null"});document.getElementById('qt-delete-confirm')?.remove()"
+              style="background:var(--red);border:none;color:white;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Confirm</button>
+      <button id="qt-cancel-btn" onmousedown="_qtDeleteConfirmOpen=false;document.getElementById('qt-delete-confirm')?.remove();event.stopPropagation()"
+              style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Cancel</button>
+    </div>
+  `;
+  drawer.appendChild(confirmDiv);
+  setTimeout(() => {
+    confirmDiv.remove();
+    _qtDeleteConfirmOpen = false;
+  }, 4000);
+}
+
+function qtDrawerDelete(id) {
+  const p = currentProject(); if (!p) return;
+  const tasks = p.quickTasks || [];
+  if (id) {
+    p.quickTasks = tasks.filter(t => t.id !== id);
+  } else {
+    p.quickTasks = tasks.slice(0, -1);
+  }
+  _qtDeleteConfirmOpen = false;
+  saveStore(); qtDrawerRender(p);
+}
+
+function qtDrawerRename(el, id) {
+  if (!id) return;
+  const p = currentProject(); if (!p) return;
+  const t = (p.quickTasks||[]).find(t => t.id === id);
+  if (!t) return;
+  const old = el.textContent;
+  el.contentEditable = 'true';
+  el.style.outline = 'none';
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  const finish = () => {
+    el.contentEditable = 'false';
+    const val = el.textContent.trim();
+    if (val) { t.text = val; saveStore(); }
+    else { el.textContent = old; }
+    qtDrawerRender(p);
+  };
+  el.addEventListener('blur', finish, { once:true });
+  el.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();el.blur();} }, { once:true });
+}
+
+function _qtFormatDeadline(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.round((d - now) / 86400000);
+  if (diff < 0) return `${Math.abs(diff)}d ago`;
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  return `${diff}d`;
+}
+
+function qtDrawerSync() {
+  const p = currentProject();
+  qtDrawerRender(p || null);
 }
 
 // ══════════════════════════════════════════

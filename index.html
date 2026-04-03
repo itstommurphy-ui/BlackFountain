@@ -76,123 +76,45 @@
     <header id="topbar">
       <div class="topbar-main">
 
-        <!-- Logo -->
-        <div class="topbar-logo" onclick="showView('dashboard')" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <svg id="bf-logo-icon" width="22" height="30" viewBox="0 0 48 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="topbar-logo" onclick="showView('dashboard')">
+          <svg width="16" height="22" viewBox="0 0 48 64" fill="none">
             <ellipse cx="24" cy="56" rx="20" ry="5" fill="currentColor" opacity="0.9"/>
             <rect x="22" y="36" width="4" height="20" fill="currentColor"/>
             <ellipse cx="24" cy="36" rx="10" ry="3" fill="currentColor"/>
             <rect x="23" y="20" width="2" height="16" fill="currentColor"/>
-            <rect x="23.5" y="16" width="1" height="4" fill="currentColor"/>
-            <path d="M24 16 Q14 10 10 18" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
-            <path d="M24 16 Q16 8 14 16" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
-            <path d="M24 16 Q34 10 38 18" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
-            <path d="M24 16 Q32 8 34 16" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
-            <path d="M24 16 Q22 6 24 2" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <path d="M24 16 Q26 6 24 2" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <circle cx="10" cy="19" r="1" fill="currentColor" opacity="0.6"/>
-            <circle cx="38" cy="19" r="1" fill="currentColor" opacity="0.6"/>
-            <circle cx="24" cy="2" r="1" fill="currentColor" opacity="0.7"/>
+            <path d="M24 16 Q14 10 10 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <path d="M24 16 Q34 10 38 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <path d="M24 16 Q23 6 24 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+            <circle cx="24" cy="2" r="1.5" fill="currentColor" opacity="0.7"/>
           </svg>
-          <div style="display:flex;flex-direction:column;gap:1px;">
+          <div>
             <span class="topbar-logo-text">BLACK FOUNTAIN</span>
             <span class="topbar-logo-sub">Production Tools</span>
           </div>
         </div>
 
-        <!-- Centred nav -->
-        <nav class="topbar-nav" id="topbar-nav">
-
-          <div class="topbar-nav-item" id="nav-dashboard">
-            <span onclick="showView('dashboard')">Dashboard</span>
+        <div class="project-switcher" id="ps-btn" onclick="toggleProjectSwitcher(event)">
+          <div>
+            <div class="project-switcher-label">Current project</div>
+            <div class="project-switcher-name" id="ps-current-name">—</div>
           </div>
+          <span class="project-switcher-arrow">▾</span>
+        </div>
 
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-story">
-            <span>Story</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="navToSection('script')">Script &amp; Docs</div>
-              <div class="nav-dropdown-item" onclick="navToSection('breakdown')">Script Breakdown</div>
-              <div class="nav-dropdown-item" onclick="navToSection('stripboard')">Stripboard</div>
-              <div class="nav-dropdown-item" onclick="navToSection('storyboard')">Storyboard</div>
-              <div class="nav-dropdown-item" onclick="navToSection('moodboards')">Moodboards</div>
-              <div class="nav-dropdown-item" onclick="navToSection('brief')">Project Outline</div>
-            </div>
-          </div>
-
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-people">
-            <span>People</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="navToSection('cast')">Cast &amp; Extras</div>
-              <div class="nav-dropdown-item" onclick="navToSection('crew')">Crew</div>
-            </div>
-          </div>
-
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-locations">
-            <span>Locations</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="navToSection('locations')">Locations</div>
-              <div class="nav-dropdown-item" onclick="navToSection('riskassess')">Risk Assessment</div>
-            </div>
-          </div>
-
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-production">
-            <span>Production</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="navToSection('schedule')">Schedule</div>
-              <div class="nav-dropdown-item" onclick="navToSection('callsheet')">Callsheet</div>
-              <div class="nav-dropdown-item" onclick="navToSection('shotlist')">Shot List</div>
-              <div class="nav-dropdown-item" onclick="navToSection('props')">Props</div>
-              <div class="nav-dropdown-item" onclick="navToSection('wardrobe')">Wardrobe</div>
-              <div class="nav-dropdown-item" onclick="navToSection('soundlog')">Sound Log</div>
-              <div class="nav-dropdown-item" onclick="navToSection('equipment')">Equipment</div>
-              <div class="nav-dropdown-item" onclick="navToSection('releases')">Release Forms</div>
-            </div>
-          </div>
-
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-finance">
-            <span>Finance</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="navToSection('budget')">Budget</div>
-              <div class="nav-dropdown-item" onclick="navToSection('plan')">Production Plan</div>
-            </div>
-          </div>
-
-          <span class="topbar-nav-sep">|</span>
-
-          <div class="topbar-nav-item" id="nav-assets">
-            <span>Assets</span>
-            <div class="nav-dropdown">
-              <div class="nav-dropdown-item" onclick="showView('contacts')">Contacts</div>
-              <div class="nav-dropdown-item" onclick="showView('locations')">All Locations</div>
-              <div class="nav-dropdown-item" onclick="showView('moodboards')">All Moodboards</div>
-              <div class="nav-dropdown-item" onclick="showView('settings')">Settings</div>
-            </div>
-          </div>
-
-        </nav>
-
-        <!-- Right side -->
         <div class="topbar-right">
-          <span id="topbar-save-status" style="font-size:11px;font-family:var(--font-mono);font-weight:600;opacity:0;transition:opacity 0.25s ease;white-space:nowrap;"></span>
-          <div style="position:relative">
+          <span id="topbar-save-status"></span>
+          <div style="position:relative;">
             <input type="search" id="global-search" placeholder="Search…" autocomplete="off">
             <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:340px;max-height:420px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.35);z-index:9999;"></div>
           </div>
           <div class="dropdown">
             <button class="dropdown-toggle" id="topbar-actions-btn">⚙</button>
             <div class="dropdown-menu" id="topbar-actions-menu">
-              <div class="dropdown-item" onclick="exportStore()">⬇ Export Data</div>
-              <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import Data</div>
+              <div class="dropdown-item" onclick="openNewProjectModal()">+ New project</div>
+              <div class="dropdown-item" onclick="window.open('https://blackfountain.io','_blank')">◈ My Fountain</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" onclick="exportStore()">⬇ Export data</div>
+              <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import data</div>
               <div class="dropdown-divider"></div>
               <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
             </div>
@@ -200,14 +122,29 @@
         </div>
 
       </div>
-
-      <!-- Section label bar — visible when inside a project section -->
-      <div class="topbar-section-bar" id="topbar-section-bar">
-        <span class="topbar-section-name" id="topbar-section-name"></span>
-        <span class="topbar-project-name" id="topbar-project-name"></span>
-      </div>
-
     </header>
+
+    <!-- Project switcher dropdown — outside topbar so it isn't clipped -->
+    <div id="ps-dropdown">
+      <div class="ps-header">
+        <span class="ps-header-label">Switch project</span>
+        <div style="display:flex;gap:4px;position:relative;">
+          <button class="ps-sort-btn" id="ps-sort-btn" onclick="togglePsSort(event)">↕ Sort</button>
+          <button class="ps-sort-btn" id="ps-dir-btn" onclick="togglePsDir(event)">↓</button>
+          <div class="ps-sort-menu" id="ps-sort-menu">
+            <div class="ps-sort-option active" onclick="setPsSort('recent',this)">Most recent</div>
+            <div class="ps-sort-option" onclick="setPsSort('status',this)">By status</div>
+            <div class="ps-sort-option" onclick="setPsSort('alpha',this)">Alphabetical</div>
+          </div>
+        </div>
+      </div>
+      <div id="ps-list"></div>
+      <div class="psd-sep"></div>
+      <div class="psd-item" onclick="openNewProjectModal();closeProjectSwitcher()">
+        <div class="psd-dot" style="background:var(--border);"></div>
+        <div class="psd-new">+ New project</div>
+      </div>
+    </div>
 
     <div id="content">
 
@@ -2088,6 +2025,168 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
     <button id="fab-btn" onclick="toggleFab()" title="Menu">+</button>
+  </div>
+
+<!-- QUICK TASKS DRAWER -->
+<div id="qt-drawer" class="qt-drawer">
+  <div class="qt-drawer-tab" onclick="toggleQtDrawer()">
+    <div class="qt-tab-count" id="qt-tab-count">0</div>
+    <div class="qt-tab-label">Tasks</div>
+    <div class="qt-tab-arrow" id="qt-tab-arrow">‹</div>
+  </div>
+
+  <div class="qt-drawer-header">
+    <div class="qt-drawer-title">
+      <div class="qt-title-dot"></div>
+      <span id="qt-drawer-context">Quick tasks</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="qt-drawer-progress" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">0/0</span>
+      <select id="qt-drawer-sort" onchange="qtDrawerSortChanged()" style="font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:3px;padding:2px 4px;cursor:pointer;">
+        <option value="custom">Custom</option>
+        <option value="priority">Priority</option>
+        <option value="deadline">Deadline</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="qt-drawer-tasks" id="qt-drawer-list"></div>
+
+  <div class="qt-drawer-add">
+    <div class="qt-add-row">
+      <input class="qt-add-input" id="qt-drawer-input" placeholder="Add a task…"
+             onkeydown="if(event.key==='Enter')qtDrawerAddTask()">
+    </div>
+    <div class="qt-add-meta-row">
+      <select id="qt-drawer-priority" title="Priority"
+              style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px;outline:none;font-family:var(--font-body);">
+        <option value="">Priority</option>
+        <option value="low">🟢 Low</option>
+        <option value="medium">🟠 Medium</option>
+        <option value="high">🔴 High</option>
+        <option value="urgent">🟣 Urgent</option>
+      </select>
+      <input type="date" id="qt-drawer-deadline" title="Set deadline"
+             style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px;outline:none;font-family:var(--font-body);">
+      <button class="qt-add-btn" onclick="qtDrawerAddTask()">+ Add</button>
+    </div>
+  </div>
+</div>
+
+  <!-- BOTTOM DOCK — only visible in project mode -->
+  <div id="dock">
+    <div class="dock-inner">
+
+      <div class="dock-item active" id="dock-overview" onclick="showSection('overview')">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="4" width="14" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="5" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5" y1="11" x2="10" y2="11" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="6" y1="2" x2="6" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span class="dock-label">Overview</span>
+        <div class="dock-pip"></div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-story">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="3" y="2" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="5.5" y1="6" x2="12.5" y2="6" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5.5" y1="9" x2="12.5" y2="9" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5.5" y1="12" x2="9.5" y2="12" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <span class="dock-label">Story</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Story</div>
+          <div class="flyup-item" onclick="navToSection('script')">Script &amp; Docs</div>
+          <div class="flyup-item" onclick="navToSection('breakdown')">Script Breakdown</div>
+          <div class="flyup-item" onclick="navToSection('stripboard')">Stripboard</div>
+          <div class="flyup-item" onclick="navToSection('storyboard')">Storyboard</div>
+          <div class="flyup-item" onclick="navToSection('moodboards')">Moodboards</div>
+          <div class="flyup-item" onclick="navToSection('brief')">Project Outline</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-people">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="7" cy="7" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <circle cx="13" cy="7" r="3.5" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+          <path d="M2 16c0-3 2.2-5 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M9 13c1-.6 2.5-1 4-1 2.8 0 5 2 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        <span class="dock-label">People</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">People</div>
+          <div class="flyup-item" onclick="navToSection('cast')">Cast &amp; Extras</div>
+          <div class="flyup-item" onclick="navToSection('crew')">Crew</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-locations">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="8" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M9 16 C9 16 3 11 3 8a6 6 0 0 1 12 0c0 3-6 8-6 8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+        <span class="dock-label">Locations</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Locations</div>
+          <div class="flyup-item" onclick="navToSection('locations')">Locations</div>
+          <div class="flyup-item" onclick="navToSection('riskassess')">Risk Assessment</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-production">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="5" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="2" y="10" width="10" height="3" rx="1" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+        </svg>
+        <span class="dock-label">Production</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Production</div>
+          <div class="flyup-item" onclick="navToSection('schedule')">Schedule</div>
+          <div class="flyup-item" onclick="navToSection('callsheet')">Callsheet</div>
+          <div class="flyup-item" onclick="navToSection('shotlist')">Shot List</div>
+          <div class="flyup-item" onclick="navToSection('props')">Props</div>
+          <div class="flyup-item" onclick="navToSection('wardrobe')">Wardrobe</div>
+          <div class="flyup-item" onclick="navToSection('soundlog')">Sound Log</div>
+          <div class="flyup-item" onclick="navToSection('equipment')">Equipment</div>
+          <div class="flyup-item" onclick="navToSection('releases')">Release Forms</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-finance">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="2" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <line x1="7" y1="7" x2="7" y2="16" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <rect x="4" y="9.5" width="1.5" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+          <rect x="9" y="8.5" width="1.5" height="5" rx="0.5" fill="currentColor" opacity="0.7"/>
+        </svg>
+        <span class="dock-label">Finance</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Finance</div>
+          <div class="flyup-item" onclick="navToSection('budget')">Budget</div>
+          <div class="flyup-item" onclick="navToSection('plan')">Production Plan</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </body>
 </html>
