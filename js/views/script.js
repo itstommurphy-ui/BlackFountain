@@ -1033,7 +1033,7 @@ async function shareScriptFile(id) {
   const s = p.scripts.find(x => x.id === id);
   if (!s) return;
 
-  // Try Web Share API with file first (native on mobile/modern desktop)
+  // Use Web Share API directly (native on mobile/modern desktop)
   if (navigator.canShare) {
     try {
       const res = await fetch(s.dataUrl);
@@ -1043,10 +1043,10 @@ async function shareScriptFile(id) {
         await navigator.share({ files: [file], title: s.name });
         return;
       }
-    } catch(e) { /* fall through to manual share */ }
+    } catch(e) { /* fall through to modal */ }
   }
 
-  // Fallback share modal
+  // Fallback share modal (for desktop or when Web Share not available)
   const ovId = '_share-' + id;
   const fname = s.name;
   const projTitle = p ? p.title : '';
@@ -1065,11 +1065,10 @@ async function shareScriptFile(id) {
       </div>
       <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Click Email, download file, then attach:</div>
-        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email (pre-filled)</a>
-        <a href="#" onclick="downloadScriptFile('${id}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download File</a>
-        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
-        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
+        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <a href="#" onclick="downloadScriptFile('${id}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download</a>
+        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp (text only)</a>
+        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram (text only)</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
         <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
         <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fblackfountain.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>

@@ -123,6 +123,7 @@ async function shareCustomSectionFile(csId, fileId) {
   const f = cs.files.find(x => x.id === fileId);
   if (!f) return;
 
+  // Use Web Share API directly (native on mobile/modern desktop)
   if (navigator.canShare) {
     try {
       const res = await fetch(f.dataUrl);
@@ -132,9 +133,10 @@ async function shareCustomSectionFile(csId, fileId) {
         await navigator.share({ files: [file], title: f.name });
         return;
       }
-    } catch(e) { /* fall through */ }
+    } catch(e) { /* fall through to modal */ }
   }
 
+  // Fallback share modal
   const ovId = '_share-csf-' + fileId;
   const fname = f.name;
   const projTitle = p ? p.title : '';
@@ -153,11 +155,10 @@ async function shareCustomSectionFile(csId, fileId) {
       </div>
       <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Click Email, download file, then attach:</div>
-        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email (pre-filled)</a>
-        <a href="#" onclick="downloadCustomSectionFile('${csId}','${fileId}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download File</a>
-        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
-        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
+        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
+        <a href="#" onclick="downloadCustomSectionFile('${csId}','${fileId}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download</a>
+        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp (text only)</a>
+        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram (text only)</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
         <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
         <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fblackfountain.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
@@ -166,6 +167,7 @@ async function shareCustomSectionFile(csId, fileId) {
   document.body.appendChild(overlay);
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 }
+
 function removeCustomSectionFile(csId, fileId) {
   showConfirmDialog('Remove this file?', 'Remove', () => {
     const p = currentProject();
