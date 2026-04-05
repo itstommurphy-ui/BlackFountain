@@ -1082,7 +1082,7 @@ function renderBreakdownReport(p, scenes) {
           <div>
             <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${cat.label}</span>
             <div style="display:flex;flex-wrap:wrap;gap:3px">
-              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();removeBreakdownTag('${item.id}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
+              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();_bdDeleteTagInline('${item.id}', this)" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
             </div>
           </div>`).join('')
       : `<span style="font-size:11px;color:var(--text3);opacity:0.5">No elements tagged</span>`;
@@ -1254,7 +1254,7 @@ function showTagActionMenu(tagId, x, y, fromScript) {
     </div>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
-    ${_bdCtxFromScript ? `<button onclick="removeBreakdownTag('${tagId}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
+    ${_bdCtxFromScript ? `<button onclick="event.stopPropagation();_bdDeleteTagInline('${tagId}', event.target)" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
   if (x != null) positionBdPopover(x, y);
   pop.style.display = 'flex';
 }
@@ -1363,6 +1363,52 @@ function applyBreakdownTag(category) {
   }
   window.getSelection()?.removeAllRanges();
   hideBdPopover();
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function _bdDeleteTagInline(tagId, btn) {
+  const existing = document.getElementById('_bd-mini-confirm');
+  if (existing) { existing.remove(); if (existing.dataset.for === tagId) return; }
+  const anchor = btn;
+  if (!anchor) return;
+
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  const tag = bd?.tags.find(t => t.id === tagId);
+  if (!tag) return;
+
+  const pop = document.createElement('div');
+  pop.id = '_bd-mini-confirm';
+  pop.dataset.for = tagId;
+  pop.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);font-size:11px';
+
+  pop.innerHTML = `
+    <span style="color:var(--text2)">Delete tag?</span>
+    <button onclick="_bdConfirmDeleteTag('${tagId}')" style="background:#E74C3C;border:none;color:#fff;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">Delete</button>
+    <button onclick="document.getElementById('_bd-mini-confirm')?.remove()" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">Cancel</button>
+  `;
+
+  document.body.appendChild(pop);
+  const r = anchor.getBoundingClientRect();
+  const pw = pop.offsetWidth;
+  let left = r.left - pw / 2 + r.width / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  const topBelow = r.bottom + 6;
+  pop.style.left = left + 'px';
+  pop.style.top  = (topBelow + pop.offsetHeight > window.innerHeight - 8 ? r.top - pop.offsetHeight - 6 : topBelow) + 'px';
+  setTimeout(() => {
+    const dismiss = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', dismiss); } };
+    document.addEventListener('click', dismiss);
+  }, 0);
+}
+
+function _bdConfirmDeleteTag(tagId) {
+  document.getElementById('_bd-mini-confirm')?.remove();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  bd.tags = bd.tags.filter(t => t.id !== tagId);
   saveStore();
   updateBreakdownView(p);
 }
