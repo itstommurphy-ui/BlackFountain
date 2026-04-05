@@ -412,17 +412,55 @@ function showSection(name) {
 }
 
 function _gotoHtml(skip) {
-  const sections = [
-    ['budget','Budget'],['callsheet','Callsheet'],['cast','Cast & Extras'],['crew','Crew'],
-    ['equipment','Equipment'],['locations','Locations'],['moodboards','Moodboards'],['overview','Overview'],
-    ['plan','Production Plan'],['brief','Project Brief'],['props','Props'],
-    ['releases','Release Forms'],['riskassess','Risk Assessment'],['schedule','Schedule'],
-    ['storyboard','Storyboard'],['breakdown','Script Breakdown'],['script','Script & Docs'],['shotlist','Shot List'],
-    ['soundlog','Sound Log'],['stripboard','Stripboard'],['wardrobe','Wardrobe'],
-  ];
+  const groups = {
+    'Story': [
+      ['script','Script & Docs'],['breakdown','Script Breakdown'],['stripboard','Stripboard'],
+      ['storyboard','Storyboard'],['moodboards','Moodboards'],['brief','Project Brief'],
+    ],
+    'People': [
+      ['cast','Cast & Extras'],['crew','Crew'],
+    ],
+    'Locations': [
+      ['locations','Locations'],['riskassess','Risk Assessment'],
+    ],
+    'Production': [
+      ['schedule','Schedule'],['callsheet','Callsheet'],['shotlist','Shot List'],
+      ['props','Props'],['wardrobe','Wardrobe'],['soundlog','Sound Log'],
+      ['equipment','Equipment'],['releases','Release Forms'],
+    ],
+    'Finance': [
+      ['budget','Budget'],['plan','Production Plan'],
+    ],
+  };
+  const current = currentProject();
+  if (current) {
+    const custom = (current.customSections || []).map(s => ['custom_'+s.id, s.name]);
+    if (custom.length) groups['Custom'] = custom;
+  }
+  const skipSet = new Set([skip, 'overview']);
+  let opts = `<option value="overview">Overview</option><option disabled>── Story ──</option>`;
+  const storySections = groups['Story'].filter(([id])=>!skipSet.has(id));
+  opts += storySections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  opts += `<option disabled>── People ──</option>`;
+  const peopleSections = groups['People'].filter(([id])=>!skipSet.has(id));
+  opts += peopleSections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  opts += `<option disabled>── Locations ──</option>`;
+  const locSections = groups['Locations'].filter(([id])=>!skipSet.has(id));
+  opts += locSections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  opts += `<option disabled>── Production ──</option>`;
+  const prodSections = groups['Production'].filter(([id])=>!skipSet.has(id));
+  opts += prodSections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  opts += `<option disabled>── Finance ──</option>`;
+  const finSections = groups['Finance'].filter(([id])=>!skipSet.has(id));
+  opts += finSections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  if (groups['Custom']) {
+    opts += `<option disabled>── Custom ──</option>`;
+    const customSections = groups['Custom'].filter(([id])=>!skipSet.has(id));
+    opts += customSections.map(([id,l])=>`<option value="${id}">${l}</option>`).join('');
+  }
   return `<select class="btn btn-sm" onchange="if(this.value){showSection(this.value);this.value=''}" style="cursor:pointer" title="Go to section">
     <option value="">→ Go to…</option>
-    ${sections.filter(([id])=>id!==skip).map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}
+    ${opts}
   </select>`;
 }
 
@@ -753,20 +791,15 @@ function toggleQtDrawer() {
 }
 
 document.addEventListener('click', e => {
-  console.log('click handler', _qtDrawerOpen, _qtDeleteConfirmOpen);
   const drawer = document.getElementById('qt-drawer');
   const tab = document.querySelector('.qt-drawer-tab');
   
   // If delete confirm was recently shown, don't close drawer
-  if (_qtDeleteConfirmOpen) {
-    console.log('skipping due to confirm open');
-    return;
-  }
+  if (_qtDeleteConfirmOpen) return;
   
   if (_qtDrawerOpen && drawer && 
       !drawer.contains(e.target) && 
       (!tab || !tab.contains(e.target))) {
-    console.log('closing drawer');
     _qtDrawerOpen = false;
     drawer.classList.remove('open');
   }
@@ -807,6 +840,60 @@ function qtDrawerAddTask() {
   priority.value = '';
   deadline.value = '';
 
+  saveStore();
+  qtDrawerRender(p);
+}
+
+function getEmptySections(p) {
+  const empty = [];
+  if (!p.budget?.length) empty.push({ tab: 'budget', name: 'Budget', task: 'Set up budget' });
+  if (!p.callsheets?.length) empty.push({ tab: 'callsheet', name: 'Callsheet', task: 'Create callsheet' });
+  if (!(p.cast?.length || p.extras?.length)) empty.push({ tab: 'cast', name: 'Cast & Extras', task: 'Add cast & extras' });
+  if (!(p.gearList?.length || Object.values(p.equipment || {}).flat().length)) empty.push({ tab: 'equipment', name: 'Equipment', task: 'Add equipment' });
+  if (!p.locations?.length) empty.push({ tab: 'locations', name: 'Locations', task: 'Add locations' });
+  if (!(store.moodboards || []).filter(b => b.projectId === p.id).length) empty.push({ tab: 'moodboards', name: 'Moodboards', task: 'Create moodboard' });
+  if (!p.brief?.template) empty.push({ tab: 'brief', name: 'Project Brief', task: 'Write project brief' });
+  if (!p.props?.length) empty.push({ tab: 'props', name: 'Props', task: 'List props' });
+  if (!p.releases?.length) empty.push({ tab: 'releases', name: 'Release Forms', task: 'Prepare release forms' });
+  if (!p.risks?.length) empty.push({ tab: 'riskassess', name: 'Risk Assessment', task: 'Complete risk assessment' });
+  if (!p.schedule?.length) empty.push({ tab: 'schedule', name: 'Schedule', task: 'Create schedule' });
+  if (!p.scripts?.length) empty.push({ tab: 'script', name: 'Script & Docs', task: 'Upload script' });
+  if (!p.scriptBreakdowns?.length) empty.push({ tab: 'breakdown', name: 'Script Breakdown', task: 'Load script breakdown' });
+  if (!p.stripboard?.days?.length) empty.push({ tab: 'stripboard', name: 'Stripboard', task: 'Set up stripboard' });
+  if (!p.shots?.length) empty.push({ tab: 'shotlist', name: 'Shot List', task: 'Create shot list' });
+  if (!p.storyboard?.frames?.length) empty.push({ tab: 'storyboard', name: 'Storyboard', task: 'Add storyboard frames' });
+  if (!p.soundlog?.length) empty.push({ tab: 'soundlog', name: 'Sound Log', task: 'Set up sound log' });
+  if (!p.unit?.length) empty.push({ tab: 'crew', name: 'Crew', task: 'Add crew members' });
+  if (!p.productionPlan?.sections?.length) empty.push({ tab: 'plan', name: 'Production Plan', task: 'Create production plan' });
+  if (!p.wardrobe?.length) empty.push({ tab: 'wardrobe', name: 'Wardrobe', task: 'List wardrobe items' });
+  return empty;
+}
+
+function renderDrawerSuggestions(p) {
+  const container = document.getElementById('qt-drawer-suggestions');
+  if (!container) return;
+  if (!p) {
+    container.style.display = 'none';
+    return;
+  }
+  const empty = getEmptySections(p);
+  if (!empty.length) {
+    container.style.display = 'none';
+    return;
+  }
+  const show = empty.slice(0, 4);
+  container.style.display = 'block';
+  container.innerHTML = `<div style="font-size:9px;color:var(--text3);margin-bottom:4px">Suggested:</div>` +
+    show.map(s => `<span onclick="qtDrawerAddSuggested(this,'${escapeHtml(s.task).replace(/'/g, "\\'")}',event)" style="display:inline-block;margin:2px 3px 2px 0;padding:3px 6px;font-size:10px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;cursor:pointer">${s.task}</span>`).join('');
+}
+
+function qtDrawerAddSuggested(btn, taskText, e) {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
+  
+  const p = currentProject();
+  if (!p) return;
+  if (!p.quickTasks) p.quickTasks = [];
+  p.quickTasks.push({ id: Date.now().toString(), text: taskText, done: false, priority: 'medium' });
   saveStore();
   qtDrawerRender(p);
 }
@@ -903,6 +990,7 @@ function qtDrawerRender(p) {
 
   if (!sorted.length) {
     list.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--text3);">No tasks yet.</div>';
+    renderDrawerSuggestions(p);
     return;
   }
 
@@ -925,6 +1013,8 @@ function qtDrawerRender(p) {
               onmouseout="this.style.color='var(--border)'">✕</button>
     </div>`;
   }).join('');
+
+  renderDrawerSuggestions(p);
 }
 
 function qtDrawerToggleDone(id) {
@@ -946,9 +1036,9 @@ function qtDrawerDeleteConfirm(btn, id) {
   const existing = document.getElementById('qt-delete-confirm');
   if (existing) existing.remove();
   
-  _qtDeleteConfirmOpen = true;
+  const p = currentProject(); if (!p) { _qtDeleteConfirmOpen = false; return; }
   
-  const p = currentProject(); if (!p) return;
+  _qtDeleteConfirmOpen = true;
   
   const taskItem = btn.closest('.quick-task-item');
   const taskText = taskItem?.querySelector('.qt-text')?.textContent || 'this task';

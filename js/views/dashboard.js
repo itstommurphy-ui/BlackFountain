@@ -110,6 +110,7 @@ function saveProject() {
   if (!title) { showToast('Please enter a project title', 'info'); return; }
   const directors = _getProjectTags('director');
   const producers = _getProjectTags('producer');
+  const notes = document.getElementById('proj-input-notes').value.trim();
   let p;
   if (editingProjectId) {
     p = getProject(editingProjectId);
@@ -120,7 +121,8 @@ function saveProject() {
     p.producers = producers;
     p.company = document.getElementById('proj-input-company').value.trim();
     p.genre = document.getElementById('proj-input-genre').value.trim();
-    p.notes = document.getElementById('proj-input-notes').value.trim();
+    p.notes = notes;
+    p.logline = notes;
     closeModal('modal-project');
     saveStore();
     showProjectView(editingProjectId);
@@ -134,7 +136,8 @@ function saveProject() {
       producers,
       company: document.getElementById('proj-input-company').value.trim(),
       genre: document.getElementById('proj-input-genre').value.trim(),
-      notes: document.getElementById('proj-input-notes').value.trim(),
+      notes: notes,
+      logline: notes,
     });
     if (!store.projects) store.projects = [];
     store.projects.push(p);

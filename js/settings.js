@@ -2937,13 +2937,29 @@ async function loadStore() {
         new Promise(resolve => setTimeout(() => resolve(null), 6000))
       ]);
       if (cloudData && cloudData.projects !== undefined) {
-        // Capture local file blobs BEFORE overwriting with cloud data
-        if (loaded && loaded.files) {
-          loaded.files.forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
-          console.log('[loadStore] Saved local blobs before cloud sync:', Object.keys(localFileBlobMap).length);
+        // Get local backup timestamp to compare
+        const localTimestamp = (() => {
+          try {
+            const idbData = localStorage.getItem('bf_backup_timestamp');
+            return idbData ? parseInt(idbData, 10) : 0;
+          } catch(e) { return 0; }
+        })();
+        const cloudTimestamp = cloudData._lastSave || cloudData.lastSave || 0;
+        
+        // If local is newer than cloud, preserve local data instead of letting cloud overwrite
+        if (loaded && loaded.projects && loaded.projects.length > 0 && localTimestamp > cloudTimestamp) {
+          console.log('[loadStore] Local data is newer than cloud (' + localTimestamp + ' > ' + cloudTimestamp + '), keeping local');
+          // Push local to cloud for sync
+          setTimeout(() => typeof sbPushStore === 'function' && sbPushStore(), 1000);
+        } else {
+          // Capture local file blobs BEFORE overwriting with cloud data
+          if (loaded && loaded.files) {
+            loaded.files.forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
+            console.log('[loadStore] Saved local blobs before cloud sync:', Object.keys(localFileBlobMap).length);
+          }
+          loaded = cloudData;
+          console.log('[loadStore] Cloud data loaded, files in cloud:', (cloudData.files || []).length);
         }
-        loaded = cloudData; // cloud wins for project/contact/settings data
-        console.log('[loadStore] Cloud data loaded, files in cloud:', (cloudData.files || []).length);
       } else if (loaded) {
         console.log('[loadStore] Cloud unavailable, using local data');
         sbPushStore(); // push local up when connection recovers

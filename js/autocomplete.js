@@ -44,7 +44,8 @@ const AutoComplete = (function() {
     // Get roles from global contacts
     store.contacts?.forEach(c => {
       if ((c.type || '').includes('cast') && !(c.type || '').includes('crew')) return;
-      (c.crewRoles || []).forEach(r => { if (r) roles.add(r); });
+      const crewRoles = Array.isArray(c.crewRoles) ? c.crewRoles : [];
+      crewRoles.forEach(r => { if (r) roles.add(r); });
       if (c.defaultRole && !(c.type || '').includes('cast')) roles.add(c.defaultRole);
     });
     

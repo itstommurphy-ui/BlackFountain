@@ -257,7 +257,8 @@ async function sbPushStore() {
 
     const stripped = {
       ...store,
-      files: (store.files || []).map(({ data: _d, ...f }) => f)
+      files: (store.files || []).map(({ data: _d, ...f }) => f),
+      _lastSave: Date.now()
     };
     
     console.log('[sbPushStore] Pushing to REST API for user_id:', _sbUser.id);

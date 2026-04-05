@@ -264,8 +264,10 @@ function _sbRenderStrip(sceneKey, data, sourceDayId) {
 
 function _sbRenderDrops(dayId, sceneKeys, data) {
   const strips = sceneKeys.map(k => _sbRenderStrip(k, data, dayId)).join('');
-  const empty  = !sceneKeys.length ? `<div class="sb-empty-drop">Drop scenes here</div>` : '';
-  return `<div class="sb-drops" ondragover="_sbOnDragOver(event,'${dayId}')" ondragleave="_sbOnDragLeave(event)" ondrop="_sbOnDrop(event,'${dayId}')" data-day="${dayId}">${strips}${empty}</div>`;
+  return `<div class="sb-drops" ondragover="_sbOnDragOver(event,'${dayId}')" ondragleave="_sbOnDragLeave(event)" ondrop="_sbOnDrop(event,'${dayId}')" data-day="${dayId}">
+    ${strips}
+    <div class="sb-drop-zone">Drop scenes here to create day order</div>
+  </div>`;
 }
 
 function _sbRenderDay(day, data, index) {
@@ -313,6 +315,7 @@ let _sbJustDragged  = false;
 let _sbOpenSceneKey = null;
 let _sbSelectMode   = false;
 let _sbSelectedDays = new Set();
+let _sbDragOverDay  = null;
 
 function renderStripboard(p) {
   const el = document.getElementById('stripboard-content');
@@ -433,6 +436,8 @@ function _sbOnDragStart(e) {
 function _sbOnDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
+  _sbDragOverDay = null;
   _sbJustDragged = true;
   setTimeout(() => { _sbJustDragged = false; }, 300);
 }
@@ -441,8 +446,30 @@ function _sbOnDragOver(e, targetDayId) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
   const drops = document.querySelector(`.sb-drops[data-day="${targetDayId}"]`);
-  if (drops) drops.closest('.sb-col')?.classList.add('drag-over');
+  if (drops) {
+    drops.closest('.sb-col')?.classList.add('drag-over');
+    const strips = [...drops.querySelectorAll('.strip')];
+    let insertIdx = strips.length;
+    let insertY = drops.offsetTop + 5;
+    for (let i = 0; i < strips.length; i++) {
+      const rect = strips[i].getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { insertIdx = i; break; }
+    }
+    if (insertIdx < strips.length) {
+      const targetStrip = strips[insertIdx];
+      insertY = targetStrip.offsetTop - 5;
+    } else if (strips.length > 0) {
+      const lastStrip = strips[strips.length - 1];
+      insertY = lastStrip.offsetTop + lastStrip.offsetHeight - 5;
+    }
+    const line = document.createElement('div');
+    line.className = 'sb-insert-line';
+    line.style.top = insertY + 'px';
+    drops.appendChild(line);
+    _sbDragOverDay = targetDayId;
+  }
 }
 
 function _sbOnDragLeave(e) {
@@ -454,6 +481,7 @@ function _sbOnDragLeave(e) {
 function _sbOnDrop(e, targetDayId) {
   e.preventDefault();
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
   const sceneKey    = _sbDragKey;
   const sourceDayId = _sbDragSource;
   _sbDragKey    = null;

@@ -857,7 +857,7 @@
         <label class="form-label">Directors</label>
         <div class="tag-input-container" id="proj-input-director-container">
           <div class="tag-input-tags" id="proj-input-director-tags"></div>
-          <input class="tag-input-field" id="proj-input-director" placeholder="Director name">
+          <input class="tag-input-field" id="proj-input-director" placeholder="Director name" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();_addProjectTag('director')}">
           <button type="button" class="tag-input-add-btn" onclick="_addProjectTag('director')" title="Add director">+</button>
         </div>
       </div>
@@ -865,7 +865,7 @@
         <label class="form-label">Producers</label>
         <div class="tag-input-container" id="proj-input-producer-container">
           <div class="tag-input-tags" id="proj-input-producer-tags"></div>
-          <input class="tag-input-field" id="proj-input-producer" placeholder="Producer name">
+          <input class="tag-input-field" id="proj-input-producer" placeholder="Producer name" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();_addProjectTag('producer')}">
           <button type="button" class="tag-input-add-btn" onclick="_addProjectTag('producer')" title="Add producer">+</button>
         </div>
       </div>
@@ -1868,6 +1868,7 @@
   }
 </script>
 <script src="js/views/breakdown.js"></script>
+<script src="js/bf-sync.js"></script>
 <script src="js/breakdown-scene-patch.js"></script>
 <script src="js/production-handoff.js"></script>
 <script src="js/views/callsheet.js"></script>
@@ -2075,6 +2076,7 @@ if ('serviceWorker' in navigator) {
       <button class="qt-add-btn" onclick="qtDrawerAddTask()">+ Add</button>
     </div>
   </div>
+  <div id="qt-drawer-suggestions" style="display:none;padding:8px 12px;background:var(--surface);border-top:1px dashed var(--border2)"></div>
 </div>
 
   <!-- BOTTOM DOCK — only visible in project mode -->
