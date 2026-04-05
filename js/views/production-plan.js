@@ -309,7 +309,7 @@ function getAllOverviewSections(p) {
     })(), tab:'equipment'},
     {name:'Locations',       icon:'📍',  count: p.locations.length + ' locations',                                    tab:'locations'},
     {name:'Moodboards',      icon:'🎨',  count: (store.moodboards||[]).filter(b => b.projectId === p.id).length + ' boards', tab:'moodboards'},
-    {name:'Project Brief',   icon:'🗒️', count: (p.brief&&p.brief.template) ? 'Template ' + p.brief.template : '0 fields', tab:'brief'},
+    {name:'Project Brief',   icon:'🗒️', count: (p.brief?.projectType) ? (() => { const f=p.brief.fields||{}; const ans=Object.values(f).filter(v=>v?.trim()).length; return ans + ' answered'; })() : 'Not started', tab:'brief'},
     {name:'Props',           icon:'🧳',  count: (p.props||[]).length + ' items',                                      tab:'props'},
     {name:'Release Forms',   icon:'📝',  count: (p.releases||[]).length + ' forms',                                   tab:'releases'},
     {name:'Risk Assessment', icon:'⚠️',  count: (p.risks||[]).length + ' hazards',                                    tab:'riskassess'},
