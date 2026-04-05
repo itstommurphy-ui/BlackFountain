@@ -405,7 +405,7 @@ function getEmptySections(p) {
   if (!(p.gearList?.length || Object.values(p.equipment || {}).flat().length)) empty.push({ tab: 'equipment', name: 'Equipment', task: 'Add equipment' });
   if (!p.locations?.length) empty.push({ tab: 'locations', name: 'Locations', task: 'Add locations' });
   if (!(store.moodboards || []).filter(b => b.projectId === p.id).length) empty.push({ tab: 'moodboards', name: 'Moodboards', task: 'Create moodboard' });
-  if (!p.brief?.template) empty.push({ tab: 'brief', name: 'Project Brief', task: 'Write project brief' });
+  if (!p.brief?.projectType) empty.push({ tab: 'brief', name: 'Project Brief', task: 'Write project brief' });
   if (!p.props?.length) empty.push({ tab: 'props', name: 'Props', task: 'List props' });
   if (!p.releases?.length) empty.push({ tab: 'releases', name: 'Release Forms', task: 'Prepare release forms' });
   if (!p.risks?.length) empty.push({ tab: 'riskassess', name: 'Risk Assessment', task: 'Complete risk assessment' });
