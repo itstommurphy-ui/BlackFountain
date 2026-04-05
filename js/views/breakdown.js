@@ -1252,6 +1252,7 @@ function showTagActionMenu(tagId, x, y, fromScript) {
     <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
       <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
     </div>
+    <button onclick="_bdOpenTagEdit('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✎  Edit / re-tag</button>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
     ${_bdCtxFromScript ? `<button onclick="event.stopPropagation();_bdDeleteTagInline('${tagId}', event.target)" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
@@ -1409,6 +1410,146 @@ function _bdConfirmDeleteTag(tagId) {
   const bd = _getActiveBd(p);
   if (!bd) return;
   bd.tags = bd.tags.filter(t => t.id !== tagId);
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function _bdOpenTagEdit(tagId) {
+  hideBdPopover();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  const tag = bd?.tags.find(t => t.id === tagId);
+  if (!tag || !bd?.rawText) return;
+
+  const text = bd.rawText;
+  const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#e6bc3c', textColor:'#000' };
+
+  const lines = text.split('\n');
+  let offset = 0, targetLine = -1;
+  const lineOffsets = [];
+  for (let i = 0; i < lines.length; i++) {
+    lineOffsets.push(offset);
+    if (targetLine === -1 && offset + lines[i].length >= tag.start) targetLine = i;
+    offset += lines[i].length + 1;
+  }
+  if (targetLine === -1) return;
+
+  const fromLine = Math.max(0, targetLine - 3);
+  const toLine   = Math.min(lines.length - 1, targetLine + 3);
+  const windowStart = lineOffsets[fromLine];
+  const windowText  = lines.slice(fromLine, toLine + 1).join('\n');
+
+  const relStart = tag.start - windowStart;
+  const relEnd   = tag.end   - windowStart;
+  const esc = str => str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const safeRelStart = Math.max(0, Math.min(relStart, windowText.length));
+  const safeRelEnd   = Math.max(safeRelStart, Math.min(relEnd, windowText.length));
+
+  const highlighted =
+    esc(windowText.slice(0, safeRelStart)) +
+    `<mark style="background:${cat.color};color:${cat.textColor};border-radius:2px;padding:0 1px">` +
+    esc(windowText.slice(safeRelStart, safeRelEnd)) +
+    `</mark>` +
+    esc(windowText.slice(safeRelEnd));
+
+  const modal = document.createElement('div');
+  modal.id = '_bd-tag-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;max-width:90%;width:500px;max-height:80vh;overflow-y:auto">
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)">Edit Tag — ${cat.label}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--font-mono)">SELECT DIFFERENT TEXT — highlight your preferred span below</div>
+      <div
+        id="_bd-tag-edit-ctx"
+        data-tag-id="${tagId}"
+        data-window-start="${windowStart}"
+        style="font-family:'Courier New',monospace;font-size:12px;line-height:1.8;white-space:pre-wrap;word-break:break-word;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:text;user-select:text"
+      >${highlighted}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        <div id="_bd-tag-edit-preview" style="font-size:11px;color:var(--text3);font-family:'Courier New',monospace;flex:1;font-style:italic">Select text above to preview</div>
+        <button onclick="document.getElementById('_bd-tag-edit-modal')?.remove()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:11px;color:var(--text3);cursor:pointer">Cancel</button>
+        <button id="_bd-tag-edit-apply" onclick="_bdApplyTagEdit('${tagId}')" disabled style="background:var(--accent);color:#000;border:none;border-radius:4px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;opacity:0.4">Apply</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  const ctx = document.getElementById('_bd-tag-edit-ctx');
+  const applyBtn = document.getElementById('_bd-tag-edit-apply');
+  const preview  = document.getElementById('_bd-tag-edit-preview');
+
+  ctx._pendingStart = null;
+  ctx._pendingEnd   = null;
+
+  const onSelectionChange = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!ctx.contains(range.commonAncestorContainer)) return;
+
+    const getOffset = (container, node, offset) => {
+      let total = 0;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        if (walker.currentNode === node) return total + offset;
+        total += walker.currentNode.textContent.length;
+      }
+      return total + offset;
+    };
+
+    const relA = getOffset(ctx, range.startContainer, range.startOffset);
+    const relB = getOffset(ctx, range.endContainer,   range.endOffset);
+    const selStart = Math.min(relA, relB);
+    const selEnd   = Math.max(relA, relB);
+    const selectedText = windowText.slice(selStart, selEnd).trim();
+
+    if (!selectedText) {
+      applyBtn.disabled = true;
+      applyBtn.style.opacity = '0.4';
+      preview.textContent = 'Select text above to preview';
+      ctx._pendingStart = null;
+      ctx._pendingEnd   = null;
+      return;
+    }
+
+    const trimOffset = windowText.slice(selStart, selEnd).indexOf(selectedText);
+    const absStart = windowStart + selStart + trimOffset;
+    const absEnd   = absStart + selectedText.length;
+
+    ctx._pendingStart = absStart;
+    ctx._pendingEnd   = absEnd;
+
+    preview.innerHTML = `New tag: <span style="font-weight:700;color:var(--text)">${selectedText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>`;
+    applyBtn.disabled = false;
+    applyBtn.style.opacity = '1';
+  };
+
+  document.addEventListener('selectionchange', onSelectionChange);
+  modal._cleanupListener = () => document.removeEventListener('selectionchange', onSelectionChange);
+}
+
+function _bdApplyTagEdit(tagId) {
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  const tag = bd?.tags.find(t => t.id === tagId);
+  if (!tag) return;
+
+  const ctx = document.getElementById('_bd-tag-edit-ctx');
+  if (!ctx || ctx._pendingStart == null) return;
+
+  const newText = bd.rawText.slice(ctx._pendingStart, ctx._pendingEnd).trim();
+  if (!newText) return;
+
+  tag.text  = newText;
+  tag.start = ctx._pendingStart;
+  tag.end   = ctx._pendingEnd;
+
+  const modal = document.getElementById('_bd-tag-edit-modal');
+  if (modal?._cleanupListener) modal._cleanupListener();
+  modal?.remove();
+
   saveStore();
   updateBreakdownView(p);
 }
