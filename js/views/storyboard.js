@@ -134,6 +134,8 @@ function renderStoryboard(p) {
   `;
   // Wire rubber-band selection on the canvas
   setTimeout(() => _sbInitRubberBand(), 0);
+  // Inject Go To dropdown
+  el.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml('storyboard'); });
 }
 
 function _sbGroupHtml(group, scenes) {
@@ -283,9 +285,9 @@ function _sbOpenFrame(id, isDraft) {
             <div id="_sbFavs_${id}" style="display:flex;gap:3px;align-items:center"></div>
             <div class="sb-tdiv"></div>
             <!-- BG colour -->
-            <label title="Background colour" style="position:relative;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px">
+            <label id="_sbBgLabel_${id}" title="Background colour" style="position:relative;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px">
               <span style="font-size:9px;color:#888">BG</span>
-              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:${f.bgColor || '#1a1a1a'};cursor:pointer"></div>
+              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:${f.bgColor || '#1a1a1a'};cursor:pointer" onclick="_sbToggleBgPicker('${id}')"></div>
               <input type="color" id="_sbBgPicker_${id}" value="${f.bgColor || '#1a1a1a'}"
                 style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer"
                 oninput="_sbSetBgLive('${id}',this.value)" onchange="_sbSetBg('${id}',this.value)">
@@ -421,7 +423,7 @@ function _sbOpenFrame(id, isDraft) {
     ov.remove();
     renderStoryboard(currentProject());
   };
-  ov.addEventListener('click', e => { if (e.target === ov) _sbCloseModal(false); });
+  
   ov.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.stopPropagation(); _sbCloseModal(false); }
     if (e.key === 'ArrowLeft'  && !isFirst && !isDraft) { e.preventDefault(); _sbSaveSketch(id); _sbCleanupKb(); _sbPrevFrame(id); }
@@ -629,6 +631,10 @@ function _sbDiscardDraft() {
 function _sbAddCustomScene() {
   const ovId = '_sb-custom-scene-modal';
   document.getElementById(ovId)?.remove();
+  const p = currentProject();
+  const scenes = p ? _sbScenes(p) : [];
+  const hasBreakdown = scenes.length > 0;
+
   const ov = document.createElement('div');
   ov.id = ovId;
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -638,14 +644,29 @@ function _sbAddCustomScene() {
         <h3 style="margin:0;font-size:14px;font-weight:700">+ Add Scene</h3>
         <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1">✕</button>
       </div>
-      <div>
-        <label class="form-label" style="margin-bottom:4px">Scene heading</label>
-        <input type="text" id="_sbCustomSceneName" placeholder="e.g. INT. BARRY'S OFFICE - DAY"
-          style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)"
-          onkeydown="if(event.key==='Enter')_sbAddCustomSceneConfirm('${ovId}')">
+      ${hasBreakdown ? `
+        <div>
+          <label class="form-label" style="margin-bottom:4px">Select scene from breakdown</label>
+          <select id="_sbSceneSelect" style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
+            <option value="">— Choose a scene —</option>
+            ${scenes.map(s => `<option value="${s.key.replace(/"/g,'&quot;')}">${s.heading.replace(/</g,'&lt;').substring(0,80)}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:-8px">
+          <input type="checkbox" id="_sbNewScene" style="width:16px;height:16px;accent-color:var(--accent)">
+          <label for="_sbNewScene" style="font-size:12px;color:var(--text2)">Or create custom scene</label>
+        </div>
+      ` : ''}
+      <div id="_sbCustomSceneInput" style="display:${hasBreakdown ? 'none' : 'flex'};flex-direction:column;gap:10px">
+        <div>
+          <label class="form-label" style="margin-bottom:4px">Scene heading</label>
+          <input type="text" id="_sbCustomSceneName" placeholder="e.g. INT. BARRY'S OFFICE - DAY"
+            style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)"
+            onkeydown="if(event.key==='Enter')_sbAddCustomSceneConfirm('${ovId}')">
+        </div>
       </div>
       <div>
-        <label class="form-label" style="margin-bottom:4px">Blank frames to add <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <label class="form-label" style="margin-bottom:4px">Frames to add <span style="opacity:0.5;font-weight:400">(optional)</span></label>
         <input type="number" id="_sbCustomSceneCount" value="1" min="0" max="20"
           style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
       </div>
@@ -656,17 +677,45 @@ function _sbAddCustomScene() {
     </div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  if (hasBreakdown) {
+    const sel = document.getElementById('_sbSceneSelect');
+    const chk = document.getElementById('_sbNewScene');
+    const cust = document.getElementById('_sbCustomSceneInput');
+    sel?.addEventListener('change', () => {
+      if (sel.value) cust.style.display = 'none';
+    });
+    chk?.addEventListener('change', () => {
+      cust.style.display = chk.checked ? 'flex' : 'none';
+      if (chk.checked) { sel.value = ''; }
+    });
+  }
   setTimeout(() => document.getElementById('_sbCustomSceneName')?.focus(), 50);
 }
 
 function _sbAddCustomSceneConfirm(ovId) {
   const ov = document.getElementById(ovId); if (!ov) return;
-  if (ov._confirming) return; // guard against double-fire (Enter + click)
+  if (ov._confirming) return;
   ov._confirming = true;
-  const name  = document.getElementById('_sbCustomSceneName')?.value.trim();
-  if (!name) { showToast('Please enter a scene heading', 'info'); ov._confirming = false; return; }
+  const p = currentProject(); if (!p) return;
+  const scenes = _sbScenes(p);
+  const hasBreakdown = scenes.length > 0;
+
+  let name = '';
+  if (hasBreakdown) {
+    const sel = document.getElementById('_sbSceneSelect');
+    const chk = document.getElementById('_sbNewScene');
+    const customInput = document.getElementById('_sbCustomSceneName');
+    if (chk?.checked || !sel?.value) {
+      name = customInput?.value.trim();
+    } else {
+      name = sel?.value;
+    }
+  } else {
+    name = document.getElementById('_sbCustomSceneName')?.value.trim();
+  }
+
+  if (!name) { showToast('Please select or enter a scene heading', 'info'); ov._confirming = false; return; }
   const count = Math.max(1, Math.min(20, parseInt(document.getElementById('_sbCustomSceneCount')?.value) || 1));
-  const p  = currentProject(); if (!p) return;
   const sb = _getStoryboard(p);
   for (let i = 0; i < count; i++) {
     sb.frames.push(_sbMakeFrame(sb, name, name));
@@ -1252,7 +1301,7 @@ function _sbSetTool(id, tool) {
   state.tool = tool;
   // Update cursor
   const canvas = state._canvas;
-  if (canvas) canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'erase' ? 'not-allowed' : 'crosshair';
+  if (canvas) canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'erase' ? 'crosshair' : 'crosshair';
   _sbSyncToolbar(id);
 }
 
@@ -1284,6 +1333,19 @@ function _sbSetBgLive(id, color) {
   const bgSwatch = document.getElementById('_sbBgSwatch_' + id);
   if (bgSwatch) bgSwatch.style.background = color;
 }
+
+function _sbToggleBgPicker(id) {
+  const picker = document.getElementById('_sbBgPicker_' + id);
+  if (!picker) return;
+  if (_sbBgPickerOpen === id) {
+    picker.blur();
+    _sbBgPickerOpen = null;
+  } else {
+    _sbBgPickerOpen = id;
+  }
+}
+
+let _sbBgPickerOpen = null;
 
 function _sbSetBg(id, color) {
   console.log('[DEBUG] _sbSetBg called, id=', id, 'color=', color);
