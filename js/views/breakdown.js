@@ -1422,6 +1422,7 @@ function _bdOpenTagEdit(tagId) {
   if (!tag || !bd?.rawText) return;
 
   const text = bd.rawText;
+  const tagText = text.slice(tag.start, tag.end);
   const cat  = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#e6bc3c', textColor:'#000', label:'?' };
 
   const lines       = text.split('\n');
@@ -1479,7 +1480,7 @@ function _bdOpenTagEdit(tagId) {
             id="_bd-tag-edit-replace"
             onclick="_bdApplyTagEdit('${tagId}','replace')"
             style="background:${cat.color};color:${cat.textColor};border:none;border-radius:4px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0"
-          >Replace "${tag.text.length > 20 ? tag.text.slice(0,20)+'…' : tag.text}"</button>
+          >Replace "${tagText.length > 20 ? tagText.slice(0,20)+'…' : tagText}"</button>
           <span style="font-size:10px;color:var(--text3)">updates this ${cat.label} tag</span>
         </div>
         <div style="border-top:1px solid var(--border2);padding-top:8px">
@@ -1573,7 +1574,6 @@ function _bdApplyTagEdit(tagId, action) {
   if (!newText) return;
 
   if (action === 'replace') {
-    tag.text  = newText;
     tag.start = ctx._pendingStart;
     tag.end   = ctx._pendingEnd;
   } else if (action === 'addnew') {
