@@ -2501,18 +2501,207 @@ function _bdRenderSuggestItem(s, cat) {
     onmouseleave="this.style.borderColor='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.25)'}';this.style.color='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.4)'}';this.style.background='${downActive ? 'rgba(231,76,60,0.13)' : 'none'}'"
   >👎</button>`;
 
+  const editBtn = `<button
+    onclick="event.stopPropagation();_bdToggleSugEdit('${s.id}')"
+    title="Edit — pick a different span of text for this suggestion"
+    style="background:none;border:1px solid rgba(230,188,60,0.25);border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:rgba(230,188,60,0.5);line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseleave="this.style.borderColor='rgba(230,188,60,0.25)';this.style.color='rgba(230,188,60,0.5)'"
+  >✎</button>`;
+
   const commBadge = commScore !== 0
     ? `<span title="Community score" style="font-size:9px;color:${commScore>0?'#5fc460':'#E74C3C'};opacity:0.6;flex-shrink:0">${commScore>0?'+':''}${commScore}</span>`
     : '';
 
-  return `<div id="sug_row_${s.id}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);${isMedium?'opacity:0.7':''}">
-    <input type="checkbox" id="sug_cb_${s.id}" ${isChecked?'checked':''} onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
-    <span onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()" style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default">${s.text}</span>
-    ${isMedium ? `<span style="font-size:9px;color:var(--text3);background:var(--surface3);border-radius:3px;padding:1px 4px;flex-shrink:0">common</span>` : ''}
-    <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
-    ${commBadge}
-    <span style="display:flex;gap:3px;flex-shrink:0">${upBtn}${downBtn}</span>
+  return `<div id="sug_wrap_${s.id}">
+    <div id="sug_row_${s.id}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);${isMedium?'opacity:0.7':''}">
+      <input type="checkbox" id="sug_cb_${s.id}" ${isChecked?'checked':''} onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+      <span onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()" style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default">${s.text}</span>
+      ${isMedium ? `<span style="font-size:9px;color:var(--text3);background:var(--surface3);border-radius:3px;padding:1px 4px;flex-shrink:0">common</span>` : ''}
+      <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
+      ${commBadge}
+      <span style="display:flex;gap:3px;flex-shrink:0">${editBtn}${upBtn}${downBtn}</span>
+    </div>
+    <div id="sug_edit_${s.id}" style="display:none"></div>
   </div>`;
+}
+function _bdToggleSugEdit(sugId) {
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (!editEl) return;
+  const isOpen = editEl.style.display !== 'none';
+  // Close any other open edit panels first
+  document.querySelectorAll('[id^="sug_edit_"]').forEach(el => {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  });
+  if (isOpen) return;
+  _bdOpenSugEdit(sugId);
+}
+
+function _bdOpenSugEdit(sugId) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  const bd = _getActiveBd(currentProject());
+  if (!bd?.rawText) return;
+  const text = bd.rawText;
+  const cat = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#e6bc3c', textColor:'#000' };
+
+  // Extract a window of context: 3 lines before and after the suggestion
+  const lines = text.split('\n');
+  let offset = 0, targetLine = -1;
+  const lineOffsets = [];
+  for (let i = 0; i < lines.length; i++) {
+    lineOffsets.push(offset);
+    if (targetLine === -1 && offset + lines[i].length >= s.start) targetLine = i;
+    offset += lines[i].length + 1;
+  }
+  if (targetLine === -1) return;
+
+  const fromLine = Math.max(0, targetLine - 3);
+  const toLine   = Math.min(lines.length - 1, targetLine + 3);
+  const windowStart = lineOffsets[fromLine];
+  const windowText  = lines.slice(fromLine, toLine + 1).join('\n');
+
+  // Build HTML with current suggestion highlighted
+  const relStart = s.start - windowStart;
+  const relEnd   = s.end   - windowStart;
+  const esc = str => str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const safeRelStart = Math.max(0, Math.min(relStart, windowText.length));
+  const safeRelEnd   = Math.max(safeRelStart, Math.min(relEnd, windowText.length));
+
+  const highlighted =
+    esc(windowText.slice(0, safeRelStart)) +
+    `<mark style="background:${cat.color};color:${cat.textColor};border-radius:2px;padding:0 1px">` +
+    esc(windowText.slice(safeRelStart, safeRelEnd)) +
+    `</mark>` +
+    esc(windowText.slice(safeRelEnd));
+
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (!editEl) return;
+
+  editEl.innerHTML = `
+    <div style="margin:4px 0 6px;padding:10px 12px;background:var(--surface3);border:1px solid ${cat.color}44;border-radius:6px;border-top:none;border-top-left-radius:0;border-top-right-radius:0">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--font-mono);letter-spacing:0.5px">
+        SELECT A DIFFERENT SPAN — highlight your preferred text below, then click Apply
+      </div>
+      <div
+        id="sug_edit_ctx_${sugId}"
+        data-sug-id="${sugId}"
+        data-window-start="${windowStart}"
+        style="font-family:'Courier New',monospace;font-size:11.5px;line-height:1.8;white-space:pre-wrap;word-break:break-word;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:text;user-select:text"
+      >${highlighted}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <div id="sug_edit_preview_${sugId}" style="font-size:11px;color:var(--text3);font-family:'Courier New',monospace;flex:1;font-style:italic">
+          Select text above to preview new tag
+        </div>
+        <button
+          id="sug_edit_apply_${sugId}"
+          onclick="_bdApplySugEdit('${sugId}')"
+          disabled
+          style="background:var(--accent);color:#000;border:none;border-radius:4px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;opacity:0.4;flex-shrink:0"
+        >Apply</button>
+        <button
+          onclick="_bdToggleSugEdit('${sugId}')"
+          style="background:none;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--text3);cursor:pointer;flex-shrink:0"
+        >Cancel</button>
+      </div>
+    </div>`;
+
+  editEl.style.display = 'block';
+
+  // Listen for selection changes within the context div
+  const ctx = document.getElementById(`sug_edit_ctx_${sugId}`);
+  const applyBtn = document.getElementById(`sug_edit_apply_${sugId}`);
+  const preview  = document.getElementById(`sug_edit_preview_${sugId}`);
+
+  // Store pending selection data on the element
+  ctx._pendingStart = null;
+  ctx._pendingEnd   = null;
+
+  const onSelectionChange = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!ctx.contains(range.commonAncestorContainer)) return;
+
+    // Calculate char offsets within windowText (strip HTML — use text nodes only)
+    const getOffset = (container, node, offset) => {
+      let total = 0;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        if (walker.currentNode === node) return total + offset;
+        total += walker.currentNode.textContent.length;
+      }
+      return total + offset;
+    };
+
+    const relA = getOffset(ctx, range.startContainer, range.startOffset);
+    const relB = getOffset(ctx, range.endContainer,   range.endOffset);
+    const selStart = Math.min(relA, relB);
+    const selEnd   = Math.max(relA, relB);
+    const selectedText = windowText.slice(selStart, selEnd).trim();
+
+    if (!selectedText) {
+      applyBtn.disabled = true;
+      applyBtn.style.opacity = '0.4';
+      preview.textContent = 'Select text above to preview new tag';
+      ctx._pendingStart = null;
+      ctx._pendingEnd   = null;
+      return;
+    }
+
+    // Adjust to trimmed bounds
+    const trimOffset = windowText.slice(selStart, selEnd).indexOf(selectedText);
+    const absStart = windowStart + selStart + trimOffset;
+    const absEnd   = absStart + selectedText.length;
+
+    ctx._pendingStart = absStart;
+    ctx._pendingEnd   = absEnd;
+
+    preview.innerHTML = `New tag: <span style="font-weight:700;color:var(--text)">${selectedText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>`;
+    applyBtn.disabled = false;
+    applyBtn.style.opacity = '1';
+  };
+
+  document.addEventListener('selectionchange', onSelectionChange);
+  // Clean up listener when edit panel closes
+  editEl._cleanupListener = () => document.removeEventListener('selectionchange', onSelectionChange);
+}
+
+function _bdApplySugEdit(sugId) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  const ctx = document.getElementById(`sug_edit_ctx_${sugId}`);
+  if (!ctx || ctx._pendingStart == null) return;
+
+  const bd = _getActiveBd(currentProject());
+  if (!bd?.rawText) return;
+
+  const newText  = bd.rawText.slice(ctx._pendingStart, ctx._pendingEnd).trim();
+  if (!newText) return;
+
+  // Update the suggestion in place
+  s.text  = newText;
+  s.start = ctx._pendingStart;
+  s.end   = ctx._pendingEnd;
+  // Bump to high confidence since user explicitly chose this
+  s.confidence = 'high';
+  // Auto-check it
+  _bdSuggestSelected.add(sugId);
+
+  // Clean up selection listener
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (editEl?._cleanupListener) editEl._cleanupListener();
+
+  // Re-render just this row + close edit panel
+  const wrap = document.getElementById(`sug_wrap_${sugId}`);
+  if (wrap) {
+    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#aaa', textColor:'#000' };
+    wrap.outerHTML = _bdRenderSuggestItem(s, cat);
+  }
+
+  updateBdSuggestCount();
 }
 function _bdSuggestSceneStats(suggestions) {
   // Build a map: sceneHeading → { total, byCategory }
@@ -2766,6 +2955,33 @@ function _bdShowSugTooltip(el, sugId) {
 function _bdHideSugTooltip() {
   const tip = document.getElementById('bd-sug-tip');
   if (tip) tip.style.display = 'none';
+}
+
+function _bdMoveSuggestion(sugId, newCat, mode) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  if (mode === 'move') {
+    s.category = newCat;
+    const row = document.getElementById('sug_row_' + sugId);
+    if (row) {
+      const cat = BREAKDOWN_CATEGORIES.find(c => c.id === newCat);
+      row.style.borderColor = cat ? cat.color : 'var(--accent)';
+      setTimeout(() => row.style.borderColor = 'var(--border)', 400);
+    }
+    const cb = document.getElementById('sug_cb_' + sugId);
+    if (cb) cb.checked = true;
+    _bdSuggestSelected.add(sugId);
+    updateBdSuggestCount();
+    showToast(`Moved to ${BREAKDOWN_CATEGORIES.find(c => c.id === newCat)?.label || newCat}`, 'info');
+  } else if (mode === 'add') {
+    const newS = { ...s, id: s.id + '_copy_' + Date.now(), category: newCat, confidence: s.confidence };
+    _bdSuggestions.push(newS);
+    if (s.confidence === 'high') {
+      _bdSuggestSelected.add(newS.id);
+    }
+    showBdSuggestPanel();
+    showToast(`Added copy to ${BREAKDOWN_CATEGORIES.find(c => c.id === newCat)?.label || newCat}`, 'info');
+  }
 }
 
 // CHANGE [4]: Batch prop export during bulk apply.
