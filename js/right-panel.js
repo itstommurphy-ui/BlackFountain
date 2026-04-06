@@ -285,86 +285,185 @@ function rpToggleContactExpand(name) {
   }
 }
 
+// ── Replace these three functions in right-panel.js ─────────
+// rpContactCtxMenu, rpShowConfirm, rpDeleteContact
+// ═════════════════════════════════════════════════════════��══
+
 function rpContactCtxMenu(e, itemEl) {
   e.preventDefault();
   e.stopPropagation();
-  const item = itemEl.closest('.rp-contact-item');
-  const name = item?.dataset.rpContactName || '';
+
+  // Dismiss any existing confirm first
+  document.getElementById('rp-confirm')?.remove();
+
+  const item  = itemEl.closest('.rp-contact-item');
+  const name  = item?.dataset.rpContactName  || '';
   const phone = item?.dataset.rpContactPhone || '';
   const email = item?.dataset.rpContactEmail || '';
 
-  const items = [
-    phone ? { label: 'Copy Phone', icon: '📋', fn: () => navigator.clipboard.writeText(phone) } : null,
-    email ? { label: 'Copy Email', icon: '📋', fn: () => navigator.clipboard.writeText(email) } : null,
-    (phone || email) ? { label: 'Copy Contact', icon: '📋', fn: () => navigator.clipboard.writeText(`${name}${phone ? '\n' + phone : ''}${email ? '\n' + email : ''}`) } : null,
-    null,
-    { label: 'Delete Contact', icon: '🗑', danger: true, fn: () => rpDeleteContact(name) }
-  ].filter(Boolean);
+  // Build a self-contained menu div — no dependency on showContextMenu()
+  document.getElementById('rp-ctx-menu')?.remove();
 
-  showContextMenu(e, items);
+  const menu = document.createElement('div');
+  menu.id = 'rp-ctx-menu';
+  menu.style.cssText = [
+    'position:fixed',
+    `left:${Math.min(e.clientX, window.innerWidth - 180)}px`,
+    `top:${Math.min(e.clientY, window.innerHeight - 160)}px`,
+    'z-index:9999',
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:8px',
+    'padding:4px 0',
+    'min-width:160px',
+    'box-shadow:0 8px 24px rgba(0,0,0,0.45)',
+    'font-size:12px',
+  ].join(';');
+
+  const _item = (label, icon, fn, danger) => {
+    const el = document.createElement('div');
+    el.style.cssText = `padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;color:${danger ? 'var(--red)' : 'var(--text)'}`;
+    el.innerHTML = `<span style="font-size:13px">${icon}</span>${label}`;
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
+    el.addEventListener('mouseleave', () => el.style.background = '');
+    el.addEventListener('mousedown', ev => {
+      ev.stopPropagation();
+      _rpDismissCtxMenu();
+      fn();
+    });
+    return el;
+  };
+
+  const _sep = () => {
+    const s = document.createElement('div');
+    s.style.cssText = 'height:1px;background:var(--border2);margin:3px 0';
+    return s;
+  };
+
+  if (phone) menu.appendChild(_item('Copy phone',   '📋', () => { navigator.clipboard.writeText(phone); showToast?.('Copied', 'success'); }));
+  if (email) menu.appendChild(_item('Copy email',   '📋', () => { navigator.clipboard.writeText(email); showToast?.('Copied', 'success'); }));
+  if (phone || email) {
+    menu.appendChild(_item('Copy contact', '📋', () => {
+      navigator.clipboard.writeText([name, phone, email].filter(Boolean).join('\n'));
+      showToast?.('Copied', 'success');
+    }));
+  }
+  if (phone || email) menu.appendChild(_sep());
+  menu.appendChild(_item('Delete contact', '🗑', () => rpDeleteContact(name), true));
+
+  document.body.appendChild(menu);
+
+  // Close on next click anywhere — including inside the panel
+  // Use capture so it fires before anything else, then remove itself
+  const _close = ev => {
+    if (!menu.contains(ev.target)) _rpDismissCtxMenu();
+  };
+  setTimeout(() => document.addEventListener('click', _close, { capture: true, once: true }), 10);
+  menu._closeHandler = _close;
+}
+
+function _rpDismissCtxMenu() {
+  const menu = document.getElementById('rp-ctx-menu');
+  if (!menu) return;
+  if (menu._closeHandler) {
+    document.removeEventListener('click', menu._closeHandler, { capture: true });
+  }
+  menu.remove();
 }
 
 function rpDeleteContact(name) {
-  const contacts = _rpGetAllContacts();
-  const c = contacts.find(ct => ct.name.toLowerCase() === name.toLowerCase());
-  if (!c) return;
+  // Dismiss any existing menus
+  _rpDismissCtxMenu();
 
-  rpShowConfirm(`Delete contact "${c.name}"?`, 'Delete', () => {
-    store.contacts = (store.contacts || []).filter(con => con.name.toLowerCase() !== c.name.toLowerCase());
+  // Find the contact row to anchor the confirm near it
+  const safeId = name.replace(/[^a-zA-Z0-9]/g, '-');
+  const row = document.getElementById(`rp-contact-${safeId}`);
 
-    for (const p of store.projects || []) {
-      if (p.cast) p.cast = p.cast.filter(cast => cast.name.toLowerCase() !== c.name.toLowerCase());
-      if (p.extras) p.extras = p.extras.filter(ext => ext.name.toLowerCase() !== c.name.toLowerCase());
-      if (p.unit) p.unit = p.unit.filter(u => u.name.toLowerCase() !== c.name.toLowerCase());
-      if (p.contacts) p.contacts = p.contacts.filter(con => con.name.toLowerCase() !== c.name.toLowerCase());
-    }
+  // Remove any existing confirm
+  document.getElementById('rp-confirm')?.remove();
 
-    saveStore();
-    rpContactsRender();
-  });
-}
-
-function rpShowConfirm(message, confirmLabel, onConfirm) {
-  const existing = document.getElementById('rp-confirm');
-  if (existing) existing.remove();
-
-  const left = window.innerWidth / 2 - 100;
-  const top = window.innerHeight / 2;
   const confirm = document.createElement('div');
   confirm.id = 'rp-confirm';
-  confirm.style.cssText = `position:fixed;left:${left}px;top:${top}px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:200;font-size:13px;color:var(--text)`;
-  
+
+  // Position: just below the contact row if we can find it, otherwise centre
+  let top = window.innerHeight / 2 - 50;
+  let left = window.innerWidth / 2 - 120;
+  if (row) {
+    const rect = row.getBoundingClientRect();
+    top  = Math.min(rect.bottom + 6, window.innerHeight - 100);
+    left = Math.max(8, rect.left - 10);
+  }
+
+  confirm.style.cssText = [
+    'position:fixed',
+    `left:${left}px`,
+    `top:${top}px`,
+    'z-index:9999',
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:8px',
+    'padding:14px 16px',
+    'box-shadow:0 8px 32px rgba(0,0,0,0.5)',
+    'min-width:220px',
+    'max-width:260px',
+    'font-size:12px',
+    'color:var(--text)',
+  ].join(';');
+
+  const msg = document.createElement('div');
+  msg.style.cssText = 'margin-bottom:12px;line-height:1.5;color:var(--text2)';
+  msg.textContent = `Delete "${name}" from all contacts and projects?`;
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
+
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'btn btn-sm';
-  cancelBtn.style.background = 'var(--surface2)';
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.onclick = (e) => { e.stopPropagation(); confirm.remove(); };
-  
-  const confirmBtn = document.createElement('button');
-  confirmBtn.className = 'btn btn-sm btn-danger';
-  confirmBtn.textContent = confirmLabel;
-  confirmBtn.onclick = (e) => { e.stopPropagation(); confirm.remove(); onConfirm(); };
-  
-  const msg = document.createElement('div');
-  msg.style.marginBottom = '12px';
-  msg.textContent = message;
-  
-  const btnRow = document.createElement('div');
-  btnRow.style.display = 'flex';
-  btnRow.style.gap = '8px';
-  btnRow.style.justifyContent = 'flex-end';
+  cancelBtn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    confirm.remove();
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-sm';
+  deleteBtn.style.cssText = 'background:rgba(196,68,68,0.2);border-color:rgba(196,68,68,0.4);color:var(--red)';
+  deleteBtn.textContent = 'Delete';
+  deleteBtn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    confirm.remove();
+
+    // Actually delete
+    store.contacts = (store.contacts || []).filter(
+      c => c.name?.toLowerCase() !== name.toLowerCase()
+    );
+    for (const p of store.projects || []) {
+      const _f = arr => (arr || []).filter(c => c.name?.toLowerCase() !== name.toLowerCase());
+      p.cast     = _f(p.cast);
+      p.extras   = _f(p.extras);
+      p.unit     = _f(p.unit);
+      p.contacts = _f(p.contacts);
+    }
+    saveStore();
+    rpContactsRender();
+    showToast?.(`"${name}" removed`, 'success');
+  });
+
   btnRow.appendChild(cancelBtn);
-  btnRow.appendChild(confirmBtn);
-  
+  btnRow.appendChild(deleteBtn);
   confirm.appendChild(msg);
   confirm.appendChild(btnRow);
   document.body.appendChild(confirm);
-}
 
-document.addEventListener('contextmenu', e => {
-  const confirm = document.getElementById('rp-confirm');
-  if (confirm) confirm.remove();
-});
+  // Clicking outside the confirm closes it
+  const _closeConfirm = ev => {
+    if (!confirm.contains(ev.target)) {
+      confirm.remove();
+      document.removeEventListener('click', _closeConfirm, { capture: true });
+    }
+  };
+  setTimeout(() => document.addEventListener('click', _closeConfirm, { capture: true }), 10);
+}
 
 // ── Moodboards ───────────────────────────────────────────────
 
