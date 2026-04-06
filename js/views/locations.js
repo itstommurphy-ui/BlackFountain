@@ -37,10 +37,10 @@ function renderProjectLocations(p) {
     tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
   } else {
     tbody.innerHTML = p.locations.map((l,i) => `
-      <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.name||'')}">
-        <td style="padding:6px 8px"><input type="checkbox" class="loc-cb" data-idx="${i}" onchange="updateLocSelBtn()" style="cursor:pointer"></td>
-        <td><input type="text" class="form-input" value="${(l.location||'').replace(/"/g,'&quot;')}" placeholder="—" style="min-width:120px;padding:3px 6px;font-size:12px" onblur="saveProjectLocLocation(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
-        <td style="white-space:nowrap"><strong>${l.name}</strong>${_scoutIconHtml(l.name||'')}</td>
+      <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.location||'')}" onclick="editLocation(${i})" style="cursor:pointer">
+        <td style="padding:6px 8px"><input type="checkbox" class="loc-cb" data-idx="${i}" onclick="event.stopPropagation()" onchange="updateLocSelBtn()" style="cursor:pointer"></td>
+        <td><input type="text" class="form-input" value="${(l.location||'').replace(/"/g,'&quot;')}" placeholder="—" style="min-width:120px;padding:3px 6px;font-size:12px" onclick="event.stopPropagation()" onblur="saveProjectLocLocation(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+        <td style="white-space:nowrap"><strong>${l.scene||l.name||''}</strong>${_scoutIconHtml(l.scene||l.name||'')}</td>
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
         <td>${l.avail||'—'}</td>
@@ -50,7 +50,7 @@ function renderProjectLocations(p) {
         <td>${l.decision||'TBD'}</td>
         <td>
           <button class="btn btn-sm btn-ghost" onclick="editLocation(${i})">✎</button>
-          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeLocation(${i})">✕</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="event.stopPropagation();removeLocation(${i})">✕</button>
         </td>
       </tr>
     `).join('');
@@ -68,9 +68,81 @@ function addLocation() {
   document.getElementById('loc-cost-period').value='';
   openModal('modal-location');
   setTimeout(() => {
-    const inp = document.getElementById('loc-name');
+    const inp = document.getElementById('loc-location');
     if (inp && window.attachLocAuto) window.attachLocAuto(inp);
   }, 80);
+}
+function duplicateLocation(idx) {
+  const p = currentProject();
+  const loc = p.locations[idx];
+  if (!loc) return;
+  const newLoc = { ...loc };
+  let suffix = 1;
+  const baseName = loc.scene || 'Location';
+  const nameWithoutNum = baseName.replace(/\s*\d+$/, '').trim();
+  while (p.locations.some(l => l.scene === newLoc.scene)) {
+    suffix++;
+    newLoc.scene = `${nameWithoutNum} ${suffix}`;
+  }
+  p.locations.push(newLoc);
+  saveStore();
+  renderProjectLocations(p);
+  showToast(`Location duplicated as "${newLoc.name}"`, 'success');
+}
+function getLocationsForImport() {
+  const p = currentProject();
+  if (!p) return [];
+  return p.locations.map((l, i) => ({ ...l, _idx: i })).filter((_, i) => i !== window._ctxLocImportIdx);
+}
+function importLocationFrom(sourceIdx, targetIdx) {
+  const p = currentProject();
+  if (!p || sourceIdx < 0 || sourceIdx >= p.locations.length || targetIdx < 0 || targetIdx >= p.locations.length) return;
+  const sourceLoc = p.locations[sourceIdx];
+  const targetLoc = p.locations[targetIdx];
+  const fieldsToCopy = ['location', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
+  fieldsToCopy.forEach(f => { targetLoc[f] = sourceLoc[f]; });
+  saveStore();
+  renderProjectLocations(p);
+  showToast(`Imported info from "${sourceLoc.name}"`, 'success');
+}
+window._ctxLocImportIdx = -1;
+function showLocationImportMenu(e, locIdx) {
+  window._ctxLocImportIdx = locIdx;
+  const p = currentProject();
+  if (!p) return;
+  const otherLocs = p.locations.filter((_, i) => i !== locIdx);
+  if (!otherLocs.length) {
+    showToast('No other locations to import from', 'info');
+    return;
+  }
+  const items = otherLocs.map((l, i) => {
+    const actualIdx = p.locations.indexOf(l);
+    return { label: l.name || 'Unnamed', icon: '📍', fn: () => importLocationFrom(actualIdx) };
+  });
+  showContextMenu(e, items);
+}
+function handleLocationRowCtx(e, locIdx) {
+  e.preventDefault();
+  const el = e.target.closest('[data-ctx]');
+  if (!el) return;
+  const ctx = el.dataset.ctx;
+  const sep = ctx.indexOf(':');
+  const args = sep >= 0 ? ctx.slice(sep + 1).split(':') : [];
+  const locIdx2 = +args[0];
+  const locName = decodeURIComponent(args[1] || '');
+  const p = currentProject();
+  const otherLocs = p?.locations?.filter((_, i) => i !== locIdx2) || [];
+  const items = [
+    { label: 'Edit', icon: '✎', fn: () => editLocation(locIdx2) },
+    { label: 'Duplicate', icon: '⧉', fn: () => duplicateLocation(locIdx2) },
+    ...(otherLocs.length > 0 ? [{ label: 'Import from…', icon: '📥', fn: () => showLocationImportMenu({ clientX: e.clientX, clientY: e.clientY, preventDefault: () => {}, stopPropagation: () => {} }, locIdx2) }] : []),
+    null,
+    { label: 'Open Scouting Sheet', icon: '🗺', fn: () => openScoutingSheetForLocation(locName) },
+    { label: 'Open Tech Scout Checklist', icon: '☑', fn: () => openTechScoutForLocation(locName) },
+    null,
+    { label: 'Remove from Project', icon: '🗑', danger: true, fn: () => removeLocation(locIdx2) }
+  ];
+  showContextMenu(e, items);
 }
 function openImportLocationModal() {
   document.getElementById('import-loc-search').value = '';
@@ -141,8 +213,8 @@ function importLocationEntry(l) {
 function editLocation(i) {
   const l=currentProject().locations[i];
   document.getElementById('loc-edit-idx').value=i;
-  document.getElementById('loc-name').value=l.name||'';
-  document.getElementById('loc-location').value=l.location||'';
+  document.getElementById('loc-location').value=l.location||l.name||'';
+  document.getElementById('loc-name').value=l.scene||'';
   document.getElementById('loc-suit').value=l.suit||'suitable';
   document.getElementById('loc-contacted').value=l.contacted||'no';
   document.getElementById('loc-avail').value=l.avail||'';
@@ -227,11 +299,11 @@ function removeAllLocations() {
 }
 function saveLocation() {
   const p=currentProject();
-  const name=document.getElementById('loc-name').value.trim();
+  const name=document.getElementById('loc-location').value.trim();
   if(!name){showToast('Location name required','info');return;}
   const l={
-    name,
     location:document.getElementById('loc-location').value.trim(),
+    scene:document.getElementById('loc-name').value.trim(),
     suit:document.getElementById('loc-suit').value,
     contacted:document.getElementById('loc-contacted').value,
     avail:document.getElementById('loc-avail').value,

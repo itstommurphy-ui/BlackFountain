@@ -1271,7 +1271,7 @@ document.addEventListener('contextmenu', e => {
         ...otherLocs.map(l => {
           const actualIdx = p.locations.indexOf(l);
           return {
-            label: l.name || 'Unnamed',
+            label: l.scene || l.name || 'Unnamed',
             icon:  '📍',
             fn:    () => importLocationFrom(actualIdx, locIdx)
           };
