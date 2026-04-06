@@ -1088,33 +1088,132 @@ function showContextMenu(e, items) {
   e.preventDefault();
   e.stopPropagation();
   _ctxFns = [];
+  window._ctxSubmenuData = [];
+  window._activeSubmenu = null;
   let fi = 0;
   const menu = document.getElementById('ctx-menu');
+
+  // Hide any open submenu first
+  const sub = document.getElementById('ctx-submenu');
+  if (sub) sub.style.display = 'none';
+
   menu.innerHTML = items.map(item => {
     if (!item) return '<div class="ctx-sep"></div>';
     const i = fi++;
-    _ctxFns.push(item.fn);
-    const danger = item.danger ? ' ctx-danger' : '';
-    return `<div class="ctx-item${danger}" onclick="_ctxRun(${i})"><span class="ctx-icon">${item.icon||''}</span><span>${item.label}</span></div>`;
+    _ctxFns.push(item.fn || (() => {}));
+    window._ctxSubmenuData[i] = item.submenu || null;
+    const danger  = item.danger ? ' ctx-danger' : '';
+    const hasSub  = item.submenu && item.submenu.length;
+    let html = `<div class="ctx-item${danger}${hasSub ? ' ctx-has-sub' : ''}" data-ctx-idx="${i}"`;
+    if (hasSub) {
+      // Use mouseenter for hover — not mousedown
+      html += ` onmouseenter="showCtxSubmenu(this,${i})"`;
+    } else {
+      html += ` onmouseenter="_ctxHideSubmenu()"`;
+      html += ` onclick="event.stopPropagation();_ctxRun(${i})"`;
+    }
+    html += `><span class="ctx-icon">${item.icon||''}</span><span>${item.label}</span>`;
+    if (hasSub) html += '<span class="ctx-arrow">▸</span>';
+    html += '</div>';
+    return html;
   }).join('');
-  const rows = items.length;
+
+  const rows = items.filter(Boolean).length;
   const menuH = rows * 32 + 12;
-  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const x = Math.min(e.clientX, window.innerWidth - 220);
   const y = Math.min(e.clientY, window.innerHeight - menuH - 4);
   menu.style.left = Math.max(4, x) + 'px';
-  menu.style.top = Math.max(4, y) + 'px';
+  menu.style.top  = Math.max(4, y) + 'px';
   menu.style.display = 'block';
 }
 
+function showCtxSubmenu(el, idx) {
+  const sub = window._ctxSubmenuData[idx];
+  if (!sub || !sub.length) return;
+
+  const subMenu = document.getElementById('ctx-submenu');
+  if (!subMenu) return;
+
+  // Build submenu with its own _subFns array so _ctxRun still works
+  window._ctxSubFns = [];
+  let fi = 0;
+
+  subMenu.innerHTML = sub.map(item => {
+    if (!item) return '<div class="ctx-sep"></div>';
+    const i = fi++;
+    window._ctxSubFns.push(item.fn || (() => {}));
+    const danger = item.danger ? ' ctx-danger' : '';
+    return `<div class="ctx-item${danger}" onclick="event.stopPropagation();_ctxSubRun(${i})"><span class="ctx-icon">${item.icon||''}</span><span>${item.label}</span></div>`;
+  }).join('');
+
+  // Position to the right of the hovered item
+  const rect    = el.getBoundingClientRect();
+  const menuEl  = document.getElementById('ctx-menu');
+  const menuRect= menuEl.getBoundingClientRect();
+  const subW    = 200;
+  const subH    = sub.length * 32 + 12;
+
+  // Prefer right, fall back to left
+  const rightSpace = window.innerWidth - menuRect.right;
+  const subLeft = rightSpace >= subW
+    ? menuRect.right - 2
+    : menuRect.left - subW + 2;
+
+  const subTop = Math.min(rect.top, window.innerHeight - subH - 4);
+
+  subMenu.style.left    = Math.max(4, subLeft) + 'px';
+  subMenu.style.top     = Math.max(4, subTop)  + 'px';
+  subMenu.style.display = 'block';
+  window._activeSubmenu = idx;
+}
+
+function _ctxSubRun(i) {
+  // Run submenu item function and close everything
+  const fn = window._ctxSubFns?.[i];
+  document.getElementById('ctx-menu').style.display    = 'none';
+  document.getElementById('ctx-submenu').style.display = 'none';
+  window._activeSubmenu = null;
+  if (typeof fn === 'function') fn();
+}
+
+function _ctxHideSubmenu() {
+  const sub = document.getElementById('ctx-submenu');
+  if (sub) sub.style.display = 'none';
+  window._activeSubmenu = null;
+}
+
 document.addEventListener('click', (e) => {
-  const m = document.getElementById('ctx-menu');
-  if (m && m.style.display !== 'none' && !m.contains(e.target)) {
-    m.style.display = 'none';
+  const menu    = document.getElementById('ctx-menu');
+  const subMenu = document.getElementById('ctx-submenu');
+
+  const inMenu    = menu?.contains(e.target);
+  const inSubMenu = subMenu?.contains(e.target);
+
+  // If click is outside both menu and submenu, close everything
+  if (!inMenu && !inSubMenu) {
+    if (menu)    menu.style.display    = 'none';
+    if (subMenu) subMenu.style.display = 'none';
+    window._activeSubmenu = null;
   }
+
+  // Close rp-confirm if click outside it
   const cf = document.getElementById('rp-confirm');
-  if (cf && !cf.contains(e.target)) {
-    cf.remove();
-  }
+  if (cf && !cf.contains(e.target)) cf.remove();
+});
+
+// Keep submenu open when mouse moves between parent item and submenu.
+// We need a small bridge — mouse leaving the menu item toward the submenu
+// should not close it. The mouseleave on the submenu itself closes it
+// only when leaving toward somewhere that isn't the parent menu.
+document.addEventListener('mouseover', (e) => {
+  const subMenu = document.getElementById('ctx-submenu');
+  if (!subMenu || subMenu.style.display === 'none') return;
+  const menu = document.getElementById('ctx-menu');
+  // If mouse is now over the submenu or still over the main menu, keep it open
+  if (subMenu.contains(e.target) || menu?.contains(e.target)) return;
+  // Otherwise hide the submenu
+  subMenu.style.display = 'none';
+  window._activeSubmenu = null;
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { const m = document.getElementById('ctx-menu'); if (m) m.style.display = 'none'; }
@@ -1153,16 +1252,43 @@ document.addEventListener('contextmenu', e => {
       ]; break;
     }
     case 'proj-loc': {
-      const locIdx = +args[0];
+      const locIdx  = +args[0];
       const locName = decodeURIComponent(args[1] || '');
+      const p       = currentProject();
+      const otherLocs = p?.locations?.filter((_, i) => i !== locIdx) || [];
+
+      // Build import submenu:
+      // First item = import from outside this project (opens existing modal)
+      // Then a separator
+      // Then other locations in this project
+      const importSubmenu = [
+        {
+          label: 'From another project or database…',
+          icon:  '🌐',
+          fn:    () => openImportLocationModal()
+        },
+        ...(otherLocs.length > 0 ? [null] : []),  // separator only if there are local options
+        ...otherLocs.map(l => {
+          const actualIdx = p.locations.indexOf(l);
+          return {
+            label: l.name || 'Unnamed',
+            icon:  '📍',
+            fn:    () => importLocationFrom(actualIdx, locIdx)
+          };
+        })
+      ];
+
       items = [
-        { label: 'Edit', icon: '✎', fn: () => editLocation(locIdx) },
+        { label: 'Edit',      icon: '✎', fn: () => editLocation(locIdx) },
+        { label: 'Duplicate', icon: '⧉', fn: () => duplicateLocation(locIdx) },
+        { label: 'Import from…', icon: '📥', submenu: importSubmenu },
         null,
-        { label: 'Open Scouting Sheet', icon: '🗺', fn: () => openScoutingSheetForLocation(locName) },
-        { label: 'Open Tech Scout Checklist', icon: '☑', fn: () => openTechScoutForLocation(locName) },
+        { label: 'Open Scouting Sheet',       icon: '🗺', fn: () => openScoutingSheetForLocation(locName) },
+        { label: 'Open Tech Scout Checklist', icon: '☑',  fn: () => openTechScoutForLocation(locName) },
         null,
         { label: 'Remove from Project', icon: '🗑', danger: true, fn: () => removeLocation(locIdx) }
-      ]; break;
+      ];
+      break;
     }
     case 'shot':
       items = [
