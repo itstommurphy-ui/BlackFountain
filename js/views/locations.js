@@ -966,62 +966,35 @@ function renderContacts() {
 
   // Helper function to convert social handles to clickable links
   function renderSocialLinks(socialsStr) {
+    const iconMap = { instagram: '📸', facebook: '📘', twitter: '🐦', tiktok: '🎵', bluesky: '☁️', youtube: '▶️', linkedin: '💼', threads: '🧵', website: '🌐' };
     if (!socialsStr) return '—';
     const socials = socialsStr.split(',').map(s => s.trim()).filter(Boolean);
     if (!socials.length) return '—';
 
     return socials.map(s => {
-      let raw = s;
-      let handle = raw;
-      if (handle.includes('||')) {
-        handle = handle.split('||').pop();
-      } else if (handle.includes(':') && !handle.includes('://')) {
-        handle = handle.split(':').pop();
-      }
-      const platformNames = ['instagram', 'facebook', 'twitter', 'tiktok', 'bluesky', 'youtube', 'linkedin', 'website'];
-      const lowerHandle = handle.toLowerCase();
-      for (const platform of platformNames) {
-        if (lowerHandle.startsWith(platform)) {
-          handle = handle.substring(platform.length);
-          break;
-        }
-      }
+      const sepIdx = s.indexOf('||');
+      const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'website';
+      let handle = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
       handle = handle.replace(/^[:|@\s]+/, '').trim();
       if (!handle) return '';
-      let platform = 'website';
-      const lowerRaw = raw.toLowerCase();
-      if (lowerRaw.includes('instagram')) platform = 'instagram';
-      else if (lowerRaw.includes('facebook')) platform = 'facebook';
-      else if (lowerRaw.includes('twitter') || lowerRaw.includes('x.com')) platform = 'twitter';
-      else if (lowerRaw.includes('tiktok')) platform = 'tiktok';
-      else if (lowerRaw.includes('bluesky')) platform = 'bluesky';
-      else if (lowerRaw.includes('youtube')) platform = 'youtube';
-      else if (lowerRaw.includes('linkedin')) platform = 'linkedin';
       let url = handle;
       if (!url.match(/^https?:\/\//)) {
         const cleanHandle = handle.replace(/^@/, '');
         switch(platform) {
           case 'instagram': url = 'https://instagram.com/' + cleanHandle; break;
           case 'facebook': url = 'https://facebook.com/' + cleanHandle; break;
-          case 'twitter': url = 'https://twitter.com/' + cleanHandle; break;
+          case 'twitter': url = 'https://x.com/' + cleanHandle; break;
           case 'bluesky': url = 'https://bsky.app/profile/' + cleanHandle; break;
           case 'tiktok': url = 'https://tiktok.com/@' + cleanHandle; break;
-          case 'youtube': url = 'https://youtube.com/' + cleanHandle; break;
+          case 'youtube': url = 'https://youtube.com/@' + cleanHandle; break;
           case 'linkedin': url = 'https://linkedin.com/in/' + cleanHandle; break;
+          case 'threads': url = 'https://threads.net/@' + cleanHandle; break;
+          case 'Website': url = 'https://' + cleanHandle; break;
           default: url = 'https://' + cleanHandle;
         }
       }
-      let icon = '🌐';
-      switch(platform) {
-        case 'instagram': icon = '📸'; break;
-        case 'facebook': icon = '📘'; break;
-        case 'twitter': icon = '🐦'; break;
-        case 'bluesky': icon = '☁️'; break;
-        case 'tiktok': icon = '🎵'; break;
-        case 'youtube': icon = '▶️'; break;
-        case 'linkedin': icon = '💼'; break;
-      }
-      return `${icon} <a href="${url}" target="_blank" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
+      const icon = iconMap[platform] || '🌐';
+      return `${icon} <a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
     }).join('');
   }
 

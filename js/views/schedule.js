@@ -828,7 +828,9 @@ function addPersonnel(type) {
   document.getElementById('personnel-type').value = type;
   document.getElementById('personnel-edit-idx').value = '';
   document.getElementById('modal-personnel-title').textContent = 'ADD ' + type.toUpperCase();
-  ['name','role','number','email','notes','social'].forEach(f => document.getElementById('pers-'+f).value='');
+  ['name','role','number','email','notes'].forEach(f => document.getElementById('pers-'+f).value='');
+  document.getElementById('pers-socials-container').innerHTML = '';
+  addSocialField('pers-socials-container', 'instagram', '');
   document.getElementById('pers-role-select').value = '';
   document.getElementById('pers-role-other').value = '';
   document.getElementById('pers-confirmed').value = 'green';
@@ -872,7 +874,19 @@ function editPersonnel(type, i) {
   document.getElementById('pers-number').value = m.number||'';
   document.getElementById('pers-email').value = m.email||'';
   document.getElementById('pers-notes').value = m.notes||'';
-  document.getElementById('pers-social').value = m.social||'';
+  const socialsContainer = document.getElementById('pers-socials-container');
+  socialsContainer.innerHTML = '';
+  if (m.social) {
+    const socialParts = m.social.split(',').map(s => s.trim()).filter(Boolean);
+    socialParts.forEach(s => {
+      const sepIdx = s.indexOf('||');
+      const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'instagram';
+      const handle = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
+      addSocialField('pers-socials-container', platform, handle);
+    });
+  } else {
+    addSocialField('pers-socials-container', 'instagram', '');
+  }
   document.getElementById('pers-confirmed').value = m.confirmed||'green';
   if (m.dept) document.getElementById('pers-dept').value = m.dept;
   // Clear any existing linked badge when editing
@@ -913,7 +927,7 @@ function savePersonnel() {
     number: document.getElementById('pers-number').value.trim(),
     email: document.getElementById('pers-email').value.trim(),
     notes: document.getElementById('pers-notes').value.trim(),
-    social: document.getElementById('pers-social').value.trim(),
+    social: collectSocials('pers-socials-container'),
     confirmed: document.getElementById('pers-confirmed').value,
     dept: document.getElementById('pers-dept').value
   };
@@ -981,7 +995,7 @@ function renderCrew(p) {
                 <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="crew-cb" data-type="unit" data-idx="${m._i}" onchange="_updateCrewEmailSelBtn()"></td>
                 <td><strong>${m.name}</strong></td>
                 <td>${m.role||'—'}</td><td>${m.number||'—'}</td>
-                <td>${m.email||'—'}</td><td>${m.social||'—'}</td>
+                <td>${m.email||'—'}</td><td>${m.social ? renderSocialLinks(m.social) : '—'}</td>
                 <td><span class="conf-dot conf-${m.confirmed||'green'}"></span></td>
                 <td onclick="event.stopPropagation()">
                   <button class="btn btn-sm btn-ghost" onclick="editPersonnel('unit',${m._i})">✎</button>

@@ -791,11 +791,28 @@ function toggleQtDrawer() {
 }
 
 document.addEventListener('click', e => {
-  const drawer = document.getElementById('qt-drawer');
-  const tab = document.querySelector('.qt-drawer-tab');
+  const panel = document.getElementById('right-panel');
+  const body  = document.getElementById('rp-body');
+  const strip = document.querySelector('.rp-strip');
   
   // If delete confirm was recently shown, don't close drawer
   if (_qtDeleteConfirmOpen) return;
+  
+  // Use right-panel if it exists (new), otherwise fall back to qt-drawer (legacy)
+  if (panel && panel.classList.contains('open') && body && strip) {
+    if (!body.contains(e.target) && !strip.contains(e.target)) {
+      // Clicked outside - close the panel
+      // Save scratchpad before closing
+      if (typeof _rpSaveCurrent === 'function') _rpSaveCurrent();
+      panel.classList.remove('open');
+      document.querySelectorAll('.rp-strip-tab').forEach(t => t.classList.remove('active'));
+    }
+    return;
+  }
+  
+  // Legacy qt-drawer handling
+  const drawer = document.getElementById('qt-drawer');
+  const tab = document.querySelector('.qt-drawer-tab');
   
   if (_qtDrawerOpen && drawer && 
       !drawer.contains(e.target) && 
@@ -905,6 +922,9 @@ function qtDrawerRender(p) {
   const context = document.getElementById('qt-drawer-context');
   if (!list) return;
 
+  // Update badge on strip if right-panel exists
+  const badge = document.getElementById('rp-badge-tasks');
+  
   if (!p) {
     const context = document.getElementById('qt-drawer-context');
     if (context) context.textContent = 'All projects';
@@ -925,6 +945,7 @@ function qtDrawerRender(p) {
       tabCount.textContent = outstanding || (total ? '✓' : '0');
       tabCount.className = 'qt-tab-count' + (outstanding === 0 && total > 0 ? ' zero' : '');
     }
+    if (badge) badge.textContent = outstanding > 0 ? String(outstanding) : '';
 
     const priorityColor = { low:'#2ea864', medium:'#d4883a', high:'#c44444', urgent:'#b88af0', '':'#3a3a52' };
 
@@ -984,6 +1005,7 @@ function qtDrawerRender(p) {
     tabCount.textContent = outstanding || '✓';
     tabCount.className = 'qt-tab-count' + (outstanding === 0 && total > 0 ? ' zero' : '');
   }
+  if (badge) badge.textContent = outstanding > 0 ? String(outstanding) : '';
 
   const priorityColor = { low:'#2ea864', medium:'#d4883a', high:'#c44444', urgent:'#b88af0', '':'#3a3a52' };
   const priorityLabel = { low:'🟢', medium:'🟠', high:'🔴', urgent:'🟣' };
@@ -1044,25 +1066,36 @@ function qtDrawerDeleteConfirm(btn, id) {
   const taskText = taskItem?.querySelector('.qt-text')?.textContent || 'this task';
   const truncate = taskText.length > 20 ? taskText.substring(0,20) + '...' : taskText;
   
-  const drawer = document.getElementById('qt-drawer');
+  // Use right-panel if available, otherwise fallback to qt-drawer
+  let drawer = document.getElementById('right-panel');
+  let appendTarget = document.getElementById('rp-body'); // pane body for positioning
+  if (!drawer) {
+    appendTarget = document.getElementById('qt-drawer');
+    if (!appendTarget) appendTarget = drawer;
+  }
+  if (!appendTarget) appendTarget = drawer;
+  
   const confirmDiv = document.createElement('div');
   confirmDiv.id = 'qt-delete-confirm';
   confirmDiv.style.cssText = `
-    position:absolute;top:${rect.bottom + 5}px;right:0;
+    position:fixed;top:${rect.bottom + 5}px;left:${rect.left}px;
     background:var(--surface);border:1px solid var(--border);
     border-radius:var(--radius);padding:8px 10px;z-index:10000;
     box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:11px;display:flex;flex-direction:column;gap:6px;
   `;
+  // Prevent document click from closing panel when clicking inside confirm
+  confirmDiv.addEventListener('click', e => e.stopPropagation());
+  confirmDiv.addEventListener('mousedown', e => e.stopPropagation());
   confirmDiv.innerHTML = `
     <div style="color:var(--text3);white-space:nowrap;">Delete "${truncate}"?</div>
     <div style="display:flex;gap:6px;">
       <button id="qt-confirm-btn" onclick="event.stopPropagation();qtDrawerDelete(${id ? "'"+id+"'" : "null"});document.getElementById('qt-delete-confirm')?.remove()"
               style="background:var(--red);border:none;color:white;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Confirm</button>
-      <button id="qt-cancel-btn" onmousedown="_qtDeleteConfirmOpen=false;document.getElementById('qt-delete-confirm')?.remove();event.stopPropagation()"
+      <button id="qt-cancel-btn" onclick="event.stopPropagation();_qtDeleteConfirmOpen=false;document.getElementById('qt-delete-confirm')?.remove()"
               style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Cancel</button>
     </div>
   `;
-  drawer.appendChild(confirmDiv);
+  appendTarget.appendChild(confirmDiv);
   setTimeout(() => {
     confirmDiv.remove();
     _qtDeleteConfirmOpen = false;
