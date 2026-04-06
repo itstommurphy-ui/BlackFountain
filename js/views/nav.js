@@ -805,7 +805,10 @@ document.addEventListener('click', e => {
       // Save scratchpad before closing
       if (typeof _rpSaveCurrent === 'function') _rpSaveCurrent();
       panel.classList.remove('open');
+      document.body.classList.remove('rp-panel-open');
       document.querySelectorAll('.rp-strip-tab').forEach(t => t.classList.remove('active'));
+      // Reset active tab state so dimensions recalculate properly
+      _rpActiveTab = null;
     }
     return;
   }
