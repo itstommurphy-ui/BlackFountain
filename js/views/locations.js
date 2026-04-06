@@ -117,7 +117,7 @@ function showLocationImportMenu(e, locIdx) {
   }
   const items = otherLocs.map((l, i) => {
     const actualIdx = p.locations.indexOf(l);
-    return { label: l.name || 'Unnamed', icon: '📍', fn: () => importLocationFrom(actualIdx) };
+    return { label: l.scene || l.name || 'Unnamed', icon: '📍', fn: () => importLocationFrom(actualIdx) };
   });
   showContextMenu(e, items);
 }
@@ -154,25 +154,27 @@ function renderImportLocationList() {
   const p = currentProject();
   if (!p) return;
   const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
-  const existing = new Set((p.locations || []).map(l => l.name.toLowerCase()));
+  const existing = new Set((p.locations || []).map(l => (l.scene || l.name || '').toLowerCase()));
 
   // Gather all locations from other projects + global store
   const candidates = [];
   store.projects.forEach(proj => {
     if (proj.id === p.id) return;
     (proj.locations || []).forEach(l => {
-      if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+      const name = l.scene || l.name || '';
+      if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
         candidates.push({ ...l, _from: proj.title });
       }
     });
   });
   (store.locations || []).forEach(l => {
-    if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+    const name = l.scene || l.name || '';
+    if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
       candidates.push({ ...l, _from: 'Global database' });
     }
   });
 
-  const filtered = q ? candidates.filter(l => l.name.toLowerCase().includes(q)) : candidates;
+  const filtered = q ? candidates.filter(l => (l.scene || l.name || '').toLowerCase().includes(q)) : candidates;
   const list = document.getElementById('import-loc-list');
   const empty = document.getElementById('import-loc-empty');
 
@@ -185,7 +187,7 @@ function renderImportLocationList() {
   list.innerHTML = filtered.map(l => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
       <div>
-        <strong style="font-size:13px">${l.name.replace(/</g,'&lt;')}</strong>
+        <strong style="font-size:13px">${(l.scene || l.name || '').replace(/</g,'&lt;')}</strong>
         <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
         ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
       </div>
@@ -199,15 +201,16 @@ function importLocationEntry(l) {
   if (!p) return;
   const { _from, ...locationData } = l;
   if (!p.locations) p.locations = [];
-  if (p.locations.some(x => x.name.toLowerCase() === locationData.name.toLowerCase())) {
-    showToast(`"${locationData.name}" is already in this project's locations`, 'info');
+  const locName = locationData.scene || locationData.name || '';
+  if (p.locations.some(x => (x.scene || x.name || '').toLowerCase() === locName.toLowerCase())) {
+    showToast(`"${locName}" is already in this project's locations`, 'info');
     return;
   }
   p.locations.push(locationData);
   saveStore();
   renderProjectLocations(p);
   renderImportLocationList(); // refresh to remove imported item
-  showToast(`"${locationData.name}" imported`, 'success');
+  showToast(`"${locName}" imported`, 'success');
 }
 
 function editLocation(i) {
