@@ -285,52 +285,59 @@ function rpToggleContactExpand(name) {
   }
 }
 
-// ── Replace these three functions in right-panel.js ─────────
-// rpContactCtxMenu, rpShowConfirm, rpDeleteContact
-// ═════════════════════════════════════════════════════════��══
+// ── Replace rpContactCtxMenu and _rpDismissCtxMenu in right-panel.js ─────────
 
 function rpContactCtxMenu(e, itemEl) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Dismiss any existing confirm first
   document.getElementById('rp-confirm')?.remove();
+  document.getElementById('rp-ctx-menu')?.remove();
 
   const item  = itemEl.closest('.rp-contact-item');
   const name  = item?.dataset.rpContactName  || '';
   const phone = item?.dataset.rpContactPhone || '';
   const email = item?.dataset.rpContactEmail || '';
 
-  // Build a self-contained menu div — no dependency on showContextMenu()
-  document.getElementById('rp-ctx-menu')?.remove();
-
   const menu = document.createElement('div');
   menu.id = 'rp-ctx-menu';
   menu.style.cssText = [
     'position:fixed',
-    `left:${Math.min(e.clientX, window.innerWidth - 180)}px`,
-    `top:${Math.min(e.clientY, window.innerHeight - 160)}px`,
+    `left:${Math.min(e.clientX, window.innerWidth - 200)}px`,
+    `top:${Math.min(e.clientY, window.innerHeight - 200)}px`,
     'z-index:9999',
     'background:var(--surface2)',
     'border:1px solid var(--border)',
     'border-radius:8px',
     'padding:4px 0',
-    'min-width:160px',
+    'min-width:170px',
     'box-shadow:0 8px 24px rgba(0,0,0,0.45)',
     'font-size:12px',
   ].join(';');
 
-  const _item = (label, icon, fn, danger) => {
+  // ── Helpers ──────────────────────────────────────────────
+
+  const _item = (label, icon, fn, danger, hasSubmenu) => {
     const el = document.createElement('div');
-    el.style.cssText = `padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;color:${danger ? 'var(--red)' : 'var(--text)'}`;
-    el.innerHTML = `<span style="font-size:13px">${icon}</span>${label}`;
+    el.style.cssText = [
+      'padding:8px 14px',
+      'cursor:pointer',
+      'display:flex',
+      'align-items:center',
+      'gap:8px',
+      'position:relative',
+      `color:${danger ? 'var(--red)' : 'var(--text)'}`,
+    ].join(';');
+    el.innerHTML = `<span style="font-size:13px;flex-shrink:0">${icon}</span><span style="flex:1">${label}</span>${hasSubmenu ? '<span style="color:var(--text3);font-size:10px;margin-left:auto">›</span>' : ''}`;
     el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
     el.addEventListener('mouseleave', () => el.style.background = '');
-    el.addEventListener('mousedown', ev => {
-      ev.stopPropagation();
-      _rpDismissCtxMenu();
-      fn();
-    });
+    if (fn) {
+      el.addEventListener('mousedown', ev => {
+        ev.stopPropagation();
+        _rpDismissCtxMenu();
+        fn();
+      });
+    }
     return el;
   };
 
@@ -340,23 +347,105 @@ function rpContactCtxMenu(e, itemEl) {
     return s;
   };
 
-  if (phone) menu.appendChild(_item('Copy phone',   '📋', () => { navigator.clipboard.writeText(phone); showToast?.('Copied', 'success'); }));
-  if (email) menu.appendChild(_item('Copy email',   '📋', () => { navigator.clipboard.writeText(email); showToast?.('Copied', 'success'); }));
+  // ── Copy submenu item ─────────────────────────────────────
+
+  const copyEl = _item('Copy', '📋', null, false, true);
+
+  // Build submenu
+  const submenu = document.createElement('div');
+  submenu.id = 'rp-ctx-submenu';
+  submenu.style.cssText = [
+    'position:fixed',
+    'z-index:10000',
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:8px',
+    'padding:4px 0',
+    'min-width:150px',
+    'box-shadow:0 8px 24px rgba(0,0,0,0.45)',
+    'font-size:12px',
+    'display:none',
+  ].join(';');
+
+  const _subItem = (label, value) => {
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:8px 14px;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:8px';
+    el.textContent = label;
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
+    el.addEventListener('mouseleave', () => el.style.background = '');
+    el.addEventListener('mousedown', ev => {
+      ev.stopPropagation();
+      _rpDismissCtxMenu();
+      navigator.clipboard.writeText(value).then(() => {
+        if (typeof showToast === 'function') showToast('Copied', 'success');
+      });
+    });
+    return el;
+  };
+
+  if (phone) submenu.appendChild(_subItem('Copy number', phone));
+  if (email) submenu.appendChild(_subItem('Copy email',  email));
   if (phone || email) {
-    menu.appendChild(_item('Copy contact', '📋', () => {
-      navigator.clipboard.writeText([name, phone, email].filter(Boolean).join('\n'));
-      showToast?.('Copied', 'success');
-    }));
+    submenu.appendChild(_subItem(
+      'Copy contact',
+      [name, phone, email].filter(Boolean).join('\n')
+    ));
   }
-  if (phone || email) menu.appendChild(_sep());
-  menu.appendChild(_item('Delete contact', '🗑', () => rpDeleteContact(name), true));
+
+  // If no copy options available, disable the copy item
+  const hasCopyOptions = phone || email;
+  if (!hasCopyOptions) {
+    copyEl.style.opacity = '0.4';
+    copyEl.style.cursor  = 'default';
+  } else {
+    // Show/hide submenu on hover
+    copyEl.addEventListener('mouseenter', () => {
+      const menuRect = menu.getBoundingClientRect();
+      const subW = 160;
+      // Prefer right side, fall back to left if not enough room
+      const rightSpace = window.innerWidth - menuRect.right;
+      const subLeft = rightSpace >= subW
+        ? menuRect.right - 2
+        : menuRect.left - subW + 2;
+      const subTop  = Math.min(
+        menuRect.top + copyEl.offsetTop,
+        window.innerHeight - 120
+      );
+      submenu.style.left    = subLeft + 'px';
+      submenu.style.top     = subTop  + 'px';
+      submenu.style.display = 'block';
+      document.body.appendChild(submenu);
+    });
+    copyEl.addEventListener('mouseleave', ev => {
+      // Don't hide if moving into the submenu
+      if (!submenu.contains(ev.relatedTarget)) {
+        submenu.style.display = 'none';
+        submenu.remove();
+      }
+    });
+    submenu.addEventListener('mouseleave', ev => {
+      if (!copyEl.contains(ev.relatedTarget)) {
+        submenu.style.display = 'none';
+        submenu.remove();
+      }
+    });
+  }
+
+  // ── Build menu ────────────────────────────────────────────
+
+  menu.appendChild(_item('Edit contact', '✎', () => rpEditContact(name), false, false));
+  menu.appendChild(_sep());
+  menu.appendChild(copyEl);
+  menu.appendChild(_sep());
+  menu.appendChild(_item('Delete contact', '🗑', () => rpDeleteContact(name), true, false));
 
   document.body.appendChild(menu);
 
-  // Close on next click anywhere — including inside the panel
-  // Use capture so it fires before anything else, then remove itself
+  // Close on next outside click
   const _close = ev => {
-    if (!menu.contains(ev.target)) _rpDismissCtxMenu();
+    if (!menu.contains(ev.target) && !submenu.contains(ev.target)) {
+      _rpDismissCtxMenu();
+    }
   };
   setTimeout(() => document.addEventListener('click', _close, { capture: true, once: true }), 10);
   menu._closeHandler = _close;
@@ -364,11 +453,146 @@ function rpContactCtxMenu(e, itemEl) {
 
 function _rpDismissCtxMenu() {
   const menu = document.getElementById('rp-ctx-menu');
-  if (!menu) return;
-  if (menu._closeHandler) {
+  if (menu?._closeHandler) {
     document.removeEventListener('click', menu._closeHandler, { capture: true });
   }
-  menu.remove();
+  menu?.remove();
+  document.getElementById('rp-ctx-submenu')?.remove();
+}
+
+// ── Edit contact modal ────────────────────────────────────────
+
+function rpEditContact(name) {
+  // Find the contact across all sources — prefer global store, fall back to project data
+  const allContacts = _rpGetAllContacts();
+  const c = allContacts.find(ct => ct.name.toLowerCase() === name.toLowerCase());
+  if (!c) return;
+
+  // Find raw entries to edit
+  const globalEntry  = (store.contacts || []).find(ct => ct.name?.toLowerCase() === name.toLowerCase());
+  const projectEntry = (() => {
+    for (const p of store.projects || []) {
+      const found = [...(p.cast||[]), ...(p.unit||[]), ...(p.extras||[]), ...(p.contacts||[])]
+        .find(ct => ct.name?.toLowerCase() === name.toLowerCase());
+      if (found) return found;
+    }
+    return null;
+  })();
+
+  // Use whichever has more data, prefer global
+  const entry = globalEntry || projectEntry || { name: c.name };
+
+  // Remove existing modal
+  document.getElementById('rp-edit-modal')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'rp-edit-modal';
+  overlay.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'background:rgba(0,0,0,0.6)',
+    'z-index:9998',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+  ].join(';');
+
+  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const roles = Array.isArray(entry.roles) ? entry.roles.join(', ') : (entry.role || entry.type || '');
+  const phone = entry.phone || entry.number || '';
+  const email = entry.email || '';
+  const notes = entry.notes || '';
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 22px 20px;width:min(340px,90vw);box-shadow:0 16px 48px rgba(0,0,0,0.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">Edit Contact</span>
+        <button id="rp-edit-close" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:5px">NAME</div>
+          <input id="rp-edit-name" class="form-input" value="${esc(c.name)}" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:5px">ROLE</div>
+          <input id="rp-edit-role" class="form-input" value="${esc(roles)}" placeholder="e.g. Director, Lead Actor…" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:5px">PHONE</div>
+          <input id="rp-edit-phone" class="form-input" type="tel" value="${esc(phone)}" placeholder="+44…" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:5px">EMAIL</div>
+          <input id="rp-edit-email" class="form-input" type="email" value="${esc(email)}" placeholder="name@example.com" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:5px">NOTES</div>
+          <textarea id="rp-edit-notes" class="form-input" rows="2" placeholder="Any notes…" style="width:100%;resize:none">${esc(notes)}</textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+        <button id="rp-edit-cancel" class="btn btn-sm">Cancel</button>
+        <button id="rp-edit-save"   class="btn btn-sm" style="background:var(--accent);color:#000;border-color:var(--accent);font-weight:700">Save</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const _close = () => { overlay.remove(); };
+
+  overlay.querySelector('#rp-edit-close').addEventListener('click',  _close);
+  overlay.querySelector('#rp-edit-cancel').addEventListener('click', _close);
+  overlay.addEventListener('click', ev => { if (ev.target === overlay) _close(); });
+
+  overlay.querySelector('#rp-edit-save').addEventListener('click', ev => {
+    ev.stopPropagation();
+
+    const newName  = overlay.querySelector('#rp-edit-name').value.trim();
+    const newRole  = overlay.querySelector('#rp-edit-role').value.trim();
+    const newPhone = overlay.querySelector('#rp-edit-phone').value.trim();
+    const newEmail = overlay.querySelector('#rp-edit-email').value.trim();
+    const newNotes = overlay.querySelector('#rp-edit-notes').value.trim();
+
+    if (!newName) {
+      overlay.querySelector('#rp-edit-name').style.borderColor = 'var(--red)';
+      return;
+    }
+
+    const _applyToEntry = (e) => {
+      if (!e) return;
+      e.name   = newName;
+      e.phone  = newPhone;
+      e.email  = newEmail;
+      e.notes  = newNotes;
+      // Handle role field — different shapes in different arrays
+      if ('roles' in e) e.roles = newRole ? [newRole] : [];
+      if ('role'  in e) e.role  = newRole;
+      if ('type'  in e) e.type  = newRole;
+      if ('number' in e) e.number = newPhone;
+    };
+
+    // Update global contacts
+    const gc = (store.contacts || []).find(ct => ct.name?.toLowerCase() === name.toLowerCase());
+    _applyToEntry(gc);
+
+    // Update all project arrays
+    for (const p of store.projects || []) {
+      [...(p.cast||[]), ...(p.unit||[]), ...(p.extras||[]), ...(p.contacts||[])]
+        .filter(ct => ct.name?.toLowerCase() === name.toLowerCase())
+        .forEach(_applyToEntry);
+    }
+
+    saveStore();
+    _close();
+    rpContactsRender();
+    if (typeof showToast === 'function') showToast('Contact updated', 'success');
+  });
+
+  // Focus name field
+  setTimeout(() => overlay.querySelector('#rp-edit-name')?.focus(), 60);
 }
 
 function rpDeleteContact(name) {
