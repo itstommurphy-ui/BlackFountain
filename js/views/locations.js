@@ -113,6 +113,50 @@ function renderImportLocationListForRow() {
     </div>
   `).join('');
 }
+function renderImportLocationList() {
+  const p = currentProject();
+  if (!p) return;
+  const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
+  const existing = new Set((p.locations || []).map(l => (l.scene || l.name || '').toLowerCase()));
+
+  const candidates = [];
+  store.projects.forEach(proj => {
+    if (proj.id === p.id) return;
+    (proj.locations || []).forEach(l => {
+      const name = l.scene || l.name || '';
+      if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
+        candidates.push({ ...l, _from: proj.title });
+      }
+    });
+  });
+  (store.locations || []).forEach(l => {
+    const name = l.scene || l.name || '';
+    if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
+      candidates.push({ ...l, _from: 'Global database' });
+    }
+  });
+
+  const filtered = q ? candidates.filter(l => (l.scene || l.name || '').toLowerCase().includes(q)) : candidates;
+  const list = document.getElementById('import-loc-list');
+  const empty = document.getElementById('import-loc-empty');
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = filtered.map(l => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
+      <div>
+        <strong style="font-size:13px">${(l.scene || l.name || '').replace(/</g,'&lt;')}</strong>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
+        ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="importLocationEntry(${JSON.stringify(l).replace(/"/g,'&quot;')})">Import</button>
+    </div>
+  `).join('');
+}
 function importLocationToRow(l) {
   const p = currentProject();
   if (!p || _importToRowIdx < 0) return;
