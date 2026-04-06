@@ -13,10 +13,16 @@ let _rpLastX      = 0;
 let _rpLastY      = 0;
 
 // Stop propagation on right-panel clicks so document click handler doesn't close it
+// But allow ctx-menu and rp-confirm clicks to propagate so they can close menus
 document.addEventListener('DOMContentLoaded', () => {
   const panel = document.getElementById('right-panel');
   if (panel) {
-    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('click', e => {
+      const ctxMenu = document.getElementById('ctx-menu');
+      const rpConfirm = document.getElementById('rp-confirm');
+      if (ctxMenu?.contains(e.target) || rpConfirm?.contains(e.target)) return;
+      e.stopPropagation();
+    });
   }
 });
 
@@ -225,65 +231,140 @@ function _rpContactRow(c, esc) {
   const projTag  = c.projects.length ? c.projects[0] : '';
   const phone    = c.phone;
   const email    = c.email;
-
-  return `<div class="rp-contact-item" onclick="rpShowContactCard('${esc(c.name).replace(/'/g, "\\'")}')" title="${esc(c.name)}${phone?' · '+esc(phone):''}${email?' · '+esc(email):''}">
-    <div class="rp-contact-avatar">${esc(initials)}</div>
-    <div class="rp-contact-info">
-      <div class="rp-contact-name">${esc(c.name)}</div>
-      <div class="rp-contact-role">${esc(roleStr)}${phone?` · ${esc(phone)}`:''}${email && !phone?` · ${esc(email)}`:''}${c.projects.length > 1 ? ` +${c.projects.length-1}` : ''}</div>
-    </div>
-    ${projTag ? `<div class="rp-contact-project" title="${esc(c.projects.join(', '))}">${esc(projTag.substring(0,12))}${projTag.length>12?'…':''}</div>` : ''}
-  </div>`;
-}
-
-function rpShowContactCard(name) {
-  const contacts = _rpGetAllContacts();
-  const c = contacts.find(ct => ct.name.toLowerCase() === name.toLowerCase());
-  if (!c) return;
-
-  const card = document.getElementById('rp-contact-card');
-  if (!card) return;
-
-  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const nameKey  = esc(c.name).replace(/'/g, "\\'");
 
   let socialsHtml = '';
   if (c.socials) {
     if (typeof renderSocialLinks === 'function') {
-      socialsHtml = `<div class="rp-card-socials">${renderSocialLinks(c.socials, { empty: '' })}</div>`;
+      socialsHtml = `<div class="rp-contact-socials">${renderSocialLinks(c.socials, { empty: '' })}</div>`;
     } else {
-      socialsHtml = `<div class="rp-card-socials">${esc(c.socials)}</div>`;
+      socialsHtml = `<div class="rp-contact-socials">${esc(c.socials)}</div>`;
     }
   }
 
   let projectsHtml = '';
   if (c.projects.length) {
-    projectsHtml = `<div class="rp-card-field"><span class="rp-card-label">Projects:</span> ${c.projects.map(p => esc(p)).join(', ')}</div>`;
+    projectsHtml = `<div class="rp-contact-detail"><span class="rp-contact-detail-label">Projects:</span> ${c.projects.map(p => esc(p)).join(', ')}</div>`;
   }
 
-  card.innerHTML = `
-    <div class="rp-card-header">
-      <div class="rp-card-avatar">${c.name.split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div>
-      <div class="rp-card-title">
-        <div class="rp-card-name">${esc(c.name)}</div>
-        <div class="rp-card-roles">${c.roles.length ? esc(c.roles.join(', ')) : ''}</div>
+  return `<div class="rp-contact-item" id="rp-contact-${nameKey.replace(/[^a-zA-Z0-9]/g, '-')}" onclick="rpToggleContactExpand('${nameKey}')" oncontextmenu="rpContactCtxMenu(event, this)" data-rp-contact-name="${nameKey}" data-rp-contact-phone="${esc(phone)}" data-rp-contact-email="${esc(email)}">
+    <div class="rp-contact-main">
+      <div class="rp-contact-avatar">${esc(initials)}</div>
+      <div class="rp-contact-info">
+        <div class="rp-contact-name">${esc(c.name)}</div>
+        <div class="rp-contact-role">${esc(roleStr)}${phone?` · ${esc(phone)}`:''}${email && !phone?` · ${esc(email)}`:''}${c.projects.length > 1 ? ` +${c.projects.length-1}` : ''}</div>
       </div>
-      <button class="rp-card-close" onclick="rpCloseContactCard()" aria-label="Close">✕</button>
+      ${projTag ? `<div class="rp-contact-project" title="${esc(c.projects.join(', '))}">${esc(projTag.substring(0,12))}${projTag.length>12?'…':''}</div>` : ''}
     </div>
-    <div class="rp-card-body">
-      ${c.phone ? `<div class="rp-card-field"><span class="rp-card-label">Phone:</span> <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>` : ''}
-      ${c.email ? `<div class="rp-card-field"><span class="rp-card-label">Email:</span> <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>` : ''}
+    <div class="rp-contact-expand">
+      ${c.phone ? `<div class="rp-contact-detail"><span class="rp-contact-detail-label">Phone:</span> <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>` : ''}
+      ${c.email ? `<div class="rp-contact-detail"><span class="rp-contact-detail-label">Email:</span> <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>` : ''}
       ${socialsHtml}
       ${projectsHtml}
     </div>
-  `;
-
-  card.classList.add('open');
+  </div>`;
 }
 
-function rpCloseContactCard() {
-  const card = document.getElementById('rp-contact-card');
-  if (card) card.classList.remove('open');
+let _rpExpandedContact = null;
+
+function rpToggleContactExpand(name) {
+  const id = 'rp-contact-' + name.replace(/[^a-zA-Z0-9]/g, '-');
+  const item = document.getElementById(id);
+  if (!item) return;
+
+  if (_rpExpandedContact && _rpExpandedContact !== item) {
+    _rpExpandedContact.classList.remove('expanded');
+  }
+
+  if (_rpExpandedContact === item && item.classList.contains('expanded')) {
+    item.classList.remove('expanded');
+    _rpExpandedContact = null;
+  } else {
+    item.classList.add('expanded');
+    _rpExpandedContact = item;
+  }
 }
+
+function rpContactCtxMenu(e, itemEl) {
+  e.preventDefault();
+  e.stopPropagation();
+  const item = itemEl.closest('.rp-contact-item');
+  const name = item?.dataset.rpContactName || '';
+  const phone = item?.dataset.rpContactPhone || '';
+  const email = item?.dataset.rpContactEmail || '';
+
+  const items = [
+    phone ? { label: 'Copy Phone', icon: '📋', fn: () => navigator.clipboard.writeText(phone) } : null,
+    email ? { label: 'Copy Email', icon: '📋', fn: () => navigator.clipboard.writeText(email) } : null,
+    (phone || email) ? { label: 'Copy Contact', icon: '📋', fn: () => navigator.clipboard.writeText(`${name}${phone ? '\n' + phone : ''}${email ? '\n' + email : ''}`) } : null,
+    null,
+    { label: 'Delete Contact', icon: '🗑', danger: true, fn: () => rpDeleteContact(name) }
+  ].filter(Boolean);
+
+  showContextMenu(e, items);
+}
+
+function rpDeleteContact(name) {
+  const contacts = _rpGetAllContacts();
+  const c = contacts.find(ct => ct.name.toLowerCase() === name.toLowerCase());
+  if (!c) return;
+
+  rpShowConfirm(`Delete contact "${c.name}"?`, 'Delete', () => {
+    store.contacts = (store.contacts || []).filter(con => con.name.toLowerCase() !== c.name.toLowerCase());
+
+    for (const p of store.projects || []) {
+      if (p.cast) p.cast = p.cast.filter(cast => cast.name.toLowerCase() !== c.name.toLowerCase());
+      if (p.extras) p.extras = p.extras.filter(ext => ext.name.toLowerCase() !== c.name.toLowerCase());
+      if (p.unit) p.unit = p.unit.filter(u => u.name.toLowerCase() !== c.name.toLowerCase());
+      if (p.contacts) p.contacts = p.contacts.filter(con => con.name.toLowerCase() !== c.name.toLowerCase());
+    }
+
+    saveStore();
+    rpContactsRender();
+  });
+}
+
+function rpShowConfirm(message, confirmLabel, onConfirm) {
+  const existing = document.getElementById('rp-confirm');
+  if (existing) existing.remove();
+
+  const left = window.innerWidth / 2 - 100;
+  const top = window.innerHeight / 2;
+  const confirm = document.createElement('div');
+  confirm.id = 'rp-confirm';
+  confirm.style.cssText = `position:fixed;left:${left}px;top:${top}px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:200;font-size:13px;color:var(--text)`;
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn-sm';
+  cancelBtn.style.background = 'var(--surface2)';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = (e) => { e.stopPropagation(); confirm.remove(); };
+  
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn btn-sm btn-danger';
+  confirmBtn.textContent = confirmLabel;
+  confirmBtn.onclick = (e) => { e.stopPropagation(); confirm.remove(); onConfirm(); };
+  
+  const msg = document.createElement('div');
+  msg.style.marginBottom = '12px';
+  msg.textContent = message;
+  
+  const btnRow = document.createElement('div');
+  btnRow.style.display = 'flex';
+  btnRow.style.gap = '8px';
+  btnRow.style.justifyContent = 'flex-end';
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(confirmBtn);
+  
+  confirm.appendChild(msg);
+  confirm.appendChild(btnRow);
+  document.body.appendChild(confirm);
+}
+
+document.addEventListener('contextmenu', e => {
+  const confirm = document.getElementById('rp-confirm');
+  if (confirm) confirm.remove();
+});
 
 // ── Moodboards ───────────────────────────────────────────────
 

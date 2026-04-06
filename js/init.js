@@ -1106,9 +1106,15 @@ function showContextMenu(e, items) {
   menu.style.display = 'block';
 }
 
-document.addEventListener('click', () => {
+document.addEventListener('click', (e) => {
   const m = document.getElementById('ctx-menu');
-  if (m) m.style.display = 'none';
+  if (m && m.style.display !== 'none' && !m.contains(e.target)) {
+    m.style.display = 'none';
+  }
+  const cf = document.getElementById('rp-confirm');
+  if (cf && !cf.contains(e.target)) {
+    cf.remove();
+  }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { const m = document.getElementById('ctx-menu'); if (m) m.style.display = 'none'; }

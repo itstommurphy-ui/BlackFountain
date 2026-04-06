@@ -1509,9 +1509,6 @@ body:not(.project-mode) #app-footer { display: flex; }
 
 /* ── Contacts ── */
 .rp-contact-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
   padding: 8px 6px;
   border-radius: 6px;
   margin-bottom: 2px;
@@ -1577,7 +1574,63 @@ body:not(.project-mode) #app-footer { display: flex; }
   margin-bottom: 4px;
 }
 
-.rp-contact-item { cursor: pointer; }
+.rp-contact-item { 
+  cursor: pointer; 
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.rp-contact-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rp-contact-expand {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+}
+
+.rp-contact-item.expanded .rp-contact-expand {
+  max-height: 200px;
+  opacity: 1;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border2);
+}
+
+.rp-contact-detail {
+  font-size: 11px;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.rp-contact-detail-label {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.rp-contact-detail a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.rp-contact-detail a:hover {
+  text-decoration: underline;
+}
+
+.rp-contact-socials {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 
 /* ── Contact Card Modal ── */
 .rp-contact-card-overlay {
