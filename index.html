@@ -2092,7 +2092,12 @@ if ('serviceWorker' in navigator) {
             <option value="high">🔴 High</option>
             <option value="urgent">🟣 Urgent</option>
           </select>
-          <input type="date" id="qt-drawer-deadline" class="rp-select" style="flex:1">
+          <button id="qt-drawer-deadline-btn" class="rp-select" style="flex:1;display:flex;align-items:center;justify-content:space-between;min-width:0"
+                  onclick="qtOpenDeadlinePicker(this)">
+            <span id="qt-drawer-deadline-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Deadline</span>
+            <span style="font-size:12px">📅</span>
+          </button>
+          <input type="hidden" id="qt-drawer-deadline" value="">
           <button class="rp-add-btn" onclick="qtDrawerAddTask()">+</button>
         </div>
       </div>

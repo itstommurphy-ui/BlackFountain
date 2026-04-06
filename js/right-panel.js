@@ -17,12 +17,23 @@ let _rpLastY      = 0;
 document.addEventListener('DOMContentLoaded', () => {
   const panel = document.getElementById('right-panel');
   if (panel) {
-    panel.addEventListener('click', e => {
-      const ctxMenu = document.getElementById('ctx-menu');
-      const rpConfirm = document.getElementById('rp-confirm');
-      if (ctxMenu?.contains(e.target) || rpConfirm?.contains(e.target)) return;
-      e.stopPropagation();
-    });
+panel.addEventListener('click', e => {
+  const ctxMenu   = document.getElementById('ctx-menu');
+  const rpConfirm = document.getElementById('rp-confirm');
+  const rpCtxMenu = document.getElementById('rp-ctx-menu');
+  // Don't stop propagation for interactive elements within the panel
+  if (
+    ctxMenu?.contains(e.target)   ||
+    rpConfirm?.contains(e.target) ||
+    rpCtxMenu?.contains(e.target) ||
+    e.target.closest('button')    ||
+    e.target.closest('input')     ||
+    e.target.closest('select')    ||
+    e.target.closest('a')         ||
+    e.target.closest('label')
+  ) return;
+  e.stopPropagation();
+});
   }
 });
 

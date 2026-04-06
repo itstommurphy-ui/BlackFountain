@@ -834,6 +834,7 @@ function qtDrawerAddTask() {
   const input = document.getElementById('qt-drawer-input');
   const priority = document.getElementById('qt-drawer-priority');
   const deadline = document.getElementById('qt-drawer-deadline');
+  const deadlineLabel = document.getElementById('qt-drawer-deadline-label');
   const val = input.value.trim();
   if (!val) return;
 
@@ -856,9 +857,73 @@ function qtDrawerAddTask() {
   input.value = '';
   priority.value = '';
   deadline.value = '';
+  deadlineLabel.textContent = 'Deadline';
 
   saveStore();
   qtDrawerRender(p);
+}
+
+function showQtDatePicker() {
+  const deadline = document.getElementById('qt-drawer-deadline');
+  const deadlineLabel = document.getElementById('qt-drawer-deadline-label');
+  showDatePicker('Set Deadline', deadline.value || '', (newDate) => {
+    deadline.value = newDate || '';
+    if (newDate) {
+      const d = new Date(newDate + 'T00:00:00');
+      deadlineLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      deadlineLabel.textContent = 'Deadline';
+    }
+  });
+}
+
+function qtOpenDeadlinePicker(btn) {
+  const deadline = document.getElementById('qt-drawer-deadline');
+  const deadlineLabel = document.getElementById('qt-drawer-deadline-label');
+  const list = document.getElementById('qt-drawer-list');
+  const rect = btn.getBoundingClientRect();
+  
+  let pickerInput = document.getElementById('qt-deadline-picker');
+  if (!pickerInput) {
+    pickerInput = document.createElement('input');
+    pickerInput.id = 'qt-deadline-picker';
+    pickerInput.type = 'date';
+    pickerInput.style.cssText = 'position:fixed;left:-9999px;opacity:0;z-index:9999';
+    document.body.appendChild(pickerInput);
+  }
+  
+  pickerInput.value = deadline.value || '';
+  
+  const handleChange = () => {
+    const val = pickerInput.value;
+    deadline.value = val;
+    if (val) {
+      const d = new Date(val + 'T00:00:00');
+      deadlineLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      deadlineLabel.textContent = 'Deadline';
+    }
+  };
+  
+  pickerInput.onchange = handleChange;
+  pickerInput.onblur = handleChange;
+  
+  const listRect = list ? list.getBoundingClientRect() : rect;
+  pickerInput.style.position = 'fixed';
+  pickerInput.style.left = (listRect.left + 10) + 'px';
+  pickerInput.style.top = (listRect.bottom - 40) + 'px';
+  pickerInput.style.width = '200px';
+  pickerInput.style.height = '36px';
+  pickerInput.style.opacity = '0';
+  pickerInput.style.cursor = 'pointer';
+  
+  setTimeout(() => {
+    try {
+      pickerInput.showPicker();
+    } catch (e) {
+      pickerInput.focus();
+    }
+  }, 10);
 }
 
 function getEmptySections(p) {
@@ -972,6 +1037,10 @@ function qtDrawerRender(p) {
                  onchange="qtDashboardToggle('${t._projId}','${t.id}')">
           <span class="qt-text${t.done ? ' done' : ''}">${t.text}</span>
           ${dl ? `<span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0">${dl}</span>` : ''}
+          <button onclick="qtDashboardDeleteConfirm(this,'${t._projId}','${t.id}')"
+                  style="background:none;border:none;color:var(--border);font-size:11px;cursor:pointer;padding:0 4px;flex-shrink:0;transition:color 0.1s"
+                  onmouseover="this.style.color='var(--red)'"
+                  onmouseout="this.style.color='var(--border)'">✕</button>
         </div>`;
       }).join('')}
     `).join('');
@@ -1028,7 +1097,7 @@ function qtDrawerRender(p) {
       <span class="qt-text${t.done ? ' done' : ''}"
             ondblclick="qtDrawerRename(this,${taskId})"
             title="Double-click to rename">${t.text}</span>
-      ${dl ? `<span class="qt-deadline" style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0">${dl}</span>` : ''}
+      ${dl ? `<span class="qt-deadline" style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0;cursor:pointer" onclick="qtEditTaskDeadline('${t.id}')" title="Click to change date">${dl}</span>` : `<span class="qt-deadline" style="font-size:9px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0;cursor:pointer;opacity:0.5" onclick="qtEditTaskDeadline('${t.id}')" title="Click to set date">—</span>`}
       <button onclick="qtDrawerDeleteConfirm(this,${taskId})"
               style="background:none;border:none;color:var(--border);font-size:11px;cursor:pointer;padding:0 4px;flex-shrink:0;transition:color 0.1s"
               onmouseover="this.style.color='var(--red)'"
@@ -1046,11 +1115,111 @@ function qtDrawerToggleDone(id) {
   if (t) { t.done = !t.done; saveStore(); qtDrawerRender(p); }
 }
 
+function qtEditTaskDeadline(id) {
+  const p = currentProject(); if (!p) return;
+  const t = (p.quickTasks||[]).find(t => t.id === id);
+  if (!t) return;
+
+  const list = document.getElementById('qt-drawer-list');
+  
+  let pickerInput = document.getElementById('qt-task-deadline-picker');
+  if (!pickerInput) {
+    pickerInput = document.createElement('input');
+    pickerInput.id = 'qt-task-deadline-picker';
+    pickerInput.type = 'date';
+    pickerInput.style.cssText = 'position:fixed;left:-9999px;opacity:0;z-index:9999';
+    document.body.appendChild(pickerInput);
+  }
+
+  pickerInput.value = t.deadline || '';
+
+  const handleChange = () => {
+    const val = pickerInput.value;
+    t.deadline = val || null;
+    saveStore();
+    qtDrawerRender(p);
+  };
+
+  pickerInput.onchange = handleChange;
+  pickerInput.onblur = handleChange;
+
+  const listRect = list ? list.getBoundingClientRect() : { left: 0, bottom: 0 };
+  pickerInput.style.position = 'fixed';
+  pickerInput.style.left = (listRect.left + 10) + 'px';
+  pickerInput.style.top = (listRect.bottom - 40) + 'px';
+  pickerInput.style.width = '200px';
+  pickerInput.style.height = '28px';
+  pickerInput.style.opacity = '0';
+  pickerInput.style.cursor = 'pointer';
+
+  setTimeout(() => {
+    try {
+      pickerInput.showPicker();
+    } catch (e) {
+      pickerInput.focus();
+    }
+  }, 10);
+}
+
 function qtDashboardToggle(projId, taskId) {
   const p = store.projects?.find(p => p.id === projId);
   if (!p) return;
   const t = (p.quickTasks||[]).find(t => t.id === taskId);
   if (t) { t.done = !t.done; saveStore(); qtDrawerRender(null); }
+}
+
+function qtDashboardDeleteConfirm(btn, projId, taskId) {
+  const rect = btn.getBoundingClientRect();
+  const existing = document.getElementById('qt-delete-confirm');
+  if (existing) existing.remove();
+
+  const p = store.projects?.find(p => p.id === projId);
+  if (!p) return;
+
+  _qtDeleteConfirmOpen = true;
+
+  const taskItem = btn.closest('.quick-task-item');
+  const taskText = taskItem?.querySelector('.qt-text')?.textContent || 'this task';
+  const truncate = taskText.length > 20 ? taskText.substring(0,20) + '...' : taskText;
+
+  const confirmDiv = document.createElement('div');
+  confirmDiv.id = 'qt-delete-confirm';
+  const popupWidth = 180;
+  const popupHeight = 60;
+  let left = rect.left;
+  let top = rect.bottom + 5;
+  if (left + popupWidth > window.innerWidth) {
+    left = window.innerWidth - popupWidth - 10;
+  }
+  if (top + popupHeight > window.innerHeight) {
+    top = rect.top - popupHeight - 5;
+  }
+  confirmDiv.style.cssText = `
+    position:fixed;top:${top}px;left:${left}px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:8px 10px;z-index:10000;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:11px;display:flex;flex-direction:column;gap:6px;
+  `;
+  confirmDiv.addEventListener('click', e => e.stopPropagation());
+  confirmDiv.addEventListener('mousedown', e => e.stopPropagation());
+  confirmDiv.innerHTML = `
+    <div style="color:var(--text3);white-space:nowrap;">Delete "${truncate}"?</div>
+    <div style="display:flex;gap:6px;">
+      <button id="qt-confirm-btn" onclick="event.stopPropagation();qtDashboardDelete('${projId}','${taskId}');document.getElementById('qt-delete-confirm')?.remove()"
+              style="background:var(--red);border:none;color:white;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Confirm</button>
+      <button id="qt-cancel-btn" onclick="event.stopPropagation();_qtDeleteConfirmOpen=false;document.getElementById('qt-delete-confirm')?.remove()"
+              style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(confirmDiv);
+}
+
+function qtDashboardDelete(projId, taskId) {
+  const p = store.projects?.find(p => p.id === projId);
+  if (!p) return;
+  p.quickTasks = (p.quickTasks || []).filter(t => t.id !== taskId);
+  saveStore();
+  qtDrawerRender(null);
 }
 
 function qtDrawerDeleteConfirm(btn, id) {
@@ -1066,24 +1235,24 @@ function qtDrawerDeleteConfirm(btn, id) {
   const taskText = taskItem?.querySelector('.qt-text')?.textContent || 'this task';
   const truncate = taskText.length > 20 ? taskText.substring(0,20) + '...' : taskText;
   
-  // Use right-panel if available, otherwise fallback to qt-drawer
-  let drawer = document.getElementById('right-panel');
-  let appendTarget = document.getElementById('rp-body'); // pane body for positioning
-  if (!drawer) {
-    appendTarget = document.getElementById('qt-drawer');
-    if (!appendTarget) appendTarget = drawer;
-  }
-  if (!appendTarget) appendTarget = drawer;
-  
   const confirmDiv = document.createElement('div');
   confirmDiv.id = 'qt-delete-confirm';
+  const popupWidth = 180;
+  const popupHeight = 60;
+  let left = rect.left;
+  let top = rect.bottom + 5;
+  if (left + popupWidth > window.innerWidth) {
+    left = window.innerWidth - popupWidth - 10;
+  }
+  if (top + popupHeight > window.innerHeight) {
+    top = rect.top - popupHeight - 5;
+  }
   confirmDiv.style.cssText = `
-    position:fixed;top:${rect.bottom + 5}px;left:${rect.left}px;
+    position:fixed;top:${top}px;left:${left}px;
     background:var(--surface);border:1px solid var(--border);
     border-radius:var(--radius);padding:8px 10px;z-index:10000;
     box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:11px;display:flex;flex-direction:column;gap:6px;
   `;
-  // Prevent document click from closing panel when clicking inside confirm
   confirmDiv.addEventListener('click', e => e.stopPropagation());
   confirmDiv.addEventListener('mousedown', e => e.stopPropagation());
   confirmDiv.innerHTML = `
@@ -1095,7 +1264,7 @@ function qtDrawerDeleteConfirm(btn, id) {
               style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">Cancel</button>
     </div>
   `;
-  appendTarget.appendChild(confirmDiv);
+  document.body.appendChild(confirmDiv);
   setTimeout(() => {
     confirmDiv.remove();
     _qtDeleteConfirmOpen = false;
