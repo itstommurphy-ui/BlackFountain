@@ -1265,7 +1265,7 @@ document.addEventListener('contextmenu', e => {
         {
           label: 'From another project or database…',
           icon:  '🌐',
-          fn:    () => openImportLocationModal()
+          fn:    () => openImportLocationModalForRow(locIdx)
         },
         ...(otherLocs.length > 0 ? [null] : []),  // separator only if there are local options
         ...otherLocs.map(l => {

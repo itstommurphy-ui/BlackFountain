@@ -53,110 +53,28 @@ function renderProjectLocations(p) {
           <button class="btn btn-sm btn-ghost btn-danger" onclick="event.stopPropagation();removeLocation(${i})">✕</button>
         </td>
       </tr>
-    `).join('');
-  }
-  renderScoutingList(p);
-  renderTechScouts(p);
+  `).join('');
 }
-function addLocation() {
-  document.getElementById('loc-edit-idx').value='';
-  ['location','name','avail','rules','cost','access','light','power','problems','notes'].forEach(f=>{const el=document.getElementById('loc-'+f);if(el)el.value='';});
-  document.getElementById('loc-suit').value='suitable';
-  document.getElementById('loc-contacted').value='no';
-  document.getElementById('loc-recce').value='no';
-  document.getElementById('loc-decision').value='';
-  document.getElementById('loc-cost-period').value='';
-  openModal('modal-location');
-  setTimeout(() => {
-    const inp = document.getElementById('loc-location');
-    if (inp && window.attachLocAuto) window.attachLocAuto(inp);
-  }, 80);
-}
-function duplicateLocation(idx) {
-  const p = currentProject();
-  const loc = p.locations[idx];
-  if (!loc) return;
-  const newLoc = { ...loc };
-  let suffix = 1;
-  const baseName = loc.scene || 'Location';
-  const nameWithoutNum = baseName.replace(/\s*\d+$/, '').trim();
-  while (p.locations.some(l => l.scene === newLoc.scene)) {
-    suffix++;
-    newLoc.scene = `${nameWithoutNum} ${suffix}`;
-  }
-  p.locations.push(newLoc);
-  saveStore();
-  renderProjectLocations(p);
-  showToast(`Location duplicated as "${newLoc.name}"`, 'success');
-}
-function getLocationsForImport() {
-  const p = currentProject();
-  if (!p) return [];
-  return p.locations.map((l, i) => ({ ...l, _idx: i })).filter((_, i) => i !== window._ctxLocImportIdx);
-}
-function importLocationFrom(sourceIdx, targetIdx) {
-  const p = currentProject();
-  if (!p || sourceIdx < 0 || sourceIdx >= p.locations.length || targetIdx < 0 || targetIdx >= p.locations.length) return;
-  const sourceLoc = p.locations[sourceIdx];
-  const targetLoc = p.locations[targetIdx];
-  const fieldsToCopy = ['location', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
-  fieldsToCopy.forEach(f => { targetLoc[f] = sourceLoc[f]; });
-  saveStore();
-  renderProjectLocations(p);
-  showToast(`Imported info from "${sourceLoc.name}"`, 'success');
-}
-window._ctxLocImportIdx = -1;
-function showLocationImportMenu(e, locIdx) {
-  window._ctxLocImportIdx = locIdx;
-  const p = currentProject();
-  if (!p) return;
-  const otherLocs = p.locations.filter((_, i) => i !== locIdx);
-  if (!otherLocs.length) {
-    showToast('No other locations to import from', 'info');
-    return;
-  }
-  const items = otherLocs.map((l, i) => {
-    const actualIdx = p.locations.indexOf(l);
-    return { label: l.scene || l.name || 'Unnamed', icon: '📍', fn: () => importLocationFrom(actualIdx) };
-  });
-  showContextMenu(e, items);
-}
-function handleLocationRowCtx(e, locIdx) {
-  e.preventDefault();
-  const el = e.target.closest('[data-ctx]');
-  if (!el) return;
-  const ctx = el.dataset.ctx;
-  const sep = ctx.indexOf(':');
-  const args = sep >= 0 ? ctx.slice(sep + 1).split(':') : [];
-  const locIdx2 = +args[0];
-  const locName = decodeURIComponent(args[1] || '');
-  const p = currentProject();
-  const otherLocs = p?.locations?.filter((_, i) => i !== locIdx2) || [];
-  const items = [
-    { label: 'Edit', icon: '✎', fn: () => editLocation(locIdx2) },
-    { label: 'Duplicate', icon: '⧉', fn: () => duplicateLocation(locIdx2) },
-    ...(otherLocs.length > 0 ? [{ label: 'Import from…', icon: '📥', fn: () => showLocationImportMenu({ clientX: e.clientX, clientY: e.clientY, preventDefault: () => {}, stopPropagation: () => {} }, locIdx2) }] : []),
-    null,
-    { label: 'Open Scouting Sheet', icon: '🗺', fn: () => openScoutingSheetForLocation(locName) },
-    { label: 'Open Tech Scout Checklist', icon: '☑', fn: () => openTechScoutForLocation(locName) },
-    null,
-    { label: 'Remove from Project', icon: '🗑', danger: true, fn: () => removeLocation(locIdx2) }
-  ];
-  showContextMenu(e, items);
+let _importToRowIdx = -1;
+function openImportLocationModalForRow(rowIdx) {
+  _importToRowIdx = rowIdx;
+  document.getElementById('import-loc-search').value = '';
+  renderImportLocationListForRow();
+  openModal('modal-import-location');
 }
 function openImportLocationModal() {
+  _importToRowIdx = -1;
   document.getElementById('import-loc-search').value = '';
   renderImportLocationList();
   openModal('modal-import-location');
 }
-
-function renderImportLocationList() {
+function renderImportLocationListForRow() {
   const p = currentProject();
-  if (!p) return;
+  if (!p || _importToRowIdx < 0) return;
   const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
   const existing = new Set((p.locations || []).map(l => (l.scene || l.name || '').toLowerCase()));
+  existing.delete((p.locations[_importToRowIdx]?.scene || p.locations[_importToRowIdx]?.name || '').toLowerCase());
 
-  // Gather all locations from other projects + global store
   const candidates = [];
   store.projects.forEach(proj => {
     if (proj.id === p.id) return;
@@ -191,11 +109,23 @@ function renderImportLocationList() {
         <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
         ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
       </div>
-      <button class="btn btn-sm btn-primary" onclick="importLocationEntry(${JSON.stringify(l).replace(/"/g,'&quot;')})">Import</button>
+      <button class="btn btn-sm btn-primary" onclick="importLocationToRow(${JSON.stringify(l).replace(/"/g,'&quot;')})">Import</button>
     </div>
   `).join('');
 }
-
+function importLocationToRow(l) {
+  const p = currentProject();
+  if (!p || _importToRowIdx < 0) return;
+  const { _from, ...locationData } = l;
+  const targetLoc = p.locations[_importToRowIdx];
+  if (!targetLoc) { closeModal('modal-import-location'); return; }
+  const fieldsToCopy = ['location', 'scene', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
+  fieldsToCopy.forEach(f => { if (locationData[f] !== undefined) targetLoc[f] = locationData[f]; });
+  saveStore();
+  renderProjectLocations(p);
+  closeModal('modal-import-location');
+  showToast(`Imported details to this location`, 'success');
+}
 function importLocationEntry(l) {
   const p = currentProject();
   if (!p) return;
@@ -294,10 +224,11 @@ function removeAllLocations() {
   showConfirmDialog(`Remove all ${p.locations.length} location${p.locations.length > 1 ? 's' : ''} from this project?`, 'Remove All', () => {
     // Preserve in global store
     (p.locations || []).forEach(loc => {
-      if (loc?.name && !store.locations?.some(l => l.name?.toLowerCase() === loc.name.toLowerCase())) {
+      const locName = loc.scene || loc.name || '';
+      if (locName && !store.locations?.some(l => (l.scene || l.name || '').toLowerCase() === locName.toLowerCase())) {
         if (!store.locations) store.locations = [];
-        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, name, contactName, contactPhone, contactEmail } = loc;
-        store.locations.push({ name, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
+        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, location, scene, contactName, contactPhone, contactEmail } = loc;
+        store.locations.push({ name: locName, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
       }
     });
     p.locations = [];
