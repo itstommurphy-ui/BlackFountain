@@ -1,6 +1,9 @@
-  /* ── VIEWS ── */
-  .view { display: none; }
-  .view.active { display: block; }
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+#proj-shoot-days, #prod-setup-indicator { display: none !important; }
+.dropdown-item.hide, .dropdown-divider.hide { display: none !important; }
 
   /* Sortable table headers */
   .sortable-header {
