@@ -258,7 +258,17 @@
 
 /* ── LAYOUT — full width without sidebar ── */
 #app { display: flex; flex-direction: column; min-height: 100vh; max-width: 100vw; overflow: hidden; }
-#main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; margin-right: 44px; transition: margin-right 0.2s ease; }
+body.rp-panel-open #main { margin-right: 344px; } /* strip (44) + body (300) when open */
+
+@media (max-width: 900px) {
+  #main { margin-right: 44px; }
+  body.rp-panel-open #main { margin-right: 324px; }
+}
+@media (max-width: 600px) {
+  #main { margin-right: 36px; }
+  body.rp-panel-open #main { margin-right: calc(100vw - 16px); max-width: 340px; }
+}
 
 /* ── TOPBAR ── */
 #topbar {
@@ -1209,4 +1219,632 @@ body:not(.project-mode) #app-footer { display: flex; }
   text-decoration: line-through;
   color: var(--text3);
 }
+
+/* ══════════════════════════════════════════
+   RIGHT PANEL — Tasks · Contacts · Moodboards · Scratchpad
+   Add to base.css (after existing qt-drawer rules)
+   ══════════════════════════════════════════ */
+
+/* ── Outer container ── */
+.right-panel {
+  position: fixed;
+  top: 46px;        /* below topbar */
+  right: 0;
+  bottom: 0;        /* goes to viewport bottom — dock floats above content anyway */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  z-index: 400;     /* below dock (z-index 90 on dock-inner) but above content */
+  pointer-events: none;
+  width: 44px;      /* strip width only - body floats */
+}
+
+/* ── Tab strip (always visible) ── */
+.rp-strip {
+  width: 44px;
+  background: var(--surface);
+  border-left: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  pointer-events: all;
+  flex-shrink: 0;
+  z-index: 97;  /* above body (96) so strip stays visible when panel is open */
+}
+
+.rp-strip-tab {
+  width: 36px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text3);
+  position: relative;
+  transition: background 0.1s, color 0.1s;
+  padding: 6px 0;
+  user-select: none;
+}
+.rp-strip-tab:hover  { background: var(--surface2); color: var(--text2); }
+.rp-strip-tab.active { background: var(--accent-dim); color: var(--accent); }
+
+.rp-strip-label {
+  font-size: 8px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.rp-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  background: var(--accent);
+  color: #000;
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  font-family: var(--font-mono);
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.rp-badge:not(:empty) { opacity: 1; }
+
+/* ── Panel body ── */
+.rp-body {
+  position: absolute;
+  top: 0;
+  right: 44px;        /* offset by strip width so content isn't covered */
+  width: 300px;
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(100%); /* hidden by default */
+  transition: transform 0.2s ease;
+  pointer-events: all;
+  flex-shrink: 0;
+  z-index: 96; /* above strip (95) and dock (90) */
+}
+.right-panel.open .rp-body {
+  transform: translateX(0); /* slide in when open */
+}
+
+/* Responsive: panel adapts to screen size */
+@media (min-width: 1200px) {
+  .rp-body {
+    width: 340px;
+  }
+  body.rp-panel-open #main { margin-right: 384px; }
+}
+@media (max-width: 900px) {
+  .rp-body {
+    width: 280px;
+  }
+  body.rp-panel-open #main { margin-right: 324px; }
+}
+@media (max-width: 600px) {
+  .rp-body {
+    width: calc(100vw - 50px);
+    max-width: 280px;
+  }
+  .rp-strip, .right-panel {
+    width: 36px;
+  }
+  .rp-strip-tab {
+    width: 28px;
+    min-height: 40px;
+  }
+  .rp-body {
+    right: 36px;
+  }
+  #main { margin-right: 36px; }
+  body.rp-panel-open #main { margin-right: calc(100vw - 14px); }
+}
+
+/* ── Pane shared ── */
+.rp-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.rp-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+
+.rp-pane-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+.rp-pane-toolbar {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rp-pane-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 10px;
+}
+
+.rp-pane-footer {
+  border-top: 1px solid var(--border2);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rp-foot-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.rp-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  font-family: var(--font-body);
+  transition: border-color 0.12s;
+}
+.rp-input:focus { border-color: var(--border); }
+.rp-input::placeholder { color: var(--text3); }
+
+.rp-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text3);
+  font-size: 10px;
+  padding: 4px 6px;
+  outline: none;
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+.rp-add-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: var(--radius);
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.1s, color 0.1s;
+}
+.rp-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.rp-icon-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  border-radius: var(--radius);
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.1s, color 0.1s;
+  line-height: 1;
+}
+.rp-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Task items (reuse existing quick-task-item styles) ── */
+.quick-task-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 6px;
+  border-radius: 5px;
+  margin-bottom: 3px;
+  position: relative;
+  transition: background 0.08s;
+}
+.quick-task-item:hover { background: var(--surface2); }
+.qt-priority-bar {
+  width: 2px;
+  height: 20px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+.qt-checkbox { cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+.qt-text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  min-width: 0;
+  word-break: break-word;
+  cursor: default;
+}
+.qt-text.done { text-decoration: line-through; color: var(--text3); }
+
+/* ── Contacts ── */
+.rp-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  cursor: default;
+  transition: background 0.08s;
+}
+.rp-contact-item:hover { background: var(--surface2); }
+
+.rp-contact-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.rp-contact-info { flex: 1; min-width: 0; }
+.rp-contact-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-contact-role {
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-contact-project {
+  font-size: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-contacts-group-label {
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: var(--font-mono);
+  padding: 8px 6px 4px;
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 4px;
+}
+
+.rp-contact-item { cursor: pointer; }
+
+/* ── Contact Card Modal ── */
+.rp-contact-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+.rp-contact-card-overlay.open { display: flex; }
+.rp-contact-card-overlay .rp-contact-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.rp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+.rp-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.rp-card-title { flex: 1; min-width: 0; }
+.rp-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.rp-card-roles {
+  font-size: 12px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-card-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.rp-card-close:hover { color: var(--text); }
+.rp-card-body {
+  padding: 16px;
+}
+.rp-card-field {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+.rp-card-label {
+  font-weight: 500;
+  color: var(--text3);
+  margin-right: 6px;
+}
+.rp-card-field a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.rp-card-field a:hover { text-decoration: underline; }
+.rp-card-socials {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Moodboards ── */
+.rp-mb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background 0.08s;
+}
+.rp-mb-item:hover { background: var(--surface2); }
+
+.rp-mb-thumb {
+  width: 42px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rp-mb-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rp-mb-info { flex: 1; min-width: 0; }
+.rp-mb-name {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-mb-project {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Scratchpad ── */
+.rp-sp-page-bar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.rp-sp-page-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+.rp-sp-page-dot.active { background: var(--accent); }
+.rp-sp-page-dot:hover  { background: var(--text3); }
+
+.rp-sp-scroll {
+  padding: 0;
+}
+
+.rp-sp-book {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rp-sp-page {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border2);
+}
+
+/* Lined paper effect */
+.rp-sp-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    var(--border2) 27px,
+    var(--border2) 28px
+  );
+  background-position: 0 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Left margin line */
+.rp-sp-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28px;
+  width: 1px;
+  background: rgba(230,188,60,0.15);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rp-sp-textarea {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 400px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text);
+  font-family: 'Caveat', 'Segoe Script', 'Comic Sans MS', cursive;
+  font-size: 15px;
+  line-height: 28px;
+  padding: 32px 12px 12px 36px;
+  box-sizing: border-box;
+}
+.rp-sp-textarea::placeholder { color: var(--text3); opacity: 0.4; }
+
+.rp-sp-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Draw mode: show canvas, hide textarea pointer events */
+.rp-sp-page.draw-mode .rp-sp-textarea { pointer-events: none; }
+.rp-sp-page.draw-mode .rp-sp-canvas   { pointer-events: all; }
+.rp-sp-page:not(.draw-mode) .rp-sp-canvas { pointer-events: none; }
+
+.rp-mode-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.rp-mode-btn:hover  { border-color: var(--accent); color: var(--accent); }
+.rp-mode-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* ── OLD qt-drawer — hide it (replaced by right-panel) ── */
+#qt-drawer { display: none !important; }
 

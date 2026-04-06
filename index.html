@@ -968,8 +968,9 @@
       </div>
     </div>
     <div class="form-group" id="pers-social-group">
-      <label class="form-label">Social (crew only)</label>
-      <input class="form-input" id="pers-social" placeholder="@handle">
+      <label class="form-label">Socials</label>
+      <div id="pers-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('pers-socials-container')">+ Add Social</button>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1851,6 +1852,7 @@
 <script src="js/moodboard-patch.js"></script>
 <script src="js/preferences-sync.js"></script>
 <script src="js/views/nav.js"></script>
+<script src="js/right-panel.js"></script>
 <script src="js/view-loader.js"></script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/production-plan.js"></script>
@@ -2032,52 +2034,126 @@ if ('serviceWorker' in navigator) {
     <button id="fab-btn" onclick="toggleFab()" title="Menu">+</button>
   </div>
 
-<!-- QUICK TASKS DRAWER -->
-<div id="qt-drawer" class="qt-drawer">
-  <div class="qt-drawer-tab" onclick="toggleQtDrawer()">
-    <div class="qt-tab-count" id="qt-tab-count">0</div>
-    <div class="qt-tab-label">Tasks</div>
-    <div class="qt-tab-arrow" id="qt-tab-arrow">‹</div>
+<!-- ══════════════════════════════════════════
+     RIGHT PANEL — Tasks · Contacts · Moodboards · Scratchpad
+     Replaces / extends the existing #qt-drawer in index.html
+     ══════════════════════════════════════════ -->
+
+<div id="right-panel" class="right-panel">
+
+  <!-- Tab strip (always visible on right edge) -->
+  <div class="rp-strip">
+    <div class="rp-strip-tab active" id="rp-tab-tasks"      onclick="rpShowTab('tasks')"      title="Quick Tasks (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="7" height="1.5" rx=".75" fill="currentColor"/><rect x="2" y="7" width="9" height="1.5" rx=".75" fill="currentColor"/><rect x="2" y="11" width="6" height="1.5" rx=".75" fill="currentColor"/><circle cx="13" cy="4" r="1.5" fill="currentColor" opacity=".4"/></svg>
+      <span class="rp-strip-label">Tasks</span>
+      <span class="rp-badge" id="rp-badge-tasks"></span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-contacts"   onclick="rpShowTab('contacts')"   title="Contacts (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="rp-strip-label">Contacts</span>
+      <span class="rp-badge" id="rp-badge-contacts"></span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-moodboards" onclick="rpShowTab('moodboards')" title="Moodboards (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span class="rp-strip-label">Boards</span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-scratchpad" onclick="rpShowTab('scratchpad')" title="Scratchpad (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h10v12H3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".5"/><path d="M9.5 11.5l2-2 1 1-2 2-1 0 0-1z" fill="currentColor" opacity=".7"/></svg>
+      <span class="rp-strip-label">Notes</span>
+    </div>
   </div>
 
-  <div class="qt-drawer-header">
-    <div class="qt-drawer-title">
-      <div class="qt-title-dot"></div>
-      <span id="qt-drawer-context">Quick tasks</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span id="qt-drawer-progress" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">0/0</span>
-      <select id="qt-drawer-sort" onchange="qtDrawerSortChanged()" style="font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:3px;padding:2px 4px;cursor:pointer;">
-        <option value="custom">Custom</option>
-        <option value="priority">Priority</option>
-        <option value="deadline">Deadline</option>
-      </select>
-    </div>
-  </div>
+  <!-- Panel body (slides in) -->
+  <div class="rp-body" id="rp-body">
 
-  <div class="qt-drawer-tasks" id="qt-drawer-list"></div>
+    <!-- ── TASKS ── -->
+    <div class="rp-pane" id="rp-pane-tasks">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Quick Tasks</span>
+        <span id="qt-drawer-context" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:right"></span>
+        <span id="qt-drawer-progress" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0"></span>
+        <button onclick="rpShowTab('tasks')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-toolbar">
+        <select id="qt-drawer-sort" onchange="qtDrawerSortChanged()" class="rp-select">
+          <option value="custom">Custom</option>
+          <option value="priority">Priority</option>
+          <option value="deadline">Deadline</option>
+        </select>
+      </div>
+      <div class="rp-pane-scroll" id="qt-drawer-list"></div>
+      <div class="rp-pane-footer">
+        <input id="qt-drawer-input" class="rp-input" placeholder="Add task…" onkeydown="if(event.key==='Enter')qtDrawerAddTask()">
+        <div class="rp-foot-row">
+          <select id="qt-drawer-priority" class="rp-select" style="flex:1">
+            <option value="">Priority</option>
+            <option value="low">🟢 Low</option>
+            <option value="medium">🟠 Med</option>
+            <option value="high">🔴 High</option>
+            <option value="urgent">🟣 Urgent</option>
+          </select>
+          <input type="date" id="qt-drawer-deadline" class="rp-select" style="flex:1">
+          <button class="rp-add-btn" onclick="qtDrawerAddTask()">+</button>
+        </div>
+      </div>
+    </div>
 
-  <div class="qt-drawer-add">
-    <div class="qt-add-row">
-      <input class="qt-add-input" id="qt-drawer-input" placeholder="Add a task…"
-             onkeydown="if(event.key==='Enter')qtDrawerAddTask()">
+    <!-- ── CONTACTS ── -->
+    <div class="rp-pane" id="rp-pane-contacts" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Contacts</span>
+        <span id="rp-contacts-count" style="font-size:10px;color:var(--text3);font-family:var(--font-mono)"></span>
+        <button onclick="rpShowTab('contacts')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;margin-left:auto" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-toolbar">
+        <input id="rp-contacts-search" class="rp-input" placeholder="Search name, role…" oninput="rpContactsRender()" style="margin-bottom:0">
+        <select id="rp-contacts-sort" class="rp-select" onchange="rpContactsRender()">
+          <option value="name">A → Z</option>
+          <option value="role">By role</option>
+          <option value="project">By project</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);cursor:pointer;white-space:nowrap" title="Show only contacts in current project">
+          <input type="checkbox" id="rp-contacts-project-filter" onchange="rpContactsRender()" style="accent-color:var(--accent)">
+          This project
+        </label>
+      </div>
+      <div class="rp-pane-scroll" id="rp-contacts-list"></div>
     </div>
-    <div class="qt-add-meta-row">
-      <select id="qt-drawer-priority" title="Priority"
-              style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px;outline:none;font-family:var(--font-body);">
-        <option value="">Priority</option>
-        <option value="low">🟢 Low</option>
-        <option value="medium">🟠 Medium</option>
-        <option value="high">🔴 High</option>
-        <option value="urgent">🟣 Urgent</option>
-      </select>
-      <input type="date" id="qt-drawer-deadline" title="Set deadline"
-             style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px;outline:none;font-family:var(--font-body);">
-      <button class="qt-add-btn" onclick="qtDrawerAddTask()">+ Add</button>
+    <div id="rp-contact-card" class="rp-contact-card-overlay" onclick="if(event.target === this) rpCloseContactCard()">
+      <div class="rp-contact-card"></div>
     </div>
-  </div>
-  <div id="qt-drawer-suggestions" style="display:none;padding:8px 12px;background:var(--surface);border-top:1px dashed var(--border2)"></div>
-</div>
+
+    <!-- ── MOODBOARDS ── -->
+    <div class="rp-pane" id="rp-pane-moodboards" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Moodboards</span>
+        <button onclick="openNewMoodboardModal()" class="rp-icon-btn" title="New moodboard">+</button>
+        <button onclick="rpShowTab('moodboards')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-scroll" id="rp-moodboards-list"></div>
+    </div>
+
+    <!-- ── SCRATCHPAD ── -->
+    <div class="rp-pane" id="rp-pane-scratchpad" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Scratchpad</span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button id="rp-sp-mode-text" class="rp-mode-btn active" onclick="rpScratchMode('text')" title="Text mode">T</button>
+          <button id="rp-sp-mode-draw" class="rp-mode-btn" onclick="rpScratchMode('draw')" title="Draw mode">✏</button>
+          <button onclick="rpScratchNewPage()" class="rp-icon-btn" title="New page" style="margin-left:4px">+</button>
+          <button onclick="rpShowTab('scratchpad')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="rp-sp-page-bar" id="rp-sp-page-bar"></div>
+      <div class="rp-pane-scroll rp-sp-scroll" id="rp-sp-scroll">
+        <div class="rp-sp-book" id="rp-sp-book">
+          <!-- Pages rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rp-body -->
+</div><!-- /right-panel -->
 
   <!-- BOTTOM DOCK — only visible in project mode -->
   <div id="dock">
