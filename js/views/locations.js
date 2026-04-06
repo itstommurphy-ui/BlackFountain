@@ -31,7 +31,7 @@ function renderProjectLocations(p) {
   // Reset select-all and remove-selected button
   const selAll = document.getElementById('loc-select-all');
   if (selAll) selAll.checked = false;
-  const selBtn = document.getElementById('loc-actions-dropdown');
+  const selBtn = document.getElementById('loc-remove-sel-btn');
   if (selBtn) selBtn.style.display = 'none';
   if (!p.locations.length) {
     tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
@@ -251,8 +251,12 @@ function removeLocation(i) {
 function updateLocSelBtn() {
   const cbs = [...document.querySelectorAll('.loc-cb')];
   const n = cbs.filter(c => c.checked).length;
-  const btn = document.getElementById('loc-actions-dropdown');
-  if (btn) { btn.style.display = n ? '' : 'none'; }
+  const btn = document.getElementById('loc-remove-sel-btn');
+  if (btn) { 
+    btn.style.display = n ? '' : 'none';
+    const cnt = document.getElementById('loc-sel-count');
+    if (cnt) cnt.textContent = n;
+  }
   const all = document.getElementById('loc-select-all');
   if (all) all.checked = n > 0 && n === cbs.length;
 }
@@ -268,10 +272,11 @@ function removeSelectedLocations() {
     // Preserve removed locations in global store
     selected.forEach(i => {
       const loc = p.locations[i];
-      if (loc?.name && !store.locations?.some(l => l.name?.toLowerCase() === loc.name.toLowerCase())) {
+      const locName = loc.scene || loc.name || '';
+      if (locName && !store.locations?.some(l => (l.scene || l.name || '').toLowerCase() === locName.toLowerCase())) {
         if (!store.locations) store.locations = [];
-        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, name, contactName, contactPhone, contactEmail } = loc;
-        store.locations.push({ name, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
+        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, location, scene, contactName, contactPhone, contactEmail } = loc;
+        store.locations.push({ name: locName, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
       }
     });
     const idxSet = new Set(selected);
