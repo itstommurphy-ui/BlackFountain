@@ -1325,5 +1325,3 @@ function qtDrawerSync() {
   const p = currentProject();
   qtDrawerRender(p || null);
 }
-
-// ══════════════════════════════════════════

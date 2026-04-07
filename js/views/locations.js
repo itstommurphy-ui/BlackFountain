@@ -55,6 +55,7 @@ function renderProjectLocations(p) {
       </tr>
   `).join('');
 }
+}
 let _importToRowIdx = -1;
 function openImportLocationModalForRow(rowIdx) {
   _importToRowIdx = rowIdx;
@@ -187,6 +188,31 @@ function importLocationEntry(l) {
   showToast(`"${locName}" imported`, 'success');
 }
 
+function duplicateLocation(i) {
+  const p = currentProject();
+  if (!p || !p.locations) return;
+  const src = p.locations[i];
+  if (!src) return;
+  const dup = { ...src };
+  if (dup.scene) dup.scene = dup.scene + ' (copy)';
+  if (dup.name) dup.name = dup.name + ' (copy)';
+  p.locations.push(dup);
+  saveStore();
+  renderProjectLocations(p);
+  showToast('Location duplicated', 'success');
+}
+function importLocationFrom(actualIdx, locIdx) {
+  const p = currentProject();
+  if (!p || !p.locations) return;
+  const src = p.locations[actualIdx];
+  const target = p.locations[locIdx];
+  if (!src || !target) return;
+  const fieldsToCopy = ['location', 'scene', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
+  fieldsToCopy.forEach(f => { if (src[f] !== undefined) target[f] = src[f]; });
+  saveStore();
+  renderProjectLocations(p);
+  showToast('Details imported from ' + (src.scene || src.name || 'location'), 'success');
+}
 function editLocation(i) {
   const l=currentProject().locations[i];
   document.getElementById('loc-edit-idx').value=i;
