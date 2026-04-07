@@ -795,7 +795,7 @@ function renderPersonnelTable(list, tbodyId, type) {
     return;
   }
   tbody.innerHTML = sortedList.map((m,i) => `
-    <tr data-ctx="personnel:${type}:${i}" onclick="editPersonnel('${type}',${i})" style="cursor:pointer">
+    <tr data-type="${type}" data-idx="${i}" oncontextmenu="showCastCtxMenu(event,'${type}',${i})" onclick="editPersonnel('${type}',${i})" style="cursor:pointer">
       <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="cast-cb" data-type="${type}" data-idx="${i}" onchange="_updateCastEmailSelBtn()" style="cursor:pointer"></td>
       <td><strong>${m.name}</strong></td>
       <td>${m.role||'—'}</td>
@@ -984,14 +984,20 @@ function renderCrew(p) {
         </div>
       </div>
       <div class="table-container">
-        <table class="data-table">
+        <table class="data-table" style="table-layout:fixed;width:100%">
           <thead><tr>
-            <th style="width:28px;padding:6px 4px"><input type="checkbox" onchange="_crewSelectAll(this,'${dept.replace(/'/g,"\\'")}')"></th>
-            <th onclick="_sortTable('crew','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="crew-sort-name"></span></th><th onclick="_sortTable('crew','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="crew-sort-role"></span></th><th>Number</th><th>Email</th><th>Social</th><th>Confirmed</th><th></th>
+            <th style="width:40px"><input type="checkbox" onchange="_crewSelectAll(this,'${dept.replace(/'/g,"\\'")}')"></th>
+            <th style="width:150px" onclick="_sortTable('crew','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="crew-sort-name"></span></th>
+            <th style="width:150px" onclick="_sortTable('crew','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="crew-sort-role"></span></th>
+            <th style="width:100px">Number</th>
+            <th style="width:180px">Email</th>
+            <th style="width:100px">Social</th>
+            <th style="width:80px">Confirmed</th>
+            <th style="width:70px"></th>
           </tr></thead>
           <tbody>
             ${grouped[dept].map(m => `
-              <tr onclick="editPersonnel('unit',${m._i})" style="cursor:pointer">
+              <tr data-type="unit" data-idx="${m._i}" oncontextmenu="showCrewCtxMenu(event,${m._i})" style="cursor:pointer">
                 <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="crew-cb" data-type="unit" data-idx="${m._i}" onchange="_updateCrewEmailSelBtn()"></td>
                 <td><strong>${m.name}</strong></td>
                 <td>${m.role||'—'}</td><td>${m.number||'—'}</td>
@@ -1055,6 +1061,88 @@ function emailSelectedCrew() {
   const subject = encodeURIComponent(p.title+' - Crew Communication');
   const body = encodeURIComponent('Hi,\n\nI wanted to reach out regarding '+p.title+'.\n\nBest regards');
   window.location.href = 'mailto:'+emails.join(',')+'?subject='+subject+'&body='+body;
+}
+
+function showCrewCtxMenu(e, idx) {
+  e.preventDefault();
+  e.stopPropagation();
+  _dismissCtxMenu();
+  const p = currentProject();
+  const u = p.unit?.[idx];
+  if (!u) return;
+  const menu = document.createElement('div');
+  menu.id = '_ctx-menu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:13px';
+  const items = [
+    { label: '✎ Edit', action: () => editPersonnel('unit', idx) },
+    { label: '✉️ Email', action: () => u.email ? window.location.href = `mailto:${u.email}?subject=${encodeURIComponent(p.title)}` : showToast('No email address attached to contact', 'error') },
+    { sep: true },
+    { label: '🗑 Remove from Project', action: () => removePersonnel('unit', idx), danger: true },
+  ];
+  items.forEach(item => {
+    if (item.sep) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
+      menu.appendChild(sep);
+      return;
+    }
+    const el = document.createElement('div');
+    el.style.cssText = `padding:7px 14px;cursor:pointer;color:${item.danger ? '#e55' : 'var(--text)'};white-space:nowrap`;
+    el.textContent = item.label;
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
+    el.addEventListener('mouseleave', () => el.style.background = '');
+    el.addEventListener('mousedown', e2 => { e2.stopPropagation(); _dismissCtxMenu(); item.action(); });
+    menu.appendChild(el);
+  });
+  document.body.appendChild(menu);
+  const mw = 190, mh = menu.offsetHeight || 120;
+  let x = e.clientX, y = e.clientY;
+  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  setTimeout(() => document.addEventListener('mousedown', _dismissCtxMenu, { once: true }), 0);
+}
+
+function showCastCtxMenu(e, type, idx) {
+  e.preventDefault();
+  e.stopPropagation();
+  _dismissCtxMenu();
+  const p = currentProject();
+  const item = p[type]?.[idx];
+  if (!item) return;
+  const menu = document.createElement('div');
+  menu.id = '_ctx-menu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:13px';
+  const items = [
+    { label: '✎ Edit', action: () => editPersonnel(type, idx) },
+    { label: '✉️ Email', action: () => item.email ? window.location.href = `mailto:${item.email}?subject=${encodeURIComponent(p.title)}` : showToast('No email address attached to contact', 'error') },
+    { sep: true },
+    { label: '🗑 Remove from Project', action: () => removePersonnel(type, idx), danger: true },
+  ];
+  items.forEach(item => {
+    if (item.sep) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
+      menu.appendChild(sep);
+      return;
+    }
+    const el = document.createElement('div');
+    el.style.cssText = `padding:7px 14px;cursor:pointer;color:${item.danger ? '#e55' : 'var(--text)'};white-space:nowrap`;
+    el.textContent = item.label;
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
+    el.addEventListener('mouseleave', () => el.style.background = '');
+    el.addEventListener('mousedown', e2 => { e2.stopPropagation(); _dismissCtxMenu(); item.action(); });
+    menu.appendChild(el);
+  });
+  document.body.appendChild(menu);
+  const mw = 190, mh = menu.offsetHeight || 120;
+  let x = e.clientX, y = e.clientY;
+  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  setTimeout(() => document.addEventListener('mousedown', _dismissCtxMenu, { once: true }), 0);
 }
 
 // CAST multi-select
@@ -1174,17 +1262,44 @@ function exportExtrasCSV() {
 function exportCrewPDF() {
   const p = currentProject();
   if (!p.unit?.length) { showToast('No crew to export', 'info'); return; }
-  let rows = '';
-  p.unit.forEach(u => {
-    rows += `<tr><td>${u.name||''}</td><td>${u.dept||''}</td><td>${u.role||''}</td><td>${u.email||''}</td><td>${u.number||''}</td><td>${u.notes||''}</td></tr>`;
+  const grouped = {};
+  UNIT_DEPTS.forEach(d => grouped[d] = []);
+  (p.unit || []).forEach(u => {
+    const d = u.dept || 'Other';
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(u);
   });
-  _openPrintWindow(`<h1>${p.title} — Crew</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Name</th><th>Department</th><th>Role</th><th>Email</th><th>Number</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Crew');
+  let html = `<h1>${p.title} — Crew</h1><p>Generated: ${new Date().toLocaleDateString()}</p>
+<style>
+table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+th,td{padding:8px;border:1px solid #ddd;text-align:left;}
+th{background:#f5f5f5;font-weight:600;}
+</style>`;
+  UNIT_DEPTS.forEach(dept => {
+    const members = grouped[dept];
+    if (!members?.length) return;
+    html += `<h3>${dept}</h3><table><thead><tr><th style="width:20%">Name</th><th style="width:20%">Role</th><th style="width:25%">Email</th><th style="width:15%">Number</th><th style="width:20%">Notes</th></tr></thead><tbody>`;
+    members.forEach(u => {
+      html += `<tr><td>${u.name||''}</td><td>${u.role||''}</td><td>${u.email||''}</td><td>${u.number||''}</td><td>${u.notes||''}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+  Object.keys(grouped).forEach(d => {
+    if (!UNIT_DEPTS.includes(d) && grouped[d]?.length) {
+      html += `<h3>${d}</h3><table><thead><tr><th style="width:20%">Name</th><th style="width:20%">Role</th><th style="width:25%">Email</th><th style="width:15%">Number</th><th style="width:20%">Notes</th></tr></thead><tbody>`;
+      grouped[d].forEach(u => {
+        html += `<tr><td>${u.name||''}</td><td>${u.role||''}</td><td>${u.email||''}</td><td>${u.number||''}</td><td>${u.notes||''}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+  });
+  _openPrintWindow(html, p.title + ' - Crew');
 }
 
 function exportCrewCSV() {
   const p = currentProject();
   if (!p.unit?.length) { showToast('No crew to export', 'info'); return; }
-  const csv = 'Name,Department,Role,Email,Number,Notes\n' + p.unit.map(u => `"${(u.name||'').replace(/"/g,'""')}","${(u.dept||'').replace(/"/g,'""')}","${(u.role||'').replace(/"/g,'""')}","${u.email||''}","${u.number||''}","${(u.notes||'').replace(/"/g,'""')}"`).join('\n');
+  const csv = 'Name,Department,Role,Email,Number,Notes\n' + p.unit.map(u => `"${(u.name||'').replace(/"/g,'""')}","${(u.dept||'').replace(/"/g,'""')}","${(u.role||'').replace(/"/g,'""')}","${u.email||''}","'${u.number||''}","${(u.notes||'').replace(/"/g,'""')}"`).join('\n');
   _downloadFile(csv, 'crew.csv', 'text/csv');
 }
 
