@@ -1222,14 +1222,16 @@ function exportEquipmentCSV() {
 function exportLocationsPDF() {
   const p = currentProject();
   if (!p.locations?.length) { showToast('No locations to export', 'info'); return; }
-  const rows = p.locations.map(l => `<tr><td>${l.name||''}</td><td>${l.scene||''}</td><td>${l.suitability||''}</td><td>${l.contacted?'Yes':'No'}</td><td>${l.availability||''}</td><td>${l.cost||''}</td><td>${l.accessibility||''}</td><td>${l.recce?'Yes':'No'}</td><td>${l.decision||''}</td></tr>`).join('');
+  const suitLabel = {suitable:'Suitable',possible:'Possibly Suitable',unsuitable:'Unsuitable'};
+  const rows = p.locations.map(l => `<tr><td>${l.location||l.name||''}</td><td>${l.scene||l.name||''}</td><td>${suitLabel[l.suit]||''}</td><td>${l.contacted||''}</td><td>${l.avail||''}</td><td>${l.cost||''}</td><td>${l.access||''}</td><td>${l.recce||''}</td><td>${l.decision||''}</td></tr>`).join('');
   _openPrintWindow(`<h1>${p.title} — Locations</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Location</th><th>Scene</th><th>Suitability</th><th>Contacted</th><th>Availability</th><th>Cost/Fee</th><th>Accessibility</th><th>Recce Done</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Locations');
 }
 
 function exportLocationsCSV() {
   const p = currentProject();
   if (!p.locations?.length) { showToast('No locations to export', 'info'); return; }
-  const csv = 'Location,Scene,Suitability,Contacted,Availability,Cost/Fee,Accessibility,Recce Done,Decision\n' + p.locations.map(l => `"${(l.name||'').replace(/"/g,'""')}","${l.scene||''}","${l.suitability||''}","${l.contacted?'Yes':'No'}","${l.availability||''}","${l.cost||''}","${l.accessibility||''}","${l.recce?'Yes':'No'}","${l.decision||''}"`).join('\n');
+  const suitLabel = {suitable:'Suitable',possible:'Possibly Suitable',unsuitable:'Unsuitable'};
+  const csv = 'Location,Scene,Suitability,Contacted,Availability,Cost/Fee,Accessibility,Recce Done,Decision\n' + p.locations.map(l => `"${((l.location||l.name)||'').replace(/"/g,'""')}","${(l.scene||l.name||'').replace(/"/g,'""')}","${suitLabel[l.suit]||''}","${l.contacted||''}","${l.avail||''}","${l.cost||''}","${l.access||''}","${l.recce||''}","${l.decision||''}"`).join('\n');
   _downloadFile(csv, 'locations.csv', 'text/csv');
 }
 
