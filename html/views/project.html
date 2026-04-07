@@ -459,37 +459,7 @@ Priority colour bar shows urgency">?</span>
 
         <!-- SECTION: RISK ASSESSMENT -->
         <div id="section-riskassess" style="display:none">
-          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 class="section-heading">PRODUCTION RISK ASSESSMENT</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <button class="btn btn-sm" onclick="exportRiskPDF()">⬇ Export PDF</button>
-              <button class="btn btn-sm" onclick="exportRiskCSV()">📊 Export CSV</button>
-              <button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button></div>
-          </div>
-          <div class="breakdown-card" style="margin-bottom:16px">
-            <div class="form-row-3">
-              <div class="form-group"><label class="form-label">Production Manager</label><input class="form-input" id="risk-pm" oninput="saveRiskMeta()" placeholder="Name"></div>
-              <div class="form-group"><label class="form-label">Date of Assessment</label><input class="form-input" id="risk-date" type="date" oninput="saveRiskMeta()"></div>
-              <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="risk-location" oninput="saveRiskMeta()" placeholder="Shoot location"></div>
-            </div>
-          </div>
-          <div class="table-container" style="margin-bottom:20px">
-            <table class="data-table">
-              <thead><tr>
-                <th>Hazard</th><th>Who might be harmed & how?</th>
-                <th>Risk Factor</th><th>Control Measures</th>
-                <th>Further Controls?</th><th>New Risk Factor</th><th></th>
-              </tr></thead>
-              <tbody id="risk-body"></tbody>
-            </table>
-          </div>
-          <div class="breakdown-card">
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">Name of person completing assessment (printed)</label><input class="form-input" id="risk-signatory" oninput="saveRiskMeta()" placeholder="Printed name"></div>
-              <div class="form-group"><label class="form-label">Signature / Date</label><input class="form-input" id="risk-sigdate" oninput="saveRiskMeta()" placeholder="Date signed"></div>
-            </div>
-          </div>
+          <!-- Populated entirely by renderRiskAssessment(p) in risk.js -->
         </div>
 
         <!-- SECTION: RELEASE FORMS -->
