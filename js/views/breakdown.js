@@ -1549,22 +1549,24 @@ function _bdApplyTagInScenes(tagId, matchCount) {
     const cb = document.getElementById(`_bds_cb_${i}`);
     if (!cb?.checked) continue;
     const m = matches[i];
-    for (const occ of m.occurrences) {
-      const exists = bd.tags.some(t =>
-        t.category === tag.category && t.start === occ.start && t.end === occ.end
-      );
-      if (!exists) {
-        bd.tags.push({
-          id:       makeId(),
-          category: tag.category,
-          start:    occ.start,
-          end:      occ.end,
-        });
-        if (tag.category === 'props') {
-          _bdAutoExportProp({ start: occ.start, end: occ.end }, bd, true);
-        }
-        added++;
+
+    const occ = m.occurrences[0];
+    if (!occ) continue;
+
+    const exists = bd.tags.some(t =>
+      t.category === tag.category && t.start === occ.start && t.end === occ.end
+    );
+    if (!exists) {
+      bd.tags.push({
+        id:       makeId(),
+        category: tag.category,
+        start:    occ.start,
+        end:      occ.end,
+      });
+      if (tag.category === 'props') {
+        _bdAutoExportProp({ start: occ.start, end: occ.end }, bd, true);
       }
+      added++;
     }
   }
 
@@ -1574,7 +1576,7 @@ function _bdApplyTagInScenes(tagId, matchCount) {
 
   saveStore();
   updateBreakdownView(p);
-  showToast(`${added} tag${added !== 1 ? 's' : ''} added across ${matchCount} scene${matchCount !== 1 ? 's' : ''}`, 'success');
+  showToast(`${added} tag${added !== 1 ? 's' : ''} added across ${added} scene${added !== 1 ? 's' : ''}`, 'success');
 }
 
 function _bdGoToTag(tagId) {
