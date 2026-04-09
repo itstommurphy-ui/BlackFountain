@@ -1379,12 +1379,46 @@ function showTagActionMenu(tagId, x, y, fromScript) {
     <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
       <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
     </div>
+    <button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to</button>
     <button onclick="_bdOpenTagEdit('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✎  Edit / re-tag</button>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
     ${_bdCtxFromScript ? `<button onclick="event.stopPropagation();_bdDeleteTagInline('${tagId}', event.target)" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
   if (x != null) positionBdPopover(x, y);
   pop.style.display = 'flex';
+}
+
+function _bdGoToTag(tagId) {
+  hideBdPopover();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+  const sv = document.getElementById('bd-script-view');
+  if (!sv) return;
+  const el = sv.querySelector(`[data-bd-offset="${tag.start}"]`) || sv.querySelector(`[data-bd-char="${tag.start}"]`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    const textNodes = [];
+    let offset = 0;
+    const walker = document.createTreeWalker(sv, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (offset + node.textContent.length >= tag.start) {
+        const range = document.createRange();
+        range.setStart(node, tag.start - offset);
+        range.collapse(true);
+        const rect = range.getBoundingClientRect();
+        if (rect.top > 0) {
+          sv.scrollTo({ top: sv.scrollTop + rect.top - sv.clientHeight / 2, behavior: 'smooth' });
+        }
+        return;
+      }
+      offset += node.textContent.length;
+    }
+  }
 }
 
 function showTagCategoryPicker(tagId, action) {
