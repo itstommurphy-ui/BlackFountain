@@ -1379,7 +1379,7 @@ function showTagActionMenu(tagId, x, y, fromScript) {
     <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
       <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
     </div>
-    <button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to</button>
+    ${!fromScript ? `<button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to</button>` : ''}
     <button onclick="_bdOpenTagEdit('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✎  Edit / re-tag</button>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
