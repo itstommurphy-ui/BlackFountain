@@ -1337,20 +1337,128 @@ const BRIEF_QUESTIONS = {
 
 let _briefQuestionIndex = 0;
 let _briefShowAll       = false;
+let _briefOpenId    = null;  // ID of currently open brief (null = show list or type picker)
+let _briefQIdx      = 0;     // question index for multi-brief mode
+
+// ── Migration from old single-brief format ───────────────────────────────────
+
+function _briefMigrate(p) {
+  if (p.briefs) return; // already migrated
+  p.briefs = [];
+  // Migrate old p.brief if it has content
+  if (p.brief && (p.brief.projectType || Object.keys(p.brief.fields || {}).length)) {
+    p.briefs.push({
+      id:        makeId(),
+      type:      p.brief.projectType || 'other',
+      name:      'Production Brief',
+      createdAt: Date.now(),
+      fields:    p.brief.fields || {},
+    });
+  }
+  // Leave p.brief as legacy stub
+}
 
 // ── Main render ──────────────────────────────────────────────
 
 function renderBrief(p) {
   const el = document.getElementById('brief-content');
   if (!el) return;
+  
+  _briefMigrate(p);
+  
+  // If we have briefs, show list (unless a specific brief is open)
+  if (_briefOpenId) {
+    const b = p.briefs.find(x => x.id === _briefOpenId);
+    if (!b) { _briefOpenId = null; renderBrief(p); return; }
+    _briefShowAll ? _renderBriefAllMode(el, p, b) : _renderBriefConversation(el, p, b);
+    return;
+  }
+  
+  // Show brief list if we have briefs
+  if (p.briefs.length > 0) {
+    _renderBriefList(el, p);
+    return;
+  }
+  
+  // No briefs yet - show type picker (old behavior)
   if (!p.brief) p.brief = { projectType: null, fields: {} };
   if (!p.brief.fields) p.brief.fields = {};
-
   if (!p.brief.projectType) {
     _renderBriefTypePicker(el, p);
   } else {
     _briefShowAll ? _renderBriefAllMode(el, p) : _renderBriefConversation(el, p);
   }
+}
+
+// ── LIST VIEW ─────────────────────────────────────────────────────────────────
+
+function _renderBriefList(el, p) {
+  const briefs = p.briefs || [];
+  
+  const cards = briefs.map(b => {
+    const typeMeta = BRIEF_TYPES.find(t => t.id === b.type) || { label: 'Brief', icon: '📽️' };
+    const qs = BRIEF_QUESTIONS[b.type] || [];
+    const answered = qs.filter(q => b.fields?.[q.key]?.trim()).length;
+    const pct = qs.length ? Math.round(answered / qs.length * 100) : 0;
+    const date = new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `
+      <div onclick="briefOpen('${b.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:border-color .12s;margin-bottom:10px">
+        <div style="font-size:22px;flex-shrink:0;width:32px;text-align:center">${typeMeta.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${_briefEsc(b.name)}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">${typeMeta.label} · ${date}</div>
+          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px">
+            <div style="height:100%;background:var(--accent);border-radius:2px;width:${pct}%"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${answered}/${qs.length} answered</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm" onclick="event.stopPropagation();briefExportPDF('${b.id}')">⬇ PDF</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();briefDelete('${b.id}')">🗑</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="max-width:700px;margin:0 auto">
+      ${cards}
+      <button class="btn btn-primary" onclick="briefNew()" style="margin-top:16px">+ New Brief</button>
+    </div>`;
+}
+
+function _briefEsc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── List actions ────────────────────────────────────────────────────────────
+
+function briefOpen(id) {
+  const p = currentProject(); if (!p) return;
+  _briefMigrate(p);
+  const b = p.briefs.find(x => x.id === id); if (!b) return;
+  _briefOpenId = id;
+  _briefShowAll = false;
+  const qs = BRIEF_QUESTIONS[b.type] || [];
+  const idx = qs.findIndex(q => !b.fields?.[q.key]?.trim());
+  _briefQIdx = idx === -1 ? 0 : idx;
+  renderBrief(p);
+}
+
+function briefDelete(id) {
+  const p = currentProject(); if (!p) return;
+  const b = p.briefs.find(x => x.id === id);
+  const name = b ? b.name : 'this brief';
+  showConfirmDialog('Delete "' + name + '"? This cannot be undone.', 'Delete', () => {
+    p.briefs = p.briefs.filter(x => x.id !== id);
+    if (_briefOpenId === id) _briefOpenId = null;
+    saveStore();
+    renderBrief(p);
+  });
+}
+
+function briefNew() {
+  // Go to type picker (reuse existing function)
+  _briefOpenId = null;
+  _briefMigrate(currentProject());
+  _renderBriefTypePicker(document.getElementById('brief-content'), currentProject());
 }
 
 // ── Step 1: Type picker ──────────────────────────────────────
@@ -1379,6 +1487,24 @@ function _renderBriefTypePicker(el, p) {
 
 function briefSelectType(typeId) {
   const p = currentProject(); if (!p) return;
+  // If using new multi-brief system
+  if (p.briefs) {
+    const typeMeta = BRIEF_TYPES.find(t => t.id === typeId) || {};
+    const b = {
+      id: makeId(),
+      type: typeId,
+      name: typeMeta.label + ' Brief',
+      createdAt: Date.now(),
+      fields: {},
+    };
+    p.briefs.push(b);
+    saveStore();
+    _briefOpenId = b.id;
+    _briefQIdx = 0;
+    renderBrief(p);
+    return;
+  }
+  // Old single-brief behavior
   if (!p.brief) p.brief = { fields: {} };
   p.brief.projectType = typeId;
   _briefQuestionIndex = _brieffirstUnanswered(p);
@@ -1395,27 +1521,33 @@ function _brieffirstUnanswered(p) {
 
 // ── Step 2: Conversational mode ──────────────────────────────
 
-function _renderBriefConversation(el, p) {
-  const typeId  = p.brief.projectType;
+function _renderBriefConversation(el, p, b) {
+  // Use provided brief or fall back to p.brief (legacy)
+  const brief = b || p.brief;
+  const typeId  = b?.type || brief.projectType;
   const typeMeta= BRIEF_TYPES.find(t => t.id === typeId) || {};
   const qs      = BRIEF_QUESTIONS[typeId] || [];
-  const answered= qs.filter(q => p.brief.fields[q.key]?.trim()).length;
+  const answered= qs.filter(q => brief.fields?.[q.key]?.trim()).length;
   const pct     = qs.length ? Math.round(answered / qs.length * 100) : 0;
 
-  // Clamp index
-  if (_briefQuestionIndex >= qs.length) _briefQuestionIndex = qs.length - 1;
-  if (_briefQuestionIndex < 0) _briefQuestionIndex = 0;
+  // Use correct index based on mode
+  const qIdx = b ? _briefQIdx : _briefQuestionIndex;
+  const setIdx = (i) => { if(b) _briefQIdx = i; else _briefQuestionIndex = i; };
 
-  const q   = qs[_briefQuestionIndex];
-  const val = p.brief.fields[q.key] || '';
+  // Clamp index
+  if (qIdx >= qs.length) setIdx(qs.length - 1);
+  if (qIdx < 0) setIdx(0);
+
+  const q   = qs[b ? _briefQIdx : _briefQuestionIndex];
+  const val = brief.fields?.[q.key] || '';
   const isAnswered = !!val.trim();
-  const isLast = _briefQuestionIndex === qs.length - 1;
-  const isFirst= _briefQuestionIndex === 0;
+  const isLast = (b ? _briefQIdx : _briefQuestionIndex) === qs.length - 1;
+  const isFirst= (b ? _briefQIdx : _briefQuestionIndex) === 0;
 
   // Progress dots — answered / current / unanswered
   const dots = qs.map((qq, i) => {
-    const ans = !!(p.brief.fields[qq.key]?.trim());
-    const cur = i === _briefQuestionIndex;
+    const ans = !!(brief.fields?.[qq.key]?.trim());
+    const cur = i === (b ? _briefQIdx : _briefQuestionIndex);
     const bg  = cur ? 'var(--accent)' : ans ? 'rgba(230,188,60,0.3)' : 'var(--border)';
     const size= cur ? '10px' : '7px';
     return `<span onclick="briefJumpTo(${i})" title="${qq.label}" style="display:inline-block;width:${size};height:${size};border-radius:50%;background:${bg};cursor:pointer;transition:all .15s;flex-shrink:0"></span>`;
@@ -1453,7 +1585,7 @@ function _renderBriefConversation(el, p) {
 
       <!-- Question card -->
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:16px">
-        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">${String(_briefQuestionIndex+1).padStart(2,'0')} / ${String(qs.length).padStart(2,'0')} · ${q.label}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">${String(qIdx+1).padStart(2,'0')} / ${String(qs.length).padStart(2,'0')} · ${q.label}</div>
         <div style="font-size:17px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:20px">${q.prompt}</div>
         ${q.multiline
           ? `<textarea id="brief-q-input" rows="4"
@@ -1494,11 +1626,12 @@ function _renderBriefConversation(el, p) {
 
 // ── Step 2b: All-at-once mode ────────────────────────────────
 
-function _renderBriefAllMode(el, p) {
-  const typeId  = p.brief.projectType;
+function _renderBriefAllMode(el, p, b) {
+  const brief = b || p.brief;
+  const typeId  = b?.type || brief.projectType;
   const typeMeta= BRIEF_TYPES.find(t => t.id === typeId) || {};
   const qs      = BRIEF_QUESTIONS[typeId] || [];
-  const answered= qs.filter(q => p.brief.fields[q.key]?.trim()).length;
+  const answered= qs.filter(q => brief.fields?.[q.key]?.trim()).length;
 
   el.innerHTML = `
     <div style="max-width:640px;margin:0 auto">
@@ -1524,7 +1657,7 @@ function _renderBriefAllMode(el, p) {
       </div>
 
       ${qs.map((q, i) => {
-        const val = p.brief.fields[q.key] || '';
+        const val = brief.fields?.[q.key] || '';
         const answered = !!val.trim();
         return `
         <div style="margin-bottom:24px">
@@ -1565,13 +1698,23 @@ function briefSaveCurrent() {
   const input = document.getElementById('brief-q-input');
   if (!input) return;
   const p = currentProject(); if (!p) return;
-  const qs = BRIEF_QUESTIONS[p.brief.projectType] || [];
-  const q  = qs[_briefQuestionIndex];
+  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
+  const typeId = b?.type || b?.projectType;
+  const qs = BRIEF_QUESTIONS[typeId] || [];
+  const idx = (_briefOpenId && p.briefs) ? _briefQIdx : _briefQuestionIndex;
+  const q = qs[idx];
   if (q) briefSaveField(q.key, input.value);
 }
 
 function briefSaveField(key, val) {
   const p = currentProject(); if (!p) return;
+  // If using new multi-brief system
+  if (_briefOpenId && p.briefs) {
+    const b = p.briefs.find(x => x.id === _briefOpenId);
+    if (b) { if (!b.fields) b.fields = {}; b.fields[key] = val; saveStore(); }
+    return;
+  }
+  // Legacy single brief
   if (!p.brief) p.brief = { fields: {} };
   if (!p.brief.fields) p.brief.fields = {};
   p.brief.fields[key] = val;
@@ -1581,9 +1724,12 @@ function briefSaveField(key, val) {
 function briefNext() {
   briefSaveCurrent();
   const p = currentProject(); if (!p) return;
-  const qs = BRIEF_QUESTIONS[p.brief.projectType] || [];
-  if (_briefQuestionIndex < qs.length - 1) {
-    _briefQuestionIndex++;
+  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
+  const typeId = b?.type || b?.projectType;
+  const qs = BRIEF_QUESTIONS[typeId] || [];
+  const idx = (_briefOpenId && p.briefs) ? _briefQIdx : _briefQuestionIndex;
+  if (idx < qs.length - 1) {
+    if (_briefOpenId && p.briefs) { _briefQIdx++; } else { _briefQuestionIndex++; }
     renderBrief(p);
   }
 }
@@ -1591,25 +1737,32 @@ function briefNext() {
 function briefPrev() {
   briefSaveCurrent();
   const p = currentProject(); if (!p) return;
-  if (_briefQuestionIndex > 0) {
-    _briefQuestionIndex--;
-    renderBrief(p);
+  if (_briefOpenId && p.briefs) {
+    if (_briefQIdx > 0) { _briefQIdx--; renderBrief(p); }
+  } else {
+    if (_briefQuestionIndex > 0) { _briefQuestionIndex--; renderBrief(p); }
   }
 }
 
 function briefSkip() {
   briefSaveCurrent();
   const p = currentProject(); if (!p) return;
-  const qs = BRIEF_QUESTIONS[p.brief.projectType] || [];
-  if (_briefQuestionIndex < qs.length - 1) {
-    _briefQuestionIndex++;
-    renderBrief(p);
+  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
+  const qs = BRIEF_QUESTIONS[b?.type || b?.projectType] || [];
+  if (_briefOpenId && p.briefs) {
+    if (_briefQIdx < qs.length - 1) { _briefQIdx++; renderBrief(p); }
+  } else {
+    if (_briefQuestionIndex < qs.length - 1) { _briefQuestionIndex++; renderBrief(p); }
   }
 }
 
 function briefJumpTo(i) {
   briefSaveCurrent();
-  _briefQuestionIndex = i;
+  if (_briefOpenId && currentProject().briefs) {
+    _briefQIdx = i;
+  } else {
+    _briefQuestionIndex = i;
+  }
   renderBrief(currentProject());
 }
 
@@ -1629,12 +1782,22 @@ function briefRefreshDot(i) {
 
 // ── PDF Export ───────────────────────────────────────────────
 
-function briefExportPDF() {
+function briefExportPDF(id) {
   const p = currentProject(); if (!p) return;
-  const typeId   = p.brief?.projectType;
+  // Get the brief to export
+  let brief = null;
+  if (id && p.briefs) {
+    brief = p.briefs.find(x => x.id === id);
+  } else if (_briefOpenId && p.briefs) {
+    brief = p.briefs.find(x => x.id === _briefOpenId);
+  }
+  // Fall back to legacy p.brief
+  if (!brief) brief = p.brief;
+  
+  const typeId   = brief?.type || brief?.projectType;
   const typeMeta = BRIEF_TYPES.find(t => t.id === typeId) || { label: 'Production', icon: '📽️' };
   const qs       = BRIEF_QUESTIONS[typeId] || [];
-  const fields   = p.brief?.fields || {};
+  const fields   = brief?.fields || {};
   const answered = qs.filter(q => fields[q.key]?.trim());
 
   const projectTitle   = p.title || 'Untitled Project';
@@ -1659,21 +1822,18 @@ function briefExportPDF() {
   <style>
     @page { margin: 2cm 2.2cm; size: A4; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Georgia', serif; font-size: 13px; color: #111; background: #fff; line-height: 1.65; }
+    body { font-family: 'Georgia', serif; font-size: 13px; color: #111; background: #fff; line-height: 1.5; }
 
-    .header { border-bottom: 3px solid #111; padding-bottom: 16px; margin-bottom: 28px; }
+    .header { border-bottom: 3px solid #111; padding-bottom: 16px; margin-bottom: 20px; }
     .header-label { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #888; margin-bottom: 6px; }
     .header-title { font-size: 28px; font-weight: bold; letter-spacing: -0.5px; margin-bottom: 4px; }
     .header-meta { font-family: Arial, sans-serif; font-size: 11px; color: #555; display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
     .header-meta span { display: flex; align-items: center; gap: 4px; }
 
-    .field { margin-bottom: 22px; page-break-inside: avoid; }
-    .field-label { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 5px; font-weight: bold; }
-    .field-value { font-size: 13px; color: #111; line-height: 1.7; }
+    .field { margin-bottom: 24px; page-break-inside: avoid; }
 
-    .divider { height: 1px; background: #ddd; margin: 24px 0; }
-
-    .footer { position: fixed; bottom: 12mm; left: 2.2cm; right: 2.2cm; display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 9px; color: #bbb; border-top: 1px solid #eee; padding-top: 6px; }
+    .footer { position: fixed; bottom: 0; left: 2.2cm; right: 2.2cm; display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 9px; color: #bbb; border-top: 1px solid #eee; padding: 6px 0; }
+    body { padding-bottom: 18mm; }
   </style>
 </head>
 <body>
