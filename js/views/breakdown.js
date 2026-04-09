@@ -1373,19 +1373,208 @@ function showTagActionMenu(tagId, x, y, fromScript) {
   if (!tag) { hideBdPopover(); return; }
   const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
   if (fromScript !== undefined) _bdCtxFromScript = !!fromScript;
+
+  const tagText = bd.rawText.slice(tag.start, tag.end).trim().toLowerCase();
+  const scenes  = parseBreakdownScenes(bd.rawText);
+  const currentScene = scenes.find(s => tag.start >= s.start && tag.start < s.end);
+  const otherSceneMatches = _bdFindTextInScenes(bd, tagText, tag.category, currentScene?.heading);
+  const hasOtherScenes = otherSceneMatches.length > 0;
+
   const pop = getBdPopover();
   pop.style.flexDirection = 'column';
   pop.innerHTML = `
     <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
       <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
     </div>
-    ${!fromScript ? `<button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to</button>` : ''}
+    ${!fromScript ? `<button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to in script</button>` : ''}
     <button onclick="_bdOpenTagEdit('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✎  Edit / re-tag</button>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
+    ${hasOtherScenes ? `<button onclick="showTagInScenesPanel('${tagId}')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">🎬  Tag in other scenes…</button>` : ''}
     ${_bdCtxFromScript ? `<button onclick="event.stopPropagation();_bdDeleteTagInline('${tagId}', event.target)" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
   if (x != null) positionBdPopover(x, y);
   pop.style.display = 'flex';
+}
+
+function _bdFindTextInScenes(bd, tagTextLower, category, excludeSceneHeading) {
+  const scenes  = parseBreakdownScenes(bd.rawText);
+  const results = [];
+
+  for (const scene of scenes) {
+    if (scene.heading === excludeSceneHeading) continue;
+    const sceneText = bd.rawText.slice(scene.start, scene.end);
+    const sceneTextLower = sceneText.toLowerCase();
+
+    const occurrences = [];
+    let idx = 0;
+    while ((idx = sceneTextLower.indexOf(tagTextLower, idx)) !== -1) {
+      const absStart = scene.start + idx;
+      const absEnd   = absStart + tagTextLower.length;
+
+      const before = idx > 0 ? sceneTextLower[idx - 1] : ' ';
+      const after  = idx + tagTextLower.length < sceneTextLower.length
+        ? sceneTextLower[idx + tagTextLower.length] : ' ';
+      const atBoundary = !/[a-z0-9]/i.test(before) && !/[a-z0-9]/i.test(after);
+
+      if (atBoundary) {
+        const alreadyTagged = bd.tags.some(t =>
+          t.category === category &&
+          t.start === absStart && t.end === absEnd
+        );
+        if (!alreadyTagged) {
+          occurrences.push({ start: absStart, end: absEnd });
+        }
+      }
+      idx++;
+    }
+
+    if (occurrences.length) {
+      results.push({ scene, occurrences });
+    }
+  }
+
+  return results;
+}
+
+function showTagInScenesPanel(tagId) {
+  hideBdPopover();
+  const p  = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+
+  const cat      = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
+  const tagText  = bd.rawText.slice(tag.start, tag.end).trim();
+  const scenes   = parseBreakdownScenes(bd.rawText);
+  const currentScene = scenes.find(s => tag.start >= s.start && tag.start < s.end);
+  const matches  = _bdFindTextInScenes(bd, tagText.toLowerCase(), tag.category, currentScene?.heading);
+
+  if (!matches.length) {
+    showToast(`"${tagText}" doesn't appear untagged in any other scene`, 'info');
+    return;
+  }
+
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  document.getElementById('_bd-scenes-panel')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = '_bd-scenes-panel';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+
+  const sceneRows = matches.map((m, i) => {
+    const count = m.occurrences.length;
+    const sceneLabel = esc(m.scene.heading);
+    return `
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;transition:background .1s"
+        onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+        <input type="checkbox" id="_bds_cb_${i}" checked
+          style="margin-top:2px;cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${sceneLabel}">${sceneLabel}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:1px">
+            ${count} occurrence${count !== 1 ? 's' : ''} · not yet tagged as ${cat.label}
+          </div>
+        </div>
+      </label>`;
+  }).join('');
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
+      width:min(480px,92vw);max-height:72vh;display:flex;flex-direction:column;overflow:hidden">
+
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">🎬 Tag in other scenes</div>
+          <button onclick="document.getElementById('_bd-scenes-panel').remove()"
+            style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)">
+          <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 7px;font-size:11px;font-weight:700">${cat.label}</span>
+          <span style="font-family:var(--font-mono);color:var(--text2)">"${esc(tagText)}"</span>
+          <span>appears untagged in ${matches.length} other scene${matches.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${currentScene ? `<div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic">Currently tagged in: ${esc(currentScene.heading)}</div>` : ''}
+      </div>
+
+      <div style="overflow-y:auto;padding:8px 6px;flex:1">
+        <div style="display:flex;justify-content:space-between;padding:0 12px 6px;border-bottom:1px solid var(--border2);margin-bottom:4px">
+          <button onclick="_bdScenesSelectAll(${matches.length},true)"
+            style="background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 0">Select all</button>
+          <button onclick="_bdScenesSelectAll(${matches.length},false)"
+            style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:2px 0">Deselect all</button>
+        </div>
+        ${sceneRows}
+      </div>
+
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0">
+        <button class="btn btn-sm btn-ghost"
+          onclick="document.getElementById('_bd-scenes-panel').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary"
+          onclick="_bdApplyTagInScenes('${tagId}',${matches.length})">
+          Apply Tags
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal._matches = matches;
+}
+
+function _bdScenesSelectAll(count, checked) {
+  for (let i = 0; i < count; i++) {
+    const cb = document.getElementById(`_bds_cb_${i}`);
+    if (cb) cb.checked = checked;
+  }
+}
+
+function _bdApplyTagInScenes(tagId, matchCount) {
+  const modal = document.getElementById('_bd-scenes-panel');
+  if (!modal) return;
+  const matches = modal._matches;
+  if (!matches) return;
+
+  const p  = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+  if (!bd.tags) bd.tags = [];
+
+  let added = 0;
+  for (let i = 0; i < matchCount; i++) {
+    const cb = document.getElementById(`_bds_cb_${i}`);
+    if (!cb?.checked) continue;
+    const m = matches[i];
+    for (const occ of m.occurrences) {
+      const exists = bd.tags.some(t =>
+        t.category === tag.category && t.start === occ.start && t.end === occ.end
+      );
+      if (!exists) {
+        bd.tags.push({
+          id:       makeId(),
+          category: tag.category,
+          start:    occ.start,
+          end:      occ.end,
+        });
+        if (tag.category === 'props') {
+          _bdAutoExportProp({ start: occ.start, end: occ.end }, bd, true);
+        }
+        added++;
+      }
+    }
+  }
+
+  modal.remove();
+
+  if (!added) { showToast('No new tags added', 'info'); return; }
+
+  saveStore();
+  updateBreakdownView(p);
+  showToast(`${added} tag${added !== 1 ? 's' : ''} added across ${matchCount} scene${matchCount !== 1 ? 's' : ''}`, 'success');
 }
 
 function _bdGoToTag(tagId) {
