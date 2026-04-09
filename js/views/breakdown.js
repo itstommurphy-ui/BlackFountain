@@ -5,6 +5,75 @@
 
 let _bdPendingSelection = null;
 let _bdActiveCategory = null;
+let _bdMultiTagMode = false;
+
+function toggleBdMultiTag() {
+  _bdMultiTagMode = !_bdMultiTagMode;
+
+  if (!_bdMultiTagMode && !_bdActiveCategory) {
+  }
+  if (!_bdMultiTagMode && _bdActiveCategory) {
+    _bdActiveCategory = null;
+  }
+
+  _bdRefreshCategoryBar();
+}
+
+function _bdRefreshCategoryBar() {
+  const sv   = document.getElementById('bd-script-view');
+  const hint = document.getElementById('bd-active-hint');
+
+  BREAKDOWN_CATEGORIES.forEach(cat => {
+    const chip = document.getElementById('bd-key-' + cat.id);
+    if (!chip) return;
+    if (cat.id === _bdActiveCategory) {
+      chip.style.outline       = '2px solid #fff';
+      chip.style.outlineOffset = '2px';
+      chip.style.boxShadow     = '0 0 0 5px rgba(255,255,255,0.18)';
+      chip.style.transform     = 'scale(1.08)';
+    } else {
+      chip.style.outline       = '';
+      chip.style.outlineOffset = '';
+      chip.style.boxShadow     = '';
+      chip.style.transform     = '';
+    }
+  });
+
+  _bdUpdateMultiTagBtn();
+
+  if (_bdActiveCategory) {
+    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === _bdActiveCategory);
+    if (sv) { sv.style.borderColor = cat.color; sv.style.borderWidth = '2px'; }
+    if (hint) {
+      if (_bdMultiTagMode) {
+        hint.style.cssText = `background:${cat.color}25;border:1px solid ${cat.color}88;border-radius:6px;padding:5px 10px;font-size:11px`;
+        hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> <strong>Multi-tag mode ON</strong> — every selection tags as ${cat.label}. Click the chip or ⚡ MULTI-TAG to stop.`;
+      } else {
+        hint.style.cssText = `background:${cat.color}18;border:1px solid ${cat.color}55;border-radius:6px;padding:5px 10px;font-size:11px`;
+        hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> ready — select text in the script to tag it, or click another category.`;
+      }
+    }
+  } else {
+    if (sv) { sv.style.borderColor = ''; sv.style.borderWidth = ''; }
+    if (hint) { hint.style.cssText = ''; hint.textContent = ''; }
+  }
+}
+
+function _bdUpdateMultiTagBtn() {
+  const btn = document.getElementById('bd-multitag-btn');
+  if (!btn) return;
+  if (_bdMultiTagMode) {
+    btn.style.background   = 'rgba(230,188,60,0.15)';
+    btn.style.borderColor  = 'rgba(230,188,60,0.6)';
+    btn.style.color        = 'var(--accent)';
+    btn.title              = 'Multi-tag mode ON — click to turn off';
+  } else {
+    btn.style.background  = 'none';
+    btn.style.borderColor = 'var(--border2)';
+    btn.style.color       = 'var(--text3)';
+    btn.title             = 'Multi-tag mode: keep a category active across multiple selections';
+  }
+}
 let _bdFilter = { intExt: null, tod: null };
 
 function _bdBadge(text, type) {
@@ -939,8 +1008,10 @@ function renderBreakdownEditor(el, p) {
       </div>
     </div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
-      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;white-space:nowrap">CATEGORIES <span style="opacity:0.6;font-weight:500">(click to activate multi-tagging):</span></span>
-      ${BREAKDOWN_CATEGORIES.map(cat => `<span id="bd-key-${cat.id}" onclick="setBdActiveCat('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:box-shadow 0.1s,transform 0.1s;user-select:none">${cat.label}</span>`).join('')}
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;white-space:nowrap">CATEGORIES:</span>
+      ${BREAKDOWN_CATEGORIES.map(cat => `<span id="bd-key-${cat.id}" onclick="setBdActiveCat('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:box-shadow 0.1s,transform 0.1s;user-select:none" title="Click to tag selection as ${cat.label}">${cat.label}</span>`).join('')}
+      <span style="width:1px;height:18px;background:var(--border);margin:0 4px;flex-shrink:0"></span>
+      <button id="bd-multitag-btn" onclick="toggleBdMultiTag()" title="Multi-tag mode: keep a category active across multiple selections" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;white-space:nowrap;letter-spacing:0.03em;transition:all .12s">⚡ MULTI-TAG</button>
     </div>
     <div id="bd-active-hint" style="font-size:11px;min-height:18px;margin-bottom:8px;padding-left:2px"></div>
     ${_bdFilterBar(scenes)}
@@ -1096,7 +1167,6 @@ function renderBreakdownReport(p, scenes) {
   const text = bd.rawText;
   const tags = bd.tags || [];
   if (!scenes) scenes = parseBreakdownScenes(text);
-  // Apply active filters
   if (_bdFilter.intExt) scenes = scenes.filter(s => s.intExt === _bdFilter.intExt);
   if (_bdFilter.tod)    scenes = scenes.filter(s => s.tod    === _bdFilter.tod);
 
@@ -1123,8 +1193,29 @@ function renderBreakdownReport(p, scenes) {
     </div>`;
   });
 
-  if (!parts.length) return `<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;line-height:1.6">No elements tagged yet.<br>Select text in the script to begin.</div>`;
-  return parts.join('');
+  const miscTags = tags.filter(t => !scenes.some(s => t.start >= s.start && t.end <= s.end));
+  let miscHtml = '';
+  if (miscTags.length) {
+    const byCat = {};
+    for (const t of miscTags) { (byCat[t.category] = byCat[t.category]||[]).push({ id: t.id, text: esc(text.slice(t.start, t.end)) }); }
+    miscHtml = `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <div style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px" title="Tags not associated with any scene">
+        <span style="opacity:0.5;font-size:10px">↗</span>MISC <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:auto">${miscTags.length} item${miscTags.length!==1?'s':''}</span>
+      </div>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        ${BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
+          <div>
+            <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${cat.label}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">
+              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();_bdDeleteTagInline('${item.id}', this)" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (!parts.length && !miscHtml) return `<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;line-height:1.6">No elements tagged yet.<br>Select text in the script to begin.</div>`;
+  return parts.join('') + miscHtml;
 
 }
 
@@ -1140,8 +1231,16 @@ function onBreakdownMouseup(e) {
   const end   = getTextOffsetInBd(container, range.endContainer,   range.endOffset);
   if (start === end) { hideBdPopover(); return; }
   _bdPendingSelection = { start: Math.min(start, end), end: Math.max(start, end) };
-  if (_bdActiveCategory) applyBreakdownTag(_bdActiveCategory);
-  else showBdPopover(range.getBoundingClientRect());
+
+  if (_bdActiveCategory) {
+    applyBreakdownTag(_bdActiveCategory);
+    if (!_bdMultiTagMode) {
+      _bdActiveCategory = null;
+    }
+    _bdRefreshCategoryBar();
+  } else {
+    showBdPopover(range.getBoundingClientRect());
+  }
 }
 
 function getTextOffsetInBd(container, node, offset) {
@@ -1202,32 +1301,32 @@ function hideBdPopover() {
 }
 
 function setBdActiveCat(catId) {
-  _bdActiveCategory = _bdActiveCategory === catId ? null : catId;
-  BREAKDOWN_CATEGORIES.forEach(cat => {
-    const btn = document.getElementById('bd-key-' + cat.id);
-    if (!btn) return;
-    if (cat.id === _bdActiveCategory) {
-      btn.style.outline = '2px solid #fff';
-      btn.style.outlineOffset = '2px';
-      btn.style.boxShadow = '0 0 0 5px rgba(255,255,255,0.18)';
-      btn.style.transform = 'scale(1.08)';
-    } else {
-      btn.style.outline = btn.style.outlineOffset = btn.style.boxShadow = btn.style.transform = '';
+  const sel = window.getSelection();
+  const container = document.getElementById('bd-script-view');
+  const hasLiveSelection = sel && !sel.isCollapsed && sel.rangeCount
+    && container && container.contains(sel.getRangeAt(0).commonAncestorContainer);
+
+  if (hasLiveSelection) {
+    const range = sel.getRangeAt(0);
+    const start = getTextOffsetInBd(container, range.startContainer, range.startOffset);
+    const end   = getTextOffsetInBd(container, range.endContainer,   range.endOffset);
+    if (start !== end) {
+      _bdPendingSelection = { start: Math.min(start, end), end: Math.max(start, end) };
+      _bdActiveCategory = catId;
+      applyBreakdownTag(catId);
+      if (!_bdMultiTagMode) _bdActiveCategory = null;
+      _bdRefreshCategoryBar();
+      return;
     }
-  });
-  const sv = document.getElementById('bd-script-view');
-  const hint = document.getElementById('bd-active-hint');
-  if (_bdActiveCategory) {
-    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === _bdActiveCategory);
-    if (sv) { sv.style.borderColor = cat.color; sv.style.borderWidth = '2px'; }
-    if (hint) {
-      hint.style.cssText = `background:${cat.color}25;border:1px solid ${cat.color}88;border-radius:6px;padding:5px 10px;font-size:11px`;
-      hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> <strong>Multi-Tagging Mode Active</strong> — select text to tag as ${cat.label}. Click the category again to deactivate.`;
-    }
-  } else {
-    if (sv) { sv.style.borderColor = sv.style.borderWidth = ''; }
-    if (hint) { hint.style.cssText = ''; hint.textContent = ''; }
   }
+
+  if (_bdActiveCategory === catId) {
+    _bdActiveCategory = null;
+    if (_bdMultiTagMode) { _bdMultiTagMode = false; _bdUpdateMultiTagBtn(); }
+  } else {
+    _bdActiveCategory = catId;
+  }
+  _bdRefreshCategoryBar();
 }
 
 function scrollBreakdownToScene(sceneStart) {
@@ -1397,43 +1496,12 @@ function applyBreakdownTag(category) {
 }
 
 function _bdDeleteTagInline(tagId, btn) {
-  const existing = document.getElementById('_bd-mini-confirm');
-  if (existing) { existing.remove(); if (existing.dataset.for === tagId) return; }
-  const anchor = btn;
-  if (!anchor) return;
-
-  const p = currentProject();
-  const bd = _getActiveBd(p);
-  const tag = bd?.tags.find(t => t.id === tagId);
-  if (!tag) return;
-
-  const pop = document.createElement('div');
-  pop.id = '_bd-mini-confirm';
-  pop.dataset.for = tagId;
-  pop.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);font-size:11px';
-
-  pop.innerHTML = `
-    <span style="color:var(--text2)">Delete tag?</span>
-    <button onclick="_bdConfirmDeleteTag('${tagId}')" style="background:#E74C3C;border:none;color:#fff;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">Delete</button>
-    <button onclick="document.getElementById('_bd-mini-confirm')?.remove()" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px">Cancel</button>
-  `;
-
-  document.body.appendChild(pop);
-  const r = anchor.getBoundingClientRect();
-  const pw = pop.offsetWidth;
-  let left = r.left - pw / 2 + r.width / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
-  const topBelow = r.bottom + 6;
-  pop.style.left = left + 'px';
-  pop.style.top  = (topBelow + pop.offsetHeight > window.innerHeight - 8 ? r.top - pop.offsetHeight - 6 : topBelow) + 'px';
-  setTimeout(() => {
-    const dismiss = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', dismiss); } };
-    document.addEventListener('click', dismiss);
-  }, 0);
+  _bdConfirmDeleteTag(tagId);
 }
 
 function _bdConfirmDeleteTag(tagId) {
   document.getElementById('_bd-mini-confirm')?.remove();
+  hideBdPopover();
   const p = currentProject();
   const bd = _getActiveBd(p);
   if (!bd) return;
@@ -1627,14 +1695,12 @@ function _bdApplyTagEdit(tagId, action) {
 
 function removeBreakdownTag(tagId) {
   hideBdPopover();
-  showConfirmDialog('Remove this tag?', 'Remove', () => {
-    const p = currentProject();
-    const bd = _getActiveBd(p);
-    if (!bd) return;
-    bd.tags = bd.tags.filter(t => t.id !== tagId);
-    saveStore();
-    updateBreakdownView(p);
-  });
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  bd.tags = bd.tags.filter(t => t.id !== tagId);
+  saveStore();
+  updateBreakdownView(p);
 }
 
 function updateBreakdownView(p) {
