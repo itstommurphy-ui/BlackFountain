@@ -26,6 +26,7 @@ function _bfPrintCSS() {
       color: #111;
       background: #fff;
       line-height: 1.5;
+      padding-bottom: 25px;
     }
 
     /* ── Page header ── */
@@ -236,7 +237,7 @@ function _bfPrintCSS() {
     /* ── Footer ── */
     .bf-doc-footer {
       position: fixed;
-      bottom: 8mm;
+      bottom: 10mm;
       left: 20mm;
       right: 20mm;
       display: flex;
@@ -245,6 +246,21 @@ function _bfPrintCSS() {
       color: #bbb;
       border-top: 0.5pt solid #e0e0e0;
       padding-top: 4pt;
+    }
+
+    /* ── Print layout fixes ── */
+    @media print {
+      body {
+        padding-bottom: 30mm !important;
+      }
+      table {
+        margin-bottom: 20mm !important;
+        page-break-inside: auto;
+      }
+      .day-header td {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
 
     /* ── Print button (screen only) ── */
@@ -719,3 +735,18 @@ function exportStripboardPDF() {
 
   _bfPrint({ title: p.title, section: 'Stripboard', body });
 }
+
+// Expose functions for onclick handlers
+window._bfEscHtml = _bfEscHtml;
+window._bfPrint = _bfPrint;
+window.exportRiskPDF = exportRiskPDF;
+window.exportCastPDF = exportCastPDF;
+window.exportExtrasPDF = exportExtrasPDF;
+window.exportCrewPDF = exportCrewPDF;
+window.exportEquipmentPDF = exportEquipmentPDF;
+window.exportLocationsPDF = exportLocationsPDF;
+window.exportPropsPDF = exportPropsPDF;
+window.exportWardrobePDF = exportWardrobePDF;
+window.exportSoundLogPDF = exportSoundLogPDF;
+window.exportReleasesPDF = exportReleasesPDF;
+window.exportStripboardPDF = exportStripboardPDF;
