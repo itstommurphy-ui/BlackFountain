@@ -50,6 +50,7 @@ async function _slotWriteIdb(n, snapshot) {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
+    console.log(`[saveSlot] IDB write slot ${n} success`);
   } catch(e) {
     console.warn(`[saveSlot] IDB write slot ${n} failed:`, e);
   }
@@ -116,13 +117,16 @@ async function _slotWriteSupabase(n, snapshot) {
 async function _slotReadIdb(n) {
   try {
     const db = await openDB();
-    return await new Promise((resolve, reject) => {
+    const result = await new Promise((resolve, reject) => {
       const tx = db.transaction('kv', 'readonly');
       const req = tx.objectStore('kv').get(_slotKey(n));
       req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => reject(req.error);
     });
+    console.log(`[slotReadIdb] slot ${n}:`, result ? 'found' : 'null');
+    return result;
   } catch(e) {
+    console.warn(`[slotReadIdb] slot ${n} error:`, e);
     return null;
   }
 }
@@ -230,7 +234,7 @@ async function loadSlot(n) {
 
   showToast('Loading save — restarting…', 'info');
 
-  // Write slot data into the primary IDB key so loadStore picks it up on reload
+  // Write slot data into the primary IDB key
   try {
     const db = await openDB();
     await new Promise((resolve, reject) => {
@@ -245,15 +249,19 @@ async function loadSlot(n) {
     return;
   }
 
-  // Set bf_backup_timestamp to NOW so loadStore's local-vs-cloud comparison
-  // favours local IDB over the Supabase autosave snapshot.
-  // Also set the skip flag as a belt-and-braces backup.
-  const nowStr = Date.now().toString();
-  localStorage.setItem('bf_backup_timestamp', nowStr);
-  localStorage.setItem('bf_last_save', nowStr);
+  // Set skip flag for loadStore
   localStorage.setItem('bf_skip_cloud_pull', '1');
 
-  setTimeout(() => window.location.reload(), 400);
+  // CRITICAL: Monkey-patch saveStore and sbPushStore to no-ops so that
+  // the beforeunload/visibilitychange autosave listeners can't fire and
+  // overwrite IDB or Supabase with the old 7-project state before reload.
+  window.saveStore   = async () => { console.log('[loadSlot] saveStore blocked during slot load'); };
+  window.sbPushStore = async () => { console.log('[loadSlot] sbPushStore blocked during slot load'); };
+
+  // Also cancel any pending debounced save
+  if (typeof cancelDebouncedSave === 'function') cancelDebouncedSave();
+
+  window.location.reload();
 }
 
 // ── Label prompt ──────────────────────────────────────────────────────────────

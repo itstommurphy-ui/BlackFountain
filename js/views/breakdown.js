@@ -2241,15 +2241,19 @@ function printBreakdownReport() {
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
-  const scenesHtml = scenes.map(scene => {
+  const keyHtml = BREAKDOWN_CATEGORIES.map(cat =>
+    `<span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span>`
+  ).join('');
+
+  let scenesHtml = '';
+  scenes.forEach(scene => {
     const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
     const byCat = {};
-    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(esc(text.slice(t.start, t.end))); }
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(_bfEscHtml(text.slice(t.start, t.end))); }
     const hasTags = Object.keys(byCat).length > 0;
-    return `<div class="scene">
-      <div class="scene-heading">${esc(scene.heading)}</div>
+    scenesHtml += `<div class="scene">
+      <div class="scene-heading">${_bfEscHtml(scene.heading)}</div>
       <table class="scene-table">
         ${hasTags
           ? BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
@@ -2260,57 +2264,31 @@ function printBreakdownReport() {
           : `<tr><td colspan="2" class="empty-cell">No tagged elements</td></tr>`}
       </table>
     </div>`;
-  }).join('');
+  });
 
-  const keyHtml = BREAKDOWN_CATEGORIES.map(cat =>
-    `<span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span>`
-  ).join('');
-
-  const printHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${esc(p.title)} — Script Breakdown</title>
-  <style>
-    @page { margin: 1.8cm 2cm; size: A4; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 2px solid #111; }
-    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
-    .header-meta { font-size: 11px; color: #555; margin-top: 4px; }
-    .key { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; align-items: center; }
-    .key-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-right: 4px; }
-    .cat-pill { display: inline-block; border-radius: 3px; padding: 1px 7px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-    .scene { margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
-    .scene-heading { background: #1a1a2e; color: #e8e0ff; padding: 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-    .scene-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-top: none; }
-    .scene-table tr:nth-child(even) { background: #f7f7f7; }
-    .cat-cell { padding: 5px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; }
-    .items-cell { padding: 5px 12px; color: #222; line-height: 1.5; }
-    .empty-cell { padding: 6px 12px; color: #aaa; font-style: italic; }
-    .bf-footer { position: fixed; bottom: 6mm; right: 12mm; font-size: 9px; color: #bbb; font-family: Arial, sans-serif; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="header-title">${esc(p.title)}</div>
-      <div class="header-meta">Script Breakdown Report · ${scenes.length} scenes · ${tags.length} tags · Generated ${new Date().toLocaleDateString()}</div>
-    </div>
-  </div>
-  ${scenesHtml}
-  <div class="bf-footer">Powered by Black Fountain · blackfountain.io</div>
-</body>
-</html>`;
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-  document.body.appendChild(iframe);
-  iframe.contentDocument.write(printHtml);
-  iframe.contentDocument.close();
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-  iframe.contentWindow.addEventListener('afterprint', () => iframe.remove());
+  _bfPrint({
+    title: p.title,
+    section: 'Script Breakdown',
+    subtitle: `${scenes.length} scenes · ${tags.length} elements · Generated ${new Date().toLocaleDateString()}`,
+    body: `
+      <style>
+        .key { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; align-items: center; }
+        .key-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-right: 4px; }
+        .cat-pill { display: inline-block; border-radius: 3px; padding: 2px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+        .scene { margin-bottom: 18px; break-inside: avoid; page-break-inside: avoid; }
+        .scene-heading { background: #1a1a2e; color: #e8e0ff; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .scene-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-top: none; }
+        .scene-table tr:nth-child(even) { background: #f7f7f7; }
+        .cat-cell { padding: 6px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; font-size: 10px; }
+        .items-cell { padding: 6px 12px; color: #222; line-height: 1.5; font-size: 10px; }
+        .empty-cell { padding: 8px 12px; color: #aaa; font-style: italic; }
+      </style>
+      <div class="key">
+        <span class="key-label">Elements:</span>
+        ${keyHtml}
+      </div>
+      ${scenesHtml}`,
+  });
 }
 
 // AUTO-SUGGEST
@@ -3764,3 +3742,7 @@ function applySelectedBdSuggestions() {
     showToast(`${toApply.length} tag${toApply.length!==1?'s':''} applied`, 'success');
   }
 }
+
+// Expose functions for onclick handlers
+window.printBreakdownReport = printBreakdownReport;
+window.exportBreakdownReport = exportBreakdownReport;

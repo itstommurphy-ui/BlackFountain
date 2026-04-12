@@ -248,7 +248,7 @@ function _bfPrintCSS() {
       padding-top: 4pt;
     }
 
-    /* ── Print layout fixes ── */
+
     @media print {
       body {
         padding-bottom: 30mm !important;
@@ -258,8 +258,14 @@ function _bfPrintCSS() {
         page-break-inside: auto;
       }
       .day-header td {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        background: #ffd700 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      tr.day-header {
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
       }
     }
 

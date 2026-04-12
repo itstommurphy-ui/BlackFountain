@@ -420,6 +420,7 @@ body.project-mode .project-switcher { display: flex; }
 }
 
 body.project-mode #dock { display: flex; }
+body.view-dashboard #dock { display: flex; }
 
 .dock-inner {
   pointer-events: all;

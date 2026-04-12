@@ -524,7 +524,7 @@ function exportShotList(event) {
   const menu = document.createElement('div');
   menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:9999';
   
-  ['HTML', 'CSV', 'Text'].forEach(fmt => {
+  ['HTML', 'CSV', 'Text', 'PDF'].forEach(fmt => {
     const btn = document.createElement('button');
     btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)';
     btn.textContent = '📄 ' + fmt;
@@ -614,6 +614,82 @@ function _doExport(type, fmt, p) {
       });
       filename = `schedule-${window._exportCount}.txt`;
     }
+  }
+
+  // PDF export - use the shared print system
+  if (fmt === 'PDF') {
+    const p = currentProject();
+    let rowsHtml = '';
+    
+    if (type === 'shotlist') {
+      const scenes = {};
+      (p.shots || []).forEach(s => {
+        const sc = s.scene || 'Unknown';
+        if (!scenes[sc]) scenes[sc] = [];
+        scenes[sc].push(s);
+      });
+      
+      Object.keys(scenes).sort((a,b) => parseInt(a)||0 - parseInt(b)||0).forEach(scene => {
+        rowsHtml += `<tr class="day-header"><td colspan="9">SCENE ${scene}</td></tr>`;
+        scenes[scene].forEach(s => {
+          const est = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
+          rowsHtml += `<tr>
+            <td>${_bfEscHtml(s.setup)}</td>
+            <td>${_bfEscHtml(s.num)}</td>
+            <td>${_bfEscHtml(s.type)}</td>
+            <td>${_bfEscHtml(s.movement)}</td>
+            <td>${_bfEscHtml(s.location)}</td>
+            <td>${_bfEscHtml(s.extint)}</td>
+            <td>${_bfEscHtml(s.desc)}</td>
+            <td>${_bfEscHtml(s.cast)}</td>
+            <td>${est}</td>
+          </tr>`;
+        });
+      });
+    } else {
+      // Schedule - group by day
+      let currentDay = '';
+      (p.schedule || []).forEach(s => {
+        if (s.isDayHeader) {
+          currentDay = s.desc || '';
+          rowsHtml += `<tr class="day-header"><td colspan="8">${_bfEscHtml(currentDay)}</td></tr>`;
+        } else {
+          rowsHtml += `<tr>
+            <td>${_bfEscHtml(s.time)}</td>
+            <td>${_bfEscHtml(s.scene)}</td>
+            <td>${_bfEscHtml(s.shot)}</td>
+            <td>${_bfEscHtml(s.type)}</td>
+            <td>${_bfEscHtml(s.desc)}</td>
+            <td>${_bfEscHtml(s.cast)}</td>
+            <td>${_bfEscHtml(s.pages)}</td>
+            <td>${_bfEscHtml(s.est)}</td>
+          </tr>`;
+        }
+      });
+    }
+    
+    const thead = type === 'shotlist' 
+      ? '<th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Int/Ext</th><th>Description</th><th>Cast</th><th>Est (mins)</th>'
+      : '<th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th>';
+    
+    const section = type === 'shotlist' ? 'Shot List' : 'Production Schedule';
+    
+    _bfPrint({
+      title: p.title,
+      section: section,
+      body: `<style>
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
+        tr:nth-child(even) { background: #f7f7f7; }
+        .day-header td { background: #ffd700; color: #000; font-weight: 700; padding: 6px 8px; }
+      </style>
+      <table>
+        <thead><tr>${thead}</tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`,
+    });
+    return;
   }
 
   console.log('content length:', content.length);
@@ -816,5 +892,9 @@ function saveSoundEntry(){
   saveStore();closeModal('modal-sound');renderSoundLog(p);showToast('Saved','success');
 }
 function removeSoundEntry(i){showConfirmDialog('Remove this sound log entry?','Remove',()=>{const p=currentProject();p.soundlog.splice(i,1);saveStore();renderSoundLog(p);});}
+
+// Export functions - expose to window for onclick handlers
+window.exportShotList = exportShotList;
+window._doExport = _doExport;
 
 // ══════════════════════════════════════════

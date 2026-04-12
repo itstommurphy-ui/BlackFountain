@@ -551,14 +551,54 @@ function exportSchedule(event) {
   const menu = document.createElement('div');
   menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:9999';
   
-  ['HTML', 'CSV', 'Text'].forEach(fmt => {
+  ['HTML', 'CSV', 'Text', 'PDF'].forEach(fmt => {
     const btn = document.createElement('button');
     btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)';
     btn.textContent = '📄 ' + fmt;
     btn.onclick = (e) => {
       e.stopPropagation();
       menu.remove();
-      _doExport('schedule', fmt, p);
+      if (fmt === 'PDF') {
+        // Use bf-print system like shotlist.js
+        let currentDay = '';
+        let rowsHtml = '';
+        p.schedule.forEach(s => {
+          if (s.isDayHeader) {
+            currentDay = s.desc || '';
+            rowsHtml += `<tr class="day-header"><td colspan="8">${_bfEscHtml(currentDay)}</td></tr>`;
+          } else if (!s.isWrap) {
+            rowsHtml += `<tr>
+              <td>${_bfEscHtml(s.time)}</td>
+              <td>${_bfEscHtml(s.scene)}</td>
+              <td>${_bfEscHtml(s.shot)}</td>
+              <td>${_bfEscHtml(s.type)}</td>
+              <td>${_bfEscHtml(s.desc)}</td>
+              <td>${_bfEscHtml(s.cast)}</td>
+              <td>${_bfEscHtml(s.pages)}</td>
+              <td>${_bfEscHtml(s.est)}</td>
+            </tr>`;
+          }
+        });
+        const thead = '<th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th>';
+        const tableHtml = `<style>
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
+          tr:nth-child(even) { background: #f7f7f7; }
+          .day-header td { background: #ffd700 !important; color: #000 !important; font-weight: 700; padding: 6px 8px; }
+        </style>
+        <table>
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>`;
+        _bfPrint({
+          title: p.title,
+          section: 'Production Schedule',
+          body: tableHtml
+        });
+      } else {
+        _doExport('schedule', fmt, p);
+      }
     };
     menu.appendChild(btn);
   });
@@ -1364,4 +1404,6 @@ function autofillPersonnelFromContact() {
 
 window._persPopulateContactSelect = _persPopulateContactSelect;
 window.autofillPersonnelFromContact = autofillPersonnelFromContact;
+window.exportSchedule = exportSchedule;
+window._doExport = _doExport;
 

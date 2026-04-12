@@ -2928,34 +2928,35 @@ async function loadStore() {
     console.error('[loadStore] IDB error, trying localStorage:', e);
   }
 
-  // If logged in, pull from Supabase — it's the authoritative source for project data
-  // BUT we need to preserve local file blobs since they're not stored in the cloud
   console.log('[loadStore] Checking cloud sync: sbPullStore exists:', typeof sbPullStore === 'function', '| _sbUser:', _sbUser);
+ 
   const _skipCloudPull = localStorage.getItem('bf_skip_cloud_pull') === '1';
-  if (!_skipCloudPull && typeof sbPullStore === 'function' && _sbUser) {
-    localStorage.removeItem('bf_skip_cloud_pull'); // consume only when we'd actually pull
+  if (_skipCloudPull) {
+    // Slot load in progress — trust IDB, skip Supabase entirely this run.
+    // Clear the flag so next load behaves normally.
+    localStorage.removeItem('bf_skip_cloud_pull');
+    console.log('[loadStore] Skipping cloud pull (slot load flag set) — using IDB data');
+    // Push IDB state up to Supabase after a short delay so cloud catches up
+    setTimeout(() => { if (typeof sbPushStore === 'function') sbPushStore(); }, 3000);
+  } else if (typeof sbPullStore === 'function' && _sbUser) {
     try {
       const cloudData = await Promise.race([
         sbPullStore(),
         new Promise(resolve => setTimeout(() => resolve(null), 6000))
       ]);
       if (cloudData && cloudData.projects !== undefined) {
-        // Get local backup timestamp to compare
         const localTimestamp = (() => {
           try {
-            const idbData = localStorage.getItem('bf_backup_timestamp');
-            return idbData ? parseInt(idbData, 10) : 0;
+            const ts = localStorage.getItem('bf_backup_timestamp');
+            return ts ? parseInt(ts, 10) : 0;
           } catch(e) { return 0; }
         })();
         const cloudTimestamp = cloudData._lastSave || cloudData.lastSave || 0;
-        
-        // If local is newer than cloud, preserve local data instead of letting cloud overwrite
+ 
         if (loaded && loaded.projects && loaded.projects.length > 0 && localTimestamp > cloudTimestamp) {
           console.log('[loadStore] Local data is newer than cloud (' + localTimestamp + ' > ' + cloudTimestamp + '), keeping local');
-          // Push local to cloud for sync
           setTimeout(() => typeof sbPushStore === 'function' && sbPushStore(), 1000);
         } else {
-          // Capture local file blobs BEFORE overwriting with cloud data
           if (loaded && loaded.files) {
             loaded.files.forEach(f => { if (f.data) localFileBlobMap[f.id] = f.data; });
             console.log('[loadStore] Saved local blobs before cloud sync:', Object.keys(localFileBlobMap).length);
@@ -2965,7 +2966,7 @@ async function loadStore() {
         }
       } else if (loaded) {
         console.log('[loadStore] Cloud unavailable, using local data');
-        sbPushStore(); // push local up when connection recovers
+        sbPushStore();
       }
     } catch(e) {
       console.warn('[loadStore] Supabase pull failed, using local data:', e);

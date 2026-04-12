@@ -1218,6 +1218,12 @@ document.addEventListener('mouseover', (e) => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { const m = document.getElementById('ctx-menu'); if (m) m.style.display = 'none'; }
 });
+document.addEventListener('click', e => {
+  const menu = document.getElementById('ctx-menu');
+  if (menu && menu.style.display === 'block' && !menu.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
 document.addEventListener('contextmenu', e => {
   const el = e.target.closest('[data-ctx]');
   if (!el) return;

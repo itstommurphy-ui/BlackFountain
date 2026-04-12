@@ -690,7 +690,7 @@ function renderDashboard() {
         ].filter(Boolean);
 
         html += `
-        <div class="dash-featured-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')">
+        <div class="dash-featured-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')" oncontextmenu="showProjectCtxMenu(event,'${p.id}')">
           <div class="dash-featured-main">
             <div class="dash-featured-eyebrow">#${String(p.num).padStart(3,'0')}${p.company ? ' · ' + p.company : ''}</div>
             <div class="dash-featured-title">${p.title}</div>
@@ -712,7 +712,7 @@ function renderDashboard() {
           ? p.directors.join(', ') : (p.director || '');
         const lastEdit = formatRelativeTime(p.updatedAt || p.createdAt);
         html += `
-        <div class="dash-proj-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')">
+        <div class="dash-proj-card" style="--sc:${cfg.color}" onclick="showProjectView('${p.id}')" oncontextmenu="showProjectCtxMenu(event,'${p.id}')">
           <div class="dash-proj-num">#${String(p.num).padStart(3,'0')}</div>
           <div class="dash-proj-title">${p.title}</div>
           ${dir ? `<div class="dash-proj-dir">${dir}</div>` : ''}

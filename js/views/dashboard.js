@@ -228,12 +228,21 @@ function editProjectFromDashboard(projectId) {
   document.getElementById('proj-input-company').value = p.company;
   document.getElementById('proj-input-genre').value = p.genre;
   document.getElementById('proj-input-notes').value = p.notes;
-  // Handle director/producer arrays
   const directors = Array.isArray(p.directors) ? p.directors : (p.director ? [p.director] : []);
   const producers = Array.isArray(p.producers) ? p.producers : (p.producer ? [p.producer] : []);
   _renderProjectTags('director', directors);
   _renderProjectTags('producer', producers);
   openModal('modal-project');
+}
+
+function showProjectCtxMenu(e, projectId) {
+  e.preventDefault();
+  e.stopPropagation();
+  showContextMenu(e, [
+    { label: 'Edit Project', icon: '✎', fn: () => editProjectFromDashboard(projectId) },
+    null,
+    { label: 'Delete Project', icon: '🗑', danger: true, fn: () => deleteProjectFromDashboard(projectId) }
+  ]);
 }
 
 function changeProjectStatus(newStatus) {
