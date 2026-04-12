@@ -2,7 +2,7 @@
 // SETTINGS - EXPORT/IMPORT
 // ══════════════════════════════════════════
 let _lastCloudPush = 0;
-const CLOUD_PUSH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const CLOUD_PUSH_INTERVAL = 0;
 
 function renderSettings() {
   const statsEl = document.getElementById('storage-stats');
@@ -36,6 +36,7 @@ function renderSettings() {
   updateThemeButtons();
   updateFontSizeButtons();
   renderContactLinkStats();
+  renderSaveSlots();
 }
 
 function updateThemeButtons() {
@@ -2930,7 +2931,9 @@ async function loadStore() {
   // If logged in, pull from Supabase — it's the authoritative source for project data
   // BUT we need to preserve local file blobs since they're not stored in the cloud
   console.log('[loadStore] Checking cloud sync: sbPullStore exists:', typeof sbPullStore === 'function', '| _sbUser:', _sbUser);
-  if (typeof sbPullStore === 'function' && _sbUser) {
+  const _skipCloudPull = localStorage.getItem('bf_skip_cloud_pull') === '1';
+  if (!_skipCloudPull && typeof sbPullStore === 'function' && _sbUser) {
+    localStorage.removeItem('bf_skip_cloud_pull'); // consume only when we'd actually pull
     try {
       const cloudData = await Promise.race([
         sbPullStore(),
