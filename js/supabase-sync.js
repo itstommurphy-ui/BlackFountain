@@ -45,7 +45,7 @@ async function sbInit(onReady) {
     _sbUser = session?.user ?? null;
     _cachedToken = session?.access_token ?? null;
     _updateAuthIndicator();
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && _sbUser) {
+    if (event === 'SIGNED_IN' && _sbUser) {
       _sbKeepAlive(); // Start keepalive when signed in
       if (!_sbAppStarted) {
         _sbAppStarted = true;

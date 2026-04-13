@@ -81,39 +81,87 @@ async function saveStore(opts = {}) {
 }
 
 async function loadStore() {
-  // Try Supabase first (source of truth)
+  // If logged in, Supabase is the source of truth — show a loading state and wait for it.
+  // We do NOT race against a timer and fall back to stale data.
   if (typeof sbPullStore === 'function' && _sbUser) {
-    try {
-      const cloudData = await Promise.race([
-        sbPullStore(),
-        new Promise(resolve => setTimeout(() => resolve(null), 6000))
-      ]);
-      if (cloudData && cloudData.projects !== undefined) {
-        // Preserve local file blobs (never stored in cloud)
-        const blobMap = {};
-        try {
-          const db = await openDB();
-          const idbData = await new Promise((resolve, reject) => {
-            const tx = db.transaction('kv', 'readonly');
-            const req = tx.objectStore('kv').get('v1');
-            req.onsuccess = () => resolve(req.result ?? null);
-            req.onerror = () => reject(req.error);
-          });
-          (idbData?.files || []).forEach(f => { if (f.data) blobMap[f.id] = f.data; });
-        } catch(e) {}
 
-        Object.assign(store, cloudData);
-        // Restore blobs
-        (store.files || []).forEach(f => { if (!f.data && blobMap[f.id]) f.data = blobMap[f.id]; });
-        _bfApplyStoreMigrations();
-        return;
+    // Show a subtle loading overlay so the user knows something is happening
+    _bfShowStartupLoader();
+
+    let cloudData = null;
+    let attempts  = 0;
+    const MAX_ATTEMPTS = 3;
+
+    while (attempts < MAX_ATTEMPTS && !cloudData) {
+      attempts++;
+      try {
+        _bfUpdateStartupLoader(`Connecting to cloud${attempts > 1 ? ` (attempt ${attempts})` : ''}…`);
+        cloudData = await Promise.race([
+          sbPullStore(),
+          // 15 second timeout per attempt — generous but bounded
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
+        ]);
+      } catch(e) {
+        console.warn(`[loadStore] Attempt ${attempts} failed:`, e.message);
+        if (attempts < MAX_ATTEMPTS) {
+          _bfUpdateStartupLoader(`Retrying…`);
+          await new Promise(r => setTimeout(r, 1500));
+        }
       }
-    } catch(e) {
-      console.warn('[loadStore] Supabase pull failed, falling back to IDB:', e);
+    }
+
+    _bfHideStartupLoader();
+
+    if (cloudData && cloudData.projects !== undefined) {
+      // Preserve local file blobs (never stored in cloud)
+      const blobMap = {};
+      try {
+        const db = await openDB();
+        const idbData = await new Promise((resolve, reject) => {
+          const tx = db.transaction('kv', 'readonly');
+          const req = tx.objectStore('kv').get('v1');
+          req.onsuccess = () => resolve(req.result ?? null);
+          req.onerror = () => reject(req.error);
+        });
+        (idbData?.files || []).forEach(f => { if (f.data) blobMap[f.id] = f.data; });
+      } catch(e) {}
+
+      Object.assign(store, cloudData);
+      (store.files || []).forEach(f => { if (!f.data && blobMap[f.id]) f.data = blobMap[f.id]; });
+      _bfApplyStoreMigrations();
+      return;
+    }
+
+    // Supabase failed after all attempts — tell the user clearly
+    // rather than silently showing wrong data
+    if (attempts >= MAX_ATTEMPTS) {
+      const retry = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.id = '_bf-offline-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+        overlay.innerHTML = `
+          <div style="font-family:var(--font-display);font-size:22px;letter-spacing:3px;color:var(--accent)">BLACK FOUNTAIN</div>
+          <div style="font-size:14px;color:var(--text2);text-align:center;max-width:340px;line-height:1.6">
+            Could not connect to the cloud after ${MAX_ATTEMPTS} attempts.<br>
+            <span style="font-size:12px;color:var(--text3)">Check your connection and try again.</span>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="window._bfOfflineResolve(true)">Try again</button>
+            <button class="btn" onclick="window._bfOfflineResolve(false)">Continue offline</button>
+          </div>`;
+        window._bfOfflineResolve = val => { overlay.remove(); delete window._bfOfflineResolve; resolve(val); };
+        document.body.appendChild(overlay);
+      });
+
+      if (retry) {
+        // Recurse — try the whole thing again
+        return loadStore();
+      }
+      // User chose offline — fall through to IDB below
     }
   }
 
-  // Fallback: IDB
+  // Offline fallback: IDB
   try {
     const db = await openDB();
     const idbData = await new Promise((resolve, reject) => {
@@ -125,31 +173,67 @@ async function loadStore() {
     if (idbData) {
       Object.assign(store, idbData);
       _bfApplyStoreMigrations();
-      // Push IDB state up to Supabase
-      if (typeof sbPushStore === 'function' && _sbUser) {
-        setTimeout(() => sbPushStore(), 1000);
-      }
+      showToast('Loaded from local cache — changes will sync when you reconnect', 'info');
+      // Push when connection recovers
+      window.addEventListener('online', () => {
+        if (typeof sbPushStore === 'function') sbPushStore();
+      }, { once: true });
       return;
     }
   } catch(e) {
     console.warn('[loadStore] IDB fallback failed:', e);
   }
 
-  // Last resort: localStorage backup
+  // Last resort: localStorage
   try {
     const projectsJson = localStorage.getItem('bf_projects_backup');
     if (projectsJson) {
-      store.projects  = JSON.parse(projectsJson);
-      store.contacts  = JSON.parse(localStorage.getItem('bf_contacts_backup')  || '[]');
-      store.locations = JSON.parse(localStorage.getItem('bf_locations_backup') || '[]');
-      store.folders   = JSON.parse(localStorage.getItem('bf_folders_backup')   || '[]');
-      store.teamMembers = JSON.parse(localStorage.getItem('bf_team_backup')    || '[]');
+      store.projects    = JSON.parse(projectsJson);
+      store.contacts    = JSON.parse(localStorage.getItem('bf_contacts_backup')  || '[]');
+      store.locations   = JSON.parse(localStorage.getItem('bf_locations_backup') || '[]');
+      store.folders     = JSON.parse(localStorage.getItem('bf_folders_backup')   || '[]');
+      store.teamMembers = JSON.parse(localStorage.getItem('bf_team_backup')      || '[]');
       store.currentProjectId = localStorage.getItem('bf_currentProjectId_backup') || null;
       _bfApplyStoreMigrations();
+      showToast('Loaded from emergency backup — please reconnect to sync', 'info');
     }
   } catch(e) {
     console.warn('[loadStore] localStorage fallback failed:', e);
   }
+}
+
+// ── Startup loader (subtle — not the full restore overlay) ────────────────────
+
+function _bfShowStartupLoader() {
+  document.getElementById('_bf-startup-loader')?.remove();
+  const el = document.createElement('div');
+  el.id = '_bf-startup-loader';
+  el.style.cssText = 'position:fixed;inset:0;background:var(--surface,#111);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px';
+  el.innerHTML = `
+    <div style="font-family:var(--font-display,monospace);font-size:24px;letter-spacing:4px;color:var(--accent,#e6bc3c)">BLACK FOUNTAIN</div>
+    <div style="width:220px">
+      <div id="_bf-startup-label" style="font-size:11px;color:var(--text3,#666);text-align:center;margin-bottom:8px;font-family:var(--font-mono,monospace)">Connecting…</div>
+      <div style="height:2px;background:var(--surface2,#222);border-radius:1px;overflow:hidden">
+        <div style="height:100%;background:var(--accent,#e6bc3c);border-radius:1px;animation:_bf-pulse 1.2s ease-in-out infinite"></div>
+      </div>
+    </div>
+    <style>
+      @keyframes _bf-pulse {
+        0%   { width:0%;   margin-left:0% }
+        50%  { width:60%;  margin-left:20% }
+        100% { width:0%;   margin-left:100% }
+      }
+    </style>`;
+  document.body.appendChild(el);
+}
+
+function _bfUpdateStartupLoader(text) {
+  const el = document.getElementById('_bf-startup-label');
+  if (el) el.textContent = text;
+}
+
+function _bfHideStartupLoader() {
+  document.getElementById('_bf-startup-loader')?.remove();
 }
 
 function _bfApplyStoreMigrations() {
