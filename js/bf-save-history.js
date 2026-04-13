@@ -439,6 +439,60 @@ function _bfPromptLabel() {
   });
 }
 
+// ── Delete save ──────────────────────────────────────────────────────────────
+
+async function _bfDeleteHistoryRow(id) {
+  if (!_sb || !_sbUser) return false;
+  const token = await _bfGetToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(
+      `${_SB_URL}/rest/v1/save_history?id=eq.${id}&user_id=eq.${_sbUser.id}`,
+      { 
+        method: 'DELETE', 
+        headers: { 
+          'apikey': _SB_KEY, 
+          'Authorization': `Bearer ${token}` 
+        } 
+      }
+    );
+    return res.ok;
+  } catch(e) {
+    console.error('[bfDeleteSave] Delete failed:', e);
+    return false;
+  }
+}
+
+async function bfDeleteSave(id) {
+  const row = (await _bfFetchHistory()).find(r => r.id === id);
+  if (!row) return;
+  
+  const label = row.label || (row.type === 'auto' ? 'Autosave' : 'Manual save');
+  const dateStr = new Date(row.saved_at).toLocaleDateString('en-GB', { 
+    day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric' 
+  });
+  
+  const confirmed = await new Promise(resolve => {
+    showConfirmDialog(
+      `Delete "${label}" from ${dateStr}?\n\nThis cannot be undone.`,
+      '🗑 Delete Save',
+      () => resolve(true),
+      { danger: true, onCancel: () => resolve(false) }
+    );
+  });
+  
+  if (!confirmed) return;
+  
+  showToast('Deleting...', 'info');
+  const success = await _bfDeleteHistoryRow(id);
+  if (success) {
+    showToast('Save deleted', 'success');
+    renderSaveHistoryUI();
+  } else {
+    showToast('Delete failed', 'error');
+  }
+}
+
 // ── Loading overlay ───────────────────────────────────────────────────────────
 
 function _bfShowLoadingOverlay() {
@@ -533,10 +587,16 @@ async function renderSaveHistoryUI() {
             ${dateStr} at ${timeStr} · ${row.project_count ?? '?'} project${row.project_count !== 1 ? 's' : ''}
           </div>
         </div>
-        <button class="btn btn-sm" onclick="bfLoadFromHistory('${row.id}', '${_bfEscAttr(loadLabel)}')"
-          style="flex-shrink:0;font-size:11px">
-          ⏏ Restore
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm" onclick="bfLoadFromHistory('${row.id}', '${_bfEscAttr(loadLabel)}')"
+            style="font-size:11px">
+            ⏏ Restore
+          </button>
+          <button class="btn btn-sm" style="background:var(--red);color:white;font-size:11px;padding:6px 10px;"
+            onclick="bfDeleteSave('${row.id}')" title="Delete this save">
+            🗑 Delete
+          </button>
+        </div>
       </div>`;
   }).join('');
 }
@@ -551,6 +611,7 @@ window.initAutoSave       = initAutoSave;
 window.renderSaveHistoryUI = renderSaveHistoryUI;
 window.bfManualSave       = bfManualSave;
 window.bfLoadFromHistory  = bfLoadFromHistory;
+window.bfDeleteSave       = bfDeleteSave;
 window.setBfAutoSave      = setBfAutoSave;
 
 // ══════════════════════════════════════════════════════════════════════════════
