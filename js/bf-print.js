@@ -16,7 +16,7 @@
 
 function _bfPrintCSS() {
   return `
-    @page { margin: 18mm 20mm; size: A4; }
+    @page { margin: 15mm 22mm; size: A4; }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -495,8 +495,8 @@ function exportExtrasPDF() {
 // ── Crew PDF ──────────────────────────────────────────────────────────────────
 function exportCrewPDF() {
   const p = currentProject();
-  if (!p.crew?.length) { showToast('No crew to export', 'info'); return; }
-  const sorted = [...p.crew].sort((a, b) => (a.dept || '').localeCompare(b.dept || ''));
+  if (!p.unit?.length) { showToast('No crew to export', 'info'); return; }
+  const sorted = [...p.unit].sort((a, b) => (a.dept || '').localeCompare(b.dept || ''));
   const rows = sorted.map(c => `
     <tr>
       <td>${_bfEscHtml(c.name)}</td>
@@ -518,9 +518,9 @@ function exportCrewPDF() {
 // ── Equipment PDF ─────────────────────────────────────────────────────────────
 function exportEquipmentPDF() {
   const p = currentProject();
-  if (!p.gear?.length) { showToast('No equipment to export', 'info'); return; }
+  if (!p.gearList?.length) { showToast('No equipment to export', 'info'); return; }
   let body = '';
-  p.gear.forEach(day => {
+  p.gearList.forEach(day => {
     body += `<h2>${_bfEscHtml(day.label || 'Gear Day')}</h2>`;
     if (!day.items?.length) { body += `<p style="color:#888;font-style:italic;font-size:9pt">No items</p>`; return; }
     const rows = day.items.map(i => `

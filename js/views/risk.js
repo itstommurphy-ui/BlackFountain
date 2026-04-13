@@ -22,6 +22,7 @@ function renderRiskAssessment(p) {
   const companyName = (window.store?.settings?.companyName) || '';
 
   sec.innerHTML = `
+    <div class="ra-page"><div class="ra-page-inner">
     <div class="ra-toolbar">
       <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
       <div class="ra-toolbar-actions">
@@ -164,7 +165,7 @@ function renderRiskAssessment(p) {
         <span>Black Fountain · blackfountain.io</span>
       </div>
 
-    </div><!-- /ra-page -->
+    </div></div><!-- /ra-page-inner, /ra-page -->
 
     <!-- INLINE EDIT MODAL -->
     <div class="ra-edit-overlay" id="ra-edit-overlay" style="display:none" onclick="_raCloseEdit(event)">
@@ -345,7 +346,7 @@ function _raPrintFilled() {
     <title>Risk Assessment</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111;background:#fff;padding:12mm}
+      body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111;background:#fff;padding:12mm;padding-bottom:30mm}
       .ra-toolbar,.ra-edit-overlay,.no-print{display:none!important}
       .ra-page{border:none;box-shadow:none;padding:0;max-width:none;width:100%}
       .ra-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2pt solid #111;padding-bottom:10px;margin-bottom:14px}
@@ -375,7 +376,7 @@ function _raPrintFilled() {
       .ra-sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
       .ra-sig-field{}
       .ra-sig-line{border-bottom:1pt solid #999;height:24pt;margin-top:8px}
-      .ra-doc-footer{display:flex;justify-content:space-between;font-size:7.5pt;color:#aaa;border-top:0.5pt solid #ddd;padding-top:8px;margin-top:8px}
+      .ra-doc-footer{display:flex;justify-content:space-between;font-size:7.5pt;color:#aaa;border-top:0.5pt solid #ddd;padding-top:8px;margin-top:14px}
       .ra-matrix-note{display:none}
       .ra-row-btn{display:none}
     </style></head><body>
@@ -403,7 +404,7 @@ function _raPrintBlank() {
     <title>Risk Assessment — Blank</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111;background:#fff;padding:12mm}
+      body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#111;background:#fff;padding:12mm;padding-bottom:30mm}
       .ra-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2pt solid #111;padding-bottom:10px;margin-bottom:14px}
       .ra-doc-company{font-size:9pt;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:3px}
       .ra-doc-title{font-size:16pt;font-weight:bold;letter-spacing:2px;margin-bottom:4px}
@@ -427,7 +428,7 @@ function _raPrintBlank() {
       .ra-sig-block{border:0.5pt solid #ccc;padding:12px;margin-bottom:14px}
       .ra-sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:12px}
       .ra-sig-line{border-bottom:1pt solid #999;height:28pt;margin-top:8px}
-      .ra-doc-footer{display:flex;justify-content:space-between;font-size:7.5pt;color:#aaa;border-top:0.5pt solid #ddd;padding-top:8px;margin-top:8px}
+      .ra-doc-footer{display:flex;justify-content:space-between;font-size:7.5pt;color:#aaa;border-top:0.5pt solid #ddd;padding-top:8px;margin-top:14px}
     </style></head><body>
     <div class="ra-doc-header">
       <div class="ra-doc-header-left">
@@ -523,15 +524,24 @@ function _raInjectStyles() {
 
 /* A4 page illusion - paper style */
 .ra-page {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  max-width: none;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12mm;
+  padding-bottom: 30mm;
+  box-shadow: none;
+  color: #111;
+  background-color: transparent;
+}
+.ra-page-inner {
   max-width: 900px;
   margin: 0 auto;
+  background: #fff;
   padding: 32px 36px;
-  box-shadow: 0 2px 20px rgba(0,0,0,.12);
-  color: #111;
-  background-color: #fdfbf7;
+  border: 1px solid #e0e0e0;
+  box-shadow: none;
 }
 
 /* Header */
@@ -539,36 +549,39 @@ function _raInjectStyles() {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2px solid #333;
-  padding-bottom: 14px;
-  margin-bottom: 20px;
+  border-bottom: 2pt solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
 }
 .ra-doc-company {
-  font-size: 10px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9pt;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: #666;
-  margin-bottom: 4px;
+  letter-spacing: 1px;
+  color: #555;
+  margin-bottom: 3px;
 }
 .ra-doc-title {
-  font-family: Georgia, serif;
-  font-size: 22px;
-  letter-spacing: 3px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+  font-weight: bold;
+  letter-spacing: 2px;
   color: #111;
   margin-bottom: 4px;
 }
 .ra-doc-project {
-  font-size: 13px;
-  color: #444;
+  font-size: 11pt;
+  color: #333;
 }
 .ra-doc-logo-box {
-  border: 1.5px solid #333;
-  padding: 6px 12px;
-  font-family: Georgia, serif;
-  font-size: 11px;
-  letter-spacing: 2px;
+  border: 1.5pt solid #111;
+  padding: 6px 10px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  font-weight: bold;
+  letter-spacing: 1px;
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.4;
   color: #111;
   flex-shrink: 0;
 }
@@ -577,31 +590,31 @@ function _raInjectStyles() {
 .ra-meta-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px 20px;
-  margin-bottom: 20px;
-  padding: 14px 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 0.5pt solid #ccc;
+  border-radius: 0;
   background: #fff;
 }
 .ra-meta-label {
-  font-size: 9px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 7pt;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #666;
-  margin-bottom: 4px;
-  font-family: Georgia, serif;
+  letter-spacing: 1px;
+  color: #777;
+  margin-bottom: 3px;
 }
 .ra-meta-input {
   width: 100%;
   border: none;
-  border-bottom: 1px solid #999;
+  border-bottom: 0.5pt solid #999;
   background: transparent;
   color: #111;
-  font-size: 13px;
-  padding: 3px 0;
+  font-size: 10pt;
+  padding: 2px 0;
   outline: none;
-  font-family: Georgia, serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .ra-date-wrapper {
   position: relative;
@@ -628,79 +641,78 @@ function _raInjectStyles() {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 11px;
-  color: #666;
-  margin-bottom: 16px;
-  font-family: Georgia, serif;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  color: #555;
+  margin-bottom: 10px;
 }
-.ra-matrix-note { color: #666; }
+.ra-matrix-note { display: none; }
 .ra-matrix-label { color: #444; }
 .ra-rf-chip {
-  padding: 2px 10px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-mono);
+  padding: 1px 8px;
+  border-radius: 3pt;
+  font-size: 7.5pt;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .rf-low  { background: rgba(40,167,69,.15);  color: #28a745; }
 .rf-med  { background: rgba(255,193,7,.15);  color: #c79400; }
 .rf-high { background: rgba(220,53,69,.15);  color: var(--red, #dc3545); }
 
 /* Table */
-.ra-table-wrap { margin-bottom: 20px; }
+.ra-table-wrap { margin-bottom: 14px; }
 .ra-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 9pt;
 }
 .ra-th {
-  background: #e8e6e1;
-  color: #222;
-  padding: 9px 10px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 7px 8px;
   text-align: left;
-  font-size: 10px;
-  font-family: Georgia, serif;
+  font-size: 8pt;
+  font-family: Arial, Helvetica, sans-serif;
   letter-spacing: 0.5px;
-  border: 1px solid #bbb;
+  border: 0.5pt solid #111;
   white-space: nowrap;
   font-weight: 600;
 }
-.ra-th-num     { width: 30px; text-align: center; }
+.ra-th-num     { width: 24pt; text-align: center; }
 .ra-th-hazard  { width: 16%; }
 .ra-th-who     { width: 18%; }
-.ra-th-rf      { width: 64px; text-align: center; }
+.ra-th-rf      { width: 48pt; text-align: center; }
 .ra-th-controls{ width: 22%; }
 .ra-th-further { width: 14%; }
 .ra-th-actions { width: 56px; }
 .ra-td {
-  padding: 10px;
-  border: 1px solid #bbb;
+  padding: 8px;
+  border: 0.5pt solid #bbb;
   vertical-align: top;
-  line-height: 1.55;
+  line-height: 1.5;
   color: #111;
   background: #fff;
 }
-.ra-td-num { text-align: center; color: #666; font-family: Georgia, serif; font-size: 11px; }
+.ra-td-num { text-align: center; color: #777; font-size: 8pt; }
 .ra-td-rf  { text-align: center; }
 .ra-td-actions { text-align: center; white-space: nowrap; }
-.ra-placeholder { color: #999; font-style: italic; font-size: 11px; }
+.ra-placeholder { color: #999; font-style: italic; }
 .ra-rf-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 22pt;
+  height: 22pt;
   border-radius: 50%;
-  font-weight: 700;
-  font-size: 13px;
-  font-family: var(--font-mono);
+  font-weight: bold;
+  font-size: 11pt;
 }
 .ra-rf-badge.rf-low  { background: rgba(40,167,69,.15);  color: #28a745; border: 1px solid rgba(40,167,69,.3); }
 .ra-rf-badge.rf-med  { background: rgba(255,193,7,.15);  color: #c79400; border: 1px solid rgba(255,193,7,.4); }
 .ra-rf-badge.rf-high { background: rgba(220,53,69,.15);  color: var(--red, #dc3545); border: 1px solid rgba(220,53,69,.3); }
 
-.ra-row:hover .ra-td { background: #f5f3ef; }
-.ra-empty-row td { border: 1px solid #bbb; }
+.ra-row:hover .ra-td { background: #f5f5f5; }
+.ra-empty-row td { border: 0.5pt solid #bbb; }
 
 .ra-add-row {
   margin-top: 8px;
@@ -713,7 +725,7 @@ function _raInjectStyles() {
   cursor: pointer;
   transition: all .15s;
 }
-.ra-add-row:hover { border-color: #333; color: #333; background: #f5f3ef; }
+.ra-add-row:hover { border-color: #333; color: #333; background: #f5f5f5; }
 
 .ra-row-btn {
   background: none;
@@ -730,52 +742,51 @@ function _raInjectStyles() {
 
 /* Persons key */
 .ra-key-section {
-  margin-bottom: 20px;
-  padding: 10px 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  border: 0.5pt solid #ddd;
+  border-radius: 0;
+  background: #fafafa;
 }
 .ra-key-title {
-  font-size: 9px;
-  font-family: Georgia, serif;
+  font-size: 7.5pt;
+  font-family: Arial, Helvetica, sans-serif;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #666;
-  margin-bottom: 8px;
+  letter-spacing: 1px;
+  color: #555;
+  margin-bottom: 6px;
 }
-.ra-key-chips { display: flex; flex-wrap: wrap; gap: 12px; }
-.ra-key-chip { font-size: 11px; color: #444; font-family: Georgia, serif; }
+.ra-key-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ra-key-chip { font-size: 8pt; color: #444; }
 
 /* Signature block */
 .ra-sig-block {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 16px;
-  margin-bottom: 20px;
+  border: 0.5pt solid #ccc;
+  border-radius: 0;
+  padding: 12px;
+  margin-bottom: 14px;
   background: #fff;
 }
 .ra-sig-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
 }
 .ra-sig-line {
-  border-bottom: 1px solid #bbb;
-  height: 28px;
-  margin-top: 6px;
+  border-bottom: 1pt solid #999;
+  height: 24pt;
+  margin-top: 8px;
 }
 
 /* Document footer */
 .ra-doc-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 7.5pt;
   color: #888;
-  border-top: 1px solid #ccc;
-  padding-top: 10px;
-  margin-top: 8px;
-  font-family: Georgia, serif;
+  border-top: 0.5pt solid #ddd;
+  padding-top: 8px;
+  margin-top: 0;
 }
 
 /* ── Edit overlay ───────────────────────────────── */
@@ -790,7 +801,7 @@ function _raInjectStyles() {
   padding: 20px;
 }
 .ra-edit-panel {
-  background: #fdfbf7;
+  background: #ffffff;
   border: 1px solid #ccc;
   border-radius: 8px;
   width: 100%;
