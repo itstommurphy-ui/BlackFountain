@@ -34,7 +34,7 @@ function renderSettings() {
   updateThemeButtons();
   updateFontSizeButtons();
   renderContactLinkStats();
-  renderSaveSlots();
+  if (typeof renderSaveHistoryUI === 'function') renderSaveHistoryUI();
 }
 
 function updateThemeButtons() {

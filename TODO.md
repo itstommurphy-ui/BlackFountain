@@ -1,15 +1,17 @@
-# Schedule PDF Export Fix - Approved Plan
+# SAVE OVERHAUL TEST — Current Branch Commit
 
-**Status**: ✅ Plan approved - Implementing...
+**Status**: ⏳ Planning → Staging → Commit → Push
 
-## Breakdown of Approved Plan (5 steps)
+**Steps**:
+- [✅] 1. Create .gitignore for .DS_Store if needed
+- [✅] 2. git rm --cached js/bf-save-slots.js (deleted file)
+- [✅] 3. git add js/bf-save-history.js js/settings.js js/views/nav.js html/views/settings.html index.html
+- [✅] 4. git commit -m "Save overhaul test: replace slots with history system (Supabase snapshots, autosave UI)"
+- [✅] 5. git push
+- [✅] 6. ✅ Complete + clean status
 
-- [x] **1. Create TODO.md** with approved plan breakdown ✅
-- [ ] **2. Read js/views/schedule.js** to confirm `_doExport()` content for exact edit
-- [x] **3. Edit js/views/schedule.js** - Add PDF case to `_doExport()` using `_bfPrint()` ✅  
-- [x] **4. Test** - ✅ Fixed: Schedule PDF now uses `_bfPrint()` with day-grouped table + print CSS → matches shotlist perfection  
-- [ ] **5. Complete** - Update TODO.md ✅, attempt_completion ✅
+**✅ SAVE OVERHAUL TEST** — Committed to `aesthetic-changes-v2` (611d456)
 
-**Next**: Reading target file for precise diff edit...
+**Next**: Test new save history UI in Settings tab.
 
 **Updated**: $(date)
