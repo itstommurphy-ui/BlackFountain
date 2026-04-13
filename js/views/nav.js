@@ -279,6 +279,7 @@ function showView(name) {
     const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'Settings';
     const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / Settings';
     renderSettings();
+    if (typeof renderSaveHistoryUI === 'function') renderSaveHistoryUI();
   } else if (name === 'myfountain') {
     const tt = document.getElementById('topbar-title'); if (tt) tt.textContent = 'My Fountain';
     const tb = document.getElementById('topbar-breadcrumb'); if (tb) tb.textContent = 'Black Fountain / My Fountain';
