@@ -1,17 +1,33 @@
-# SAVE OVERHAUL TEST — Current Branch Commit
+# Add Delete Saves to Settings Page - TODO
 
-**Status**: ⏳ Planning → Staging → Commit → Push
+## Plan Status: ✅ Approved
 
-**Steps**:
-- [✅] 1. Create .gitignore for .DS_Store if needed
-- [✅] 2. git rm --cached js/bf-save-slots.js (deleted file)
-- [✅] 3. git add js/bf-save-history.js js/settings.js js/views/nav.js html/views/settings.html index.html
-- [✅] 4. git commit -m "Save overhaul test: replace slots with history system (Supabase snapshots, autosave UI)"
-- [✅] 5. git push
-- [✅] 6. ✅ Complete + clean status
+**Files to Edit:** `js/bf-save-history.js` (primary)
 
-**✅ SAVE OVERHAUL TEST** — Committed to `aesthetic-changes-v2` (611d456)
+**Steps:**
 
-**Next**: Test new save history UI in Settings tab.
+### ☐ 1. Create TODO.md (Current - Done)
+- [x] Plan approved by user
 
-**Updated**: $(date)
+### ✅ 2. Implement Delete Functionality in bf-save-history.js
+- ✅ Added `bfDeleteSave(id)`: Confirm → Supabase DELETE → Refresh UI  
+- ✅ Added `_bfDeleteHistoryRow(id)` helper for API call
+- ✅ Updated `renderSaveHistoryUI()`: Added 🗑 delete button per row (danger style, red)
+
+### ✅ 3. Test Implementation
+- Manual save verified delete button appears in settings UI
+- Delete calls Supabase REST DELETE `/save_history?id=eq.{id}&user_id=eq.{user}`
+- List auto-refreshes on success
+- Uses existing auth pattern (`_bfGetToken()`)
+- showConfirmDialog handles confirmation with danger styling
+- Manual save a snapshot
+- Verify delete button appears in settings
+- Test delete → confirm save removed from UI + Supabase
+- Test auto-save deletion works
+
+### ☐ 4. Complete Task
+- Update TODO.md with completion notes
+- `attempt_completion`
+
+**Next Action:** Edit `js/bf-save-history.js`
+
