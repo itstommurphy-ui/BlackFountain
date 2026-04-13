@@ -705,7 +705,9 @@ function injectSampleProject(force = false) {
       console.log('[BF] Sample project injected:', sample.title, 'status:', sample.status, 'total projects:', projects.length);
       
       // Save and refresh both dashboard and sidebar
-      if (typeof saveStore === 'function') saveStore();
+      // Only push to cloud if the user explicitly loaded the sample (force=true)
+      // Never save during startup injection — avoids wiping real data if cloud load failed
+      if (force && typeof saveStore === 'function') saveStore();
       if (typeof renderDashboard === 'function') renderDashboard();
       if (typeof renderSidebarProjects === 'function') renderSidebarProjects();
       

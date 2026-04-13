@@ -208,7 +208,7 @@ function _bfShowStartupLoader() {
   document.getElementById('_bf-startup-loader')?.remove();
   const el = document.createElement('div');
   el.id = '_bf-startup-loader';
-  el.style.cssText = 'position:fixed;inset:0;background:var(--surface,#111);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px';
+  el.style.cssText = 'position:fixed;inset:0;background:var(--surface,#111);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px';
   el.innerHTML = `
     <div style="font-family:var(--font-display,monospace);font-size:24px;letter-spacing:4px;color:var(--accent,#e6bc3c)">BLACK FOUNTAIN</div>
     <div style="width:220px">
