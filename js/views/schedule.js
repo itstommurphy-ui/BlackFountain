@@ -359,6 +359,180 @@ function _schedRemoveAll() {
  * 3. RENDER: The "Sweet" UI.
  * Features: Drag-and-drop rows, inline time editing, and the Magic Wand.
  */
+function _doExport(type, fmt, p) {
+  console.log('_doExport start', type, fmt);
+  
+  // Counter to prevent browser caching issues
+  window._exportCount = (window._exportCount || 0) + 1;
+  let content = '', filename = type, mimeType = 'text/plain';
+
+  if (type === 'shotlist') {
+    if (fmt === 'HTML') {
+      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Shot List</h1><table><tr><th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Ext/Int</th><th>Description</th><th>Cast</th><th>Est (mins)</th></tr>' + p.shots.map(s => `<tr><td>${s.scene||''}</td><td>${s.setup||''}</td><td>${s.num||''}</td><td>${s.type||''}</td><td>${s.movement||''}</td><td>${s.location||''}</td><td>${s.extint||''}</td><td>${s.desc||''}</td><td>${s.cast||''}</td><td>${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}</td></tr>`).join('') + '</table></body></html>';
+      filename = `shotlist-${window._exportCount}.html`; mimeType = 'text/html';
+    } else if (fmt === 'CSV') {
+      content = 'Scene,Setup,Shot,Type,Movement,Location,Ext/Int,Description,Cast,Est (mins)\n' + p.shots.map(s => `"${s.scene||''}","${s.setup||''}","${s.num||''}","${s.type||''}","${s.movement||''}","${s.location||''}","${s.extint||''}","${(s.desc||'').replace(/"/g,'\"')}","${s.cast||''}","${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}"`).join('\n');
+      filename = `shotlist-${window._exportCount}.csv`; mimeType = 'text/csv';
+    } else {
+      content = 'SHOT LIST\n' + '='.repeat(50) + '\n\n' + p.shots.map((s,i) => `${i+1}. SC ${s.scene||''} / SETUP ${s.setup||''} / SHOT ${s.num||''} (${s.type||''})\n   Movement: ${s.movement||''} | Location: ${s.location||''} | ${s.extint||''}\n   Description: ${s.desc||''}\n   Cast: ${s.cast||''} | Est: ${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)} mins\n`).join('\n');
+      filename = `shotlist-${window._exportCount}.txt`;
+    }
+  } else {
+    // Schedule export
+    if (fmt === 'HTML') {
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}.day{background:#ffd700;color:#000;font-weight:bold}</style></head><body><h1>Production Schedule</h1><table><tr><th>Day</th><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th></tr>';
+      let lastDay = '';
+      rows.forEach(r => {
+        const dayRow = r.day !== lastDay ? `<tr class="day"><td colspan="9">${r.day}</td></tr>` : '';
+        lastDay = r.day;
+        content += dayRow + `<tr><td></td><td>${r.time}</td><td>${r.scene}</td><td>${r.shot}</td><td>${r.type}</td><td>${r.desc}</td><td>${r.cast}</td><td>${r.pages}</td><td>${r.est}</td></tr>`;
+      });
+      content += '</table></body></html>';
+      filename = `schedule-${window._exportCount}.html`; mimeType = 'text/html';
+    } else if (fmt === 'CSV') {
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      content = `Day,Time,Scene,Shot,Type,Description,Cast,Pages,Est (mins)\n`;
+      let lastDay = '';
+      rows.forEach(r => {
+        const d = (r.day || '').replace(/"/g, '""');
+        if (r.day !== lastDay) content += `"${r.day}","","","","","","","","\n`;
+        lastDay = r.day;
+        content += `"${r.day}","${r.time}","${r.scene}","${r.shot}","${r.type}","${(r.desc||'').replace(/"/g, '""')}","${r.cast}","${r.pages}","${r.est}"\n`;
+      });
+      filename = `schedule-${window._exportCount}.csv`; mimeType = 'text/csv';
+    } else {
+      let currentDay = '';
+      const rows = p.schedule.map(s => {
+        if (s.isDayHeader) { currentDay = s.desc; return null; }
+        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
+      }).filter(r => r);
+      let lastDay = '';
+      content = 'PRODUCTION SCHEDULE\n' + '='.repeat(50) + '\n\n';
+      rows.forEach(r => {
+        if (r.day !== lastDay) { content += '\n' + r.day + '\n' + '-'.repeat(30) + '\n'; lastDay = r.day; }
+        content += `${r.time} - SC ${r.scene} / ${r.shot} (${r.type})\n   ${r.desc}\n   Cast: ${r.cast} | Est: ${r.est} mins\n`;
+      });
+      filename = `schedule-${window._exportCount}.txt`;
+    }
+  }
+
+  // PDF export - use the shared print system
+  if (fmt === 'PDF') {
+    let rowsHtml = '';
+    
+    if (type === 'shotlist') {
+      const scenes = {};
+      (p.shots || []).forEach(s => {
+        const sc = s.scene || 'Unknown';
+        if (!scenes[sc]) scenes[sc] = [];
+        scenes[sc].push(s);
+      });
+      
+      Object.keys(scenes).sort((a,b) => parseInt(a)||0 - parseInt(b)||0).forEach(scene => {
+        rowsHtml += `<tr class="day-header"><td colspan="9">SCENE ${scene}</td></tr>`;
+        scenes[scene].forEach(s => {
+          const est = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
+          rowsHtml += `<tr>
+            <td>${s.setup||''}</td>
+            <td>${s.num||''}</td>
+            <td>${s.type||''}</td>
+            <td>${s.movement||''}</td>
+            <td>${s.location||''}</td>
+            <td>${s.extint||''}</td>
+            <td>${s.desc||''}</td>
+            <td>${s.cast||''}</td>
+            <td>${est}</td>
+          </tr>`;
+        });
+      });
+      const thead = '<th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Int/Ext</th><th>Description</th><th>Cast</th><th>Est (mins)</th>';
+      _bfPrint({
+        title: p.title,
+        section: 'Shot List',
+        body: `<style>
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
+          tr:nth-child(even) { background: #f7f7f7; }
+          .day-header td { background: #ffd700; color: #000; font-weight: 700; padding: 6px 8px; }
+        </style>
+        <table>
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>`
+      });
+    } else {
+      // Schedule
+      let currentDay = '';
+      (p.schedule || []).forEach(s => {
+        if (s.isDayHeader) {
+          currentDay = s.desc || '';
+          rowsHtml += `<tr class="day-header"><td colspan="8">${currentDay}</td></tr>`;
+        } else if (!s.isWrap) {
+          rowsHtml += `<tr>
+            <td>${s.time||''}</td>
+            <td>${s.scene||''}</td>
+            <td>${s.shot||''}</td>
+            <td>${s.type||''}</td>
+            <td>${s.desc||''}</td>
+            <td>${s.cast||''}</td>
+            <td>${s.pages||''}</td>
+            <td>${s.est||''}</td>
+          </tr>`;
+        }
+      });
+      const thead = '<th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th>';
+      _bfPrint({
+        title: p.title,
+        section: 'Production Schedule',
+        body: `<style>
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
+          tr:nth-child(even) { background: #f7f7f7; }
+          .day-header td { background: #ffd700; color: #000; font-weight: 700; padding: 6px 8px; }
+        </style>
+        <table>
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>`
+      });
+    }
+    return;
+  }
+
+  // Regular file download for HTML/CSV/TXT
+  const blob = new Blob([content], { type: mimeType });
+  
+  if (window.navigator.msSaveBlob) {
+    window.navigator.msSaveBlob(blob, filename);
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), {
+      href: url,
+      download: filename,
+      style: 'display:none'
+    });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+  
+  showToast('Exported as ' + fmt, 'success');
+}
+
 function renderSchedule(p) {
   const container = document.getElementById('schedule-container');
   if (!p.schedule || !p.schedule.length) {

@@ -4,8 +4,10 @@
 
 /** Render stats into the settings contact card */
 function renderContactLinkStats() {
-  const el = document.getElementById('contact-link-stats');
-  if (!el) return;
+  const totalEl = document.getElementById('total-contacts');
+  const linkedEl = document.getElementById('linked-rows');
+  const unlinkedEl = document.getElementById('unlinked-rows');
+  if (!totalEl || !linkedEl || !unlinkedEl) return;
 
   let total = 0, linked = 0;
   (store.projects || []).forEach(p => {
@@ -17,10 +19,9 @@ function renderContactLinkStats() {
     });
   });
 
-  const pct = total ? Math.round((linked / total) * 100) : 0;
-  el.innerHTML = total
-    ? `<p><strong>${linked} of ${total} people</strong> across your projects are currently linked (${pct}%).</p>`
-    : '<p>No cast or crew entries found across projects.</p>';
+  totalEl.textContent = total;
+  linkedEl.textContent = linked;
+  unlinkedEl.textContent = total - linked;
 }
 
 /** Sync all contact data to linked rows */
@@ -66,6 +67,8 @@ if (_origShowSettings) {
 
 window.renderContactLinkStats = renderContactLinkStats;
 window._syncAllContacts = _syncAllContacts;
+window.openContactsView = function() { showView('contacts'); };
+window.runContactMigration = function(createMissing) { openContactMigrationModal(); };
 
 // ══════════════════════════════════════════
 // SOCIAL MEDIA FIELD HANDLERS
