@@ -72,13 +72,7 @@ async function sbInit(onReady) {
         locationCustomData: {}, moodboards: []
       });
 
-      // Clear IndexedDB
-      openDB().then(db => {
-        const tx = db.transaction('kv', 'readwrite');
-        tx.objectStore('kv').clear();
-      }).catch(() => {});
-
-      // Clear localStorage backups
+       // Clear localStorage backups
       Object.keys(localStorage).filter(k => k.startsWith('bf_')).forEach(k => localStorage.removeItem(k));
 
       // Show login modal and block the app

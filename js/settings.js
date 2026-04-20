@@ -253,19 +253,12 @@ function confirmClearAllData() {
       keysToRemove.push(key);
     }
   }
-  keysToRemove.forEach(k => {
-    localStorage.removeItem(k);
-    console.log('Removed:', k);
-  });
+   keysToRemove.forEach(k => {
+     localStorage.removeItem(k);
+     console.log('Removed:', k);
+   });
 
-  // Clear IndexedDB
-  openDB().then(db => {
-    const tx = db.transaction('kv', 'readwrite');
-    tx.objectStore('kv').clear();
-    _idb = null;
-  }).catch(() => indexedDB.deleteDatabase('blackfountain'));
-
-  // Also clear session storage
+   // Also clear session storage
   sessionStorage.clear();
 
   // Also try unregistering service worker for fresh start
@@ -2762,22 +2755,10 @@ function relativeTime(ts) {
   if (days === 1) return 'Yesterday ' + hhmm;
   if (days < 7)   return days + ' days ago';
   if (days < 30)  return Math.floor(days / 7) + 'w ago';
-  return d.toLocaleDateString();
-}
+   return d.toLocaleDateString();
+ }
 
-// ── IndexedDB storage (no size limit vs localStorage's ~5MB) ─────────────────
-let _idb = null;
-function openDB() {
-  if (_idb) return Promise.resolve(_idb);
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('blackfountain', 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
-    req.onsuccess = e => { _idb = e.target.result; resolve(_idb); };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function ovFilesUpload(fileList) {
+ function ovFilesUpload(fileList) {
   if (!fileList || fileList.length === 0) return;
   const p = currentProject();
   if (!p) return;
