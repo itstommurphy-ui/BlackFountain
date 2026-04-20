@@ -359,180 +359,6 @@ function _schedRemoveAll() {
  * 3. RENDER: The "Sweet" UI.
  * Features: Drag-and-drop rows, inline time editing, and the Magic Wand.
  */
-function _doExport(type, fmt, p) {
-  console.log('_doExport start', type, fmt);
-  
-  // Counter to prevent browser caching issues
-  window._exportCount = (window._exportCount || 0) + 1;
-  let content = '', filename = type, mimeType = 'text/plain';
-
-  if (type === 'shotlist') {
-    if (fmt === 'HTML') {
-      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Shot List</h1><table><tr><th>Scene</th><th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Ext/Int</th><th>Description</th><th>Cast</th><th>Est (mins)</th></tr>' + p.shots.map(s => `<tr><td>${s.scene||''}</td><td>${s.setup||''}</td><td>${s.num||''}</td><td>${s.type||''}</td><td>${s.movement||''}</td><td>${s.location||''}</td><td>${s.extint||''}</td><td>${s.desc||''}</td><td>${s.cast||''}</td><td>${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}</td></tr>`).join('') + '</table></body></html>';
-      filename = `shotlist-${window._exportCount}.html`; mimeType = 'text/html';
-    } else if (fmt === 'CSV') {
-      content = 'Scene,Setup,Shot,Type,Movement,Location,Ext/Int,Description,Cast,Est (mins)\n' + p.shots.map(s => `"${s.scene||''}","${s.setup||''}","${s.num||''}","${s.type||''}","${s.movement||''}","${s.location||''}","${s.extint||''}","${(s.desc||'').replace(/"/g,'\"')}","${s.cast||''}","${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)}"`).join('\n');
-      filename = `shotlist-${window._exportCount}.csv`; mimeType = 'text/csv';
-    } else {
-      content = 'SHOT LIST\n' + '='.repeat(50) + '\n\n' + p.shots.map((s,i) => `${i+1}. SC ${s.scene||''} / SETUP ${s.setup||''} / SHOT ${s.num||''} (${s.type||''})\n   Movement: ${s.movement||''} | Location: ${s.location||''} | ${s.extint||''}\n   Description: ${s.desc||''}\n   Cast: ${s.cast||''} | Est: ${(parseInt(s.setuptime)||0)+(parseInt(s.shoottime)||0)} mins\n`).join('\n');
-      filename = `shotlist-${window._exportCount}.txt`;
-    }
-  } else {
-    // Schedule export
-    if (fmt === 'HTML') {
-      let currentDay = '';
-      const rows = p.schedule.map(s => {
-        if (s.isDayHeader) { currentDay = s.desc; return null; }
-        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
-      }).filter(r => r);
-      content = '<html><head><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}.day{background:#ffd700;color:#000;font-weight:bold}</style></head><body><h1>Production Schedule</h1><table><tr><th>Day</th><th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th></tr>';
-      let lastDay = '';
-      rows.forEach(r => {
-        const dayRow = r.day !== lastDay ? `<tr class="day"><td colspan="9">${r.day}</td></tr>` : '';
-        lastDay = r.day;
-        content += dayRow + `<tr><td></td><td>${r.time}</td><td>${r.scene}</td><td>${r.shot}</td><td>${r.type}</td><td>${r.desc}</td><td>${r.cast}</td><td>${r.pages}</td><td>${r.est}</td></tr>`;
-      });
-      content += '</table></body></html>';
-      filename = `schedule-${window._exportCount}.html`; mimeType = 'text/html';
-    } else if (fmt === 'CSV') {
-      let currentDay = '';
-      const rows = p.schedule.map(s => {
-        if (s.isDayHeader) { currentDay = s.desc; return null; }
-        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
-      }).filter(r => r);
-      content = `Day,Time,Scene,Shot,Type,Description,Cast,Pages,Est (mins)\n`;
-      let lastDay = '';
-      rows.forEach(r => {
-        const d = (r.day || '').replace(/"/g, '""');
-        if (r.day !== lastDay) content += `"${r.day}","","","","","","","","\n`;
-        lastDay = r.day;
-        content += `"${r.day}","${r.time}","${r.scene}","${r.shot}","${r.type}","${(r.desc||'').replace(/"/g, '""')}","${r.cast}","${r.pages}","${r.est}"\n`;
-      });
-      filename = `schedule-${window._exportCount}.csv`; mimeType = 'text/csv';
-    } else {
-      let currentDay = '';
-      const rows = p.schedule.map(s => {
-        if (s.isDayHeader) { currentDay = s.desc; return null; }
-        return { day: currentDay, time: s.time || '', scene: s.scene || '', shot: s.shot || '', type: s.type || '', desc: s.desc || '', cast: s.cast || '', pages: s.pages || '', est: s.est || '' };
-      }).filter(r => r);
-      let lastDay = '';
-      content = 'PRODUCTION SCHEDULE\n' + '='.repeat(50) + '\n\n';
-      rows.forEach(r => {
-        if (r.day !== lastDay) { content += '\n' + r.day + '\n' + '-'.repeat(30) + '\n'; lastDay = r.day; }
-        content += `${r.time} - SC ${r.scene} / ${r.shot} (${r.type})\n   ${r.desc}\n   Cast: ${r.cast} | Est: ${r.est} mins\n`;
-      });
-      filename = `schedule-${window._exportCount}.txt`;
-    }
-  }
-
-  // PDF export - use the shared print system
-  if (fmt === 'PDF') {
-    let rowsHtml = '';
-    
-    if (type === 'shotlist') {
-      const scenes = {};
-      (p.shots || []).forEach(s => {
-        const sc = s.scene || 'Unknown';
-        if (!scenes[sc]) scenes[sc] = [];
-        scenes[sc].push(s);
-      });
-      
-      Object.keys(scenes).sort((a,b) => parseInt(a)||0 - parseInt(b)||0).forEach(scene => {
-        rowsHtml += `<tr class="day-header"><td colspan="9">SCENE ${scene}</td></tr>`;
-        scenes[scene].forEach(s => {
-          const est = (parseInt(s.setuptime)||0) + (parseInt(s.shoottime)||0);
-          rowsHtml += `<tr>
-            <td>${s.setup||''}</td>
-            <td>${s.num||''}</td>
-            <td>${s.type||''}</td>
-            <td>${s.movement||''}</td>
-            <td>${s.location||''}</td>
-            <td>${s.extint||''}</td>
-            <td>${s.desc||''}</td>
-            <td>${s.cast||''}</td>
-            <td>${est}</td>
-          </tr>`;
-        });
-      });
-      const thead = '<th>Setup</th><th>Shot</th><th>Type</th><th>Movement</th><th>Location</th><th>Int/Ext</th><th>Description</th><th>Cast</th><th>Est (mins)</th>';
-      _bfPrint({
-        title: p.title,
-        section: 'Shot List',
-        body: `<style>
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
-          tr:nth-child(even) { background: #f7f7f7; }
-          .day-header td { background: #ffd700; color: #000; font-weight: 700; padding: 6px 8px; }
-        </style>
-        <table>
-          <thead><tr>${thead}</tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>`
-      });
-    } else {
-      // Schedule
-      let currentDay = '';
-      (p.schedule || []).forEach(s => {
-        if (s.isDayHeader) {
-          currentDay = s.desc || '';
-          rowsHtml += `<tr class="day-header"><td colspan="8">${currentDay}</td></tr>`;
-        } else if (!s.isWrap) {
-          rowsHtml += `<tr>
-            <td>${s.time||''}</td>
-            <td>${s.scene||''}</td>
-            <td>${s.shot||''}</td>
-            <td>${s.type||''}</td>
-            <td>${s.desc||''}</td>
-            <td>${s.cast||''}</td>
-            <td>${s.pages||''}</td>
-            <td>${s.est||''}</td>
-          </tr>`;
-        }
-      });
-      const thead = '<th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th>';
-      _bfPrint({
-        title: p.title,
-        section: 'Production Schedule',
-        body: `<style>
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
-          tr:nth-child(even) { background: #f7f7f7; }
-          .day-header td { background: #ffd700; color: #000; font-weight: 700; padding: 6px 8px; }
-        </style>
-        <table>
-          <thead><tr>${thead}</tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>`
-      });
-    }
-    return;
-  }
-
-  // Regular file download for HTML/CSV/TXT
-  const blob = new Blob([content], { type: mimeType });
-  
-  if (window.navigator.msSaveBlob) {
-    window.navigator.msSaveBlob(blob, filename);
-  } else {
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), {
-      href: url,
-      download: filename,
-      style: 'display:none'
-    });
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 1000);
-  }
-  
-  showToast('Exported as ' + fmt, 'success');
-}
-
 function renderSchedule(p) {
   const container = document.getElementById('schedule-container');
   if (!p.schedule || !p.schedule.length) {
@@ -725,54 +551,14 @@ function exportSchedule(event) {
   const menu = document.createElement('div');
   menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0;min-width:150px;z-index:9999';
   
-  ['HTML', 'CSV', 'Text', 'PDF'].forEach(fmt => {
+  ['HTML', 'CSV', 'Text'].forEach(fmt => {
     const btn = document.createElement('button');
     btn.style.cssText = 'display:block;width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)';
     btn.textContent = '📄 ' + fmt;
     btn.onclick = (e) => {
       e.stopPropagation();
       menu.remove();
-      if (fmt === 'PDF') {
-        // Use bf-print system like shotlist.js
-        let currentDay = '';
-        let rowsHtml = '';
-        p.schedule.forEach(s => {
-          if (s.isDayHeader) {
-            currentDay = s.desc || '';
-            rowsHtml += `<tr class="day-header"><td colspan="8">${_bfEscHtml(currentDay)}</td></tr>`;
-          } else if (!s.isWrap) {
-            rowsHtml += `<tr>
-              <td>${_bfEscHtml(s.time)}</td>
-              <td>${_bfEscHtml(s.scene)}</td>
-              <td>${_bfEscHtml(s.shot)}</td>
-              <td>${_bfEscHtml(s.type)}</td>
-              <td>${_bfEscHtml(s.desc)}</td>
-              <td>${_bfEscHtml(s.cast)}</td>
-              <td>${_bfEscHtml(s.pages)}</td>
-              <td>${_bfEscHtml(s.est)}</td>
-            </tr>`;
-          }
-        });
-        const thead = '<th>Time</th><th>Scene</th><th>Shot</th><th>Type</th><th>Description</th><th>Cast</th><th>Pages</th><th>Est (mins)</th>';
-        const tableHtml = `<style>
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #1a1a2e; color: #e8e0ff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-          td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; font-size: 10px; }
-          tr:nth-child(even) { background: #f7f7f7; }
-          .day-header td { background: #ffd700 !important; color: #000 !important; font-weight: 700; padding: 6px 8px; }
-        </style>
-        <table>
-          <thead><tr>${thead}</tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>`;
-        _bfPrint({
-          title: p.title,
-          section: 'Production Schedule',
-          body: tableHtml
-        });
-      } else {
-        _doExport('schedule', fmt, p);
-      }
+      _doExport('schedule', fmt, p);
     };
     menu.appendChild(btn);
   });
@@ -1009,7 +795,7 @@ function renderPersonnelTable(list, tbodyId, type) {
     return;
   }
   tbody.innerHTML = sortedList.map((m,i) => `
-    <tr data-type="${type}" data-idx="${i}" oncontextmenu="showCastCtxMenu(event,'${type}',${i})" onclick="editPersonnel('${type}',${i})" style="cursor:pointer">
+    <tr data-ctx="personnel:${type}:${i}" onclick="editPersonnel('${type}',${i})" style="cursor:pointer">
       <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="cast-cb" data-type="${type}" data-idx="${i}" onchange="_updateCastEmailSelBtn()" style="cursor:pointer"></td>
       <td><strong>${m.name}</strong></td>
       <td>${m.role||'—'}</td>
@@ -1042,9 +828,7 @@ function addPersonnel(type) {
   document.getElementById('personnel-type').value = type;
   document.getElementById('personnel-edit-idx').value = '';
   document.getElementById('modal-personnel-title').textContent = 'ADD ' + type.toUpperCase();
-  ['name','role','number','email','notes'].forEach(f => document.getElementById('pers-'+f).value='');
-  document.getElementById('pers-socials-container').innerHTML = '';
-  addSocialField('pers-socials-container', 'instagram', '');
+  ['name','role','number','email','notes','social'].forEach(f => document.getElementById('pers-'+f).value='');
   document.getElementById('pers-role-select').value = '';
   document.getElementById('pers-role-other').value = '';
   document.getElementById('pers-confirmed').value = 'green';
@@ -1088,19 +872,7 @@ function editPersonnel(type, i) {
   document.getElementById('pers-number').value = m.number||'';
   document.getElementById('pers-email').value = m.email||'';
   document.getElementById('pers-notes').value = m.notes||'';
-  const socialsContainer = document.getElementById('pers-socials-container');
-  socialsContainer.innerHTML = '';
-  if (m.social) {
-    const socialParts = m.social.split(',').map(s => s.trim()).filter(Boolean);
-    socialParts.forEach(s => {
-      const sepIdx = s.indexOf('||');
-      const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'instagram';
-      const handle = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
-      addSocialField('pers-socials-container', platform, handle);
-    });
-  } else {
-    addSocialField('pers-socials-container', 'instagram', '');
-  }
+  document.getElementById('pers-social').value = m.social||'';
   document.getElementById('pers-confirmed').value = m.confirmed||'green';
   if (m.dept) document.getElementById('pers-dept').value = m.dept;
   // Clear any existing linked badge when editing
@@ -1141,7 +913,7 @@ function savePersonnel() {
     number: document.getElementById('pers-number').value.trim(),
     email: document.getElementById('pers-email').value.trim(),
     notes: document.getElementById('pers-notes').value.trim(),
-    social: collectSocials('pers-socials-container'),
+    social: document.getElementById('pers-social').value.trim(),
     confirmed: document.getElementById('pers-confirmed').value,
     dept: document.getElementById('pers-dept').value
   };
@@ -1198,24 +970,18 @@ function renderCrew(p) {
         </div>
       </div>
       <div class="table-container">
-        <table class="data-table" style="table-layout:fixed;width:100%">
+        <table class="data-table">
           <thead><tr>
-            <th style="width:40px"><input type="checkbox" onchange="_crewSelectAll(this,'${dept.replace(/'/g,"\\'")}')"></th>
-            <th style="width:150px" onclick="_sortTable('crew','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="crew-sort-name"></span></th>
-            <th style="width:150px" onclick="_sortTable('crew','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="crew-sort-role"></span></th>
-            <th style="width:100px">Number</th>
-            <th style="width:180px">Email</th>
-            <th style="width:100px">Social</th>
-            <th style="width:80px">Confirmed</th>
-            <th style="width:70px"></th>
+            <th style="width:28px;padding:6px 4px"><input type="checkbox" onchange="_crewSelectAll(this,'${dept.replace(/'/g,"\\'")}')"></th>
+            <th onclick="_sortTable('crew','name')" style="cursor:pointer" class="sortable-header">Name <span class="sort-indicator" id="crew-sort-name"></span></th><th onclick="_sortTable('crew','role')" style="cursor:pointer" class="sortable-header">Role <span class="sort-indicator" id="crew-sort-role"></span></th><th>Number</th><th>Email</th><th>Social</th><th>Confirmed</th><th></th>
           </tr></thead>
           <tbody>
             ${grouped[dept].map(m => `
-              <tr data-type="unit" data-idx="${m._i}" oncontextmenu="showCrewCtxMenu(event,${m._i})" style="cursor:pointer">
+              <tr onclick="editPersonnel('unit',${m._i})" style="cursor:pointer">
                 <td style="width:28px;padding:6px 4px" onclick="event.stopPropagation()"><input type="checkbox" class="crew-cb" data-type="unit" data-idx="${m._i}" onchange="_updateCrewEmailSelBtn()"></td>
                 <td><strong>${m.name}</strong></td>
                 <td>${m.role||'—'}</td><td>${m.number||'—'}</td>
-                <td>${m.email||'—'}</td><td>${m.social ? renderSocialLinks(m.social) : '—'}</td>
+                <td>${m.email||'—'}</td><td>${m.social||'—'}</td>
                 <td><span class="conf-dot conf-${m.confirmed||'green'}"></span></td>
                 <td onclick="event.stopPropagation()">
                   <button class="btn btn-sm btn-ghost" onclick="editPersonnel('unit',${m._i})">✎</button>
@@ -1275,88 +1041,6 @@ function emailSelectedCrew() {
   const subject = encodeURIComponent(p.title+' - Crew Communication');
   const body = encodeURIComponent('Hi,\n\nI wanted to reach out regarding '+p.title+'.\n\nBest regards');
   window.location.href = 'mailto:'+emails.join(',')+'?subject='+subject+'&body='+body;
-}
-
-function showCrewCtxMenu(e, idx) {
-  e.preventDefault();
-  e.stopPropagation();
-  _dismissCtxMenu();
-  const p = currentProject();
-  const u = p.unit?.[idx];
-  if (!u) return;
-  const menu = document.createElement('div');
-  menu.id = '_ctx-menu';
-  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:13px';
-  const items = [
-    { label: '✎ Edit', action: () => editPersonnel('unit', idx) },
-    { label: '✉️ Email', action: () => u.email ? window.location.href = `mailto:${u.email}?subject=${encodeURIComponent(p.title)}` : showToast('No email address attached to contact', 'error') },
-    { sep: true },
-    { label: '🗑 Remove from Project', action: () => removePersonnel('unit', idx), danger: true },
-  ];
-  items.forEach(item => {
-    if (item.sep) {
-      const sep = document.createElement('div');
-      sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
-      menu.appendChild(sep);
-      return;
-    }
-    const el = document.createElement('div');
-    el.style.cssText = `padding:7px 14px;cursor:pointer;color:${item.danger ? '#e55' : 'var(--text)'};white-space:nowrap`;
-    el.textContent = item.label;
-    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
-    el.addEventListener('mouseleave', () => el.style.background = '');
-    el.addEventListener('mousedown', e2 => { e2.stopPropagation(); _dismissCtxMenu(); item.action(); });
-    menu.appendChild(el);
-  });
-  document.body.appendChild(menu);
-  const mw = 190, mh = menu.offsetHeight || 120;
-  let x = e.clientX, y = e.clientY;
-  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-  setTimeout(() => document.addEventListener('mousedown', _dismissCtxMenu, { once: true }), 0);
-}
-
-function showCastCtxMenu(e, type, idx) {
-  e.preventDefault();
-  e.stopPropagation();
-  _dismissCtxMenu();
-  const p = currentProject();
-  const item = p[type]?.[idx];
-  if (!item) return;
-  const menu = document.createElement('div');
-  menu.id = '_ctx-menu';
-  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:13px';
-  const items = [
-    { label: '✎ Edit', action: () => editPersonnel(type, idx) },
-    { label: '✉️ Email', action: () => item.email ? window.location.href = `mailto:${item.email}?subject=${encodeURIComponent(p.title)}` : showToast('No email address attached to contact', 'error') },
-    { sep: true },
-    { label: '🗑 Remove from Project', action: () => removePersonnel(type, idx), danger: true },
-  ];
-  items.forEach(item => {
-    if (item.sep) {
-      const sep = document.createElement('div');
-      sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
-      menu.appendChild(sep);
-      return;
-    }
-    const el = document.createElement('div');
-    el.style.cssText = `padding:7px 14px;cursor:pointer;color:${item.danger ? '#e55' : 'var(--text)'};white-space:nowrap`;
-    el.textContent = item.label;
-    el.addEventListener('mouseenter', () => el.style.background = 'var(--surface3)');
-    el.addEventListener('mouseleave', () => el.style.background = '');
-    el.addEventListener('mousedown', e2 => { e2.stopPropagation(); _dismissCtxMenu(); item.action(); });
-    menu.appendChild(el);
-  });
-  document.body.appendChild(menu);
-  const mw = 190, mh = menu.offsetHeight || 120;
-  let x = e.clientX, y = e.clientY;
-  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-  setTimeout(() => document.addEventListener('mousedown', _dismissCtxMenu, { once: true }), 0);
 }
 
 // CAST multi-select
@@ -1421,7 +1105,36 @@ function _downloadFile(content, filename, mimeType) {
   URL.revokeObjectURL(url);
 }
 
-// CAST & EXTRAS CSV EXPORT
+// Helper to open a new window with HTML content for PDF-like printing
+function _openPrintWindow(htmlContent, title) {
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked — allow pop-ups and try again', 'info'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#000;padding:24px;max-width:960px;margin:0 auto}
+    h1{font-size:18px;margin-bottom:4px}
+    h3{font-size:14px;margin:20px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    th{background:#f0f0f0;padding:8px;text-align:left;font-size:11px;border:1px solid #ccc}
+    td{padding:8px;border:1px solid #e0e0e0;font-size:11px}
+    tr:nth-child(even){background:#fafafa}
+    .no-print{margin-bottom:16px}
+    .no-print button{padding:8px 16px;font-size:13px;cursor:pointer}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+    <div class="no-print"><button onclick="window.print()">🖨 Print / Save as PDF</button></div>
+    ${htmlContent}
+  </body></html>`);
+  w.document.close();
+}
+
+// CAST & EXTRAS EXPORT
+function exportCastPDF() {
+  const p = currentProject();
+  if (!p.cast?.length) { showToast('No cast to export', 'info'); return; }
+  const rows = p.cast.map(c => `<tr><td>${c.name||''}</td><td>${c.role||''}</td><td>${c.number||''}</td><td>${c.email||''}</td><td>${c.notes||''}</td><td>${c.confirmed?'Yes':'No'}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Cast</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Name</th><th>Role/Character</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Cast');
+}
+
 function exportCastCSV() {
   const p = currentProject();
   if (!p.cast?.length) { showToast('No cast to export', 'info'); return; }
@@ -1429,7 +1142,13 @@ function exportCastCSV() {
   _downloadFile(csv, 'cast.csv', 'text/csv');
 }
 
-// EXTRAS CSV EXPORT
+function exportExtrasPDF() {
+  const p = currentProject();
+  if (!p.extras?.length) { showToast('No extras to export', 'info'); return; }
+  const rows = p.extras.map(e => `<tr><td>${e.name||''}</td><td>${e.role||''}</td><td>${e.number||''}</td><td>${e.email||''}</td><td>${e.notes||''}</td><td>${e.confirmed?'Yes':'No'}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Supporting Artists (Extras)</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Name</th><th>Role</th><th>Number</th><th>Email</th><th>Notes</th><th>Confirmed</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Extras');
+}
+
 function exportExtrasCSV() {
   const p = currentProject();
   if (!p.extras?.length) { showToast('No extras to export', 'info'); return; }
@@ -1437,15 +1156,39 @@ function exportExtrasCSV() {
   _downloadFile(csv, 'extras.csv', 'text/csv');
 }
 
-// CREW CSV EXPORT
+// CREW EXPORT
+function exportCrewPDF() {
+  const p = currentProject();
+  if (!p.unit?.length) { showToast('No crew to export', 'info'); return; }
+  let rows = '';
+  p.unit.forEach(u => {
+    rows += `<tr><td>${u.name||''}</td><td>${u.dept||''}</td><td>${u.role||''}</td><td>${u.email||''}</td><td>${u.number||''}</td><td>${u.notes||''}</td></tr>`;
+  });
+  _openPrintWindow(`<h1>${p.title} — Crew</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Name</th><th>Department</th><th>Role</th><th>Email</th><th>Number</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Crew');
+}
+
 function exportCrewCSV() {
   const p = currentProject();
   if (!p.unit?.length) { showToast('No crew to export', 'info'); return; }
-  const csv = 'Name,Department,Role,Email,Number,Notes\n' + p.unit.map(u => `"${(u.name||'').replace(/"/g,'""')}","${(u.dept||'').replace(/"/g,'""')}","${(u.role||'').replace(/"/g,'""')}","${u.email||''}","'${u.number||''}","${(u.notes||'').replace(/"/g,'""')}"`).join('\n');
+  const csv = 'Name,Department,Role,Email,Number,Notes\n' + p.unit.map(u => `"${(u.name||'').replace(/"/g,'""')}","${(u.dept||'').replace(/"/g,'""')}","${(u.role||'').replace(/"/g,'""')}","${u.email||''}","${u.number||''}","${(u.notes||'').replace(/"/g,'""')}"`).join('\n');
   _downloadFile(csv, 'crew.csv', 'text/csv');
 }
 
-// EQUIPMENT CSV EXPORT
+// EQUIPMENT EXPORT
+function exportEquipmentPDF() {
+  const p = currentProject();
+  const hasEquipment = p.gearList?.some(d => d.categories?.some(c => c.items?.length));
+  if (!hasEquipment) { showToast('No equipment to export', 'info'); return; }
+  let html = `<h1>${p.title} — Equipment Checklist</h1><p>Generated: ${new Date().toLocaleDateString()}</p>`;
+  p.gearList.forEach((day, dayIdx) => {
+    const rows = day.categories.flatMap(cat => 
+      cat.items.map(i => `<tr><td>${cat.name||''}</td><td>${i.name||''}</td><td>${i.pre?'✓':'○'}</td><td>${i.post?'✓':'○'}</td></tr>`)
+    ).join('');
+    if (rows) html += `<h3>${day.label||('Day '+(dayIdx+1))}</h3><table><thead><tr><th>Category</th><th>Item</th><th>Pre</th><th>Post</th></tr></thead><tbody>${rows}</tbody></table>`;
+  });
+  _openPrintWindow(html, p.title + ' - Equipment');
+}
+
 function exportEquipmentCSV() {
   const p = currentProject();
   const hasEquipment = p.gearList?.some(d => d.categories?.some(c => c.items?.length));
@@ -1461,16 +1204,29 @@ function exportEquipmentCSV() {
   _downloadFile(csv, 'equipment.csv', 'text/csv');
 }
 
-// LOCATIONS CSV EXPORT
+// LOCATIONS EXPORT
+function exportLocationsPDF() {
+  const p = currentProject();
+  if (!p.locations?.length) { showToast('No locations to export', 'info'); return; }
+  const rows = p.locations.map(l => `<tr><td>${l.name||''}</td><td>${l.scene||''}</td><td>${l.suitability||''}</td><td>${l.contacted?'Yes':'No'}</td><td>${l.availability||''}</td><td>${l.cost||''}</td><td>${l.accessibility||''}</td><td>${l.recce?'Yes':'No'}</td><td>${l.decision||''}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Locations</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Location</th><th>Scene</th><th>Suitability</th><th>Contacted</th><th>Availability</th><th>Cost/Fee</th><th>Accessibility</th><th>Recce Done</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Locations');
+}
+
 function exportLocationsCSV() {
   const p = currentProject();
   if (!p.locations?.length) { showToast('No locations to export', 'info'); return; }
-  const suitLabel = {suitable:'Suitable',possible:'Possibly Suitable',unsuitable:'Unsuitable'};
-  const csv = 'Location,Scene,Suitability,Contacted,Availability,Cost/Fee,Accessibility,Recce Done,Decision\n' + p.locations.map(l => `"${((l.location||l.name)||'').replace(/"/g,'""')}","${(l.scene||l.name||'').replace(/"/g,'""')}","${suitLabel[l.suit]||''}","${l.contacted||''}","${l.avail||''}","${l.cost||''}","${l.access||''}","${l.recce||''}","${l.decision||''}"`).join('\n');
+  const csv = 'Location,Scene,Suitability,Contacted,Availability,Cost/Fee,Accessibility,Recce Done,Decision\n' + p.locations.map(l => `"${(l.name||'').replace(/"/g,'""')}","${l.scene||''}","${l.suitability||''}","${l.contacted?'Yes':'No'}","${l.availability||''}","${l.cost||''}","${l.accessibility||''}","${l.recce?'Yes':'No'}","${l.decision||''}"`).join('\n');
   _downloadFile(csv, 'locations.csv', 'text/csv');
 }
 
-// PROPS CSV EXPORT
+// PROPS EXPORT
+function exportPropsPDF() {
+  const p = currentProject();
+  if (!p.props?.length) { showToast('No props to export', 'info'); return; }
+  const rows = p.props.map(pr => `<tr><td>${pr.name||''}</td><td>${pr.qty||''}</td><td>${pr.chars||''}</td><td>${pr.scenes||''}</td><td>${pr.locs||''}</td><td>${pr.pgs||''}</td><td>${pr.notes||''}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Props List</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Prop</th><th>Quantity</th><th>Character/s</th><th>Scene/s</th><th>Location/s</th><th>Page/s</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Props');
+}
+
 function exportPropsCSV() {
   const p = currentProject();
   if (!p.props?.length) { showToast('No props to export', 'info'); return; }
@@ -1478,7 +1234,14 @@ function exportPropsCSV() {
   _downloadFile(csv, 'props.csv', 'text/csv');
 }
 
-// WARDROBE CSV EXPORT
+// WARDROBE EXPORT
+function exportWardrobePDF() {
+  const p = currentProject();
+  if (!p.wardrobe?.length) { showToast('No wardrobe items to export', 'info'); return; }
+  const rows = p.wardrobe.map(w => `<tr><td>${w.name||''}</td><td>${w.chars||''}</td><td>${w.scenes||''}</td><td>${w.size||''}</td><td>${w.condition||''}</td><td>${w.loc||''}</td><td>${w.notes||''}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Wardrobe</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Item</th><th>Character/s</th><th>Scene/s</th><th>Size</th><th>Condition</th><th>Location</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Wardrobe');
+}
+
 function exportWardrobeCSV() {
   const p = currentProject();
   if (!p.wardrobe?.length) { showToast('No wardrobe items to export', 'info'); return; }
@@ -1486,7 +1249,14 @@ function exportWardrobeCSV() {
   _downloadFile(csv, 'wardrobe.csv', 'text/csv');
 }
 
-// SOUND LOG CSV EXPORT
+// SOUND LOG EXPORT
+function exportSoundLogPDF() {
+  const p = currentProject();
+  if (!p.soundlog?.length) { showToast('No sound log entries to export', 'info'); return; }
+  const rows = p.soundlog.map(s => `<tr><td>${s.scene||''}</td><td>${s.shot||''}</td><td>${s.take||''}</td><td>${s.comments||''}</td><td>${s.track1||''}</td><td>${s.lav||''}</td><td>${s.additional||''}</td></tr>`).join('');
+  _openPrintWindow(`<h1>${p.title} — Sound Log</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Scene</th><th>Shot</th><th>Take</th><th>Comments</th><th>Track 1</th><th>Lav</th><th>Additional Audio</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Sound Log');
+}
+
 function exportSoundLogCSV() {
   const p = currentProject();
   if (!p.soundlog?.length) { showToast('No sound log entries to export', 'info'); return; }
@@ -1494,7 +1264,18 @@ function exportSoundLogCSV() {
   _downloadFile(csv, 'soundlog.csv', 'text/csv');
 }
 
-// RISK ASSESSMENT CSV EXPORT
+// RISK ASSESSMENT EXPORT
+function exportRiskPDF() {
+  const p = currentProject();
+  if (!p.risks?.length) { showToast('No risk assessment entries to export', 'info'); return; }
+  const rows = p.risks.map(r => `<tr><td>${r.hazard||''}</td><td>${r.who||''}</td><td>${r.factor||''}</td><td>${r.controls||''}</td><td>${r.further||''}</td><td>${r.newfactor||''}</td></tr>`).join('');
+  const meta = p.riskMeta || {};
+  _openPrintWindow(`<h1>${p.title} — Risk Assessment</h1>
+    <p><strong>Production Manager:</strong> ${meta.pm||''} | <strong>Date of Assessment:</strong> ${meta.date||''} | <strong>Location:</strong> ${meta.location||''}</p>
+    <table><thead><tr><th>Hazard</th><th>Who might be harmed & how?</th><th>Risk Factor</th><th>Control Measures</th><th>Further Controls?</th><th>New Risk Factor</th></tr></thead><tbody>${rows}</tbody></table>
+    <p><strong>Completed by:</strong> ${meta.signatory||''} | <strong>Date:</strong> ${meta.sigdate||''}</p>`, p.title + ' - Risk Assessment');
+}
+
 function exportRiskCSV() {
   const p = currentProject();
   if (!p.risks?.length) { showToast('No risk assessment entries to export', 'info'); return; }
@@ -1503,11 +1284,159 @@ function exportRiskCSV() {
   _downloadFile(csv, 'risk-assessment.csv', 'text/csv');
 }
 
+// RELEASE FORMS EXPORT
+function exportReleasesPDF() {
+  const p = currentProject();
+  if (!p.releases?.length) { showToast('No release forms to export', 'info'); return; }
+  let rows = '';
+  p.releases.forEach(r => {
+    rows += `<tr><td>${r.type||''}</td><td>${r.name||''}</td><td>${r.date||''}</td><td>${r.notes||''}</td></tr>`;
+  });
+  _openPrintWindow(`<h1>${p.title} — Release Forms</h1><p>Generated: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Type</th><th>Name</th><th>Date</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`, p.title + ' - Release Forms');
+}
 
+// Helper to convert newlines to <br> tags for proper line break display
+function _formatTextWithBreaks(text) {
+  if (!text) return '';
+  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+}
 
+// PROJECT BRIEF EXPORT
+function exportBriefPDF() {
+  const p = currentProject();
+  if (!p || !p.brief) { showToast('No project brief to export', 'info'); return; }
+  
+  // Generate clean export HTML without interactive elements
+  let html = '';
+  
+  // Add template info if a template is selected
+  if (p.brief.template) {
+    const tmpl = BRIEF_TEMPLATES.find(t => t.id === p.brief.template);
+    if (tmpl) {
+      html += `<p style="font-size:12px;color:#666;margin-bottom:20px">Template: ${tmpl.name}</p>`;
+    }
+  }
+  
+  // Add removed fields notice if any
+  if (p.brief.removedKeys && p.brief.removedKeys.length > 0) {
+    html += `<p style="font-size:11px;color:#888;margin-bottom:16px;font-style:italic">(${p.brief.removedKeys.length} hidden field${p.brief.removedKeys.length !== 1 ? 's' : ''})</p>`;
+  }
+  
+  if (p.brief.template) {
+    const tmpl = BRIEF_TEMPLATES.find(t => t.id === p.brief.template);
+    if (tmpl) {
+      const visibleFields = tmpl.fields.filter(f => !p.brief.removedKeys.includes(f.key));
+      visibleFields.forEach(f => {
+        const value = (p.brief.fields[f.key] || '').trim();
+        html += `<div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${f.label}</div>
+          <div style="font-size:13px;line-height:1.6;padding:8px 0;border-bottom:1px solid #eee">${value ? _formatTextWithBreaks(value) : '<span style="color:#ccc">—</span>'}</div>
+        </div>`;
+      });
+    }
+  }
+  
+  // Custom fields
+  if (p.brief.customFields && p.brief.customFields.length > 0) {
+    p.brief.customFields.forEach(f => {
+      const value = (p.brief.fields[f.key] || '').trim();
+      html += `<div style="margin-bottom:20px">
+        <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${f.label}</div>
+        <div style="font-size:13px;line-height:1.6;padding:8px 0;border-bottom:1px solid #eee">${value ? _formatTextWithBreaks(value) : '<span style="color:#ccc">—</span>'}</div>
+      </div>`;
+    });
+  }
+  
+  if (!html) {
+    html = '<p style="color:#888;font-style:italic">No content</p>';
+  }
+  
+  _openPrintWindow(`<h1>${p.title} — Project Brief</h1><p>Generated: ${new Date().toLocaleDateString()}</p>${html}`, p.title + ' - Project Brief');
+}
 
+// Helper to format pages in eighths (film industry standard)
+function _formatPagesEighths(scene) {
+  const lineCount = scene.lineCount || 1;
+  const eighths = Math.max(1, Math.round(lineCount / 6.75));
+  return eighths >= 8 ? Math.floor(eighths/8) + '-' + (eighths%8||'0') + '/8' : eighths + '/8';
+}
 
-
+// STRIPBOARD EXPORT
+function exportStripboardPDF() {
+  const p = currentProject();
+  const stripboardContent = document.getElementById('stripboard-content');
+  if (!stripboardContent) { showToast('No stripboard to export', 'info'); return; }
+  
+  // Generate clean print-friendly HTML
+  let html = '';
+  const sb = p.stripboard || { days: [] };
+  const data = _sbBuildSceneData(p);
+  const allKeys = Object.keys(data);
+  const scheduledKeys = new Set((sb.days || []).flatMap(d => d.sceneKeys || []));
+  const unscheduled = allKeys.filter(k => !scheduledKeys.has(k));
+  
+  // Summary stats - calculate total pages in eighths
+  const scheduledSc = scheduledKeys.size;
+  let totalEighths = 0;
+  allKeys.forEach(k => {
+    if (data[k]) {
+      const lineCount = data[k].scene.lineCount || 1;
+      totalEighths += Math.max(1, Math.round(lineCount / 6.75));
+    }
+  });
+  const totalPages = totalEighths >= 8 ? Math.floor(totalEighths/8) + '-' + (totalEighths%8||'0') + '/8' : totalEighths + '/8';
+  html += `<p style="font-size:12px;color:#666;margin-bottom:20px">${scheduledSc} of ${allKeys.length} scenes scheduled · ${sb.days.length} day${sb.days.length !== 1 ? 's' : ''} · ~${totalPages} pages</p>`;
+  
+  // Unscheduled scenes
+  if (unscheduled.length > 0) {
+    html += `<h3 style="font-size:14px;margin:20px 0 10px;border-bottom:1px solid #ccc;padding-bottom:4px">Unscheduled (${unscheduled.length})</h3>`;
+    html += `<table style="width:100%;border-collapse:collapse;margin-bottom:20px">`;
+    html += `<thead><tr><th style="background:#f0f0f0;padding:8px;text-align:left;font-size:11px;border:1px solid #ccc">Scene</th><th style="background:#f0f0f0;padding:8px;text-align:left;font-size:11px;border:1px solid #ccc">Description</th><th style="background:#f0f0f0;padding:8px;text-align:left;font-size:11px;border:1px solid #ccc">Pages</th></tr></thead><tbody>`;
+    unscheduled.forEach(key => {
+      const d = data[key];
+      const pages = d ? _formatPagesEighths(d.scene) : '1/8';
+      html += `<tr><td style="padding:8px;border:1px solid #e0e0e0;font-size:11px">${key}</td><td style="padding:8px;border:1px solid #e0e0e0;font-size:11px">${d ? _sbEsc(d.scene.heading) : ''}</td><td style="padding:8px;border:1px solid #e0e0e0;font-size:11px">${pages}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  
+  // Scheduled days
+  if (sb.days && sb.days.length > 0) {
+    html += `<h3 style="font-size:14px;margin:20px 0 10px;border-bottom:1px solid #ccc;padding-bottom:4px">Shoot Days</h3>`;
+    sb.days.forEach((day, idx) => {
+      const dayScenes = day.sceneKeys || [];
+      let dayEighths = 0;
+      dayScenes.forEach(k => {
+        if (data[k]) {
+          const lineCount = data[k].scene.lineCount || 1;
+          dayEighths += Math.max(1, Math.round(lineCount / 6.75));
+        }
+      });
+      const dayPages = dayEighths >= 8 ? Math.floor(dayEighths/8) + '-' + (dayEighths%8||'0') + '/8' : dayEighths + '/8';
+      html += `<div style="margin-bottom:24px">`;
+      html += `<div style="font-size:13px;font-weight:600;margin-bottom:8px">Day ${idx + 1}: ${_sbEsc(day.label)} ${day.date ? '(' + day.date + ')' : ''} — ${dayScenes.length} scenes, ~${dayPages} pages</div>`;
+      if (dayScenes.length > 0) {
+        html += `<table style="width:100%;border-collapse:collapse">`;
+        html += `<thead><tr><th style="background:#f0f0f0;padding:6px;text-align:left;font-size:10px;border:1px solid #ccc;width:60px">Scene</th><th style="background:#f0f0f0;padding:6px;text-align:left;font-size:10px;border:1px solid #ccc">Description</th><th style="background:#f0f0f0;padding:6px;text-align:left;font-size:10px;border:1px solid #ccc;width:50px">Pages</th></tr></thead><tbody>`;
+        dayScenes.forEach(key => {
+          const d = data[key];
+          const pages = d ? _formatPagesEighths(d.scene) : '1/8';
+          html += `<tr><td style="padding:6px;border:1px solid #e0e0e0;font-size:11px">${key}</td><td style="padding:6px;border:1px solid #e0e0e0;font-size:11px">${d ? _sbEsc(d.scene.heading) : ''}</td><td style="padding:6px;border:1px solid #e0e0e0;font-size:11px">${pages}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      } else {
+        html += `<p style="color:#888;font-style:italic;font-size:11px">No scenes scheduled</p>`;
+      }
+      html += `</div>`;
+    });
+  }
+  
+  if (!html) {
+    html = '<p style="color:#888;font-style:italic">No stripboard data</p>';
+  }
+  
+  _openPrintWindow(`<h1>${p.title} — Stripboard</h1><p>Generated: ${new Date().toLocaleDateString()}</p>${html}`, p.title + ' - Stripboard');
+}
 
 // ═══════════════════════════════════════════════════════════════
 // CONTACT DROPDOWN FOR PERSONNEL MODAL
@@ -1578,6 +1507,4 @@ function autofillPersonnelFromContact() {
 
 window._persPopulateContactSelect = _persPopulateContactSelect;
 window.autofillPersonnelFromContact = autofillPersonnelFromContact;
-window.exportSchedule = exportSchedule;
-window._doExport = _doExport;
 

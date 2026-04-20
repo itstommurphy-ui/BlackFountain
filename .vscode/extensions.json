@@ -1,8 +1,5 @@
 {
     "recommendations": [
-        "denizhandaklr.minimax-vscode",
-        "minovativetechnologies.minovative-mind-vscode",
-        "continue.continue",
-        "codemateai.codemate-enterprise"
+        "denizhandaklr.minimax-vscode"
     ]
 }

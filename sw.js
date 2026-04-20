@@ -1,5 +1,5 @@
 // Black Fountain Service Worker
-const CACHE_NAME = 'blackfountain-v39';
+const CACHE_NAME = 'blackfountain-v37';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -69,34 +69,30 @@ self.addEventListener('fetch', event => {
   // them natively with full CORS and auth header support.
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-   // Never intercept the service worker script itself — must always come fresh from network
-   if (event.request.url.includes('/sw.js')) return;
+  // Never intercept the service worker script itself — must always come fresh from network
+  if (event.request.url.includes('/sw.js')) return;
 
-   // Never serve these from cache — they contain critical sync guards
-   if (event.request.url.includes('/supabase-sync.js') ||
-       event.request.url.includes('/bf-save-history.js')) return;
+  // For JS and HTML files, try network first to get updates
+  const isJsOrHtml = event.request.url.endsWith('.js') || 
+                     event.request.url.endsWith('.html') ||
+                     event.request.url.includes('/html/');
 
-   // DEBUG — log which files are being served from cache vs network
-   const url = event.request.url;
-   if (url.endsWith('.js') || url.includes('/html/')) {
-     const req = event.request.clone();
-     event.respondWith(
-       fetch(req)
-         .then(response => {
-           console.log('[SW] Network served:', url.split('/').pop());
-           const responseToCache = response.clone();
-           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
-           return response;
-         })
-         .catch(() => {
-           console.warn('[SW] Cache fallback:', url.split('/').pop());
-           return caches.match(event.request);
-         })
-     );
-     return;
-   }
+  if (isJsOrHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Clone and cache the fresh response
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseToCache));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
-   // For other assets, use cache-first strategy
+  // For other assets, use cache-first strategy
   event.respondWith(
     caches.match(event.request)
       .then(response => {

@@ -1033,7 +1033,7 @@ async function shareScriptFile(id) {
   const s = p.scripts.find(x => x.id === id);
   if (!s) return;
 
-  // Use Web Share API directly (native on mobile/modern desktop)
+  // Try Web Share API with file first (native on mobile/modern desktop)
   if (navigator.canShare) {
     try {
       const res = await fetch(s.dataUrl);
@@ -1043,10 +1043,10 @@ async function shareScriptFile(id) {
         await navigator.share({ files: [file], title: s.name });
         return;
       }
-    } catch(e) { /* fall through to modal */ }
+    } catch(e) { /* fall through to manual share */ }
   }
 
-  // Fallback share modal (for desktop or when Web Share not available)
+  // Fallback share modal
   const ovId = '_share-' + id;
   const fname = s.name;
   const projTitle = p ? p.title : '';
@@ -1065,10 +1065,11 @@ async function shareScriptFile(id) {
       </div>
       <p style="font-size:11px;color:var(--text3);margin:0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname.replace(/</g,'&lt;')}</p>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email</a>
-        <a href="#" onclick="downloadScriptFile('${id}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download</a>
-        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp (text only)</a>
-        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram (text only)</a>
+        <div style="font-size:10px;color:var(--text3);padding:2px 2px 4px">Click Email, download file, then attach:</div>
+        <a href="mailto:?subject=${emailSubject}&body=${emailBody}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✉️ Email (pre-filled)</a>
+        <a href="#" onclick="downloadScriptFile('${id}');return false" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">⬇ Download File</a>
+        <a href="https://wa.me/?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 WhatsApp</a>
+        <a href="https://t.me/share/url?text=${textMsg}" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">✈️ Telegram</a>
         <a href="sms:?body=${textMsg}" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💬 iMessage / SMS</a>
         <a href="https://www.messenger.com/t/" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">💙 Facebook Messenger</a>
         <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fblackfountain.app" target="_blank" class="btn btn-sm" style="justify-content:flex-start;gap:10px;text-decoration:none">🔗 LinkedIn</a>
@@ -1192,688 +1193,176 @@ const BD_SUGGEST_KEYWORDS = {
 };
 
 // PROJECT BRIEF
-// ══════════════════════════════════════════
-// PROJECT BRIEF — Conversational v2
-// Replaces renderBrief and all brief-related
-// functions in script.js
-// ══════════════════════════════════════════
-
-// ── Question sets per project type ──────────────────────────
-
-const BRIEF_TYPES = [
-  { id: 'short',       label: 'Short Film',       icon: '🎬' },
-  { id: 'feature',     label: 'Feature Film',      icon: '🎥' },
-  { id: 'documentary', label: 'Documentary',       icon: '🎙️' },
-  { id: 'commercial',  label: 'Commercial / Ad',   icon: '📺' },
-  { id: 'corporate',   label: 'Corporate / Brand', icon: '🏢' },
-  { id: 'music_video', label: 'Music Video',       icon: '🎵' },
-  { id: 'other',       label: 'Other',             icon: '📽️' },
+const BRIEF_TEMPLATES = [
+  {
+    id: 1,
+    name: 'Narrative / Feature',
+    fields: [
+      { key: 'intro',           label: 'Introduction and Vision' },
+      { key: 'plotSummary',     label: 'Plot Summary' },
+      { key: 'targetAudience',  label: 'Target Audience' },
+      { key: 'budget',          label: 'Budget and Distribution Plans' },
+      { key: 'timeline',        label: 'Timeline and Schedule' },
+      { key: 'productionTeam',  label: 'Production Team' },
+      { key: 'taskManagement',  label: 'Task Management' },
+    ]
+  },
+  {
+    id: 2,
+    name: 'Commercial / Client',
+    fields: [
+      { key: 'clientProfile',  label: 'Client Profile' },
+      { key: 'projectInfo',    label: 'Project Information' },
+      { key: 'creativeReq',    label: 'Creative Requirements' },
+      { key: 'logistics',      label: 'Logistics' },
+      { key: 'timelineBudget', label: 'Timeline and Budget' },
+    ]
+  },
+  {
+    id: 3,
+    name: 'Corporate / Branded',
+    fields: [
+      { key: 'purpose',        label: 'Project Purpose' },
+      { key: 'deliverables',   label: 'Deliverables / Outputs' },
+      { key: 'storyboard',     label: 'Storyboard & Script' },
+      { key: 'shootLocations', label: 'Shoot Locations' },
+      { key: 'timelineBudget', label: 'Timeline Budget' },
+      { key: 'objectives',     label: 'Objectives & Target Audience' },
+      { key: 'audio',          label: 'Audio & Branding' },
+      { key: 'distribution',   label: 'Distribution Channels' },
+      { key: 'reference',      label: 'Reference Videos' },
+    ]
+  },
 ];
-
-const BRIEF_QUESTIONS = {
-  short: [
-    { key: 'logline',       label: 'Logline',               prompt: 'What is the film about in one sentence?',                        placeholder: 'A struggling baker discovers a letter that changes everything.' },
-    { key: 'synopsis',      label: 'Synopsis',              prompt: 'Give a short synopsis — 2 to 4 sentences.',                      placeholder: 'Expand on your logline a little…', multiline: true },
-    { key: 'theme',         label: 'Theme / Message',       prompt: 'What is the film really about underneath the story?',            placeholder: 'e.g. grief, identity, belonging…' },
-    { key: 'audience',      label: 'Target Audience',       prompt: 'Who is this film for?',                                          placeholder: 'e.g. festival audiences, general public, 18–35…' },
-    { key: 'tone',          label: 'Tone & Style',          prompt: 'How does it feel? What\'s the visual and tonal approach?',       placeholder: 'e.g. quiet, naturalistic, dark comedy, handheld…' },
-    { key: 'references',    label: 'References / Influences',prompt: 'Any films, directors or works that influence this project?',    placeholder: 'e.g. early Ken Loach, The Lobster, short films by…' },
-    { key: 'director',      label: 'Director\'s Statement', prompt: 'Why are you making this film? What draws you to it personally?', placeholder: 'In your own words…', multiline: true },
-    { key: 'runtime',       label: 'Estimated Runtime',     prompt: 'How long do you expect the film to be?',                        placeholder: 'e.g. 10–15 minutes' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many days do you plan to shoot?',                           placeholder: 'e.g. 3 days' },
-    { key: 'locations',     label: 'Key Locations',         prompt: 'Where will you be shooting?',                                   placeholder: 'e.g. a domestic kitchen, Runcorn town centre…' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is your total budget, or rough estimate?',                  placeholder: 'e.g. £800 micro-budget, self-funded' },
-    { key: 'funding',       label: 'Funding / Finance',     prompt: 'How is it being funded?',                                       placeholder: 'e.g. self-funded, BFI, crowdfunding…' },
-    { key: 'distribution',  label: 'Distribution Plans',    prompt: 'What do you plan to do with it after completion?',              placeholder: 'e.g. festival circuit, YouTube, broadcast pitch…' },
-    { key: 'team',          label: 'Key Creative Team',     prompt: 'Who are the key people attached to this project?',              placeholder: 'Director, Producer, DP, Lead Actor…', multiline: true },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else worth noting?',                                   placeholder: 'Special requirements, sensitivities, ambitions…', multiline: true },
-  ],
-  feature: [
-    { key: 'logline',       label: 'Logline',               prompt: 'What is the film about in one sentence?',                        placeholder: 'A struggling baker discovers a letter that changes everything.' },
-    { key: 'synopsis',      label: 'Synopsis',              prompt: 'Give a full synopsis — 1 to 2 paragraphs.',                     placeholder: 'Full story arc, including ending…', multiline: true },
-    { key: 'theme',         label: 'Theme / Message',       prompt: 'What is the film really about underneath the story?',            placeholder: 'e.g. grief, identity, belonging…' },
-    { key: 'genre',         label: 'Genre',                 prompt: 'What genre(s) does it fall into?',                              placeholder: 'e.g. drama, dark comedy, thriller…' },
-    { key: 'audience',      label: 'Target Audience',       prompt: 'Who is this film for?',                                          placeholder: 'e.g. arthouse audiences, mainstream, 25–45…' },
-    { key: 'tone',          label: 'Tone & Style',          prompt: 'How does it feel? What\'s the visual and tonal approach?',       placeholder: 'e.g. epic, intimate, handheld realism…' },
-    { key: 'references',    label: 'References / Influences',prompt: 'Any films, directors or works that influence this project?',    placeholder: 'e.g. Lynne Ramsay, early Aronofsky, Loach…' },
-    { key: 'director',      label: 'Director\'s Statement', prompt: 'Why are you making this film? What draws you to it?',           placeholder: 'In your own words…', multiline: true },
-    { key: 'runtime',       label: 'Estimated Runtime',     prompt: 'Expected running time?',                                        placeholder: 'e.g. 90–100 minutes' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many days do you plan to shoot?',                           placeholder: 'e.g. 24 days principal photography' },
-    { key: 'locations',     label: 'Key Locations',         prompt: 'Where will principal photography take place?',                  placeholder: 'e.g. Liverpool, rural Lancashire…' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is your total budget?',                                    placeholder: 'e.g. £250,000' },
-    { key: 'funding',       label: 'Funding / Finance',     prompt: 'How is it being funded?',                                       placeholder: 'e.g. BFI, Screen Yorkshire, co-production…' },
-    { key: 'sales',         label: 'Sales Agent / Distributor', prompt: 'Is there a sales agent or distributor attached?',           placeholder: 'If not, what\'s the plan?' },
-    { key: 'distribution',  label: 'Distribution Strategy', prompt: 'Festival route? Theatrical? Streaming?',                       placeholder: 'e.g. Sundance → theatrical → streaming…' },
-    { key: 'team',          label: 'Key Creative Team',     prompt: 'Who are the key people attached to this project?',              placeholder: 'Director, Producer, DP, Writer, Lead Cast…', multiline: true },
-    { key: 'legal',         label: 'Legal & Rights',        prompt: 'Script rights, chain of title, any IP considerations?',        placeholder: 'e.g. original screenplay, optioned novel…' },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else worth noting?',                                   placeholder: 'Sensitivities, ambitions, special requirements…', multiline: true },
-  ],
-  documentary: [
-    { key: 'logline',       label: 'Logline',               prompt: 'What is the documentary about in one sentence?',                placeholder: 'One filmmaker. One city. One year to save it.' },
-    { key: 'synopsis',      label: 'Synopsis',              prompt: 'What is the film about and why does it matter?',               placeholder: 'Subject, approach, why now…', multiline: true },
-    { key: 'subject',       label: 'Central Subject',       prompt: 'Who or what is at the heart of this film?',                   placeholder: 'Person, community, institution, event…' },
-    { key: 'angle',         label: 'Your Angle',            prompt: 'What is your specific take or thesis?',                        placeholder: 'What argument or perspective does the film take?' },
-    { key: 'access',        label: 'Access',                prompt: 'Do you have access to the subject? How was it established?',  placeholder: 'Existing relationship, formal agreement, ongoing…' },
-    { key: 'audience',      label: 'Target Audience',       prompt: 'Who is this film for?',                                        placeholder: 'e.g. broadcast audience, festival circuit, advocacy…' },
-    { key: 'approach',      label: 'Filmmaking Approach',   prompt: 'Observational, interview-led, participatory, archive-based?', placeholder: 'Describe the approach and visual style…' },
-    { key: 'runtime',       label: 'Runtime',               prompt: 'Intended running time?',                                       placeholder: 'e.g. 52 mins (broadcast), 90 mins (theatrical)' },
-    { key: 'shoot_days',    label: 'Shoot Period',          prompt: 'How long will the shoot phase take?',                          placeholder: 'e.g. 6 weeks over 3 months' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is your total budget?',                                   placeholder: 'e.g. £40,000' },
-    { key: 'funding',       label: 'Funding',               prompt: 'How is it being funded or what funding are you pursuing?',    placeholder: 'e.g. BFI Doc Society, broadcaster pre-sale…' },
-    { key: 'distribution',  label: 'Distribution Plans',    prompt: 'Broadcast, theatrical, online, educational?',                 placeholder: 'e.g. Channel 4 pitch, festival then streaming…' },
-    { key: 'team',          label: 'Key Team',              prompt: 'Key people attached to the project?',                         placeholder: 'Director, Producer, DoP, Editor…', multiline: true },
-    { key: 'ethics',        label: 'Ethical Considerations',prompt: 'Any ethical considerations — subject welfare, consent, sensitivity?', placeholder: 'How are these being managed?', multiline: true },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else worth noting?',                                  placeholder: '', multiline: true },
-  ],
-  commercial: [
-    { key: 'client',        label: 'Client',                prompt: 'Who is the client?',                                           placeholder: 'Company name, brand, contact name' },
-    { key: 'product',       label: 'Product / Service',     prompt: 'What product or service is being advertised?',                 placeholder: 'Describe it briefly' },
-    { key: 'objective',     label: 'Campaign Objective',    prompt: 'What should the ad achieve?',                                  placeholder: 'e.g. brand awareness, launch, direct response…' },
-    { key: 'audience',      label: 'Target Audience',       prompt: 'Who is the ad aimed at?',                                      placeholder: 'Demographics, psychographics, customer type…' },
-    { key: 'message',       label: 'Key Message',           prompt: 'What is the single most important thing the viewer should take away?', placeholder: 'One sentence if possible' },
-    { key: 'tone',          label: 'Tone & Style',          prompt: 'What tone and visual style is required?',                      placeholder: 'e.g. warm, aspirational, gritty, humorous…' },
-    { key: 'references',    label: 'Reference / Moodboard', prompt: 'Any reference ads or visual references from the client?',     placeholder: 'Links, descriptions, comparable campaigns…' },
-    { key: 'deliverables',  label: 'Deliverables',          prompt: 'What formats and lengths are required?',                      placeholder: 'e.g. 30s TV, 15s social, 6s bumper…' },
-    { key: 'runtime',       label: 'Runtime',               prompt: 'Primary spot duration?',                                       placeholder: 'e.g. :30' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many shoot days?',                                         placeholder: 'e.g. 2 days' },
-    { key: 'locations',     label: 'Location(s)',           prompt: 'Where will it shoot?',                                         placeholder: 'Studio, location, or both' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is the production budget?',                               placeholder: 'e.g. £12,000 + VAT' },
-    { key: 'timeline',      label: 'Timeline',              prompt: 'Key dates — shoot, delivery, air date?',                      placeholder: 'e.g. Shoot: 14 Feb · Delivery: 28 Feb · On air: 5 Mar' },
-    { key: 'approvals',     label: 'Approvals Process',     prompt: 'How are decisions and approvals handled?',                    placeholder: 'e.g. single client contact, committee, agency…' },
-    { key: 'team',          label: 'Production Team',       prompt: 'Key crew and any cast attached?',                              placeholder: 'Director, Producer, DP, talent…' },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else from the brief or client?',                     placeholder: 'Legal requirements, brand guidelines, restrictions…', multiline: true },
-  ],
-  corporate: [
-    { key: 'client',        label: 'Client / Company',      prompt: 'Who is the client?',                                           placeholder: 'Company name and department' },
-    { key: 'purpose',       label: 'Purpose',               prompt: 'What is this video for?',                                      placeholder: 'e.g. staff training, internal comms, investor pitch…' },
-    { key: 'message',       label: 'Key Message',           prompt: 'What should viewers understand or do after watching?',         placeholder: 'The single most important takeaway' },
-    { key: 'audience',      label: 'Audience',              prompt: 'Who will watch this video?',                                   placeholder: 'e.g. employees, stakeholders, new hires…' },
-    { key: 'tone',          label: 'Tone',                  prompt: 'What tone is appropriate for this client and context?',        placeholder: 'e.g. authoritative, warm, energetic, formal…' },
-    { key: 'deliverables',  label: 'Deliverables',          prompt: 'What are the required outputs?',                               placeholder: 'e.g. 3-minute main video + 90s edit for social' },
-    { key: 'runtime',       label: 'Runtime',               prompt: 'Expected length?',                                             placeholder: 'e.g. 3–5 minutes' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many days of filming?',                                    placeholder: 'e.g. 1 day at client premises' },
-    { key: 'locations',     label: 'Location(s)',           prompt: 'Where will it be filmed?',                                     placeholder: 'e.g. client office, studio…' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is the agreed budget?',                                   placeholder: 'e.g. £5,000 + VAT' },
-    { key: 'timeline',      label: 'Key Dates',             prompt: 'Shoot date, draft delivery, final delivery?',                 placeholder: 'e.g. Shoot: 1 Mar · Draft: 14 Mar · Final: 21 Mar' },
-    { key: 'branding',      label: 'Branding',              prompt: 'Brand guidelines, logo requirements, music policy?',           placeholder: 'Colour palette, fonts, music usage rights…' },
-    { key: 'approvals',     label: 'Sign-off Process',      prompt: 'How are edits and approvals managed?',                        placeholder: 'e.g. 2 rounds of revisions, single point of contact' },
-    { key: 'distribution',  label: 'Distribution',          prompt: 'Where and how will the video be used?',                       placeholder: 'e.g. internal intranet, YouTube, conference screen…' },
-    { key: 'team',          label: 'Key Crew',              prompt: 'Key crew attached?',                                           placeholder: 'Director, Producer, DP…' },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Any other requirements, restrictions or notes?',               placeholder: '', multiline: true },
-  ],
-  music_video: [
-    { key: 'artist',        label: 'Artist / Band',         prompt: 'Who is the artist or band?',                                   placeholder: 'Name and any relevant context' },
-    { key: 'track',         label: 'Track',                 prompt: 'What track is the video for?',                                  placeholder: 'Track name, duration, release context' },
-    { key: 'concept',       label: 'Concept',               prompt: 'What is the concept for the video?',                           placeholder: 'Narrative, performance, visual concept…', multiline: true },
-    { key: 'tone',          label: 'Tone & Style',          prompt: 'What\'s the visual and tonal approach?',                       placeholder: 'e.g. cinematic, raw, surreal, performance-focused…' },
-    { key: 'references',    label: 'References',            prompt: 'Any reference videos or visual influences?',                   placeholder: 'Links or descriptions of videos that inspire the approach' },
-    { key: 'audience',      label: 'Audience',              prompt: 'Who is the intended audience?',                                placeholder: 'Fan base, age range, platform context…' },
-    { key: 'performance',   label: 'Performance Elements',  prompt: 'Is there a performance element? Where and how?',              placeholder: 'Live performance, mimed, abstract…' },
-    { key: 'locations',     label: 'Location(s)',           prompt: 'Where will it shoot?',                                         placeholder: 'Studio, practical location, both…' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many days?',                                               placeholder: 'e.g. 1 day' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is the budget?',                                          placeholder: 'e.g. £3,000' },
-    { key: 'deliverables',  label: 'Deliverables',          prompt: 'What formats are needed?',                                     placeholder: 'e.g. YouTube 4K, Instagram square, vertical cut…' },
-    { key: 'timeline',      label: 'Timeline',              prompt: 'Shoot date and delivery date?',                                placeholder: 'e.g. Shoot: 20 Apr · Delivery: 10 May' },
-    { key: 'team',          label: 'Key Crew',              prompt: 'Key crew and talent attached?',                                placeholder: 'Director, DP, choreographer, featured talent…' },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else — rights, label requirements, restrictions?',   placeholder: '', multiline: true },
-  ],
-  other: [
-    { key: 'description',   label: 'Project Description',   prompt: 'What is this project?',                                        placeholder: 'Describe it in your own words…', multiline: true },
-    { key: 'objective',     label: 'Objective',             prompt: 'What is the goal or purpose of this project?',                 placeholder: 'What are you trying to achieve?' },
-    { key: 'audience',      label: 'Audience',              prompt: 'Who is the intended audience?',                                placeholder: 'Who will see or use this?' },
-    { key: 'tone',          label: 'Tone & Style',          prompt: 'What\'s the approach?',                                        placeholder: 'How should it look and feel?' },
-    { key: 'deliverables',  label: 'Deliverables',          prompt: 'What are the outputs?',                                        placeholder: 'What will be produced?' },
-    { key: 'runtime',       label: 'Duration / Length',     prompt: 'Expected duration or length?',                                 placeholder: '' },
-    { key: 'shoot_days',    label: 'Shoot Days',            prompt: 'How many days of filming?',                                    placeholder: '' },
-    { key: 'locations',     label: 'Location(s)',           prompt: 'Where will it be filmed?',                                     placeholder: '' },
-    { key: 'budget',        label: 'Budget',                prompt: 'What is the budget?',                                          placeholder: '' },
-    { key: 'timeline',      label: 'Timeline',              prompt: 'Key dates?',                                                   placeholder: '' },
-    { key: 'team',          label: 'Key Team',              prompt: 'Key people attached?',                                         placeholder: '', multiline: true },
-    { key: 'notes',         label: 'Additional Notes',      prompt: 'Anything else?',                                               placeholder: '', multiline: true },
-  ],
-};
-
-// ── State ────────────────────────────────────────────────────
-
-let _briefQuestionIndex = 0;
-let _briefShowAll       = false;
-let _briefOpenId    = null;  // ID of currently open brief (null = show list or type picker)
-let _briefQIdx      = 0;     // question index for multi-brief mode
-
-// ── Migration from old single-brief format ───────────────────────────────────
-
-function _briefMigrate(p) {
-  if (p.briefs) return; // already migrated
-  p.briefs = [];
-  // Migrate old p.brief if it has content
-  if (p.brief && (p.brief.projectType || Object.keys(p.brief.fields || {}).length)) {
-    p.briefs.push({
-      id:        makeId(),
-      type:      p.brief.projectType || 'other',
-      name:      'Production Brief',
-      createdAt: Date.now(),
-      fields:    p.brief.fields || {},
-    });
-  }
-  // Leave p.brief as legacy stub
-}
-
-// ── Main render ──────────────────────────────────────────────
 
 function renderBrief(p) {
   const el = document.getElementById('brief-content');
   if (!el) return;
-  
-  _briefMigrate(p);
-  
-  // If we have briefs, show list (unless a specific brief is open)
-  if (_briefOpenId) {
-    const b = p.briefs.find(x => x.id === _briefOpenId);
-    if (!b) { _briefOpenId = null; renderBrief(p); return; }
-    _briefShowAll ? _renderBriefAllMode(el, p, b) : _renderBriefConversation(el, p, b);
-    return;
+  if (!p.brief) p.brief = { template: null, fields: {} };
+  if (!p.brief.removedKeys)   p.brief.removedKeys   = [];
+  if (!p.brief.customFields)  p.brief.customFields  = [];
+  const activeT = p.brief.template;
+
+  const hasRemoved = p.brief.removedKeys.length > 0;
+  let html = '';
+  if (hasRemoved) {
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:rgba(56,168,212,0.07);border:1px solid rgba(56,168,212,0.2);border-radius:8px">
+      <span style="font-size:12px;color:var(--accent);flex:1">${p.brief.removedKeys.length} field${p.brief.removedKeys.length!==1?'s':''} hidden</span>
+      <button class="btn btn-sm" onclick="restoreBriefFields()" style="color:var(--accent)">↺ Restore fields</button>
+    </div>`;
   }
-  
-  // Show brief list if we have briefs
-  if (p.briefs.length > 0) {
-    _renderBriefList(el, p);
-    return;
-  }
-  
-  // No briefs yet - show type picker (old behavior)
-  if (!p.brief) p.brief = { projectType: null, fields: {} };
-  if (!p.brief.fields) p.brief.fields = {};
-  if (!p.brief.projectType) {
-    _renderBriefTypePicker(el, p);
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+    ${BRIEF_TEMPLATES.map(t => `
+      <div onclick="selectBriefTemplate(${t.id})" style="
+        padding:14px 16px;border-radius:10px;cursor:pointer;
+        border:2px solid ${activeT === t.id ? 'var(--accent)' : 'var(--border)'};
+        background:${activeT === t.id ? 'rgba(56,168,212,0.07)' : 'var(--surface2)'};
+        transition:border-color .15s,background .15s
+      ">
+        <div style="font-size:12px;font-weight:600;color:${activeT === t.id ? 'var(--accent)' : 'var(--text)'};margin-bottom:4px">${t.name}</div>
+        <div style="font-size:10px;color:var(--text3)">${t.fields.length} fields</div>
+      </div>
+    `).join('')}
+  </div>`;
+
+  if (activeT) {
+    const tmpl = BRIEF_TEMPLATES.find(t => t.id === activeT);
+    if (tmpl) {
+      const visibleFields = tmpl.fields.filter(f => !p.brief.removedKeys.includes(f.key));
+      html += visibleFields.map(f => briefFieldHtml(f.key, f.label, p.brief.fields[f.key]||'', false)).join('');
+    }
+    // Custom fields
+    html += p.brief.customFields.map(f => briefFieldHtml(f.key, f.label, p.brief.fields[f.key]||'', true)).join('');
+    // Add field row
+    html += `
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center" id="brief-add-row">
+        <input class="form-input form-input-sm" id="brief-new-label" placeholder="New field label..." style="flex:1" onkeydown="if(event.key==='Enter')addBriefCustomField()">
+        <button class="btn btn-sm btn-primary" onclick="addBriefCustomField()">+ Add Field</button>
+      </div>`;
   } else {
-    _briefShowAll ? _renderBriefAllMode(el, p) : _renderBriefConversation(el, p);
+    html += `<div class="empty-state" style="margin-top:12px"><div class="icon">🗒️</div><h4>Choose a template</h4><p>Select a template above to get started</p></div>`;
   }
+
+  el.innerHTML = html;
 }
 
-// ── LIST VIEW ─────────────────────────────────────────────────────────────────
-
-function _renderBriefList(el, p) {
-  const briefs = p.briefs || [];
-  
-  const cards = briefs.map(b => {
-    const typeMeta = BRIEF_TYPES.find(t => t.id === b.type) || { label: 'Brief', icon: '📽️' };
-    const qs = BRIEF_QUESTIONS[b.type] || [];
-    const answered = qs.filter(q => b.fields?.[q.key]?.trim()).length;
-    const pct = qs.length ? Math.round(answered / qs.length * 100) : 0;
-    const date = new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    return `
-      <div onclick="briefOpen('${b.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:border-color .12s;margin-bottom:10px">
-        <div style="font-size:22px;flex-shrink:0;width:32px;text-align:center">${typeMeta.icon}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${_briefEsc(b.name)}</div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">${typeMeta.label} · ${date}</div>
-          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px">
-            <div style="height:100%;background:var(--accent);border-radius:2px;width:${pct}%"></div>
-          </div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${answered}/${qs.length} answered</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-sm" onclick="event.stopPropagation();briefExportPDF('${b.id}')">⬇ PDF</button>
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();briefDelete('${b.id}')">🗑</button>
-        </div>
-      </div>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div style="max-width:700px;margin:0 auto">
-      ${cards}
-      <button class="btn btn-primary" onclick="briefNew()" style="margin-top:16px">+ New Brief</button>
+function briefFieldHtml(key, label, value, isCustom) {
+  return `
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">${label.replace(/</g,'&lt;')}</label>
+        <button onclick="removeBriefField('${key}',${isCustom})" title="Remove field" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:0 2px">✕</button>
+      </div>
+      <textarea class="form-input" rows="4" style="width:100%;resize:vertical;font-size:13px;line-height:1.6"
+        placeholder="Enter ${label.toLowerCase()}..."
+        onblur="saveBriefField('${key}',this.value)">${value.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
     </div>`;
 }
 
-function _briefEsc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ── List actions ────────────────────────────────────────────────────────────
-
-function briefOpen(id) {
-  const p = currentProject(); if (!p) return;
-  _briefMigrate(p);
-  const b = p.briefs.find(x => x.id === id); if (!b) return;
-  _briefOpenId = id;
-  _briefShowAll = false;
-  const qs = BRIEF_QUESTIONS[b.type] || [];
-  const idx = qs.findIndex(q => !b.fields?.[q.key]?.trim());
-  _briefQIdx = idx === -1 ? 0 : idx;
-  renderBrief(p);
-}
-
-function briefDelete(id) {
-  const p = currentProject(); if (!p) return;
-  const b = p.briefs.find(x => x.id === id);
-  const name = b ? b.name : 'this brief';
-  showConfirmDialog('Delete "' + name + '"? This cannot be undone.', 'Delete', () => {
-    p.briefs = p.briefs.filter(x => x.id !== id);
-    if (_briefOpenId === id) _briefOpenId = null;
+function removeBriefField(key, isCustom) {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  if (!p.brief.removedKeys)  p.brief.removedKeys  = [];
+  if (!p.brief.customFields) p.brief.customFields = [];
+  // Find label for confirm message
+  let label = key;
+  if (isCustom) {
+    label = (p.brief.customFields.find(f => f.key === key) || {}).label || key;
+  } else {
+    for (const t of BRIEF_TEMPLATES) {
+      const f = t.fields.find(x => x.key === key);
+      if (f) { label = f.label; break; }
+    }
+  }
+  const msg = isCustom
+    ? `Remove the "${label}" field? This cannot be undone.`
+    : `Hide the "${label}" field? Your text will be saved — you can restore it later via Restore fields.`;
+  showConfirmDialog(msg, isCustom ? 'Remove' : 'Hide', () => {
+    if (isCustom) {
+      p.brief.customFields = p.brief.customFields.filter(f => f.key !== key);
+    } else {
+      if (!p.brief.removedKeys.includes(key)) p.brief.removedKeys.push(key);
+    }
     saveStore();
     renderBrief(p);
   });
 }
 
-function briefNew() {
-  // Go to type picker (reuse existing function)
-  _briefOpenId = null;
-  _briefMigrate(currentProject());
-  _renderBriefTypePicker(document.getElementById('brief-content'), currentProject());
-}
-
-// ── Step 1: Type picker ──────────────────────────────────────
-
-function _renderBriefTypePicker(el, p) {
-  el.innerHTML = `
-    <div style="max-width:900px;margin:0 auto">
-      <div style="margin-bottom:24px;text-align:center">
-        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">What kind of project is this?</div>
-        <div style="font-size:13px;color:var(--text3)">This shapes the questions you'll be asked. You can change it later.</div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px">
-        ${BRIEF_TYPES.map(t => `
-          <div onclick="briefSelectType('${t.id}')"
-            style="padding:18px 16px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);transition:border-color .12s,background .12s;text-align:center;min-width:160px"
-            onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--surface3)'"
-            onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'"
-          >
-            <div style="font-size:28px;margin-bottom:8px">${t.icon}</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${t.label}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-}
-
-function briefSelectType(typeId) {
-  const p = currentProject(); if (!p) return;
-  // If using new multi-brief system
-  if (p.briefs) {
-    const typeMeta = BRIEF_TYPES.find(t => t.id === typeId) || {};
-    const b = {
-      id: makeId(),
-      type: typeId,
-      name: typeMeta.label + ' Brief',
-      createdAt: Date.now(),
-      fields: {},
-    };
-    p.briefs.push(b);
-    saveStore();
-    _briefOpenId = b.id;
-    _briefQIdx = 0;
-    renderBrief(p);
-    return;
-  }
-  // Old single-brief behavior
-  if (!p.brief) p.brief = { fields: {} };
-  p.brief.projectType = typeId;
-  _briefQuestionIndex = _brieffirstUnanswered(p);
-  _briefShowAll = false;
+function restoreBriefFields() {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  p.brief.removedKeys = [];
   saveStore();
   renderBrief(p);
 }
 
-function _brieffirstUnanswered(p) {
-  const qs = BRIEF_QUESTIONS[p.brief.projectType] || [];
-  const idx = qs.findIndex(q => !p.brief.fields[q.key] || !p.brief.fields[q.key].trim());
-  return idx === -1 ? 0 : idx;
+function addBriefCustomField() {
+  const p = currentProject();
+  if (!p || !p.brief) return;
+  if (!p.brief.customFields) p.brief.customFields = [];
+  const input = document.getElementById('brief-new-label');
+  const label = input ? input.value.trim() : '';
+  if (!label) return;
+  const key = 'custom_' + makeId();
+  p.brief.customFields.push({ key, label });
+  saveStore();
+  renderBrief(p);
 }
 
-// ── Step 2: Conversational mode ──────────────────────────────
-
-function _renderBriefConversation(el, p, b) {
-  // Use provided brief or fall back to p.brief (legacy)
-  const brief = b || p.brief;
-  const typeId  = b?.type || brief.projectType;
-  const typeMeta= BRIEF_TYPES.find(t => t.id === typeId) || {};
-  const qs      = BRIEF_QUESTIONS[typeId] || [];
-  const answered= qs.filter(q => brief.fields?.[q.key]?.trim()).length;
-  const pct     = qs.length ? Math.round(answered / qs.length * 100) : 0;
-
-  // Use correct index based on mode
-  const qIdx = b ? _briefQIdx : _briefQuestionIndex;
-  const setIdx = (i) => { if(b) _briefQIdx = i; else _briefQuestionIndex = i; };
-
-  // Clamp index
-  if (qIdx >= qs.length) setIdx(qs.length - 1);
-  if (qIdx < 0) setIdx(0);
-
-  const q   = qs[b ? _briefQIdx : _briefQuestionIndex];
-  const val = brief.fields?.[q.key] || '';
-  const isAnswered = !!val.trim();
-  const isLast = (b ? _briefQIdx : _briefQuestionIndex) === qs.length - 1;
-  const isFirst= (b ? _briefQIdx : _briefQuestionIndex) === 0;
-
-  // Progress dots — answered / current / unanswered
-  const dots = qs.map((qq, i) => {
-    const ans = !!(brief.fields?.[qq.key]?.trim());
-    const cur = i === (b ? _briefQIdx : _briefQuestionIndex);
-    const bg  = cur ? 'var(--accent)' : ans ? 'rgba(230,188,60,0.3)' : 'var(--border)';
-    const size= cur ? '10px' : '7px';
-    return `<span onclick="briefJumpTo(${i})" title="${qq.label}" style="display:inline-block;width:${size};height:${size};border-radius:50%;background:${bg};cursor:pointer;transition:all .15s;flex-shrink:0"></span>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div style="max-width:600px;margin:0 auto">
-
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">${typeMeta.icon||'📽️'}</span>
-          <div>
-            <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono)">${typeMeta.label||''} Brief</div>
-            <div style="font-size:11px;color:var(--text3)">${answered} of ${qs.length} answered · ${pct}%</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="_briefShowAll=true;renderBrief(currentProject())"
-            style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-            onmouseenter="this.style.borderColor='var(--border)';this.style.color='var(--text)'"
-            onmouseleave="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'"
-          >See all questions</button>
-          <button onclick="briefChangetype()"
-            style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-          >Change type</button>
-          <button onclick="briefExportPDF()"
-            style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-          >⬇ Export PDF</button>
-        </div>
-      </div>
-
-      <!-- Progress dots -->
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:28px">${dots}</div>
-
-      <!-- Question card -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:16px">
-        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">${String(qIdx+1).padStart(2,'0')} / ${String(qs.length).padStart(2,'0')} · ${q.label}</div>
-        <div style="font-size:17px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:20px">${q.prompt}</div>
-        ${q.multiline
-          ? `<textarea id="brief-q-input" rows="4"
-              style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--text);font-size:14px;line-height:1.7;padding:8px 0;resize:none;outline:none;font-family:var(--font-body);box-sizing:border-box"
-              placeholder="${(q.placeholder||'').replace(/"/g,'&quot;')}"
-              onblur="briefSaveField('${q.key}',this.value)"
-              onkeydown="if(event.key==='Tab'){event.preventDefault();briefNext()}"
-            >${val.replace(/</g,'&lt;')}</textarea>`
-          : `<input id="brief-q-input" type="text"
-              style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--text);font-size:14px;padding:8px 0;outline:none;font-family:var(--font-body);box-sizing:border-box"
-              placeholder="${(q.placeholder||'').replace(/"/g,'&quot;')}"
-              value="${val.replace(/"/g,'&quot;')}"
-              onblur="briefSaveField('${q.key}',this.value)"
-              onkeydown="if(event.key==='Enter')briefNext()"
-            />`
-        }
-      </div>
-
-      <!-- Controls -->
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;gap:8px">
-          <button onclick="briefPrev()" ${isFirst?'disabled':''} style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:var(--radius);padding:6px 14px;font-size:12px;cursor:pointer;opacity:${isFirst?0.3:1}">← Back</button>
-          <button onclick="briefSkip()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:6px 10px;opacity:0.6"
-            onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6"
-          >Skip</button>
-        </div>
-        ${isLast
-          ? `<button onclick="briefSaveCurrent();briefExportPDF()" style="background:var(--accent);color:#000;border:none;border-radius:var(--radius);padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer">Finish & Export PDF</button>`
-          : `<button onclick="briefNext()" style="background:var(--accent);color:#000;border:none;border-radius:var(--radius);padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer">${isAnswered?'Next →':'Next →'}</button>`
-        }
-      </div>
-
-    </div>`;
-
-  // Auto-focus input
-  setTimeout(() => document.getElementById('brief-q-input')?.focus(), 60);
+function selectBriefTemplate(id) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.brief) p.brief = { template: null, fields: {}, removedKeys: [], customFields: [] };
+  p.brief.template = id;
+  saveStore();
+  renderBrief(p);
 }
 
-// ── Step 2b: All-at-once mode ────────────────────────────────
-
-function _renderBriefAllMode(el, p, b) {
-  const brief = b || p.brief;
-  const typeId  = b?.type || brief.projectType;
-  const typeMeta= BRIEF_TYPES.find(t => t.id === typeId) || {};
-  const qs      = BRIEF_QUESTIONS[typeId] || [];
-  const answered= qs.filter(q => brief.fields?.[q.key]?.trim()).length;
-
-  el.innerHTML = `
-    <div style="max-width:640px;margin:0 auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">${typeMeta.icon||'📽️'}</span>
-          <div>
-            <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono)">${typeMeta.label||''} Brief</div>
-            <div style="font-size:11px;color:var(--text3)">${answered} of ${qs.length} answered</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="_briefShowAll=false;renderBrief(currentProject())"
-            style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-          >← One at a time</button>
-          <button onclick="briefChangetype()"
-            style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-          >Change type</button>
-          <button onclick="briefExportPDF()"
-            style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:4px 12px;font-size:11px;cursor:pointer"
-          >⬇ Export PDF</button>
-        </div>
-      </div>
-
-      ${qs.map((q, i) => {
-        const val = brief.fields?.[q.key] || '';
-        const answered = !!val.trim();
-        return `
-        <div style="margin-bottom:24px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <span style="font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1px;text-transform:uppercase">${String(i+1).padStart(2,'0')}</span>
-            <span style="font-size:12px;font-weight:600;color:${answered?'var(--text)':'var(--text3)'}">${q.label}</span>
-            ${answered ? `<span style="font-size:9px;color:var(--accent);font-family:var(--font-mono)">✓</span>` : ''}
-          </div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${q.prompt}</div>
-          ${q.multiline
-            ? `<textarea rows="3" id="brief-all-${q.key}"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;line-height:1.6;padding:10px 12px;resize:vertical;outline:none;font-family:var(--font-body);box-sizing:border-box;transition:border-color .12s"
-                placeholder="${(q.placeholder||'').replace(/"/g,'&quot;')}"
-                onblur="briefSaveField('${q.key}',this.value);briefRefreshDot(${i})"
-                onfocus="this.style.borderColor='var(--accent)'"
-                onblur2="this.style.borderColor='var(--border2)'"
-              >${val.replace(/</g,'&lt;')}</textarea>`
-            : `<input type="text" id="brief-all-${q.key}"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:var(--font-body);box-sizing:border-box;transition:border-color .12s"
-                placeholder="${(q.placeholder||'').replace(/"/g,'&quot;')}"
-                value="${val.replace(/"/g,'&quot;')}"
-                onblur="briefSaveField('${q.key}',this.value);briefRefreshDot(${i})"
-                onfocus="this.style.borderColor='var(--accent)'"
-              />`
-          }
-        </div>`;
-      }).join('')}
-
-      <div style="display:flex;justify-content:flex-end;margin-top:8px">
-        <button onclick="briefExportPDF()" style="background:var(--accent);color:#000;border:none;border-radius:var(--radius);padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">⬇ Export Brief PDF</button>
-      </div>
-    </div>`;
-}
-
-// ── Navigation helpers ───────────────────────────────────────
-
-function briefSaveCurrent() {
-  const input = document.getElementById('brief-q-input');
-  if (!input) return;
-  const p = currentProject(); if (!p) return;
-  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
-  const typeId = b?.type || b?.projectType;
-  const qs = BRIEF_QUESTIONS[typeId] || [];
-  const idx = (_briefOpenId && p.briefs) ? _briefQIdx : _briefQuestionIndex;
-  const q = qs[idx];
-  if (q) briefSaveField(q.key, input.value);
-}
-
-function briefSaveField(key, val) {
-  const p = currentProject(); if (!p) return;
-  // If using new multi-brief system
-  if (_briefOpenId && p.briefs) {
-    const b = p.briefs.find(x => x.id === _briefOpenId);
-    if (b) { if (!b.fields) b.fields = {}; b.fields[key] = val; saveStore(); }
-    return;
-  }
-  // Legacy single brief
-  if (!p.brief) p.brief = { fields: {} };
-  if (!p.brief.fields) p.brief.fields = {};
+function saveBriefField(key, val) {
+  const p = currentProject();
+  if (!p) return;
+  if (!p.brief) p.brief = { template: null, fields: {}, removedKeys: [], customFields: [] };
   p.brief.fields[key] = val;
   saveStore();
 }
-
-function briefNext() {
-  briefSaveCurrent();
-  const p = currentProject(); if (!p) return;
-  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
-  const typeId = b?.type || b?.projectType;
-  const qs = BRIEF_QUESTIONS[typeId] || [];
-  const idx = (_briefOpenId && p.briefs) ? _briefQIdx : _briefQuestionIndex;
-  if (idx < qs.length - 1) {
-    if (_briefOpenId && p.briefs) { _briefQIdx++; } else { _briefQuestionIndex++; }
-    renderBrief(p);
-  }
-}
-
-function briefPrev() {
-  briefSaveCurrent();
-  const p = currentProject(); if (!p) return;
-  if (_briefOpenId && p.briefs) {
-    if (_briefQIdx > 0) { _briefQIdx--; renderBrief(p); }
-  } else {
-    if (_briefQuestionIndex > 0) { _briefQuestionIndex--; renderBrief(p); }
-  }
-}
-
-function briefSkip() {
-  briefSaveCurrent();
-  const p = currentProject(); if (!p) return;
-  const b = (_briefOpenId && p.briefs) ? p.briefs.find(x => x.id === _briefOpenId) : p.brief;
-  const qs = BRIEF_QUESTIONS[b?.type || b?.projectType] || [];
-  if (_briefOpenId && p.briefs) {
-    if (_briefQIdx < qs.length - 1) { _briefQIdx++; renderBrief(p); }
-  } else {
-    if (_briefQuestionIndex < qs.length - 1) { _briefQuestionIndex++; renderBrief(p); }
-  }
-}
-
-function briefJumpTo(i) {
-  briefSaveCurrent();
-  if (_briefOpenId && currentProject().briefs) {
-    _briefQIdx = i;
-  } else {
-    _briefQuestionIndex = i;
-  }
-  renderBrief(currentProject());
-}
-
-function briefChangetype() {
-  const p = currentProject(); if (!p) return;
-  showConfirmDialog('Change project type? Your answers will be kept but some questions may change.', 'Change type', () => {
-    p.brief.projectType = null;
-    saveStore();
-    renderBrief(p);
-  });
-}
-
-function briefRefreshDot(i) {
-  // Re-render just the dot for index i without full re-render
-  // Simple approach: just save, dots will refresh next render
-}
-
-// ── PDF Export ───────────────────────────────────────────────
-
-function briefExportPDF(id) {
-  const p = currentProject(); if (!p) return;
-  // Get the brief to export
-  let brief = null;
-  if (id && p.briefs) {
-    brief = p.briefs.find(x => x.id === id);
-  } else if (_briefOpenId && p.briefs) {
-    brief = p.briefs.find(x => x.id === _briefOpenId);
-  }
-  // Fall back to legacy p.brief
-  if (!brief) brief = p.brief;
-  
-  const typeId   = brief?.type || brief?.projectType;
-  const typeMeta = BRIEF_TYPES.find(t => t.id === typeId) || { label: 'Production', icon: '📽️' };
-  const qs       = BRIEF_QUESTIONS[typeId] || [];
-  const fields   = brief?.fields || {};
-  const answered = qs.filter(q => fields[q.key]?.trim());
-
-  const projectTitle   = p.title || 'Untitled Project';
-  const projectCompany = p.company || '';
-  const projectGenre   = p.genre || '';
-  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-
-  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  const fieldsHtml = answered.map(q => `
-    <div class="field">
-      <div class="field-label">${esc(q.label)}</div>
-      <div class="field-value">${esc(fields[q.key]).replace(/\n/g,'<br>')}</div>
-    </div>
-  `).join('');
-
-  const printHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${esc(projectTitle)} — Production Brief</title>
-  <style>
-    @page { margin: 2cm 2.2cm; size: A4; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Georgia', serif; font-size: 13px; color: #111; background: #fff; line-height: 1.5; }
-
-    .header { border-bottom: 3px solid #111; padding-bottom: 16px; margin-bottom: 20px; }
-    .header-label { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #888; margin-bottom: 6px; }
-    .header-title { font-size: 28px; font-weight: bold; letter-spacing: -0.5px; margin-bottom: 4px; }
-    .header-meta { font-family: Arial, sans-serif; font-size: 11px; color: #555; display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
-    .header-meta span { display: flex; align-items: center; gap: 4px; }
-
-    .field { margin-bottom: 24px; page-break-inside: avoid; }
-
-    .footer { position: fixed; bottom: 0; left: 2.2cm; right: 2.2cm; display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 9px; color: #bbb; border-top: 1px solid #eee; padding: 6px 0; }
-    body { padding-bottom: 18mm; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="header-label">Production Brief · ${esc(typeMeta.label)}</div>
-    <div class="header-title">${esc(projectTitle)}</div>
-    <div class="header-meta">
-      ${projectCompany ? `<span>${esc(projectCompany)}</span>` : ''}
-      ${projectGenre   ? `<span>${esc(projectGenre)}</span>`   : ''}
-      <span>${today}</span>
-    </div>
-  </div>
-
-  ${fieldsHtml || '<p style="color:#888;font-style:italic">No answers provided yet.</p>'}
-
-  <div class="footer">
-    <span>${esc(projectTitle)} — Production Brief</span>
-    <span>Black Fountain · blackfountain.io</span>
-  </div>
-</body>
-</html>`;
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-  document.body.appendChild(iframe);
-  iframe.contentDocument.write(printHtml);
-  iframe.contentDocument.close();
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-  iframe.contentWindow.addEventListener('afterprint', () => iframe.remove());
-}
-
-// ── Legacy compat stubs ──────────────────────────────────────
-// These replace the old functions so nothing breaks if called elsewhere
-
-function selectBriefTemplate(id) { briefSelectType(id === 1 ? 'short' : id === 2 ? 'commercial' : 'corporate'); }
-function saveBriefField(key, val) { briefSaveField(key, val); }
-function addBriefCustomField()    { /* handled in all-mode */ }
-function removeBriefField()       { /* deprecated */ }
-function restoreBriefFields()     { /* deprecated */ }
-function briefFieldHtml()         { return ''; }
-function exportBriefPDF()         { briefExportPDF(); }
 

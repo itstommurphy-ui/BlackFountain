@@ -50,13 +50,12 @@ const Prefs = (function () {
   // Saves to store (which syncs to Supabase via saveStore)
   // and mirrors to localStorage as fallback.
 
-   function set(key, value) {
-     _ensure();
-     if (store.preferences[key] === value) return; // no change, no save
-     store.preferences[key] = value;
-     try { localStorage.setItem(`blackfountain_pref_${key}`, String(value)); } catch(e) {}
-     saveStore();
-   }
+  function set(key, value) {
+    _ensure();
+    store.preferences[key] = value;
+    try { localStorage.setItem(`blackfountain_pref_${key}`, String(value)); } catch(e) {}
+    saveStore();
+  }
 
   // ── Apply all preferences to the UI ────────────────────────
   // Call this after loadStore() completes.

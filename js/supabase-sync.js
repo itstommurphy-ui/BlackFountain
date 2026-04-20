@@ -25,15 +25,15 @@ async function sbInit(onReady) {
   }
   try {
     console.log('[sbInit] Creating Supabase client...');
-     _sb = supabase.createClient(_SB_URL, _SB_KEY, {
-       auth: {
-         persistSession: true,
-         storageKey: 'bf-supabase-auth',
-         autoRefreshToken: true,
-         detectSessionInUrl: true,
-         lock: false
-       }
-     });
+    _sb = supabase.createClient(_SB_URL, _SB_KEY, {
+      auth: {
+        persistSession: true,
+        storageKey: 'bf-supabase-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        lock: false
+      }
+    });
     console.log('[sbInit] Supabase client created successfully');
   } catch(e) {
     console.warn('[sbInit] Supabase init failed — running offline only', e);
@@ -45,36 +45,25 @@ async function sbInit(onReady) {
     _sbUser = session?.user ?? null;
     _cachedToken = session?.access_token ?? null;
     _updateAuthIndicator();
-
-    if (event === 'SIGNED_IN' && _sbUser) {
-      _sbKeepAlive();
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && _sbUser) {
+      _sbKeepAlive(); // Start keepalive when signed in
       if (!_sbAppStarted) {
         _sbAppStarted = true;
         document.getElementById('modal-login').style.display = 'none';
         await _sbAppReadyCallback();
       }
-      // Do NOT reload on re-auth — the sbPushStore empty guard and
-      // _bfStoreLoaded=false in SIGNED_OUT are sufficient protection
     }
-
     if (event === 'SIGNED_OUT') {
-      // Block all saves immediately — store is about to be wiped.
-      // Without this, autosave could fire between the wipe and the reload.
-      if (typeof _bfStoreLoaded !== 'undefined') _bfStoreLoaded = false;
-      if (typeof _bfSaveBlocked !== 'undefined') _bfSaveBlocked = true;
-
       // Clear local store from memory
       Object.keys(store).forEach(k => delete store[k]);
-      Object.assign(store, {
-        projects: [], teamMembers: [], currentProjectId: null, files: [],
-        contacts: [], locations: [], contactColumns: [], contactCustomData: {},
-        contactHiddenCols: [], locationHiddenCols: [], locationColumns: [],
-        locationCustomData: {}, moodboards: []
-      });
-
-       // Clear localStorage backups
+      Object.assign(store, { projects: [], teamMembers: [], currentProjectId: null, files: [], contacts: [], locations: [], contactColumns: [], contactCustomData: {}, contactHiddenCols: [], locationHiddenCols: [], locationColumns: [], locationCustomData: {}, moodboards: [] });
+      // Clear IndexedDB so data doesn't persist on this device after logout
+      openDB().then(db => {
+        const tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').clear();
+      }).catch(() => {});
+      // Clear localStorage backups
       Object.keys(localStorage).filter(k => k.startsWith('bf_')).forEach(k => localStorage.removeItem(k));
-
       // Show login modal and block the app
       _showLoginModal();
     }
@@ -256,14 +245,7 @@ async function sbPullStore() {
 // Push store to Supabase (strips file blobs to stay under size limits)
 async function sbPushStore() {
   if (!_sb || !_sbUser) return;
-
-  if ((store.projects || []).length === 0) {
-    console.error('[sbPushStore] BLOCKED empty push. Stack:', new Error().stack);
-    return;
-  }
-
-  console.log('[sbPushStore] Pushing', (store.projects||[]).length, 'projects');
-
+  
   try {
     // Get user's session token for authorization
     if (!_cachedToken) {
@@ -275,8 +257,7 @@ async function sbPushStore() {
 
     const stripped = {
       ...store,
-      files: (store.files || []).map(({ data: _d, ...f }) => f),
-      _lastSave: Date.now()
+      files: (store.files || []).map(({ data: _d, ...f }) => f)
     };
     
     console.log('[sbPushStore] Pushing to REST API for user_id:', _sbUser.id);
@@ -333,20 +314,6 @@ async function _loginSendOtp() {
     btn.textContent = 'Send sign-in code'; btn.disabled = false;
   }
 }
-
-// DIAGNOSTIC: poll Supabase every 30s and log project count
-setInterval(async () => {
-  if (!_sb || !_sbUser || !_cachedToken) return;
-  try {
-    const r = await fetch(`${_SB_URL}/rest/v1/stores?user_id=eq.${_sbUser.id}&select=data->>projects,updated_at`, {
-      headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${_cachedToken}` }
-    });
-    const d = await r.json();
-    const raw = d?.[0]?.['?column?'] || d?.[0]?.projects;
-    const count = raw ? JSON.parse(raw).length : '?';
-    console.log('[POLL] Supabase projects:', count, '| updated_at:', d?.[0]?.updated_at);
-  } catch(e) {}
-}, 30000);
 
 async function _loginVerifyOtp() {
   const token = (document.getElementById('login-otp')?.value || '').trim();

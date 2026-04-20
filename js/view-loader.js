@@ -10,8 +10,7 @@ const viewFiles = {
   'moodboards': '/html/views/moodboards',
   'files': '/html/views/files',
   'settings': '/html/views/settings',
-  'team': '/html/views/team',
-  'myfountain': '/html/views/my-fountain'
+  'team': '/html/views/team'
 };
 
 const loadedViews = new Set();
