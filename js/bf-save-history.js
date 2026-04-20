@@ -22,6 +22,7 @@ async function saveStore(opts = {}) {
     console.warn('[saveStore] Blocked — store has 0 projects');
     return;
   }
+  console.log('[saveStore] Called from:', new Error().stack.split('\n').slice(2,6).join('\n'));
 
   const { silent = false } = opts;
   if (!silent && window.SaveFeedback) SaveFeedback.showSaving();

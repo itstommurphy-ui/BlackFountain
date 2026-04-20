@@ -303,11 +303,10 @@ function showProjectView(id) {
   const p = currentProject();
   if (!p) return;
 
-  // Update last opened timestamp
-  p.updatedAt = new Date().toISOString();
-  try { saveStore(); } catch(e) {}
+   // Update last opened timestamp
+   p.updatedAt = new Date().toISOString();
 
-  // Save current view to localStorage for persistence across refreshes
+   // Save current view to localStorage for persistence across refreshes
   try {
     localStorage.setItem('bf_currentView', JSON.stringify({ type: 'project', projectId: id }));
     console.log('[ViewRestore] Saved project view:', id);
