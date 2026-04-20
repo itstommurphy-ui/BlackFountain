@@ -4,6 +4,7 @@
     <h2>SETTINGS</h2>
     <p>System configuration and data backup</p>
   </div>
+  <div id="bf-save-history-ui"></div>
   <div style="max-width:800px">
     <div class="card" style="margin-bottom:20px">
       <h3 style="margin-top:0">Appearance</h3>
@@ -56,21 +57,36 @@
     </div>
     <!-- CONTACT LINKING CARD -->
     <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">CONTACTS & PEOPLE</h3>
-      <p style="color:var(--text2);margin-bottom:16px">
-        When you add cast or crew to a project, Black Fountain can link 
-        them to your Contacts so phone numbers and emails stay in sync 
-        everywhere. 
-      </p>
-      <div id="contact-link-stats" style="font-size:14px;color:var(--text2);margin-bottom:14px"></div>
+      <h3 style="margin-top:0">Contact Management</h3>
+      <p style="color:var(--text2);margin-bottom:16px">Manage contacts and link personnel to contacts for centralized phone/email data.</p>
+      <div id="contact-stats" style="display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div id="total-contacts" style="font-size:24px;font-weight:700;color:var(--accent)">0</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Total Contacts</div>
+        </div>
+        <div style="text-align:center">
+          <div id="linked-rows" style="font-size:24px;font-weight:700;color:var(--success)">0</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Linked Rows</div>
+        </div>
+        <div style="text-align:center">
+          <div id="unlinked-rows" style="font-size:24px;font-weight:700;color:var(--warning)">0</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Unlinked</div>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="openContactMigrationModal()">
-          <span class="icon">⚭</span> Link Everyone
+        <button class="btn" onclick="openContactsView()">
+          <span class="icon">👥</span> View Contacts
         </button>
-        <button class="btn" onclick="_syncAllContacts()" title="Push latest phone/email from contacts to all linked rows">
-          <span class="icon">↻</span> Sync Now
+        <button class="btn btn-primary" onclick="runContactMigration(true)">
+          <span class="icon">🔗</span> Link All Personnel
+        </button>
+        <button class="btn" style="background:#ff9500;border:none;color:#000" onclick="runContactMigration(true)">
+          <span class="icon">➕</span> Create Missing Contacts
         </button>
       </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px">
+        <strong>How it works:</strong> Cast, crew, and extras rows can be linked to contacts. Linked rows display the contact's phone and email. Changes to a contact are automatically synced to all linked rows.
+      </p>
     </div>
     <div class="card">
       <h3 style="margin-top:0">Storage Info</h3>

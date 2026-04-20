@@ -9,9 +9,13 @@
 // Review mode shows a checklist before committing.
 //
 // Drop AFTER breakdown.js in index.html.
+//
+// DISABLED — keeping code for reference in case re-enabled later
 // ══════════════════════════════════════════
 
 (function () {
+
+  return; // Disabled
 
   // ── Patch applySelectedBdSuggestions ──────────────────────
 

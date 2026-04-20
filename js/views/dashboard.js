@@ -110,6 +110,7 @@ function saveProject() {
   if (!title) { showToast('Please enter a project title', 'info'); return; }
   const directors = _getProjectTags('director');
   const producers = _getProjectTags('producer');
+  const notes = document.getElementById('proj-input-notes').value.trim();
   let p;
   if (editingProjectId) {
     p = getProject(editingProjectId);
@@ -120,7 +121,8 @@ function saveProject() {
     p.producers = producers;
     p.company = document.getElementById('proj-input-company').value.trim();
     p.genre = document.getElementById('proj-input-genre').value.trim();
-    p.notes = document.getElementById('proj-input-notes').value.trim();
+    p.notes = notes;
+    p.logline = notes;
     closeModal('modal-project');
     saveStore();
     showProjectView(editingProjectId);
@@ -134,7 +136,8 @@ function saveProject() {
       producers,
       company: document.getElementById('proj-input-company').value.trim(),
       genre: document.getElementById('proj-input-genre').value.trim(),
-      notes: document.getElementById('proj-input-notes').value.trim(),
+      notes: notes,
+      logline: notes,
     });
     if (!store.projects) store.projects = [];
     store.projects.push(p);
@@ -225,12 +228,21 @@ function editProjectFromDashboard(projectId) {
   document.getElementById('proj-input-company').value = p.company;
   document.getElementById('proj-input-genre').value = p.genre;
   document.getElementById('proj-input-notes').value = p.notes;
-  // Handle director/producer arrays
   const directors = Array.isArray(p.directors) ? p.directors : (p.director ? [p.director] : []);
   const producers = Array.isArray(p.producers) ? p.producers : (p.producer ? [p.producer] : []);
   _renderProjectTags('director', directors);
   _renderProjectTags('producer', producers);
   openModal('modal-project');
+}
+
+function showProjectCtxMenu(e, projectId) {
+  e.preventDefault();
+  e.stopPropagation();
+  showContextMenu(e, [
+    { label: 'Edit Project', icon: '✎', fn: () => editProjectFromDashboard(projectId) },
+    null,
+    { label: 'Delete Project', icon: '🗑', danger: true, fn: () => deleteProjectFromDashboard(projectId) }
+  ]);
 }
 
 function changeProjectStatus(newStatus) {

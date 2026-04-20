@@ -1,6 +1,5 @@
 <!-- PROJECT VIEW -->
       <div class="view" id="view-project">
-        <button class="btn-back" onclick="showView('dashboard')" style="margin-bottom:16px">← All Projects</button>
         <div class="project-header" id="project-header">
           <div class="project-header-left" style="flex:1;min-width:0">
             <h2 id="proj-title">PROJECT TITLE</h2>
@@ -20,9 +19,6 @@
               <div class="dropdown">
                 <button class="dropdown-toggle">Project</button>
                 <div class="dropdown-menu">
-                  <div class="dropdown-item" onclick="openStoryModal()">📖 Story / Logline</div>
-                  <div class="dropdown-item" onclick="openProjectFiles()">📁 Project Files</div>
-                  <div class="dropdown-divider"></div>
                   <div class="dropdown-item" onclick="openEditProjectModal()">✎ Edit Project</div>
                   <div class="dropdown-item danger" onclick="deleteCurrentProject()">🗑 Delete Project</div>
                 </div>
@@ -31,34 +27,10 @@
           </div>
         </div>
 
-        <div class="section-tabs" id="section-tabs">
-          <div class="section-tab active" onclick="showSection('overview')">Overview</div>
-          <div class="section-tab" onclick="showSection('breakdown')">Script Breakdown</div>
-          <div class="section-tab" onclick="showSection('stripboard')">Stripboard</div>
-          <div class="section-tab" onclick="showSection('callsheet')">Callsheet</div>
-          <div class="section-tab" onclick="showSection('schedule')">Schedule</div>
-          <div class="section-tab" onclick="showSection('cast')">Cast & Extras</div>
-          <div class="section-tab" onclick="showSection('crew')">Crew</div>
-          <div class="section-tab" onclick="showSection('budget')">Budget</div>
-          <div class="section-tab" onclick="showSection('equipment')">Equipment</div>
-          <div class="section-tab" onclick="showSection('locations')">Locations</div>
-          <div class="section-tab" onclick="showSection('moodboards')">Moodboards</div>
-          <div class="section-tab" onclick="showSection('storyboard')">Storyboard</div>
-          <div class="section-tab" onclick="showSection('shotlist')">Shot List</div>
-          <div class="section-tab" onclick="showSection('props')">Props</div>
-          <div class="section-tab" onclick="showSection('wardrobe')">Wardrobe</div>
-          <div class="section-tab" onclick="showSection('soundlog')">Sound Log</div>
-          <div class="section-tab" onclick="showSection('riskassess')">Risk Assessment</div>
-          <div class="section-tab" onclick="showSection('releases')">Release Forms</div>
-          <div class="section-tab" onclick="showSection('script')">Script</div>
-          <div class="section-tab" onclick="showSection('brief')">Project Brief</div>
-          <div class="section-tab" onclick="showSection('plan')">Production Plan</div>
-        </div>
-
         <!-- SECTION: OVERVIEW -->
         <div id="section-overview">
           <!-- QUICK TASKS -->
-          <div class="quick-tasks-widget" id="quick-tasks-widget" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px">
+          <div class="quick-tasks-widget" id="quick-tasks-widget" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:10px">
                 <h3 style="margin:0;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--text2)">⚡ QUICK TASKS</h3>
@@ -92,6 +64,7 @@ Priority colour bar shows urgency">?</span>
               <input type="date" id="quick-task-deadline" onkeydown="if(event.key==='Enter')addQuickTask()" style="padding:8px;font-size:11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text3)">
               <button class="btn btn-sm btn-primary" onclick="addQuickTask()">+</button>
             </div>
+            <div id="quick-tasks-suggestions" style="display:none;margin-top:8px;padding:8px 10px;background:var(--surface);border:1px dashed var(--border2);border-radius:var(--radius)"></div>
           </div>
 
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px">
@@ -368,7 +341,7 @@ Priority colour bar shows urgency">?</span>
                   <div class="dropdown-item danger" onclick="removeAllLocations()">✕ Remove All</div>
                 </div>
               </div>
-              <button id="loc-remove-sel-btn" class="btn btn-sm btn-danger" onclick="removeSelectedLocations()" style="display:none">✕ Remove Selected</button>
+              <button id="loc-remove-sel-btn" class="btn btn-sm btn-danger" onclick="removeSelectedLocations()" style="display:none;margin-right:8px">🗑 Delete (<span id="loc-sel-count">0</span>)</button>
               <div class="dropdown">
                 <button class="btn btn-sm dropdown-toggle">+ Add</button>
                 <div class="dropdown-menu">
@@ -486,37 +459,7 @@ Priority colour bar shows urgency">?</span>
 
         <!-- SECTION: RISK ASSESSMENT -->
         <div id="section-riskassess" style="display:none">
-          <button class="btn-back" onclick="showSection('overview')">← Back to Overview</button>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 class="section-heading">PRODUCTION RISK ASSESSMENT</h3>
-            <div style="display:flex;gap:8px;align-items:center"><span class="goto-hook"></span>
-              <button class="btn btn-sm" onclick="exportRiskPDF()">⬇ Export PDF</button>
-              <button class="btn btn-sm" onclick="exportRiskCSV()">📊 Export CSV</button>
-              <button class="btn btn-primary btn-sm" onclick="addRiskRow()">+ Add Hazard</button></div>
-          </div>
-          <div class="breakdown-card" style="margin-bottom:16px">
-            <div class="form-row-3">
-              <div class="form-group"><label class="form-label">Production Manager</label><input class="form-input" id="risk-pm" oninput="saveRiskMeta()" placeholder="Name"></div>
-              <div class="form-group"><label class="form-label">Date of Assessment</label><input class="form-input" id="risk-date" type="date" oninput="saveRiskMeta()"></div>
-              <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="risk-location" oninput="saveRiskMeta()" placeholder="Shoot location"></div>
-            </div>
-          </div>
-          <div class="table-container" style="margin-bottom:20px">
-            <table class="data-table">
-              <thead><tr>
-                <th>Hazard</th><th>Who might be harmed & how?</th>
-                <th>Risk Factor</th><th>Control Measures</th>
-                <th>Further Controls?</th><th>New Risk Factor</th><th></th>
-              </tr></thead>
-              <tbody id="risk-body"></tbody>
-            </table>
-          </div>
-          <div class="breakdown-card">
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">Name of person completing assessment (printed)</label><input class="form-input" id="risk-signatory" oninput="saveRiskMeta()" placeholder="Printed name"></div>
-              <div class="form-group"><label class="form-label">Signature / Date</label><input class="form-input" id="risk-sigdate" oninput="saveRiskMeta()" placeholder="Date signed"></div>
-            </div>
-          </div>
+          <!-- Populated entirely by renderRiskAssessment(p) in risk.js -->
         </div>
 
         <!-- SECTION: RELEASE FORMS -->

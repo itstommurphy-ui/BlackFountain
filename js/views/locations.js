@@ -31,16 +31,16 @@ function renderProjectLocations(p) {
   // Reset select-all and remove-selected button
   const selAll = document.getElementById('loc-select-all');
   if (selAll) selAll.checked = false;
-  const selBtn = document.getElementById('loc-actions-dropdown');
+  const selBtn = document.getElementById('loc-remove-sel-btn');
   if (selBtn) selBtn.style.display = 'none';
   if (!p.locations.length) {
     tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state" style="padding:20px"><div class="icon">📍</div><h4>No locations yet</h4></div></td></tr>`;
   } else {
     tbody.innerHTML = p.locations.map((l,i) => `
-      <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.name||'')}">
-        <td style="padding:6px 8px"><input type="checkbox" class="loc-cb" data-idx="${i}" onchange="updateLocSelBtn()" style="cursor:pointer"></td>
-        <td><input type="text" class="form-input" value="${(l.location||'').replace(/"/g,'&quot;')}" placeholder="—" style="min-width:120px;padding:3px 6px;font-size:12px" onblur="saveProjectLocLocation(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
-        <td style="white-space:nowrap"><strong>${l.name}</strong>${_scoutIconHtml(l.name||'')}</td>
+      <tr data-ctx="proj-loc:${i}:${encodeURIComponent(l.location||'')}" onclick="editLocation(${i})" style="cursor:pointer">
+        <td style="padding:6px 8px"><input type="checkbox" class="loc-cb" data-idx="${i}" onclick="event.stopPropagation()" onchange="updateLocSelBtn()" style="cursor:pointer"></td>
+        <td><input type="text" class="form-input" value="${(l.location||'').replace(/"/g,'&quot;')}" placeholder="—" style="min-width:120px;padding:3px 6px;font-size:12px" onclick="event.stopPropagation()" onblur="saveProjectLocLocation(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+        <td style="white-space:nowrap"><strong>${l.scene||l.name||''}</strong>${_scoutIconHtml(l.scene||l.name||'')}</td>
         <td><span class="loc-suitability ${suitMap[l.suit]||'loc-possible'}">${suitLabel[l.suit]||'—'}</span></td>
         <td>${l.contacted||'—'}</td>
         <td>${l.avail||'—'}</td>
@@ -50,57 +50,50 @@ function renderProjectLocations(p) {
         <td>${l.decision||'TBD'}</td>
         <td>
           <button class="btn btn-sm btn-ghost" onclick="editLocation(${i})">✎</button>
-          <button class="btn btn-sm btn-ghost btn-danger" onclick="removeLocation(${i})">✕</button>
+          <button class="btn btn-sm btn-ghost btn-danger" onclick="event.stopPropagation();removeLocation(${i})">✕</button>
         </td>
       </tr>
-    `).join('');
-  }
-  renderScoutingList(p);
-  renderTechScouts(p);
+  `).join('');
 }
-function addLocation() {
-  document.getElementById('loc-edit-idx').value='';
-  ['location','name','avail','rules','cost','access','light','power','problems','notes'].forEach(f=>{const el=document.getElementById('loc-'+f);if(el)el.value='';});
-  document.getElementById('loc-suit').value='suitable';
-  document.getElementById('loc-contacted').value='no';
-  document.getElementById('loc-recce').value='no';
-  document.getElementById('loc-decision').value='';
-  document.getElementById('loc-cost-period').value='';
-  openModal('modal-location');
-  setTimeout(() => {
-    const inp = document.getElementById('loc-name');
-    if (inp && window.attachLocAuto) window.attachLocAuto(inp);
-  }, 80);
+}
+let _importToRowIdx = -1;
+function openImportLocationModalForRow(rowIdx) {
+  _importToRowIdx = rowIdx;
+  document.getElementById('import-loc-search').value = '';
+  renderImportLocationListForRow();
+  openModal('modal-import-location');
 }
 function openImportLocationModal() {
+  _importToRowIdx = -1;
   document.getElementById('import-loc-search').value = '';
   renderImportLocationList();
   openModal('modal-import-location');
 }
-
-function renderImportLocationList() {
+function renderImportLocationListForRow() {
   const p = currentProject();
-  if (!p) return;
+  if (!p || _importToRowIdx < 0) return;
   const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
-  const existing = new Set((p.locations || []).map(l => l.name.toLowerCase()));
+  const existing = new Set((p.locations || []).map(l => (l.scene || l.name || '').toLowerCase()));
+  existing.delete((p.locations[_importToRowIdx]?.scene || p.locations[_importToRowIdx]?.name || '').toLowerCase());
 
-  // Gather all locations from other projects + global store
   const candidates = [];
   store.projects.forEach(proj => {
     if (proj.id === p.id) return;
     (proj.locations || []).forEach(l => {
-      if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+      const name = l.scene || l.name || '';
+      if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
         candidates.push({ ...l, _from: proj.title });
       }
     });
   });
   (store.locations || []).forEach(l => {
-    if (l.name && !existing.has(l.name.toLowerCase()) && !candidates.some(c => c.name.toLowerCase() === l.name.toLowerCase())) {
+    const name = l.scene || l.name || '';
+    if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
       candidates.push({ ...l, _from: 'Global database' });
     }
   });
 
-  const filtered = q ? candidates.filter(l => l.name.toLowerCase().includes(q)) : candidates;
+  const filtered = q ? candidates.filter(l => (l.scene || l.name || '').toLowerCase().includes(q)) : candidates;
   const list = document.getElementById('import-loc-list');
   const empty = document.getElementById('import-loc-empty');
 
@@ -113,7 +106,51 @@ function renderImportLocationList() {
   list.innerHTML = filtered.map(l => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
       <div>
-        <strong style="font-size:13px">${l.name.replace(/</g,'&lt;')}</strong>
+        <strong style="font-size:13px">${(l.scene || l.name || '').replace(/</g,'&lt;')}</strong>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
+        ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="importLocationToRow(${JSON.stringify(l).replace(/"/g,'&quot;')})">Import</button>
+    </div>
+  `).join('');
+}
+function renderImportLocationList() {
+  const p = currentProject();
+  if (!p) return;
+  const q = (document.getElementById('import-loc-search').value || '').toLowerCase();
+  const existing = new Set((p.locations || []).map(l => (l.scene || l.name || '').toLowerCase()));
+
+  const candidates = [];
+  store.projects.forEach(proj => {
+    if (proj.id === p.id) return;
+    (proj.locations || []).forEach(l => {
+      const name = l.scene || l.name || '';
+      if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
+        candidates.push({ ...l, _from: proj.title });
+      }
+    });
+  });
+  (store.locations || []).forEach(l => {
+    const name = l.scene || l.name || '';
+    if (name && !existing.has(name.toLowerCase()) && !candidates.some(c => (c.scene || c.name || '').toLowerCase() === name.toLowerCase())) {
+      candidates.push({ ...l, _from: 'Global database' });
+    }
+  });
+
+  const filtered = q ? candidates.filter(l => (l.scene || l.name || '').toLowerCase().includes(q)) : candidates;
+  const list = document.getElementById('import-loc-list');
+  const empty = document.getElementById('import-loc-empty');
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = filtered.map(l => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
+      <div>
+        <strong style="font-size:13px">${(l.scene || l.name || '').replace(/</g,'&lt;')}</strong>
         <span style="font-size:11px;color:var(--text3);margin-left:8px">from ${l._from}</span>
         ${l.suit ? `<span style="font-size:10px;margin-left:6px" class="loc-suitability loc-${l.suit==='suitable'?'suitable':l.suit==='unsuitable'?'unsuitable':'possible'}">${l.suit}</span>` : ''}
       </div>
@@ -121,28 +158,66 @@ function renderImportLocationList() {
     </div>
   `).join('');
 }
-
+function importLocationToRow(l) {
+  const p = currentProject();
+  if (!p || _importToRowIdx < 0) return;
+  const { _from, ...locationData } = l;
+  const targetLoc = p.locations[_importToRowIdx];
+  if (!targetLoc) { closeModal('modal-import-location'); return; }
+  const fieldsToCopy = ['location', 'scene', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
+  fieldsToCopy.forEach(f => { if (locationData[f] !== undefined) targetLoc[f] = locationData[f]; });
+  saveStore();
+  renderProjectLocations(p);
+  closeModal('modal-import-location');
+  showToast(`Imported details to this location`, 'success');
+}
 function importLocationEntry(l) {
   const p = currentProject();
   if (!p) return;
   const { _from, ...locationData } = l;
   if (!p.locations) p.locations = [];
-  if (p.locations.some(x => x.name.toLowerCase() === locationData.name.toLowerCase())) {
-    showToast(`"${locationData.name}" is already in this project's locations`, 'info');
+  const locName = locationData.scene || locationData.name || '';
+  if (p.locations.some(x => (x.scene || x.name || '').toLowerCase() === locName.toLowerCase())) {
+    showToast(`"${locName}" is already in this project's locations`, 'info');
     return;
   }
   p.locations.push(locationData);
   saveStore();
   renderProjectLocations(p);
   renderImportLocationList(); // refresh to remove imported item
-  showToast(`"${locationData.name}" imported`, 'success');
+  showToast(`"${locName}" imported`, 'success');
 }
 
+function duplicateLocation(i) {
+  const p = currentProject();
+  if (!p || !p.locations) return;
+  const src = p.locations[i];
+  if (!src) return;
+  const dup = { ...src };
+  if (dup.scene) dup.scene = dup.scene + ' (copy)';
+  if (dup.name) dup.name = dup.name + ' (copy)';
+  p.locations.push(dup);
+  saveStore();
+  renderProjectLocations(p);
+  showToast('Location duplicated', 'success');
+}
+function importLocationFrom(actualIdx, locIdx) {
+  const p = currentProject();
+  if (!p || !p.locations) return;
+  const src = p.locations[actualIdx];
+  const target = p.locations[locIdx];
+  if (!src || !target) return;
+  const fieldsToCopy = ['location', 'scene', 'avail', 'rules', 'cost', 'costPeriod', 'access', 'light', 'power', 'problems', 'notes', 'suit', 'contacted', 'recce', 'decision'];
+  fieldsToCopy.forEach(f => { if (src[f] !== undefined) target[f] = src[f]; });
+  saveStore();
+  renderProjectLocations(p);
+  showToast('Details imported from ' + (src.scene || src.name || 'location'), 'success');
+}
 function editLocation(i) {
   const l=currentProject().locations[i];
   document.getElementById('loc-edit-idx').value=i;
-  document.getElementById('loc-name').value=l.name||'';
-  document.getElementById('loc-location').value=l.location||'';
+  document.getElementById('loc-location').value=l.location||l.name||'';
+  document.getElementById('loc-name').value=l.scene||'';
   document.getElementById('loc-suit').value=l.suit||'suitable';
   document.getElementById('loc-contacted').value=l.contacted||'no';
   document.getElementById('loc-avail').value=l.avail||'';
@@ -179,8 +254,12 @@ function removeLocation(i) {
 function updateLocSelBtn() {
   const cbs = [...document.querySelectorAll('.loc-cb')];
   const n = cbs.filter(c => c.checked).length;
-  const btn = document.getElementById('loc-actions-dropdown');
-  if (btn) { btn.style.display = n ? '' : 'none'; }
+  const btn = document.getElementById('loc-remove-sel-btn');
+  if (btn) { 
+    btn.style.display = n ? '' : 'none';
+    const cnt = document.getElementById('loc-sel-count');
+    if (cnt) cnt.textContent = n;
+  }
   const all = document.getElementById('loc-select-all');
   if (all) all.checked = n > 0 && n === cbs.length;
 }
@@ -196,10 +275,11 @@ function removeSelectedLocations() {
     // Preserve removed locations in global store
     selected.forEach(i => {
       const loc = p.locations[i];
-      if (loc?.name && !store.locations?.some(l => l.name?.toLowerCase() === loc.name.toLowerCase())) {
+      const locName = loc.scene || loc.name || '';
+      if (locName && !store.locations?.some(l => (l.scene || l.name || '').toLowerCase() === locName.toLowerCase())) {
         if (!store.locations) store.locations = [];
-        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, name, contactName, contactPhone, contactEmail } = loc;
-        store.locations.push({ name, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
+        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, location, scene, contactName, contactPhone, contactEmail } = loc;
+        store.locations.push({ name: locName, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
       }
     });
     const idxSet = new Set(selected);
@@ -214,10 +294,11 @@ function removeAllLocations() {
   showConfirmDialog(`Remove all ${p.locations.length} location${p.locations.length > 1 ? 's' : ''} from this project?`, 'Remove All', () => {
     // Preserve in global store
     (p.locations || []).forEach(loc => {
-      if (loc?.name && !store.locations?.some(l => l.name?.toLowerCase() === loc.name.toLowerCase())) {
+      const locName = loc.scene || loc.name || '';
+      if (locName && !store.locations?.some(l => (l.scene || l.name || '').toLowerCase() === locName.toLowerCase())) {
         if (!store.locations) store.locations = [];
-        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, name, contactName, contactPhone, contactEmail } = loc;
-        store.locations.push({ name, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
+        const { suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, location, scene, contactName, contactPhone, contactEmail } = loc;
+        store.locations.push({ name: locName, suit, contacted, avail, cost, costPeriod, access, recce, decision, notes, contactName, contactPhone, contactEmail });
       }
     });
     p.locations = [];
@@ -227,11 +308,11 @@ function removeAllLocations() {
 }
 function saveLocation() {
   const p=currentProject();
-  const name=document.getElementById('loc-name').value.trim();
+  const name=document.getElementById('loc-location').value.trim();
   if(!name){showToast('Location name required','info');return;}
   const l={
-    name,
     location:document.getElementById('loc-location').value.trim(),
+    scene:document.getElementById('loc-name').value.trim(),
     suit:document.getElementById('loc-suit').value,
     contacted:document.getElementById('loc-contacted').value,
     avail:document.getElementById('loc-avail').value,
@@ -966,62 +1047,35 @@ function renderContacts() {
 
   // Helper function to convert social handles to clickable links
   function renderSocialLinks(socialsStr) {
+    const iconMap = { instagram: '📸', facebook: '📘', twitter: '🐦', tiktok: '🎵', bluesky: '☁️', youtube: '▶️', linkedin: '💼', threads: '🧵', website: '🌐' };
     if (!socialsStr) return '—';
     const socials = socialsStr.split(',').map(s => s.trim()).filter(Boolean);
     if (!socials.length) return '—';
 
     return socials.map(s => {
-      let raw = s;
-      let handle = raw;
-      if (handle.includes('||')) {
-        handle = handle.split('||').pop();
-      } else if (handle.includes(':') && !handle.includes('://')) {
-        handle = handle.split(':').pop();
-      }
-      const platformNames = ['instagram', 'facebook', 'twitter', 'tiktok', 'bluesky', 'youtube', 'linkedin', 'website'];
-      const lowerHandle = handle.toLowerCase();
-      for (const platform of platformNames) {
-        if (lowerHandle.startsWith(platform)) {
-          handle = handle.substring(platform.length);
-          break;
-        }
-      }
+      const sepIdx = s.indexOf('||');
+      const platform = sepIdx >= 0 ? s.slice(0, sepIdx) : 'website';
+      let handle = sepIdx >= 0 ? s.slice(sepIdx + 2) : s;
       handle = handle.replace(/^[:|@\s]+/, '').trim();
       if (!handle) return '';
-      let platform = 'website';
-      const lowerRaw = raw.toLowerCase();
-      if (lowerRaw.includes('instagram')) platform = 'instagram';
-      else if (lowerRaw.includes('facebook')) platform = 'facebook';
-      else if (lowerRaw.includes('twitter') || lowerRaw.includes('x.com')) platform = 'twitter';
-      else if (lowerRaw.includes('tiktok')) platform = 'tiktok';
-      else if (lowerRaw.includes('bluesky')) platform = 'bluesky';
-      else if (lowerRaw.includes('youtube')) platform = 'youtube';
-      else if (lowerRaw.includes('linkedin')) platform = 'linkedin';
       let url = handle;
       if (!url.match(/^https?:\/\//)) {
         const cleanHandle = handle.replace(/^@/, '');
         switch(platform) {
           case 'instagram': url = 'https://instagram.com/' + cleanHandle; break;
           case 'facebook': url = 'https://facebook.com/' + cleanHandle; break;
-          case 'twitter': url = 'https://twitter.com/' + cleanHandle; break;
+          case 'twitter': url = 'https://x.com/' + cleanHandle; break;
           case 'bluesky': url = 'https://bsky.app/profile/' + cleanHandle; break;
           case 'tiktok': url = 'https://tiktok.com/@' + cleanHandle; break;
-          case 'youtube': url = 'https://youtube.com/' + cleanHandle; break;
+          case 'youtube': url = 'https://youtube.com/@' + cleanHandle; break;
           case 'linkedin': url = 'https://linkedin.com/in/' + cleanHandle; break;
+          case 'threads': url = 'https://threads.net/@' + cleanHandle; break;
+          case 'Website': url = 'https://' + cleanHandle; break;
           default: url = 'https://' + cleanHandle;
         }
       }
-      let icon = '🌐';
-      switch(platform) {
-        case 'instagram': icon = '📸'; break;
-        case 'facebook': icon = '📘'; break;
-        case 'twitter': icon = '🐦'; break;
-        case 'bluesky': icon = '☁️'; break;
-        case 'tiktok': icon = '🎵'; break;
-        case 'youtube': icon = '▶️'; break;
-        case 'linkedin': icon = '💼'; break;
-      }
-      return `${icon} <a href="${url}" target="_blank" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
+      const icon = iconMap[platform] || '🌐';
+      return `${icon} <a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent2);margin-right:8px">${handle}</a>`;
     }).join('');
   }
 

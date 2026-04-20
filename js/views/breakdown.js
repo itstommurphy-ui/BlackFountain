@@ -5,6 +5,75 @@
 
 let _bdPendingSelection = null;
 let _bdActiveCategory = null;
+let _bdMultiTagMode = false;
+
+function toggleBdMultiTag() {
+  _bdMultiTagMode = !_bdMultiTagMode;
+
+  if (!_bdMultiTagMode && !_bdActiveCategory) {
+  }
+  if (!_bdMultiTagMode && _bdActiveCategory) {
+    _bdActiveCategory = null;
+  }
+
+  _bdRefreshCategoryBar();
+}
+
+function _bdRefreshCategoryBar() {
+  const sv   = document.getElementById('bd-script-view');
+  const hint = document.getElementById('bd-active-hint');
+
+  BREAKDOWN_CATEGORIES.forEach(cat => {
+    const chip = document.getElementById('bd-key-' + cat.id);
+    if (!chip) return;
+    if (cat.id === _bdActiveCategory) {
+      chip.style.outline       = '2px solid #fff';
+      chip.style.outlineOffset = '2px';
+      chip.style.boxShadow     = '0 0 0 5px rgba(255,255,255,0.18)';
+      chip.style.transform     = 'scale(1.08)';
+    } else {
+      chip.style.outline       = '';
+      chip.style.outlineOffset = '';
+      chip.style.boxShadow     = '';
+      chip.style.transform     = '';
+    }
+  });
+
+  _bdUpdateMultiTagBtn();
+
+  if (_bdActiveCategory) {
+    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === _bdActiveCategory);
+    if (sv) { sv.style.borderColor = cat.color; sv.style.borderWidth = '2px'; }
+    if (hint) {
+      if (_bdMultiTagMode) {
+        hint.style.cssText = `background:${cat.color}25;border:1px solid ${cat.color}88;border-radius:6px;padding:5px 10px;font-size:11px`;
+        hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> <strong>Multi-tag mode ON</strong> — every selection tags as ${cat.label}. Click the chip or ⚡ MULTI-TAG to stop.`;
+      } else {
+        hint.style.cssText = `background:${cat.color}18;border:1px solid ${cat.color}55;border-radius:6px;padding:5px 10px;font-size:11px`;
+        hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> ready — select text in the script to tag it, or click another category.`;
+      }
+    }
+  } else {
+    if (sv) { sv.style.borderColor = ''; sv.style.borderWidth = ''; }
+    if (hint) { hint.style.cssText = ''; hint.textContent = ''; }
+  }
+}
+
+function _bdUpdateMultiTagBtn() {
+  const btn = document.getElementById('bd-multitag-btn');
+  if (!btn) return;
+  if (_bdMultiTagMode) {
+    btn.style.background   = 'rgba(230,188,60,0.15)';
+    btn.style.borderColor  = 'rgba(230,188,60,0.6)';
+    btn.style.color        = 'var(--accent)';
+    btn.title              = 'Multi-tag mode ON — click to turn off';
+  } else {
+    btn.style.background  = 'none';
+    btn.style.borderColor = 'var(--border2)';
+    btn.style.color       = 'var(--text3)';
+    btn.title             = 'Multi-tag mode: keep a category active across multiple selections';
+  }
+}
 let _bdFilter = { intExt: null, tod: null };
 
 function _bdBadge(text, type) {
@@ -264,8 +333,10 @@ function _sbRenderStrip(sceneKey, data, sourceDayId) {
 
 function _sbRenderDrops(dayId, sceneKeys, data) {
   const strips = sceneKeys.map(k => _sbRenderStrip(k, data, dayId)).join('');
-  const empty  = !sceneKeys.length ? `<div class="sb-empty-drop">Drop scenes here</div>` : '';
-  return `<div class="sb-drops" ondragover="_sbOnDragOver(event,'${dayId}')" ondragleave="_sbOnDragLeave(event)" ondrop="_sbOnDrop(event,'${dayId}')" data-day="${dayId}">${strips}${empty}</div>`;
+  return `<div class="sb-drops" ondragover="_sbOnDragOver(event,'${dayId}')" ondragleave="_sbOnDragLeave(event)" ondrop="_sbOnDrop(event,'${dayId}')" data-day="${dayId}">
+    ${strips}
+    <div class="sb-drop-zone">Drop scenes here to create day order</div>
+  </div>`;
 }
 
 function _sbRenderDay(day, data, index) {
@@ -313,6 +384,7 @@ let _sbJustDragged  = false;
 let _sbOpenSceneKey = null;
 let _sbSelectMode   = false;
 let _sbSelectedDays = new Set();
+let _sbDragOverDay  = null;
 
 function renderStripboard(p) {
   const el = document.getElementById('stripboard-content');
@@ -433,6 +505,8 @@ function _sbOnDragStart(e) {
 function _sbOnDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
+  _sbDragOverDay = null;
   _sbJustDragged = true;
   setTimeout(() => { _sbJustDragged = false; }, 300);
 }
@@ -441,8 +515,30 @@ function _sbOnDragOver(e, targetDayId) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
   const drops = document.querySelector(`.sb-drops[data-day="${targetDayId}"]`);
-  if (drops) drops.closest('.sb-col')?.classList.add('drag-over');
+  if (drops) {
+    drops.closest('.sb-col')?.classList.add('drag-over');
+    const strips = [...drops.querySelectorAll('.strip')];
+    let insertIdx = strips.length;
+    let insertY = drops.offsetTop + 5;
+    for (let i = 0; i < strips.length; i++) {
+      const rect = strips[i].getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { insertIdx = i; break; }
+    }
+    if (insertIdx < strips.length) {
+      const targetStrip = strips[insertIdx];
+      insertY = targetStrip.offsetTop - 5;
+    } else if (strips.length > 0) {
+      const lastStrip = strips[strips.length - 1];
+      insertY = lastStrip.offsetTop + lastStrip.offsetHeight - 5;
+    }
+    const line = document.createElement('div');
+    line.className = 'sb-insert-line';
+    line.style.top = insertY + 'px';
+    drops.appendChild(line);
+    _sbDragOverDay = targetDayId;
+  }
 }
 
 function _sbOnDragLeave(e) {
@@ -454,6 +550,7 @@ function _sbOnDragLeave(e) {
 function _sbOnDrop(e, targetDayId) {
   e.preventDefault();
   document.querySelectorAll('.sb-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.sb-insert-line').forEach(l => l.remove());
   const sceneKey    = _sbDragKey;
   const sourceDayId = _sbDragSource;
   _sbDragKey    = null;
@@ -911,8 +1008,10 @@ function renderBreakdownEditor(el, p) {
       </div>
     </div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
-      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;white-space:nowrap">CATEGORIES <span style="opacity:0.6;font-weight:500">(click to activate multi-tagging):</span></span>
-      ${BREAKDOWN_CATEGORIES.map(cat => `<span id="bd-key-${cat.id}" onclick="setBdActiveCat('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:box-shadow 0.1s,transform 0.1s;user-select:none">${cat.label}</span>`).join('')}
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;white-space:nowrap">CATEGORIES:</span>
+      ${BREAKDOWN_CATEGORIES.map(cat => `<span id="bd-key-${cat.id}" onclick="setBdActiveCat('${cat.id}')" style="background:${cat.color};color:${cat.textColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:box-shadow 0.1s,transform 0.1s;user-select:none" title="Click to tag selection as ${cat.label}">${cat.label}</span>`).join('')}
+      <span style="width:1px;height:18px;background:var(--border);margin:0 4px;flex-shrink:0"></span>
+      <button id="bd-multitag-btn" onclick="toggleBdMultiTag()" title="Multi-tag mode: keep a category active across multiple selections" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;white-space:nowrap;letter-spacing:0.03em;transition:all .12s">⚡ MULTI-TAG</button>
     </div>
     <div id="bd-active-hint" style="font-size:11px;min-height:18px;margin-bottom:8px;padding-left:2px"></div>
     ${_bdFilterBar(scenes)}
@@ -1068,7 +1167,6 @@ function renderBreakdownReport(p, scenes) {
   const text = bd.rawText;
   const tags = bd.tags || [];
   if (!scenes) scenes = parseBreakdownScenes(text);
-  // Apply active filters
   if (_bdFilter.intExt) scenes = scenes.filter(s => s.intExt === _bdFilter.intExt);
   if (_bdFilter.tod)    scenes = scenes.filter(s => s.tod    === _bdFilter.tod);
 
@@ -1082,7 +1180,7 @@ function renderBreakdownReport(p, scenes) {
           <div>
             <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${cat.label}</span>
             <div style="display:flex;flex-wrap:wrap;gap:3px">
-              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();removeBreakdownTag('${item.id}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
+              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();_bdDeleteTagInline('${item.id}', this)" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
             </div>
           </div>`).join('')
       : `<span style="font-size:11px;color:var(--text3);opacity:0.5">No elements tagged</span>`;
@@ -1095,8 +1193,29 @@ function renderBreakdownReport(p, scenes) {
     </div>`;
   });
 
-  if (!parts.length) return `<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;line-height:1.6">No elements tagged yet.<br>Select text in the script to begin.</div>`;
-  return parts.join('');
+  const miscTags = tags.filter(t => !scenes.some(s => t.start >= s.start && t.end <= s.end));
+  let miscHtml = '';
+  if (miscTags.length) {
+    const byCat = {};
+    for (const t of miscTags) { (byCat[t.category] = byCat[t.category]||[]).push({ id: t.id, text: esc(text.slice(t.start, t.end)) }); }
+    miscHtml = `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <div style="background:var(--surface2);padding:6px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px" title="Tags not associated with any scene">
+        <span style="opacity:0.5;font-size:10px">↗</span>MISC <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:auto">${miscTags.length} item${miscTags.length!==1?'s':''}</span>
+      </div>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        ${BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
+          <div>
+            <span style="display:inline-block;background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${cat.label}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">
+              ${byCat[cat.id].map(item => `<span style="display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:1px 3px 1px 6px;font-size:11px;gap:0;color:var(--text2)"><span onclick="showTagActionMenu('${item.id}',event.clientX,event.clientY,false)" style="cursor:pointer;padding-right:3px" title="Add to / Move to">${item.text}</span><button onclick="event.stopPropagation();_bdDeleteTagInline('${item.id}', this)" style="background:none;border:none;color:#E74C3C;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;font-weight:700" title="Remove">×</button></span>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (!parts.length && !miscHtml) return `<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;line-height:1.6">No elements tagged yet.<br>Select text in the script to begin.</div>`;
+  return parts.join('') + miscHtml;
 
 }
 
@@ -1112,8 +1231,16 @@ function onBreakdownMouseup(e) {
   const end   = getTextOffsetInBd(container, range.endContainer,   range.endOffset);
   if (start === end) { hideBdPopover(); return; }
   _bdPendingSelection = { start: Math.min(start, end), end: Math.max(start, end) };
-  if (_bdActiveCategory) applyBreakdownTag(_bdActiveCategory);
-  else showBdPopover(range.getBoundingClientRect());
+
+  if (_bdActiveCategory) {
+    applyBreakdownTag(_bdActiveCategory);
+    if (!_bdMultiTagMode) {
+      _bdActiveCategory = null;
+    }
+    _bdRefreshCategoryBar();
+  } else {
+    showBdPopover(range.getBoundingClientRect());
+  }
 }
 
 function getTextOffsetInBd(container, node, offset) {
@@ -1174,32 +1301,32 @@ function hideBdPopover() {
 }
 
 function setBdActiveCat(catId) {
-  _bdActiveCategory = _bdActiveCategory === catId ? null : catId;
-  BREAKDOWN_CATEGORIES.forEach(cat => {
-    const btn = document.getElementById('bd-key-' + cat.id);
-    if (!btn) return;
-    if (cat.id === _bdActiveCategory) {
-      btn.style.outline = '2px solid #fff';
-      btn.style.outlineOffset = '2px';
-      btn.style.boxShadow = '0 0 0 5px rgba(255,255,255,0.18)';
-      btn.style.transform = 'scale(1.08)';
-    } else {
-      btn.style.outline = btn.style.outlineOffset = btn.style.boxShadow = btn.style.transform = '';
+  const sel = window.getSelection();
+  const container = document.getElementById('bd-script-view');
+  const hasLiveSelection = sel && !sel.isCollapsed && sel.rangeCount
+    && container && container.contains(sel.getRangeAt(0).commonAncestorContainer);
+
+  if (hasLiveSelection) {
+    const range = sel.getRangeAt(0);
+    const start = getTextOffsetInBd(container, range.startContainer, range.startOffset);
+    const end   = getTextOffsetInBd(container, range.endContainer,   range.endOffset);
+    if (start !== end) {
+      _bdPendingSelection = { start: Math.min(start, end), end: Math.max(start, end) };
+      _bdActiveCategory = catId;
+      applyBreakdownTag(catId);
+      if (!_bdMultiTagMode) _bdActiveCategory = null;
+      _bdRefreshCategoryBar();
+      return;
     }
-  });
-  const sv = document.getElementById('bd-script-view');
-  const hint = document.getElementById('bd-active-hint');
-  if (_bdActiveCategory) {
-    const cat = BREAKDOWN_CATEGORIES.find(c => c.id === _bdActiveCategory);
-    if (sv) { sv.style.borderColor = cat.color; sv.style.borderWidth = '2px'; }
-    if (hint) {
-      hint.style.cssText = `background:${cat.color}25;border:1px solid ${cat.color}88;border-radius:6px;padding:5px 10px;font-size:11px`;
-      hint.innerHTML = `<span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 6px;font-weight:600">${cat.label}</span> <strong>Multi-Tagging Mode Active</strong> — select text to tag as ${cat.label}. Click the category again to deactivate.`;
-    }
-  } else {
-    if (sv) { sv.style.borderColor = sv.style.borderWidth = ''; }
-    if (hint) { hint.style.cssText = ''; hint.textContent = ''; }
   }
+
+  if (_bdActiveCategory === catId) {
+    _bdActiveCategory = null;
+    if (_bdMultiTagMode) { _bdMultiTagMode = false; _bdUpdateMultiTagBtn(); }
+  } else {
+    _bdActiveCategory = catId;
+  }
+  _bdRefreshCategoryBar();
 }
 
 function scrollBreakdownToScene(sceneStart) {
@@ -1246,17 +1373,243 @@ function showTagActionMenu(tagId, x, y, fromScript) {
   if (!tag) { hideBdPopover(); return; }
   const cat = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
   if (fromScript !== undefined) _bdCtxFromScript = !!fromScript;
+
+  const tagText = bd.rawText.slice(tag.start, tag.end).trim().toLowerCase();
+  const scenes  = parseBreakdownScenes(bd.rawText);
+  const currentScene = scenes.find(s => tag.start >= s.start && tag.start < s.end);
+  const otherSceneMatches = _bdFindTextInScenes(bd, tagText, tag.category, currentScene?.heading);
+  const hasOtherScenes = otherSceneMatches.length > 0;
+
   const pop = getBdPopover();
   pop.style.flexDirection = 'column';
   pop.innerHTML = `
     <div style="display:flex;align-items:center;gap:6px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--border)">
       <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700">${cat.label}</span>
     </div>
+    ${!fromScript ? `<button onclick="_bdGoToTag('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↗  Go to in script</button>` : ''}
+    <button onclick="_bdOpenTagEdit('${tagId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✎  Edit / re-tag</button>
     <button onclick="showTagCategoryPicker('${tagId}','add')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">➕  Add to another category</button>
     <button onclick="showTagCategoryPicker('${tagId}','move')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">↔  Change category</button>
-    ${_bdCtxFromScript ? `<button onclick="removeBreakdownTag('${tagId}')" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
+    ${hasOtherScenes ? `<button onclick="showTagInScenesPanel('${tagId}')" style="background:none;border:none;color:var(--text);cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">🎬  Tag in other scenes…</button>` : ''}
+    ${_bdCtxFromScript ? `<button onclick="event.stopPropagation();_bdDeleteTagInline('${tagId}', event.target)" style="background:none;border:none;color:#E74C3C;cursor:pointer;padding:5px 4px;font-size:12px;text-align:left;width:100%;border-radius:4px">✕  Remove tag</button>` : ''}`;
   if (x != null) positionBdPopover(x, y);
   pop.style.display = 'flex';
+}
+
+function _bdFindTextInScenes(bd, tagTextLower, category, excludeSceneHeading) {
+  const scenes  = parseBreakdownScenes(bd.rawText);
+  const results = [];
+
+  for (const scene of scenes) {
+    if (scene.heading === excludeSceneHeading) continue;
+    const sceneText = bd.rawText.slice(scene.start, scene.end);
+    const sceneTextLower = sceneText.toLowerCase();
+
+    const occurrences = [];
+    let idx = 0;
+    while ((idx = sceneTextLower.indexOf(tagTextLower, idx)) !== -1) {
+      const absStart = scene.start + idx;
+      const absEnd   = absStart + tagTextLower.length;
+
+      const before = idx > 0 ? sceneTextLower[idx - 1] : ' ';
+      const after  = idx + tagTextLower.length < sceneTextLower.length
+        ? sceneTextLower[idx + tagTextLower.length] : ' ';
+      const atBoundary = !/[a-z0-9]/i.test(before) && !/[a-z0-9]/i.test(after);
+
+      if (atBoundary) {
+        const alreadyTagged = bd.tags.some(t =>
+          t.category === category &&
+          t.start === absStart && t.end === absEnd
+        );
+        if (!alreadyTagged) {
+          occurrences.push({ start: absStart, end: absEnd });
+        }
+      }
+      idx++;
+    }
+
+    if (occurrences.length) {
+      results.push({ scene, occurrences });
+    }
+  }
+
+  return results;
+}
+
+function showTagInScenesPanel(tagId) {
+  hideBdPopover();
+  const p  = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+
+  const cat      = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#aaa', textColor:'#000', label:'?' };
+  const tagText  = bd.rawText.slice(tag.start, tag.end).trim();
+  const scenes   = parseBreakdownScenes(bd.rawText);
+  const currentScene = scenes.find(s => tag.start >= s.start && tag.start < s.end);
+  const matches  = _bdFindTextInScenes(bd, tagText.toLowerCase(), tag.category, currentScene?.heading);
+
+  if (!matches.length) {
+    showToast(`"${tagText}" doesn't appear untagged in any other scene`, 'info');
+    return;
+  }
+
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  document.getElementById('_bd-scenes-panel')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = '_bd-scenes-panel';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+
+  const sceneRows = matches.map((m, i) => {
+    const count = m.occurrences.length;
+    const sceneLabel = esc(m.scene.heading);
+    return `
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;transition:background .1s"
+        onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+        <input type="checkbox" id="_bds_cb_${i}" checked
+          style="margin-top:2px;cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${sceneLabel}">${sceneLabel}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:1px">
+            ${count} occurrence${count !== 1 ? 's' : ''} · not yet tagged as ${cat.label}
+          </div>
+        </div>
+      </label>`;
+  }).join('');
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
+      width:min(480px,92vw);max-height:72vh;display:flex;flex-direction:column;overflow:hidden">
+
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">🎬 Tag in other scenes</div>
+          <button onclick="document.getElementById('_bd-scenes-panel').remove()"
+            style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)">
+          <span style="background:${cat.color};color:${cat.textColor};border-radius:3px;padding:0 7px;font-size:11px;font-weight:700">${cat.label}</span>
+          <span style="font-family:var(--font-mono);color:var(--text2)">"${esc(tagText)}"</span>
+          <span>appears untagged in ${matches.length} other scene${matches.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${currentScene ? `<div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic">Currently tagged in: ${esc(currentScene.heading)}</div>` : ''}
+      </div>
+
+      <div style="overflow-y:auto;padding:8px 6px;flex:1">
+        <div style="display:flex;justify-content:space-between;padding:0 12px 6px;border-bottom:1px solid var(--border2);margin-bottom:4px">
+          <button onclick="_bdScenesSelectAll(${matches.length},true)"
+            style="background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 0">Select all</button>
+          <button onclick="_bdScenesSelectAll(${matches.length},false)"
+            style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:2px 0">Deselect all</button>
+        </div>
+        ${sceneRows}
+      </div>
+
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0">
+        <button class="btn btn-sm btn-ghost"
+          onclick="document.getElementById('_bd-scenes-panel').remove()">Cancel</button>
+        <button class="btn btn-sm btn-primary"
+          onclick="_bdApplyTagInScenes('${tagId}',${matches.length})">
+          Apply Tags
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal._matches = matches;
+}
+
+function _bdScenesSelectAll(count, checked) {
+  for (let i = 0; i < count; i++) {
+    const cb = document.getElementById(`_bds_cb_${i}`);
+    if (cb) cb.checked = checked;
+  }
+}
+
+function _bdApplyTagInScenes(tagId, matchCount) {
+  const modal = document.getElementById('_bd-scenes-panel');
+  if (!modal) return;
+  const matches = modal._matches;
+  if (!matches) return;
+
+  const p  = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+  if (!bd.tags) bd.tags = [];
+
+  let added = 0;
+  for (let i = 0; i < matchCount; i++) {
+    const cb = document.getElementById(`_bds_cb_${i}`);
+    if (!cb?.checked) continue;
+    const m = matches[i];
+
+    const occ = m.occurrences[0];
+    if (!occ) continue;
+
+    const exists = bd.tags.some(t =>
+      t.category === tag.category && t.start === occ.start && t.end === occ.end
+    );
+    if (!exists) {
+      bd.tags.push({
+        id:       makeId(),
+        category: tag.category,
+        start:    occ.start,
+        end:      occ.end,
+      });
+      if (tag.category === 'props') {
+        _bdAutoExportProp({ start: occ.start, end: occ.end }, bd, true);
+      }
+      added++;
+    }
+  }
+
+  modal.remove();
+
+  if (!added) { showToast('No new tags added', 'info'); return; }
+
+  saveStore();
+  updateBreakdownView(p);
+  showToast(`${added} tag${added !== 1 ? 's' : ''} added across ${added} scene${added !== 1 ? 's' : ''}`, 'success');
+}
+
+function _bdGoToTag(tagId) {
+  hideBdPopover();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  const tag = bd.tags.find(t => t.id === tagId);
+  if (!tag) return;
+  const sv = document.getElementById('bd-script-view');
+  if (!sv) return;
+  const el = sv.querySelector(`[data-bd-offset="${tag.start}"]`) || sv.querySelector(`[data-bd-char="${tag.start}"]`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    const textNodes = [];
+    let offset = 0;
+    const walker = document.createTreeWalker(sv, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (offset + node.textContent.length >= tag.start) {
+        const range = document.createRange();
+        range.setStart(node, tag.start - offset);
+        range.collapse(true);
+        const rect = range.getBoundingClientRect();
+        if (rect.top > 0) {
+          sv.scrollTo({ top: sv.scrollTop + rect.top - sv.clientHeight / 2, behavior: 'smooth' });
+        }
+        return;
+      }
+      offset += node.textContent.length;
+    }
+  }
 }
 
 function showTagCategoryPicker(tagId, action) {
@@ -1367,16 +1720,212 @@ function applyBreakdownTag(category) {
   updateBreakdownView(p);
 }
 
+function _bdDeleteTagInline(tagId, btn) {
+  _bdConfirmDeleteTag(tagId);
+}
+
+function _bdConfirmDeleteTag(tagId) {
+  document.getElementById('_bd-mini-confirm')?.remove();
+  hideBdPopover();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  bd.tags = bd.tags.filter(t => t.id !== tagId);
+  saveStore();
+  updateBreakdownView(p);
+}
+
+function _bdOpenTagEdit(tagId) {
+  hideBdPopover();
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  const tag = bd?.tags.find(t => t.id === tagId);
+  if (!tag || !bd?.rawText) return;
+
+  const text = bd.rawText;
+  const tagText = text.slice(tag.start, tag.end);
+  const cat  = BREAKDOWN_CATEGORIES.find(c => c.id === tag.category) || { color:'#e6bc3c', textColor:'#000', label:'?' };
+
+  const lines       = text.split('\n');
+  const lineOffsets = [];
+  let off = 0;
+  for (const l of lines) { lineOffsets.push(off); off += l.length + 1; }
+
+  let targetLine = lineOffsets.findIndex((lo, i) => lo + lines[i].length >= tag.start);
+  if (targetLine === -1) targetLine = lines.length - 1;
+
+  const fromLine    = Math.max(0, targetLine - 5);
+  const toLine      = Math.min(lines.length - 1, targetLine + 5);
+  const windowStart = lineOffsets[fromLine];
+  const windowText  = lines.slice(fromLine, toLine + 1).join('\n');
+
+  const esc = str => str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const relStart = Math.max(0, tag.start - windowStart);
+  const relEnd   = Math.min(windowText.length, tag.end - windowStart);
+
+  const highlighted =
+    esc(windowText.slice(0, relStart)) +
+    `<mark data-current="1" style="background:${cat.color};color:${cat.textColor};border-radius:2px;padding:0 1px">` +
+    esc(windowText.slice(relStart, relEnd)) +
+    `</mark>` +
+    esc(windowText.slice(relEnd));
+
+  const catButtons = BREAKDOWN_CATEGORIES.map(c =>
+    `<button
+      data-cat-id="${c.id}"
+      onclick="_bdSetTagEditNewCat('${tagId}','${c.id}',this)"
+      style="background:${c.color};color:${c.textColor};border:none;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;opacity:${c.id===tag.category?'1':'0.45'};outline:${c.id===tag.category?`2px solid #fff`:'none'};outline-offset:1px"
+    >${c.label}</button>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.id = '_bd-tag-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;max-width:90%;width:500px;max-height:80vh;overflow-y:auto">
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px;color:var(--text)">Edit Tag — ${cat.label}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.5px">Highlight any text below — then choose what to do with it</div>
+      <div
+        id="_bd-tag-edit-ctx"
+        data-tag-id="${tagId}"
+        data-window-start="${windowStart}"
+        style="font-family:'Courier New',monospace;font-size:12px;line-height:1.85;white-space:pre-wrap;word-break:break-word;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:text;user-select:text"
+      >${highlighted}</div>
+
+      <div id="_bd-tag-edit-actions" style="display:none;flex-direction:column;gap:8px;margin-top:12px">
+        <div style="font-size:11px;color:var(--text2)">
+          Selected: <strong id="_bd-tag-edit-seltext" style="font-family:'Courier New',monospace;color:var(--text)"></strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button
+            id="_bd-tag-edit-replace"
+            onclick="_bdApplyTagEdit('${tagId}','replace')"
+            style="background:${cat.color};color:${cat.textColor};border:none;border-radius:4px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0"
+          >Replace "${tagText.length > 20 ? tagText.slice(0,20)+'…' : tagText}"</button>
+          <span style="font-size:10px;color:var(--text3)">updates this ${cat.label} tag</span>
+        </div>
+        <div style="border-top:1px solid var(--border2);padding-top:8px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px">Or add as a new tag in:</div>
+          <div id="_bd-tag-edit-catpicker" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${catButtons}</div>
+          <button
+            id="_bd-tag-edit-addnew"
+            onclick="_bdApplyTagEdit('${tagId}','addnew')"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 12px;font-size:11px;cursor:pointer"
+          >Add as new tag</button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button onclick="document.getElementById('_bd-tag-edit-modal')?.remove()" style="background:none;border:1px solid var(--border2);border-radius:4px;padding:6px 12px;font-size:11px;color:var(--text3);cursor:pointer">Done</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  const ctx = document.getElementById('_bd-tag-edit-ctx');
+  const actionsEl = document.getElementById('_bd-tag-edit-actions');
+  const selTextEl = document.getElementById('_bd-tag-edit-seltext');
+  ctx._pendingStart = null;
+  ctx._pendingEnd   = null;
+  modal._newCatId = tag.category;
+
+  const onSelChange = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      actionsEl.style.display = 'none';
+      ctx._pendingStart = null;
+      ctx._pendingEnd   = null;
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    if (!ctx.contains(range.commonAncestorContainer)) return;
+
+    const getOff = (container, node, offset) => {
+      let total = 0;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        if (walker.currentNode === node) return total + offset;
+        total += walker.currentNode.textContent.length;
+      }
+      return total + offset;
+    };
+
+    const relA = getOff(ctx, range.startContainer, range.startOffset);
+    const relB = getOff(ctx, range.endContainer,   range.endOffset);
+    const selStart = Math.min(relA, relB);
+    const selEnd   = Math.max(relA, relB);
+    const selectedText = windowText.slice(selStart, selEnd).trim();
+    if (!selectedText) { actionsEl.style.display = 'none'; return; }
+
+    const trimOff = windowText.slice(selStart, selEnd).indexOf(selectedText);
+    ctx._pendingStart = windowStart + selStart + trimOff;
+    ctx._pendingEnd   = ctx._pendingStart + selectedText.length;
+
+    selTextEl.textContent = selectedText;
+    actionsEl.style.display = 'flex';
+  };
+
+  document.addEventListener('selectionchange', onSelChange);
+  modal._cleanupListener = () => document.removeEventListener('selectionchange', onSelChange);
+}
+
+function _bdSetTagEditNewCat(tagId, catId, btn) {
+  const modal = document.getElementById('_bd-tag-edit-modal');
+  if (modal) modal._newCatId = catId;
+  const picker = document.getElementById('_bd-tag-edit-catpicker');
+  if (!picker) return;
+  picker.querySelectorAll('button').forEach(b => {
+    b.style.opacity = b.dataset.catId === catId ? '1' : '0.45';
+    b.style.outline = b.dataset.catId === catId ? '2px solid #fff' : 'none';
+  });
+}
+
+function _bdApplyTagEdit(tagId, action) {
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  const tag = bd?.tags.find(t => t.id === tagId);
+  if (!tag) return;
+
+  const ctx = document.getElementById('_bd-tag-edit-ctx');
+  const modal = document.getElementById('_bd-tag-edit-modal');
+  if (!ctx || ctx._pendingStart == null) return;
+
+  const newText = bd.rawText.slice(ctx._pendingStart, ctx._pendingEnd).trim();
+  if (!newText) return;
+
+  if (action === 'replace') {
+    tag.start = ctx._pendingStart;
+    tag.end   = ctx._pendingEnd;
+  } else if (action === 'addnew') {
+    const newCatId = modal._newCatId || tag.category;
+    const newTag = {
+      id:          't_' + Math.random().toString(36).slice(2),
+      category:    newCatId,
+      text:        newText,
+      start:       ctx._pendingStart,
+      end:         ctx._pendingEnd,
+      sceneHeading: tag.sceneHeading,
+    };
+    bd.tags.push(newTag);
+    showToast(`"${newText}" added as ${BREAKDOWN_CATEGORIES.find(c=>c.id===newCatId)?.label || newCatId}`, 'success');
+  }
+
+  if (modal?._cleanupListener) modal._cleanupListener();
+  modal?.remove();
+
+  saveStore();
+  updateBreakdownView(p);
+}
+
 function removeBreakdownTag(tagId) {
   hideBdPopover();
-  showConfirmDialog('Remove this tag?', 'Remove', () => {
-    const p = currentProject();
-    const bd = _getActiveBd(p);
-    if (!bd) return;
-    bd.tags = bd.tags.filter(t => t.id !== tagId);
-    saveStore();
-    updateBreakdownView(p);
-  });
+  const p = currentProject();
+  const bd = _getActiveBd(p);
+  if (!bd) return;
+  bd.tags = bd.tags.filter(t => t.id !== tagId);
+  saveStore();
+  updateBreakdownView(p);
 }
 
 function updateBreakdownView(p) {
@@ -1692,15 +2241,19 @@ function printBreakdownReport() {
   if (!bd?.rawText) return;
   const { rawText: text, tags = [] } = bd;
   const scenes = parseBreakdownScenes(text);
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
-  const scenesHtml = scenes.map(scene => {
+  const keyHtml = BREAKDOWN_CATEGORIES.map(cat =>
+    `<span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span>`
+  ).join('');
+
+  let scenesHtml = '';
+  scenes.forEach(scene => {
     const st = tags.filter(t => t.start >= scene.start && t.end <= scene.end);
     const byCat = {};
-    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(esc(text.slice(t.start, t.end))); }
+    for (const t of st) { (byCat[t.category] = byCat[t.category]||[]).push(_bfEscHtml(text.slice(t.start, t.end))); }
     const hasTags = Object.keys(byCat).length > 0;
-    return `<div class="scene">
-      <div class="scene-heading">${esc(scene.heading)}</div>
+    scenesHtml += `<div class="scene">
+      <div class="scene-heading">${_bfEscHtml(scene.heading)}</div>
       <table class="scene-table">
         ${hasTags
           ? BREAKDOWN_CATEGORIES.filter(c => byCat[c.id]).map(cat => `
@@ -1711,57 +2264,31 @@ function printBreakdownReport() {
           : `<tr><td colspan="2" class="empty-cell">No tagged elements</td></tr>`}
       </table>
     </div>`;
-  }).join('');
+  });
 
-  const keyHtml = BREAKDOWN_CATEGORIES.map(cat =>
-    `<span class="cat-pill" style="background:${cat.color};color:${cat.textColor}">${cat.label}</span>`
-  ).join('');
-
-  const printHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${esc(p.title)} — Script Breakdown</title>
-  <style>
-    @page { margin: 1.8cm 2cm; size: A4; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 2px solid #111; }
-    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
-    .header-meta { font-size: 11px; color: #555; margin-top: 4px; }
-    .key { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; align-items: center; }
-    .key-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-right: 4px; }
-    .cat-pill { display: inline-block; border-radius: 3px; padding: 1px 7px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-    .scene { margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
-    .scene-heading { background: #1a1a2e; color: #e8e0ff; padding: 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-    .scene-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-top: none; }
-    .scene-table tr:nth-child(even) { background: #f7f7f7; }
-    .cat-cell { padding: 5px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; }
-    .items-cell { padding: 5px 12px; color: #222; line-height: 1.5; }
-    .empty-cell { padding: 6px 12px; color: #aaa; font-style: italic; }
-    .bf-footer { position: fixed; bottom: 6mm; right: 12mm; font-size: 9px; color: #bbb; font-family: Arial, sans-serif; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="header-title">${esc(p.title)}</div>
-      <div class="header-meta">Script Breakdown Report · ${scenes.length} scenes · ${tags.length} tags · Generated ${new Date().toLocaleDateString()}</div>
-    </div>
-  </div>
-  ${scenesHtml}
-  <div class="bf-footer">Powered by Black Fountain · blackfountain.io</div>
-</body>
-</html>`;
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-  document.body.appendChild(iframe);
-  iframe.contentDocument.write(printHtml);
-  iframe.contentDocument.close();
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-  iframe.contentWindow.addEventListener('afterprint', () => iframe.remove());
+  _bfPrint({
+    title: p.title,
+    section: 'Script Breakdown',
+    subtitle: `${scenes.length} scenes · ${tags.length} elements · Generated ${new Date().toLocaleDateString()}`,
+    body: `
+      <style>
+        .key { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; align-items: center; }
+        .key-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-right: 4px; }
+        .cat-pill { display: inline-block; border-radius: 3px; padding: 2px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+        .scene { margin-bottom: 18px; break-inside: avoid; page-break-inside: avoid; }
+        .scene-heading { background: #1a1a2e; color: #e8e0ff; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .scene-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-top: none; }
+        .scene-table tr:nth-child(even) { background: #f7f7f7; }
+        .cat-cell { padding: 6px 10px; width: 130px; vertical-align: top; border-right: 1px solid #e0e0e0; font-size: 10px; }
+        .items-cell { padding: 6px 12px; color: #222; line-height: 1.5; font-size: 10px; }
+        .empty-cell { padding: 8px 12px; color: #aaa; font-style: italic; }
+      </style>
+      <div class="key">
+        <span class="key-label">Elements:</span>
+        ${keyHtml}
+      </div>
+      ${scenesHtml}`,
+  });
 }
 
 // AUTO-SUGGEST
@@ -2473,7 +3000,13 @@ function _bdApplyVotesToSuggestions(suggestions) {
   });
 }
 
-// Render a single suggestion row with vote buttons
+// ══════════════════════════════════════════
+// BD SUGGEST — INLINE EDIT PATCH
+// Replace _bdRenderSuggestItem and add the
+// functions below in breakdown.js, before
+// _bdSuggestSceneStats.
+// ══════════════════════════════════════════
+
 function _bdRenderSuggestItem(s, cat) {
   const isMedium  = s.confidence === 'medium';
   const isChecked = _bdSuggestSelected.has(s.id);
@@ -2501,18 +3034,388 @@ function _bdRenderSuggestItem(s, cat) {
     onmouseleave="this.style.borderColor='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.25)'}';this.style.color='${downActive ? '#E74C3C' : 'rgba(231,76,60,0.4)'}';this.style.background='${downActive ? 'rgba(231,76,60,0.13)' : 'none'}'"
   >👎</button>`;
 
+  const editBtn = `<button
+    onclick="event.stopPropagation();_bdToggleSugEdit('${s.id}')"
+    title="Edit — refine this tag or add more from context"
+    style="background:none;border:1px solid rgba(230,188,60,0.25);border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:rgba(230,188,60,0.5);line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseleave="this.style.borderColor='rgba(230,188,60,0.25)';this.style.color='rgba(230,188,60,0.5)'"
+  >✎</button>`;
+
+  const moveBtn = `<button
+    onclick="event.stopPropagation();_bdShowMovePicker('${s.id}','move')"
+    title="Move to a different category"
+    style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:rgba(255,255,255,0.3);line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='rgba(255,255,255,0.35)';this.style.color='rgba(255,255,255,0.6)'"
+    onmouseleave="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.3)'"
+  >↔</button>`;
+
+  const alsoBtn = `<button
+    onclick="event.stopPropagation();_bdShowMovePicker('${s.id}','also')"
+    title="Also tag as another category — keeps this one too"
+    style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:rgba(255,255,255,0.3);line-height:1.4;flex-shrink:0"
+    onmouseenter="this.style.borderColor='rgba(255,255,255,0.35)';this.style.color='rgba(255,255,255,0.6)'"
+    onmouseleave="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.3)'"
+  >+cat</button>`;
+
   const commBadge = commScore !== 0
     ? `<span title="Community score" style="font-size:9px;color:${commScore>0?'#5fc460':'#E74C3C'};opacity:0.6;flex-shrink:0">${commScore>0?'+':''}${commScore}</span>`
     : '';
 
-  return `<div id="sug_row_${s.id}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);${isMedium?'opacity:0.7':''}">
-    <input type="checkbox" id="sug_cb_${s.id}" ${isChecked?'checked':''} onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
-    <span onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()" style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default">${s.text}</span>
-    ${isMedium ? `<span style="font-size:9px;color:var(--text3);background:var(--surface3);border-radius:3px;padding:1px 4px;flex-shrink:0">common</span>` : ''}
-    <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
-    ${commBadge}
-    <span style="display:flex;gap:3px;flex-shrink:0">${upBtn}${downBtn}</span>
+  return `<div id="sug_wrap_${s.id}">
+    <div id="sug_row_${s.id}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);${isMedium?'opacity:0.7':''}">
+      <input type="checkbox" id="sug_cb_${s.id}" ${isChecked?'checked':''} onchange="toggleBdSuggestion('${s.id}',this.checked)" style="cursor:pointer;accent-color:${cat.color};flex-shrink:0">
+      <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};flex-shrink:0;display:inline-block" title="${catLabel}"></span>
+      <span onmouseenter="_bdShowSugTooltip(this,'${s.id}')" onmouseleave="_bdHideSugTooltip()" style="font-size:12px;font-family:'Courier New',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default">${s.text}</span>
+      ${isMedium ? `<span style="font-size:9px;color:var(--text3);background:var(--surface3);border-radius:3px;padding:1px 4px;flex-shrink:0">common</span>` : ''}
+      <span style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;flex-shrink:0" title="${s.sceneHeading}">${s.sceneHeading}</span>
+      ${commBadge}
+      <span style="display:flex;gap:3px;flex-shrink:0">${editBtn}${moveBtn}${alsoBtn}${upBtn}${downBtn}</span>
+    </div>
+    <div id="sug_edit_${s.id}" style="display:none"></div>
+    <div id="sug_picker_${s.id}" style="display:none"></div>
   </div>`;
+}
+
+// ── Move / Also-tag category picker ─────────────────────────────────────────
+
+function _bdShowMovePicker(sugId, mode) {
+  // Close any open edit panels or other pickers
+  document.querySelectorAll('[id^="sug_edit_"]').forEach(el => { if (el._cleanupListener) el._cleanupListener(); el.style.display = 'none'; el.innerHTML = ''; });
+  document.querySelectorAll('[id^="sug_picker_"]').forEach(el => {
+    if (el.id !== `sug_picker_${sugId}`) { el.style.display = 'none'; el.innerHTML = ''; }
+  });
+
+  const pickerEl = document.getElementById(`sug_picker_${sugId}`);
+  if (!pickerEl) return;
+
+  // Toggle off if already open in same mode
+  if (pickerEl.style.display !== 'none' && pickerEl.dataset.mode === mode) {
+    pickerEl.style.display = 'none';
+    pickerEl.innerHTML = '';
+    return;
+  }
+  pickerEl.dataset.mode = mode;
+
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  const currentCat = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#aaa', label:'?' };
+  const otherCats  = mode === 'move'
+    ? BREAKDOWN_CATEGORIES.filter(c => c.id !== s.category)
+    : BREAKDOWN_CATEGORIES.filter(c => c.id !== s.category && !_bdSuggestions.some(x => x.start === s.start && x.end === s.end && x.category === c.id));
+
+  const label = mode === 'move'
+    ? `Move <strong>${s.text}</strong> from <span style="background:${currentCat.color};color:${currentCat.textColor};border-radius:3px;padding:0 5px;font-size:10px;font-weight:700">${currentCat.label}</span> to:`
+    : `Also tag <strong>${s.text}</strong> as:`;
+
+  pickerEl.innerHTML = `
+    <div style="margin:2px 0 6px;padding:8px 10px;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;border-top:none;border-top-left-radius:0;border-top-right-radius:0">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:7px">${label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${otherCats.map(cat => `
+          <button
+            onclick="_bdExecuteCatAction('${sugId}','${mode}','${cat.id}')"
+            style="background:${cat.color};color:${cat.textColor};border:none;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer"
+          >${cat.label}</button>
+        `).join('')}
+      </div>
+    </div>`;
+  pickerEl.style.display = 'block';
+}
+
+function _bdExecuteCatAction(sugId, mode, toCatId) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+
+  if (mode === 'move') {
+    // Change the category on this suggestion
+    const oldCatId = s.category;
+    s.category = toCatId;
+    s.confidence = 'high';
+    _bdSuggestSelected.add(sugId);
+
+    // Re-render the wrap — it may move position in the list visually but
+    // we just re-render in place for simplicity
+    const wrap = document.getElementById(`sug_wrap_${sugId}`);
+    if (wrap) {
+      const newCat = BREAKDOWN_CATEGORIES.find(c => c.id === toCatId) || { color:'#aaa', textColor:'#000', label:'?' };
+      wrap.outerHTML = _bdRenderSuggestItem(s, newCat);
+    }
+  } else {
+    // 'also' — duplicate into another category as a new suggestion
+    const newSug = {
+      id:          's_' + Math.random().toString(36).slice(2),
+      category:    toCatId,
+      text:        s.text,
+      start:       s.start,
+      end:         s.end,
+      sceneHeading:s.sceneHeading,
+      confidence:  'high',
+    };
+    _bdSuggestions.push(newSug);
+    _bdSuggestSelected.add(newSug.id);
+
+    // Close the picker on the original row
+    const pickerEl = document.getElementById(`sug_picker_${sugId}`);
+    if (pickerEl) { pickerEl.style.display = 'none'; pickerEl.innerHTML = ''; }
+
+    // Insert the new row directly after the current wrap
+    const wrap = document.getElementById(`sug_wrap_${sugId}`);
+    if (wrap) {
+      const newCat = BREAKDOWN_CATEGORIES.find(c => c.id === toCatId) || { color:'#aaa', textColor:'#000', label:'?' };
+      const div = document.createElement('div');
+      div.innerHTML = _bdRenderSuggestItem(newSug, newCat);
+      wrap.after(div.firstElementChild);
+    }
+  }
+
+  updateBdSuggestCount();
+}
+
+// ── Inline edit panel ────────────────────────────────────────────────────────
+
+function _bdToggleSugEdit(sugId) {
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (!editEl) return;
+  const isOpen = editEl.style.display !== 'none';
+
+  // Close all other open panels
+  document.querySelectorAll('[id^="sug_edit_"]').forEach(el => {
+    if (el._cleanupListener) { el._cleanupListener(); el._cleanupListener = null; }
+    el.style.display = 'none'; el.innerHTML = '';
+  });
+  document.querySelectorAll('[id^="sug_picker_"]').forEach(el => {
+    el.style.display = 'none'; el.innerHTML = '';
+  });
+
+  if (isOpen) return;
+  _bdOpenSugEdit(sugId);
+}
+
+function _bdOpenSugEdit(sugId) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  const bd = _getActiveBd(currentProject());
+  if (!bd?.rawText) return;
+  const text = bd.rawText;
+  const cat  = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#e6bc3c', textColor:'#000', label:'?' };
+
+  // Build a ±5 line context window around the suggestion
+  const lines       = text.split('\n');
+  const lineOffsets = [];
+  let off = 0;
+  for (const l of lines) { lineOffsets.push(off); off += l.length + 1; }
+
+  let targetLine = lineOffsets.findIndex((lo, i) => lo + lines[i].length >= s.start);
+  if (targetLine === -1) targetLine = lines.length - 1;
+
+  const fromLine    = Math.max(0, targetLine - 5);
+  const toLine      = Math.min(lines.length - 1, targetLine + 5);
+  const windowStart = lineOffsets[fromLine];
+  const windowText  = lines.slice(fromLine, toLine + 1).join('\n');
+
+  // Highlight existing suggestion in the window
+  const esc = str => str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const relStart = Math.max(0, s.start - windowStart);
+  const relEnd   = Math.min(windowText.length, s.end - windowStart);
+
+  const highlighted =
+    esc(windowText.slice(0, relStart)) +
+    `<mark data-current="1" style="background:${cat.color};color:${cat.textColor};border-radius:2px;padding:0 1px">` +
+    esc(windowText.slice(relStart, relEnd)) +
+    `</mark>` +
+    esc(windowText.slice(relEnd));
+
+  // Category picker for "Add as new" action
+  const catButtons = BREAKDOWN_CATEGORIES.map(c =>
+    `<button
+      data-cat-id="${c.id}"
+      onclick="_bdSetEditNewCat('${sugId}','${c.id}',this)"
+      style="background:${c.color};color:${c.textColor};border:none;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;opacity:${c.id===s.category?'1':'0.45'};outline:${c.id===s.category?`2px solid #fff`:'none'};outline-offset:1px"
+    >${c.label}</button>`
+  ).join('');
+
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (!editEl) return;
+
+  editEl.innerHTML = `
+    <div style="margin:2px 0 6px;padding:10px 12px;background:var(--surface3);border:1px solid ${cat.color}44;border-top:none;border-radius:0 0 6px 6px">
+
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--font-mono);letter-spacing:0.5px;text-transform:uppercase">
+        Highlight any text below — then choose what to do with it
+      </div>
+
+      <div
+        id="sug_edit_ctx_${sugId}"
+        data-sug-id="${sugId}"
+        data-window-start="${windowStart}"
+        style="font-family:'Courier New',monospace;font-size:11.5px;line-height:1.85;white-space:pre-wrap;word-break:break-word;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:text;user-select:text"
+      >${highlighted}</div>
+
+      <!-- Action bar — shown once user selects something -->
+      <div id="sug_edit_actions_${sugId}" style="display:none;flex-direction:column;gap:8px">
+
+        <div style="font-size:11px;color:var(--text2)">
+          Selected: <strong id="sug_edit_seltext_${sugId}" style="font-family:'Courier New',monospace;color:var(--text)"></strong>
+        </div>
+
+        <!-- Action: Replace current suggestion -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button
+            id="sug_edit_replace_${sugId}"
+            onclick="_bdApplySugEdit('${sugId}','replace')"
+            style="background:${cat.color};color:${cat.textColor};border:none;border-radius:4px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0"
+          >Replace "${s.text.length > 20 ? s.text.slice(0,20)+'…' : s.text}"</button>
+          <span style="font-size:10px;color:var(--text3)">updates this ${cat.label} tag to your selection</span>
+        </div>
+
+        <!-- Action: Add as new tag (with category picker) -->
+        <div style="border-top:1px solid var(--border2);padding-top:8px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px">Or add as a new tag in:</div>
+          <div id="sug_edit_catpicker_${sugId}" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${catButtons}</div>
+          <button
+            id="sug_edit_addnew_${sugId}"
+            onclick="_bdApplySugEdit('${sugId}','addnew')"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 12px;font-size:11px;cursor:pointer"
+          >Add as new tag</button>
+        </div>
+
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button onclick="_bdToggleSugEdit('${sugId}')" style="background:none;border:1px solid var(--border2);border-radius:4px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer">Done</button>
+      </div>
+
+    </div>`;
+
+  editEl.style.display = 'block';
+
+  // Track the "add as new" category selection — default to current cat
+  editEl._newCatId = s.category;
+
+  // Listen for selection changes
+  const ctx       = document.getElementById(`sug_edit_ctx_${sugId}`);
+  const actionsEl = document.getElementById(`sug_edit_actions_${sugId}`);
+  const selTextEl = document.getElementById(`sug_edit_seltext_${sugId}`);
+  ctx._pendingStart = null;
+  ctx._pendingEnd   = null;
+
+  const onSelChange = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      actionsEl.style.display = 'none';
+      ctx._pendingStart = null;
+      ctx._pendingEnd   = null;
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    if (!ctx.contains(range.commonAncestorContainer)) return;
+
+    const getOff = (container, node, offset) => {
+      let total = 0;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        if (walker.currentNode === node) return total + offset;
+        total += walker.currentNode.textContent.length;
+      }
+      return total + offset;
+    };
+
+    const relA = getOff(ctx, range.startContainer, range.startOffset);
+    const relB = getOff(ctx, range.endContainer,   range.endOffset);
+    const selStart = Math.min(relA, relB);
+    const selEnd   = Math.max(relA, relB);
+    const selectedText = windowText.slice(selStart, selEnd).trim();
+    if (!selectedText) { actionsEl.style.display = 'none'; return; }
+
+    const trimOff = windowText.slice(selStart, selEnd).indexOf(selectedText);
+    ctx._pendingStart = windowStart + selStart + trimOff;
+    ctx._pendingEnd   = ctx._pendingStart + selectedText.length;
+
+    selTextEl.textContent = selectedText;
+    actionsEl.style.display = 'flex';
+  };
+
+  document.addEventListener('selectionchange', onSelChange);
+  editEl._cleanupListener = () => document.removeEventListener('selectionchange', onSelChange);
+}
+
+// Called when user clicks a category button in the "add as new" picker
+function _bdSetEditNewCat(sugId, catId, btn) {
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  if (editEl) editEl._newCatId = catId;
+  // Update button highlights
+  const picker = document.getElementById(`sug_edit_catpicker_${sugId}`);
+  if (!picker) return;
+  picker.querySelectorAll('button').forEach(b => {
+    b.style.opacity  = b.dataset.catId === catId ? '1' : '0.45';
+    b.style.outline  = b.dataset.catId === catId ? '2px solid #fff' : 'none';
+  });
+}
+
+function _bdApplySugEdit(sugId, action) {
+  const s      = _bdSuggestions.find(x => x.id === sugId);
+  const editEl = document.getElementById(`sug_edit_${sugId}`);
+  const ctx    = document.getElementById(`sug_edit_ctx_${sugId}`);
+  if (!s || !editEl || !ctx || ctx._pendingStart == null) return;
+
+  const bd = _getActiveBd(currentProject());
+  if (!bd?.rawText) return;
+
+  const newText  = bd.rawText.slice(ctx._pendingStart, ctx._pendingEnd).trim();
+  if (!newText) return;
+
+  if (action === 'replace') {
+    // Update this suggestion in place
+    s.text       = newText;
+    s.start      = ctx._pendingStart;
+    s.end        = ctx._pendingEnd;
+    s.confidence = 'high';
+    _bdSuggestSelected.add(sugId);
+
+    // Clean up and re-render
+    if (editEl._cleanupListener) { editEl._cleanupListener(); editEl._cleanupListener = null; }
+    const wrap = document.getElementById(`sug_wrap_${sugId}`);
+    if (wrap) {
+      const cat = BREAKDOWN_CATEGORIES.find(c => c.id === s.category) || { color:'#aaa', textColor:'#000' };
+      wrap.outerHTML = _bdRenderSuggestItem(s, cat);
+    }
+
+  } else if (action === 'addnew') {
+    const newCatId = editEl._newCatId || s.category;
+    const newSug   = {
+      id:           's_' + Math.random().toString(36).slice(2),
+      category:     newCatId,
+      text:         newText,
+      start:        ctx._pendingStart,
+      end:          ctx._pendingEnd,
+      sceneHeading: s.sceneHeading,
+      confidence:   'high',
+    };
+    _bdSuggestions.push(newSug);
+    _bdSuggestSelected.add(newSug.id);
+
+    // Insert new row after current wrap
+    const wrap = document.getElementById(`sug_wrap_${sugId}`);
+    if (wrap) {
+      const newCat = BREAKDOWN_CATEGORIES.find(c => c.id === newCatId) || { color:'#aaa', textColor:'#000' };
+      const div = document.createElement('div');
+      div.innerHTML = _bdRenderSuggestItem(newSug, newCat);
+      wrap.after(div.firstElementChild);
+    }
+
+    // Keep edit panel open so user can keep tagging more from the same context
+    // Just clear the selection state so actions bar hides
+    ctx._pendingStart = null;
+    ctx._pendingEnd   = null;
+    const actionsEl = document.getElementById(`sug_edit_actions_${sugId}`);
+    if (actionsEl) actionsEl.style.display = 'none';
+    window.getSelection()?.removeAllRanges();
+
+    showToast(`"${newText}" added as ${BREAKDOWN_CATEGORIES.find(c=>c.id===newCatId)?.label || newCatId}`, 'success');
+  }
+
+  updateBdSuggestCount();
 }
 function _bdSuggestSceneStats(suggestions) {
   // Build a map: sceneHeading → { total, byCategory }
@@ -2768,6 +3671,33 @@ function _bdHideSugTooltip() {
   if (tip) tip.style.display = 'none';
 }
 
+function _bdMoveSuggestion(sugId, newCat, mode) {
+  const s = _bdSuggestions.find(x => x.id === sugId);
+  if (!s) return;
+  if (mode === 'move') {
+    s.category = newCat;
+    const row = document.getElementById('sug_row_' + sugId);
+    if (row) {
+      const cat = BREAKDOWN_CATEGORIES.find(c => c.id === newCat);
+      row.style.borderColor = cat ? cat.color : 'var(--accent)';
+      setTimeout(() => row.style.borderColor = 'var(--border)', 400);
+    }
+    const cb = document.getElementById('sug_cb_' + sugId);
+    if (cb) cb.checked = true;
+    _bdSuggestSelected.add(sugId);
+    updateBdSuggestCount();
+    showToast(`Moved to ${BREAKDOWN_CATEGORIES.find(c => c.id === newCat)?.label || newCat}`, 'info');
+  } else if (mode === 'add') {
+    const newS = { ...s, id: s.id + '_copy_' + Date.now(), category: newCat, confidence: s.confidence };
+    _bdSuggestions.push(newS);
+    if (s.confidence === 'high') {
+      _bdSuggestSelected.add(newS.id);
+    }
+    showBdSuggestPanel();
+    showToast(`Added copy to ${BREAKDOWN_CATEGORIES.find(c => c.id === newCat)?.label || newCat}`, 'info');
+  }
+}
+
 // CHANGE [4]: Batch prop export during bulk apply.
 // Individual _bdAutoExportProp toasts are suppressed (silent=true); instead we
 // collect the count and show one summary toast after all tags are applied.
@@ -2812,3 +3742,7 @@ function applySelectedBdSuggestions() {
     showToast(`${toApply.length} tag${toApply.length!==1?'s':''} applied`, 'success');
   }
 }
+
+// Expose functions for onclick handlers
+window.printBreakdownReport = printBreakdownReport;
+window.exportBreakdownReport = exportBreakdownReport;

@@ -134,6 +134,8 @@ function renderStoryboard(p) {
   `;
   // Wire rubber-band selection on the canvas
   setTimeout(() => _sbInitRubberBand(), 0);
+  // Inject Go To dropdown
+  el.querySelectorAll('.goto-hook').forEach(h => { h.innerHTML = _gotoHtml('storyboard'); });
 }
 
 function _sbGroupHtml(group, scenes) {
@@ -283,9 +285,9 @@ function _sbOpenFrame(id, isDraft) {
             <div id="_sbFavs_${id}" style="display:flex;gap:3px;align-items:center"></div>
             <div class="sb-tdiv"></div>
             <!-- BG colour -->
-            <label title="Background colour" style="position:relative;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px">
+            <label id="_sbBgLabel_${id}" title="Background colour" style="position:relative;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px">
               <span style="font-size:9px;color:#888">BG</span>
-              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:${f.bgColor || '#1a1a1a'};cursor:pointer"></div>
+              <div id="_sbBgSwatch_${id}" style="width:16px;height:16px;border-radius:3px;border:2px solid #555;background:${f.bgColor || '#1a1a1a'};cursor:pointer" onclick="_sbToggleBgPicker('${id}')"></div>
               <input type="color" id="_sbBgPicker_${id}" value="${f.bgColor || '#1a1a1a'}"
                 style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer"
                 oninput="_sbSetBgLive('${id}',this.value)" onchange="_sbSetBg('${id}',this.value)">
@@ -421,7 +423,7 @@ function _sbOpenFrame(id, isDraft) {
     ov.remove();
     renderStoryboard(currentProject());
   };
-  ov.addEventListener('click', e => { if (e.target === ov) _sbCloseModal(false); });
+  
   ov.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.stopPropagation(); _sbCloseModal(false); }
     if (e.key === 'ArrowLeft'  && !isFirst && !isDraft) { e.preventDefault(); _sbSaveSketch(id); _sbCleanupKb(); _sbPrevFrame(id); }
@@ -629,6 +631,10 @@ function _sbDiscardDraft() {
 function _sbAddCustomScene() {
   const ovId = '_sb-custom-scene-modal';
   document.getElementById(ovId)?.remove();
+  const p = currentProject();
+  const scenes = p ? _sbScenes(p) : [];
+  const hasBreakdown = scenes.length > 0;
+
   const ov = document.createElement('div');
   ov.id = ovId;
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -638,14 +644,29 @@ function _sbAddCustomScene() {
         <h3 style="margin:0;font-size:14px;font-weight:700">+ Add Scene</h3>
         <button onclick="document.getElementById('${ovId}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1">✕</button>
       </div>
-      <div>
-        <label class="form-label" style="margin-bottom:4px">Scene heading</label>
-        <input type="text" id="_sbCustomSceneName" placeholder="e.g. INT. BARRY'S OFFICE - DAY"
-          style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)"
-          onkeydown="if(event.key==='Enter')_sbAddCustomSceneConfirm('${ovId}')">
+      ${hasBreakdown ? `
+        <div>
+          <label class="form-label" style="margin-bottom:4px">Select scene from breakdown</label>
+          <select id="_sbSceneSelect" style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
+            <option value="">— Choose a scene —</option>
+            ${scenes.map(s => `<option value="${s.key.replace(/"/g,'&quot;')}">${s.heading.replace(/</g,'&lt;').substring(0,80)}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:-8px">
+          <input type="checkbox" id="_sbNewScene" style="width:16px;height:16px;accent-color:var(--accent)">
+          <label for="_sbNewScene" style="font-size:12px;color:var(--text2)">Or create custom scene</label>
+        </div>
+      ` : ''}
+      <div id="_sbCustomSceneInput" style="display:${hasBreakdown ? 'none' : 'flex'};flex-direction:column;gap:10px">
+        <div>
+          <label class="form-label" style="margin-bottom:4px">Scene heading</label>
+          <input type="text" id="_sbCustomSceneName" placeholder="e.g. INT. BARRY'S OFFICE - DAY"
+            style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)"
+            onkeydown="if(event.key==='Enter')_sbAddCustomSceneConfirm('${ovId}')">
+        </div>
       </div>
       <div>
-        <label class="form-label" style="margin-bottom:4px">Blank frames to add <span style="opacity:0.5;font-weight:400">(optional)</span></label>
+        <label class="form-label" style="margin-bottom:4px">Frames to add <span style="opacity:0.5;font-weight:400">(optional)</span></label>
         <input type="number" id="_sbCustomSceneCount" value="1" min="0" max="20"
           style="width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text)">
       </div>
@@ -656,17 +677,45 @@ function _sbAddCustomScene() {
     </div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  if (hasBreakdown) {
+    const sel = document.getElementById('_sbSceneSelect');
+    const chk = document.getElementById('_sbNewScene');
+    const cust = document.getElementById('_sbCustomSceneInput');
+    sel?.addEventListener('change', () => {
+      if (sel.value) cust.style.display = 'none';
+    });
+    chk?.addEventListener('change', () => {
+      cust.style.display = chk.checked ? 'flex' : 'none';
+      if (chk.checked) { sel.value = ''; }
+    });
+  }
   setTimeout(() => document.getElementById('_sbCustomSceneName')?.focus(), 50);
 }
 
 function _sbAddCustomSceneConfirm(ovId) {
   const ov = document.getElementById(ovId); if (!ov) return;
-  if (ov._confirming) return; // guard against double-fire (Enter + click)
+  if (ov._confirming) return;
   ov._confirming = true;
-  const name  = document.getElementById('_sbCustomSceneName')?.value.trim();
-  if (!name) { showToast('Please enter a scene heading', 'info'); ov._confirming = false; return; }
+  const p = currentProject(); if (!p) return;
+  const scenes = _sbScenes(p);
+  const hasBreakdown = scenes.length > 0;
+
+  let name = '';
+  if (hasBreakdown) {
+    const sel = document.getElementById('_sbSceneSelect');
+    const chk = document.getElementById('_sbNewScene');
+    const customInput = document.getElementById('_sbCustomSceneName');
+    if (chk?.checked || !sel?.value) {
+      name = customInput?.value.trim();
+    } else {
+      name = sel?.value;
+    }
+  } else {
+    name = document.getElementById('_sbCustomSceneName')?.value.trim();
+  }
+
+  if (!name) { showToast('Please select or enter a scene heading', 'info'); ov._confirming = false; return; }
   const count = Math.max(1, Math.min(20, parseInt(document.getElementById('_sbCustomSceneCount')?.value) || 1));
-  const p  = currentProject(); if (!p) return;
   const sb = _getStoryboard(p);
   for (let i = 0; i < count; i++) {
     sb.frames.push(_sbMakeFrame(sb, name, name));
@@ -1252,7 +1301,7 @@ function _sbSetTool(id, tool) {
   state.tool = tool;
   // Update cursor
   const canvas = state._canvas;
-  if (canvas) canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'erase' ? 'not-allowed' : 'crosshair';
+  if (canvas) canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'erase' ? 'crosshair' : 'crosshair';
   _sbSyncToolbar(id);
 }
 
@@ -1284,6 +1333,19 @@ function _sbSetBgLive(id, color) {
   const bgSwatch = document.getElementById('_sbBgSwatch_' + id);
   if (bgSwatch) bgSwatch.style.background = color;
 }
+
+function _sbToggleBgPicker(id) {
+  const picker = document.getElementById('_sbBgPicker_' + id);
+  if (!picker) return;
+  if (_sbBgPickerOpen === id) {
+    picker.blur();
+    _sbBgPickerOpen = null;
+  } else {
+    _sbBgPickerOpen = id;
+  }
+}
+
+let _sbBgPickerOpen = null;
 
 function _sbSetBg(id, color) {
   console.log('[DEBUG] _sbSetBg called, id=', id, 'color=', color);
@@ -1728,7 +1790,6 @@ async function _sbExportPDF() {
 
   const scenes = _sbScenes(p);
   const groups = _sbGroupByScene(sb.frames, scenes);
-  const date   = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
 
   let pagesHtml = '';
   let buf = [];
@@ -1746,10 +1807,10 @@ async function _sbExportPDF() {
         <div class="sbp-foot">
           <div class="sbp-fnum">#${cell.frameNumber||'?'}</div>
           <div class="sbp-tags">${[cell.shotType,cell.movement,cell.lens].filter(Boolean).map(t=>`<span class="sbp-tag">${t}</span>`).join('')}</div>
-          ${cell.action    ? `<div class="sbp-action">${cell.action.substring(0,120)}</div>` : ''}
-          ${cell.dialogue  ? `<div class="sbp-dial">"${cell.dialogue.substring(0,80)}"</div>` : ''}
-          ${cell.notes     ? `<div class="sbp-notes">${cell.notes.substring(0,80)}</div>` : ''}
-          ${cell.transition? `<div class="sbp-trans">→ ${cell.transition}</div>` : ''}
+          ${cell.action    ? `<div class="sbp-action">${_bfEscHtml(cell.action.substring(0,120))}</div>` : ''}
+          ${cell.dialogue  ? `<div class="sbp-dial">"${_bfEscHtml(cell.dialogue.substring(0,80))}"</div>` : ''}
+          ${cell.notes     ? `<div class="sbp-notes">${_bfEscHtml(cell.notes.substring(0,80))}</div>` : ''}
+          ${cell.transition? `<div class="sbp-trans">→ ${_bfEscHtml(cell.transition)}</div>` : ''}
         </div>
       </div>`;
     }).join('')}</div></div>`;
@@ -1758,7 +1819,7 @@ async function _sbExportPDF() {
 
   groups.forEach((group, gi) => {
     if (gi > 0 && buf.length) flushBuf();
-    pagesHtml += `<div class="sbp-scene-head">${group.heading.replace(/</g,'&lt;')}</div>`;
+    pagesHtml += `<div class="sbp-scene-head">${_bfEscHtml(group.heading)}</div>`;
     group.frames.forEach(f => { buf.push(f); if (buf.length === 6) flushBuf(); });
   });
   flushBuf();
@@ -1766,13 +1827,7 @@ async function _sbExportPDF() {
   const totalSecs = sb.frames.reduce((a,f)=>a+(parseInt(f.duration)||0),0);
   const durStr = totalSecs>0 ? ` · ~${Math.floor(totalSecs/60)}m ${totalSecs%60}s` : '';
 
-  const css = `
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#111}
-    .sbp-header{display:flex;justify-content:space-between;align-items:flex-end;padding:8mm 12mm 5mm;border-bottom:2px solid #111}
-    .sbp-header-title{font-size:17pt;font-weight:700}
-    .sbp-header-sub{font-size:8pt;color:#777;margin-top:2px}
-    .sbp-header-date{font-size:8pt;color:#999}
+  const sbCss = `
     .sbp-scene-head{font-size:8pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#444;padding:4mm 12mm 2mm;border-bottom:1px solid #ddd;page-break-after:avoid}
     .sbp-page{padding:3mm 10mm 6mm;page-break-after:always}
     .sbp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm}
@@ -1788,34 +1843,20 @@ async function _sbExportPDF() {
     .sbp-dial{font-size:6.5pt;color:#555;font-style:italic;line-height:1.3;margin-bottom:1mm}
     .sbp-notes{font-size:6pt;color:#888;line-height:1.3;margin-bottom:1mm}
     .sbp-trans{font-size:6pt;color:#aaa;font-family:monospace}
-    .sbp-footer{text-align:center;padding:4mm;font-size:6.5pt;color:#ccc;border-top:1px solid #eee}
-    @page{size:A4 landscape;margin:0}
+    @page{size:A4 landscape;margin:12mm 15mm}
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   `;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-    <title>Storyboard — ${(p.title||'').replace(/</g,'&lt;')}</title>
-    <style>${css}</style></head><body>
-    <div class="sbp-header">
-      <div>
-        <div class="sbp-header-title">${(p.title||'Untitled').replace(/</g,'&lt;')} — Storyboard</div>
-        <div class="sbp-header-sub">${sb.frames.length} frame${sb.frames.length!==1?'s':''}${durStr} · ${groups.length} scene${groups.length!==1?'s':''}</div>
-      </div>
-      <div class="sbp-header-date">${date}</div>
-    </div>
-    ${pagesHtml}
-    <div class="sbp-footer">Generated by Black Fountain · blackfountain.io</div>
-    </body></html>`;
+  const bodyHtml = `
+    <style>${sbCss}</style>
+    ${pagesHtml}`;
 
-  const w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 700); }
-  else {
-    const a = document.createElement('a');
-    a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-    a.download = `storyboard-${(p.title||'project').replace(/\s+/g,'-').toLowerCase()}.html`;
-    a.click();
-    showToast('Downloaded as HTML — open in browser and print to PDF', 'info');
-  }
+  _bfPrint({
+    title:    p.title,
+    section:  'Storyboard',
+    subtitle: `${sb.frames.length} frame${sb.frames.length!==1?'s':''}${durStr} · ${groups.length} scene${groups.length!==1?'s':''}`,
+    body:     bodyHtml,
+  });
 }
 
 

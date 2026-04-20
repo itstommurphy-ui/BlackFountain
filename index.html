@@ -57,6 +57,9 @@
       <div class="nav-item" onclick="showView('settings')">
         <span class="icon">⚙️</span> Settings
       </div>
+      <div class="nav-item" onclick="showView('myfountain')">
+        <span class="icon">⛲</span> My Fountain
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -74,32 +77,80 @@
   <!-- MAIN -->
   <div id="main">
     <header id="topbar">
-      <div>
-        <div class="topbar-title" id="topbar-title">Dashboard</div>
-        <div class="topbar-breadcrumb" id="topbar-breadcrumb">Black Fountain</div>
-      </div>
-      <div class="topbar-right">
-        <span id="save-indicator" style="font-size:11px;color:var(--green);font-family:var(--font-mono);opacity:0;transition:opacity .4s">✓ Saved</span>
-        <span id="sb-auth-indicator" style="font-size:11px;font-family:var(--font-mono);color:var(--text3)" title=""></span>
-        <div style="position:relative;">
-          <input type="text" id="global-search" aria-label="Search projects and data" placeholder="Search..." style="width:140px;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);" onfocus="this.style.width='220px'" onblur="setTimeout(()=>{document.getElementById('search-dropdown').style.display='none'},200)">
-          <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;margin-top:4px;"></div>
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-sm dropdown-toggle">⚙ Actions</button>
-          <div class="dropdown-menu" style="right:0;left:auto">
-            <div class="dropdown-item" onclick="manualSave()">💾 Save Data</div>
-            <div class="dropdown-item" onclick="exportData()">⬇ Export Data</div>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
-            <div class="dropdown-item" onclick="sbSignOut()">🚪 Sign Out</div>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item" id="pwa-install-btn" onclick="triggerPWAInstall()">⬇ Install App</div>
+      <div class="topbar-main">
+
+        <div class="topbar-logo" onclick="showView('dashboard')">
+          <svg width="16" height="22" viewBox="0 0 48 64" fill="none">
+            <ellipse cx="24" cy="56" rx="20" ry="5" fill="currentColor" opacity="0.9"/>
+            <rect x="22" y="36" width="4" height="20" fill="currentColor"/>
+            <ellipse cx="24" cy="36" rx="10" ry="3" fill="currentColor"/>
+            <rect x="23" y="20" width="2" height="16" fill="currentColor"/>
+            <path d="M24 16 Q14 10 10 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <path d="M24 16 Q34 10 38 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+            <path d="M24 16 Q23 6 24 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+            <circle cx="24" cy="2" r="1.5" fill="currentColor" opacity="0.7"/>
+          </svg>
+          <div>
+            <span class="topbar-logo-text">BLACK FOUNTAIN</span>
+            <span class="topbar-logo-sub">Production Tools</span>
           </div>
         </div>
-        <button class="btn btn-sm btn-primary" onclick="openNewProjectModal()">+ New Project</button>
+
+        <div class="project-switcher" id="ps-btn" onclick="toggleProjectSwitcher(event)">
+          <div>
+            <div class="project-switcher-label">Current project</div>
+            <div class="project-switcher-name" id="ps-current-name">—</div>
+          </div>
+          <span class="project-switcher-arrow">▾</span>
+        </div>
+
+        <div class="topbar-right">
+          <span id="topbar-save-status"></span>
+          <div style="position:relative;">
+            <input type="search" id="global-search" placeholder="Search…" autocomplete="off">
+            <div id="search-dropdown" style="display:none;position:absolute;top:100%;right:0;width:340px;max-height:420px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.35);z-index:9999;"></div>
+          </div>
+          <div class="dropdown">
+            <button class="dropdown-toggle" id="topbar-actions-btn">⚙</button>
+              <div class="dropdown-menu" id="topbar-actions-menu">
+                <div class="dropdown-item" onclick="openNewProjectModal()">+ New project</div>
+                <div class="dropdown-item" onclick="showView('myfountain')">◈ My Fountain</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="exportStore()">⬇ Export data</div>
+                <div class="dropdown-item" onclick="document.getElementById('import-file-input').click()">⬆ Import data</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="showView('settings')">⚙ Settings</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="bfManualSave()">💾 Save</div>
+                <div class="dropdown-item danger" onclick="sbSignOut()">🚪 Sign Out</div>
+              </div>
+          </div>
+        </div>
+
       </div>
     </header>
+
+    <!-- Project switcher dropdown — outside topbar so it isn't clipped -->
+    <div id="ps-dropdown">
+      <div class="ps-header">
+        <span class="ps-header-label">Switch project</span>
+        <div style="display:flex;gap:4px;position:relative;">
+          <button class="ps-sort-btn" id="ps-sort-btn" onclick="togglePsSort(event)">↕ Sort</button>
+          <button class="ps-sort-btn" id="ps-dir-btn" onclick="togglePsDir(event)">↓</button>
+          <div class="ps-sort-menu" id="ps-sort-menu">
+            <div class="ps-sort-option active" onclick="setPsSort('recent',this)">Most recent</div>
+            <div class="ps-sort-option" onclick="setPsSort('status',this)">By status</div>
+            <div class="ps-sort-option" onclick="setPsSort('alpha',this)">Alphabetical</div>
+          </div>
+        </div>
+      </div>
+      <div id="ps-list"></div>
+      <div class="psd-sep"></div>
+      <div class="psd-item" onclick="openNewProjectModal();closeProjectSwitcher()">
+        <div class="psd-dot" style="background:var(--border);"></div>
+        <div class="psd-new">+ New project</div>
+      </div>
+    </div>
 
     <div id="content">
 
@@ -809,7 +860,7 @@
         <label class="form-label">Directors</label>
         <div class="tag-input-container" id="proj-input-director-container">
           <div class="tag-input-tags" id="proj-input-director-tags"></div>
-          <input class="tag-input-field" id="proj-input-director" placeholder="Director name">
+          <input class="tag-input-field" id="proj-input-director" placeholder="Director name" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();_addProjectTag('director')}">
           <button type="button" class="tag-input-add-btn" onclick="_addProjectTag('director')" title="Add director">+</button>
         </div>
       </div>
@@ -817,7 +868,7 @@
         <label class="form-label">Producers</label>
         <div class="tag-input-container" id="proj-input-producer-container">
           <div class="tag-input-tags" id="proj-input-producer-tags"></div>
-          <input class="tag-input-field" id="proj-input-producer" placeholder="Producer name">
+          <input class="tag-input-field" id="proj-input-producer" placeholder="Producer name" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();_addProjectTag('producer')}">
           <button type="button" class="tag-input-add-btn" onclick="_addProjectTag('producer')" title="Add producer">+</button>
         </div>
       </div>
@@ -920,8 +971,9 @@
       </div>
     </div>
     <div class="form-group" id="pers-social-group">
-      <label class="form-label">Social (crew only)</label>
-      <input class="form-input" id="pers-social" placeholder="@handle">
+      <label class="form-label">Socials</label>
+      <div id="pers-socials-container" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="addSocialField('pers-socials-container')">+ Add Social</button>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1788,6 +1840,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-sync.js"></script>
+<script src="js/bf-save-history.js"></script>
 <script src="js/store.js"></script>
 <script src="js/contact-anchor.js"></script>
 <script src="js/contact-migration-ui.js"></script>
@@ -1803,9 +1856,12 @@
 <script src="js/moodboard-patch.js"></script>
 <script src="js/preferences-sync.js"></script>
 <script src="js/views/nav.js"></script>
+<script src="js/right-panel.js"></script>
 <script src="js/view-loader.js"></script>
 <script src="js/views/dashboard.js"></script>
+<script src="js/views/locations.js"></script>
 <script src="js/views/production-plan.js"></script>
+<script src="js/views/my-fountain.js"></script>
 <script src="js/views/email.js"></script>
 <script src="js/views/script.js"></script>
 <script src="js/scene-entity.js"></script>
@@ -1819,17 +1875,17 @@
   }
 </script>
 <script src="js/views/breakdown.js"></script>
+<script src="js/bf-sync.js"></script>
 <script src="js/breakdown-scene-patch.js"></script>
 <script src="js/production-handoff.js"></script>
+<script src="js/bf-print.js"></script>
 <script src="js/views/callsheet.js"></script>
-<script src="js/callsheet-scene-patch.js"></script>
 <script src="js/views/schedule.js"></script>
 <script src="js/schedule-nonshot-preserve.js"></script> <!-- ADD THIS -->
 <script src="js/schedule-structure.js"></script>
 <script src="js/schedule-time-sync.js"></script>
 <script src="js/views/budget.js"></script>
 <script src="js/budget-personnel-suggestions.js"></script>
-<script src="js/views/locations.js"></script>
 <script src="js/views/moodboard.js"></script>
 <script src="js/views/callsheet-html.js"></script>
 <script src="js/views/shotlist.js"></script>
@@ -1900,6 +1956,7 @@
 
 <!-- Global context menu -->
 <div id="ctx-menu"></div>
+<div id="ctx-submenu"></div>
 <script>
 // PWA Install Handler
 let deferredPrompt;
@@ -1908,7 +1965,7 @@ const pwaInstallBtn = document.getElementById('pwa-install-btn');
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  pwaInstallBtn.style.display = 'inline-block';
+  if (pwaInstallBtn) pwaInstallBtn.style.display = 'inline-block';
 });
 
 function triggerPWAInstall() {
@@ -1916,9 +1973,9 @@ function triggerPWAInstall() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((result) => {
       deferredPrompt = null;
-      pwaInstallBtn.style.display = 'none';
+      if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
     });
-  } else {
+  } else if (pwaInstallBtn) {
     // Fallback - show message
     pwaInstallBtn.textContent = 'Loading...';
     setTimeout(() => pwaInstallBtn.textContent = '⬇ Install App', 1000);
@@ -1965,6 +2022,260 @@ if ('serviceWorker' in navigator) {
       <span class="footer-divider">·</span>
       <a href="mailto:support@blackfountain.io">support@blackfountain.io</a>
     </footer>
+  </div>
+
+  <div id="fab-menu" style="position:fixed;bottom:28px;left:28px;z-index:9000;">
+    <div id="fab-items" style="display:none;flex-direction:column-reverse;gap:8px;margin-bottom:10px;">
+      <div class="fab-item" onclick="showView('settings');closeFab()">
+        ⚙ Preferences
+      </div>
+      <div class="fab-item" onclick="window.open('https://blackfountain.io','_blank');closeFab()">
+        ◈ My Fountain
+      </div>
+      <div class="fab-item" onclick="openNewProjectModal();closeFab()">
+        + New Project
+      </div>
+    </div>
+    <button id="fab-btn" onclick="toggleFab()" title="Menu">+</button>
+  </div>
+
+<!-- ══════════════════════════════════════════
+     RIGHT PANEL — Tasks · Contacts · Moodboards · Scratchpad
+     Replaces / extends the existing #qt-drawer in index.html
+     ══════════════════════════════════════════ -->
+
+<div id="right-panel" class="right-panel">
+
+  <!-- Tab strip (always visible on right edge) -->
+  <div class="rp-strip">
+    <div class="rp-strip-tab active" id="rp-tab-tasks"      onclick="rpShowTab('tasks')"      title="Quick Tasks (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="7" height="1.5" rx=".75" fill="currentColor"/><rect x="2" y="7" width="9" height="1.5" rx=".75" fill="currentColor"/><rect x="2" y="11" width="6" height="1.5" rx=".75" fill="currentColor"/><circle cx="13" cy="4" r="1.5" fill="currentColor" opacity=".4"/></svg>
+      <span class="rp-strip-label">Tasks</span>
+      <span class="rp-badge" id="rp-badge-tasks"></span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-contacts"   onclick="rpShowTab('contacts')"   title="Contacts (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="rp-strip-label">Contacts</span>
+      <span class="rp-badge" id="rp-badge-contacts"></span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-moodboards" onclick="rpShowTab('moodboards')" title="Moodboards (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span class="rp-strip-label">Boards</span>
+    </div>
+    <div class="rp-strip-tab" id="rp-tab-scratchpad" onclick="rpShowTab('scratchpad')" title="Scratchpad (click to close)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h10v12H3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".5"/><path d="M9.5 11.5l2-2 1 1-2 2-1 0 0-1z" fill="currentColor" opacity=".7"/></svg>
+      <span class="rp-strip-label">Notes</span>
+    </div>
+  </div>
+
+  <!-- Panel body (slides in) -->
+  <div class="rp-body" id="rp-body">
+
+    <!-- ── TASKS ── -->
+    <div class="rp-pane" id="rp-pane-tasks">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Quick Tasks</span>
+        <span id="qt-drawer-context" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:right"></span>
+        <span id="qt-drawer-progress" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0"></span>
+        <button onclick="rpShowTab('tasks')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-toolbar">
+        <select id="qt-drawer-sort" onchange="qtDrawerSortChanged()" class="rp-select">
+          <option value="custom">Custom</option>
+          <option value="priority">Priority</option>
+          <option value="deadline">Deadline</option>
+        </select>
+      </div>
+      <div class="rp-pane-scroll" id="qt-drawer-list"></div>
+      <div class="rp-pane-footer">
+        <input id="qt-drawer-input" class="rp-input" placeholder="Add task…" onkeydown="if(event.key==='Enter')qtDrawerAddTask()">
+        <div class="rp-foot-row">
+          <select id="qt-drawer-priority" class="rp-select" style="flex:1">
+            <option value="">Priority</option>
+            <option value="low">🟢 Low</option>
+            <option value="medium">🟠 Med</option>
+            <option value="high">🔴 High</option>
+            <option value="urgent">🟣 Urgent</option>
+          </select>
+          <button id="qt-drawer-deadline-btn" class="rp-select" style="flex:1;display:flex;align-items:center;justify-content:space-between;min-width:0"
+                  onclick="qtOpenDeadlinePicker(this)">
+            <span id="qt-drawer-deadline-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Deadline</span>
+            <span style="font-size:12px">📅</span>
+          </button>
+          <input type="hidden" id="qt-drawer-deadline" value="">
+          <button class="rp-add-btn" onclick="qtDrawerAddTask()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONTACTS ── -->
+    <div class="rp-pane" id="rp-pane-contacts" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Contacts</span>
+        <span id="rp-contacts-count" style="font-size:10px;color:var(--text3);font-family:var(--font-mono)"></span>
+        <button onclick="rpShowTab('contacts')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;margin-left:auto" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-toolbar">
+        <input id="rp-contacts-search" class="rp-input" placeholder="Search name, role…" oninput="rpContactsRender()" style="margin-bottom:0">
+        <select id="rp-contacts-sort" class="rp-select" onchange="rpContactsRender()">
+          <option value="name">A → Z</option>
+          <option value="role">By role</option>
+          <option value="project">By project</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);cursor:pointer;white-space:nowrap" title="Show only contacts in current project">
+          <input type="checkbox" id="rp-contacts-project-filter" onchange="rpContactsRender()" style="accent-color:var(--accent)">
+          This project
+        </label>
+      </div>
+      <div class="rp-pane-scroll" id="rp-contacts-list"></div>
+    </div>
+
+    <!-- ── MOODBOARDS ── -->
+    <div class="rp-pane" id="rp-pane-moodboards" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Moodboards</span>
+        <button onclick="openNewMoodboardModal()" class="rp-icon-btn" title="New moodboard">+</button>
+        <button onclick="rpShowTab('moodboards')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+      </div>
+      <div class="rp-pane-scroll" id="rp-moodboards-list"></div>
+    </div>
+
+    <!-- ── SCRATCHPAD ── -->
+    <div class="rp-pane" id="rp-pane-scratchpad" style="display:none">
+      <div class="rp-pane-header">
+        <span class="rp-pane-title">Scratchpad</span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button id="rp-sp-mode-text" class="rp-mode-btn active" onclick="rpScratchMode('text')" title="Text mode">T</button>
+          <button id="rp-sp-mode-draw" class="rp-mode-btn" onclick="rpScratchMode('draw')" title="Draw mode">✏</button>
+          <button onclick="rpScratchNewPage()" class="rp-icon-btn" title="New page" style="margin-left:4px">+</button>
+          <button onclick="rpShowTab('scratchpad')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="rp-sp-page-bar" id="rp-sp-page-bar"></div>
+      <div class="rp-pane-scroll rp-sp-scroll" id="rp-sp-scroll">
+        <div class="rp-sp-book" id="rp-sp-book">
+          <!-- Pages rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rp-body -->
+</div><!-- /right-panel -->
+
+  <!-- BOTTOM DOCK — only visible in project mode -->
+  <div id="dock">
+    <div class="dock-inner">
+
+      <div class="dock-item active" id="dock-overview" onclick="showSection('overview')">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="4" width="14" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="5" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5" y1="11" x2="10" y2="11" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="6" y1="2" x2="6" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span class="dock-label">Overview</span>
+        <div class="dock-pip"></div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-story">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="3" y="2" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="5.5" y1="6" x2="12.5" y2="6" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5.5" y1="9" x2="12.5" y2="9" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="5.5" y1="12" x2="9.5" y2="12" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <span class="dock-label">Story</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Story</div>
+          <div class="flyup-item" onclick="navToSection('script')">Script &amp; Docs</div>
+          <div class="flyup-item" onclick="navToSection('breakdown')">Script Breakdown</div>
+          <div class="flyup-item" onclick="navToSection('stripboard')">Stripboard</div>
+          <div class="flyup-item" onclick="navToSection('storyboard')">Storyboard</div>
+          <div class="flyup-item" onclick="navToSection('moodboards')">Moodboards</div>
+          <div class="flyup-item" onclick="navToSection('brief')">Project Outline</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-people">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="7" cy="7" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <circle cx="13" cy="7" r="3.5" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+          <path d="M2 16c0-3 2.2-5 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M9 13c1-.6 2.5-1 4-1 2.8 0 5 2 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        <span class="dock-label">People</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">People</div>
+          <div class="flyup-item" onclick="navToSection('cast')">Cast &amp; Extras</div>
+          <div class="flyup-item" onclick="navToSection('crew')">Crew</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-locations">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="8" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M9 16 C9 16 3 11 3 8a6 6 0 0 1 12 0c0 3-6 8-6 8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+        <span class="dock-label">Locations</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Locations</div>
+          <div class="flyup-item" onclick="navToSection('locations')">Locations</div>
+          <div class="flyup-item" onclick="navToSection('riskassess')">Risk Assessment</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-production">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="5" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="2" y="10" width="10" height="3" rx="1" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+        </svg>
+        <span class="dock-label">Production</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Production</div>
+          <div class="flyup-item" onclick="navToSection('schedule')">Schedule</div>
+          <div class="flyup-item" onclick="navToSection('callsheet')">Callsheet</div>
+          <div class="flyup-item" onclick="navToSection('shotlist')">Shot List</div>
+          <div class="flyup-item" onclick="navToSection('props')">Props</div>
+          <div class="flyup-item" onclick="navToSection('wardrobe')">Wardrobe</div>
+          <div class="flyup-item" onclick="navToSection('soundlog')">Sound Log</div>
+          <div class="flyup-item" onclick="navToSection('equipment')">Equipment</div>
+          <div class="flyup-item" onclick="navToSection('releases')">Release Forms</div>
+        </div>
+      </div>
+
+      <div class="dock-sep"></div>
+
+      <div class="dock-item" id="dock-finance">
+        <svg class="dock-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="2" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <line x1="7" y1="7" x2="7" y2="16" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <rect x="4" y="9.5" width="1.5" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+          <rect x="9" y="8.5" width="1.5" height="5" rx="0.5" fill="currentColor" opacity="0.7"/>
+        </svg>
+        <span class="dock-label">Finance</span>
+        <div class="dock-pip"></div>
+        <div class="dock-flyup">
+          <div class="flyup-label">Finance</div>
+          <div class="flyup-item" onclick="navToSection('budget')">Budget</div>
+          <div class="flyup-item" onclick="navToSection('plan')">Production Plan</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </body>
 </html>

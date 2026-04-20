@@ -309,7 +309,7 @@ function getAllOverviewSections(p) {
     })(), tab:'equipment'},
     {name:'Locations',       icon:'📍',  count: p.locations.length + ' locations',                                    tab:'locations'},
     {name:'Moodboards',      icon:'🎨',  count: (store.moodboards||[]).filter(b => b.projectId === p.id).length + ' boards', tab:'moodboards'},
-    {name:'Project Brief',   icon:'🗒️', count: (p.brief&&p.brief.template) ? 'Template ' + p.brief.template : '0 fields', tab:'brief'},
+    {name:'Project Brief',   icon:'🗒️', count: (p.brief?.projectType) ? (() => { const f=p.brief.fields||{}; const ans=Object.values(f).filter(v=>v?.trim()).length; return ans + ' answered'; })() : 'Not started', tab:'brief'},
     {name:'Props',           icon:'🧳',  count: (p.props||[]).length + ' items',                                      tab:'props'},
     {name:'Release Forms',   icon:'📝',  count: (p.releases||[]).length + ' forms',                                   tab:'releases'},
     {name:'Risk Assessment', icon:'⚠️',  count: (p.risks||[]).length + ' hazards',                                    tab:'riskassess'},
@@ -397,6 +397,57 @@ function toggleQuickTasksWidget() {
   }
 }
 
+function getEmptySections(p) {
+  const empty = [];
+  if (!p.budget?.length) empty.push({ tab: 'budget', name: 'Budget', task: 'Set up budget' });
+  if (!p.callsheets?.length) empty.push({ tab: 'callsheet', name: 'Callsheet', task: 'Create callsheet' });
+  if (!(p.cast?.length || p.extras?.length)) empty.push({ tab: 'cast', name: 'Cast & Extras', task: 'Add cast & extras' });
+  if (!(p.gearList?.length || Object.values(p.equipment || {}).flat().length)) empty.push({ tab: 'equipment', name: 'Equipment', task: 'Add equipment' });
+  if (!p.locations?.length) empty.push({ tab: 'locations', name: 'Locations', task: 'Add locations' });
+  if (!(store.moodboards || []).filter(b => b.projectId === p.id).length) empty.push({ tab: 'moodboards', name: 'Moodboards', task: 'Create moodboard' });
+  if (!p.brief?.projectType) empty.push({ tab: 'brief', name: 'Project Brief', task: 'Write project brief' });
+  if (!p.props?.length) empty.push({ tab: 'props', name: 'Props', task: 'List props' });
+  if (!p.releases?.length) empty.push({ tab: 'releases', name: 'Release Forms', task: 'Prepare release forms' });
+  if (!p.risks?.length) empty.push({ tab: 'riskassess', name: 'Risk Assessment', task: 'Complete risk assessment' });
+  if (!p.schedule?.length) empty.push({ tab: 'schedule', name: 'Schedule', task: 'Create schedule' });
+  if (!p.scripts?.length) empty.push({ tab: 'script', name: 'Script & Docs', task: 'Upload script' });
+  if (!p.scriptBreakdowns?.length) empty.push({ tab: 'breakdown', name: 'Script Breakdown', task: 'Load script breakdown' });
+  if (!p.stripboard?.days?.length) empty.push({ tab: 'stripboard', name: 'Stripboard', task: 'Set up stripboard' });
+  if (!p.shots?.length) empty.push({ tab: 'shotlist', name: 'Shot List', task: 'Create shot list' });
+  if (!p.storyboard?.frames?.length) empty.push({ tab: 'storyboard', name: 'Storyboard', task: 'Add storyboard frames' });
+  if (!p.soundlog?.length) empty.push({ tab: 'soundlog', name: 'Sound Log', task: 'Set up sound log' });
+  if (!p.unit?.length) empty.push({ tab: 'crew', name: 'Crew', task: 'Add crew members' });
+  if (!p.productionPlan?.sections?.length) empty.push({ tab: 'plan', name: 'Production Plan', task: 'Create production plan' });
+  if (!p.wardrobe?.length) empty.push({ tab: 'wardrobe', name: 'Wardrobe', task: 'List wardrobe items' });
+  return empty;
+}
+
+function renderQuickTaskSuggestions(p) {
+  const container = document.getElementById('quick-tasks-suggestions');
+  if (!container) return;
+  const empty = getEmptySections(p);
+  // If no empty sections found, show a generic suggestion
+  if (!empty.length) {
+    container.style.display = 'block';
+    container.innerHTML = `<div style="font-size:10px;color:var(--text3);margin-bottom:6px">Suggested (click to add):</div>` +
+      `<span onclick="addSuggestedQuickTask('Create production plan','plan')" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;font-size:11px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:12px;cursor:pointer">Create production plan</span>`;
+    return;
+  }
+  const show = empty.slice(0, 4);
+  container.style.display = 'block';
+  container.innerHTML = `<div style="font-size:10px;color:var(--text3);margin-bottom:6px">Suggested (click to add):</div>` +
+    show.map(s => `<span onclick="addSuggestedQuickTask('${escapeHtml(s.task)}','${s.tab}')" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;font-size:11px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:12px;cursor:pointer">${s.task}</span>`).join('');
+}
+
+function addSuggestedQuickTask(taskText, tab) {
+  const p = currentProject();
+  if (!p.quickTasks) p.quickTasks = [];
+  p.quickTasks.push({ text: taskText, priority: 'medium', done: false });
+  saveStore();
+  renderQuickTasks(p);
+  showToast('Task added: ' + taskText, 'success');
+}
+
 function renderQuickTasks(p) {
   if (!p.quickTasks) p.quickTasks = [];
   let tasks = [...p.quickTasks];
@@ -409,6 +460,7 @@ function renderQuickTasks(p) {
   
   if (tasks.length === 0) {
     list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:8px 0">No quick tasks yet</div>';
+    renderQuickTaskSuggestions(p);
     return;
   }
   
@@ -459,6 +511,9 @@ function renderQuickTasks(p) {
   
   // Update selection UI after render
   updateQuickTaskSelectionUI();
+
+  // Render suggestions based on empty sections
+  renderQuickTaskSuggestions(p);
 }
 
 // ══════════════════════════════════════════
@@ -670,6 +725,7 @@ function addQuickTask() {
   if (!p.quickTasks) p.quickTasks = [];
   
   p.quickTasks.push({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
     text: text,
     deadline: deadlineInput.value || null,
     priority: prioritySelect.value || 'medium',
@@ -846,49 +902,104 @@ function renderOverviewDocs(p) {
   initOverviewLayout(p);
   const sectionMap = {};
   getAllOverviewSections(p).forEach(s => sectionMap[s.tab] = s);
-  let cards = p.overviewLayout
+
+  // Dock group definitions — matches bottom nav exactly
+  const groups = [
+    { label: 'Story',      tabs: ['script','breakdown','stripboard','storyboard','moodboards','brief'] },
+    { label: 'People',     tabs: ['cast','crew'] },
+    { label: 'Locations',  tabs: ['locations','riskassess'] },
+    { label: 'Production', tabs: ['schedule','callsheet','shotlist','props','wardrobe','soundlog','equipment','releases'] },
+    { label: 'Finance',    tabs: ['budget','plan'] },
+  ];
+
+  // Collect visible cards in layout order
+  const visibleByTab = {};
+  p.overviewLayout
     .filter(item => item.visible && sectionMap[item.tab])
-    .map(item => sectionMap[item.tab]);
+    .forEach(item => { visibleByTab[item.tab] = sectionMap[item.tab]; });
 
-  // Apply sort
+  // Any tabs not in a group (custom sections etc) go into a catch-all
+  const groupedTabs = new Set(groups.flatMap(g => g.tabs));
+
   const sa = p.sectionActivity || {};
-  if      (overviewSortMode === 'az')     cards = [...cards].sort((a,b) => a.name.localeCompare(b.name));
-  else if (overviewSortMode === 'za')     cards = [...cards].sort((a,b) => b.name.localeCompare(a.name));
-  else if (overviewSortMode === 'recent') cards = [...cards].sort((a,b) => (sa[b.tab]||0) - (sa[a.tab]||0));
-  else if (overviewSortMode === 'filled') cards = [...cards].sort((a,b) => {
-    const af = !a.count.startsWith('0'), bf = !b.count.startsWith('0');
-    return af === bf ? 0 : (af ? -1 : 1);
-  });
 
-  el.innerHTML = cards.map(s => {
+  const _card = s => {
     const sel = overviewSelectedCards.has(s.tab);
     const ts  = sa[s.tab] ? relativeTime(sa[s.tab]) : null;
+    const isEmpty = s.count.startsWith('0') || s.count === 'No script loaded' || s.count === 'No days scheduled';
     return `
-      <div class="doc-card${sel ? ' ov-selected' : ''}" data-tab="${s.tab}"
-        draggable="true"
-        ondragstart="ovDragStart(event,'${s.tab}')"
-        ondragover="ovDragOver(event,'${s.tab}')"
-        ondrop="ovDrop(event,'${s.tab}')"
-        ondragend="ovDragEnd()"
-        ondragleave="ovDragLeave(event,this)"
-        onclick="ovCardClick(event,'${s.tab}')"
-      >
-        <input type="checkbox" class="ov-checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleOvCard('${s.tab}')">
-        <button class="ov-remove-btn" onclick="event.stopPropagation();hideOverviewCard('${s.tab}')" title="Remove">✕</button>
-        <div class="doc-card-icon">${s.icon}</div>
-        <div class="doc-card-title">${s.name}</div>
-        ${s.desc ? `<div class="doc-card-sub">${s.desc}</div>` : ''}
-        <div class="doc-card-status ${s.count.startsWith('0') ? 'empty' : 'filled'}">
-          ${s.count.startsWith('0') ? '○ Empty' : '● ' + s.count}
-        </div>
-        ${ts ? `<div style="font-size:9px;color:var(--text3);margin-top:5px;opacity:.7">↺ ${ts}</div>` : ''}
-      </div>`;
-  }).join('') + `
-    <div class="new-doc-card" onclick="openAddSectionPicker(this)">
-      <span style="font-size:22px">+</span>
-      <span style="font-size:11px;color:var(--text3)">Add Section</span>
+    <div class="doc-card${sel ? ' ov-selected' : ''}${isEmpty ? ' doc-card-empty' : ''}" data-tab="${s.tab}"
+      draggable="true"
+      ondragstart="ovDragStart(event,'${s.tab}')"
+      ondragenter="ovDragEnter(event,'${s.tab}')"
+      ondragover="ovDragOver(event,'${s.tab}')"
+      ondragleave="ovDragLeave(event,this)"
+      ondrop="ovDrop(event,'${s.tab}')"
+      ondragend="ovDragEnd()"
+      onclick="ovCardClick(event,'${s.tab}')"
+    >
+      <input type="checkbox" class="ov-checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleOvCard('${s.tab}')">
+      <button class="ov-remove-btn" onclick="event.stopPropagation();hideOverviewCard('${s.tab}')" title="Remove">✕</button>
+      <div class="doc-card-icon">${s.icon}</div>
+      <div class="doc-card-title">${s.name}</div>
+      ${s.desc ? `<div class="doc-card-sub">${s.desc}</div>` : ''}
+      <div class="doc-card-status ${isEmpty ? 'empty' : 'filled'}">
+        ${isEmpty ? '○ Empty' : '● ' + s.count}
+      </div>
+      ${ts ? `<div style="font-size:9px;color:var(--text3);margin-top:5px;opacity:.7">↺ ${ts}</div>` : ''}
     </div>`;
+  };
 
+  let html = '';
+
+  // Render groups in overviewLayout order, but group by category
+  groups.forEach(group => {
+    // Get tabs in this group, sorted by overviewLayout order
+    const groupTabsInOrder = group.tabs
+      .filter(tab => visibleByTab[tab])
+      .sort((a, b) => {
+        const idxA = p.overviewLayout.findIndex(x => x.tab === a);
+        const idxB = p.overviewLayout.findIndex(x => x.tab === b);
+        return idxA - idxB;
+      });
+    
+    if (!groupTabsInOrder.length) return;
+
+    const groupCards = groupTabsInOrder.map(tab => visibleByTab[tab]);
+
+    html += `<div class="ov-group">
+      <div class="ov-group-label">${group.label}</div>
+      <div class="ov-group-cards">${groupCards.map(_card).join('')}</div>
+    </div>`;
+  });
+
+  // Custom / ungrouped sections - preserve order from overviewLayout
+  const ungroupedOrdered = p.overviewLayout
+    .filter(item => item.visible && sectionMap[item.tab] && !groupedTabs.has(item.tab))
+    .map(item => sectionMap[item.tab]);
+
+  if (ungroupedOrdered.length) {
+    html += `<div class="ov-group">
+      <div class="ov-group-label">Custom</div>
+      <div class="ov-group-cards">${ungroupedOrdered.map(_card).join('')}
+        <div class="new-doc-card" onclick="openAddSectionPicker(this)">
+          <span style="font-size:22px">+</span>
+          <span style="font-size:11px;color:var(--text3)">Add Section</span>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="ov-group">
+      <div class="ov-group-cards">
+        <div class="new-doc-card" onclick="openAddSectionPicker(this)">
+          <span style="font-size:22px">+</span>
+          <span style="font-size:11px;color:var(--text3)">Add Section</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
   renderOvToolbar();
 }
 
@@ -898,26 +1009,45 @@ function ovDragStart(event, tab) {
   event.dataTransfer.effectAllowed = 'move';
   setTimeout(() => document.querySelector(`.doc-card[data-tab="${tab}"]`)?.classList.add('ov-dragging'), 0);
 }
+function ovDragEnter(event, tab) {
+  event.preventDefault();
+  if (tab !== _ovDragTab) {
+    document.querySelector(`.doc-card[data-tab="${tab}"]`)?.classList.add('ov-drag-over');
+  }
+}
+function ovDragLeave(event, el) {
+  el.classList.remove('ov-drag-over');
+}
 function ovDragOver(event, tab) {
   event.preventDefault();
   event.dataTransfer.dropEffect = 'move';
   document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('ov-drag-over'));
-  if (tab !== _ovDragTab) document.querySelector(`.doc-card[data-tab="${tab}"]`)?.classList.add('ov-drag-over');
-}
-function ovDragLeave(event, el) {
-  if (!el.contains(event.relatedTarget)) el.classList.remove('ov-drag-over');
+  const target = document.querySelector(`.doc-card[data-tab="${tab}"]`);
+  if (target && tab !== _ovDragTab) {
+    target.classList.add('ov-drag-over');
+  }
 }
 function ovDrop(event, targetTab) {
   event.preventDefault();
   document.querySelectorAll('.doc-card').forEach(c => { c.classList.remove('ov-drag-over','ov-dragging'); });
   if (!_ovDragTab || _ovDragTab === targetTab) { _ovDragging = false; return; }
+  
   const p = currentProject();
-  if (!p) return;
+  if (!p) {
+    console.log('[ovDrop] No current project');
+    _ovDragging = false;
+    return;
+  }
+  
   const from = p.overviewLayout.findIndex(x => x.tab === _ovDragTab);
   const to   = p.overviewLayout.findIndex(x => x.tab === targetTab);
+  console.log('[ovDrop] from:', from, 'to:', to, 'layout length:', p.overviewLayout?.length);
+  
   if (from !== -1 && to !== -1) {
+    console.log('[ovDrop] Before reorder:', p.overviewLayout.map(x => x.tab));
     const [item] = p.overviewLayout.splice(from, 1);
     p.overviewLayout.splice(to, 0, item);
+    console.log('[ovDrop] After reorder:', p.overviewLayout.map(x => x.tab));
     saveStore();
     renderOverviewDocs(p);
   }
@@ -927,6 +1057,7 @@ function ovDragEnd() {
   document.querySelectorAll('.doc-card').forEach(c => { c.classList.remove('ov-drag-over','ov-dragging'); });
   setTimeout(() => { _ovDragging = false; }, 60);
 }
+
 function ovCardClick(event, tab) {
   if (_ovDragging) return;
   if (overviewSelectedCards.size > 0) { toggleOvCard(tab); return; }

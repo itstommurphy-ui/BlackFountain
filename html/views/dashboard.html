@@ -1,32 +1,16 @@
-<!-- DASHBOARD VIEW -->
 <div class="view active" id="view-dashboard">
-  <div class="page-header">
-    <h2>PROJECTS</h2>
-    <p>Your production pipeline at a glance</p>
-  </div>
-  
-  <!-- QUICK ACTIONS -->
-  <div class="quick-actions-widget" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
-    <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">⚡ Quick Actions:</span>
-    <button class="btn btn-sm" onclick="quickActionContinue()" title="Continue where you left off">▶ Continue</button>
-    <button class="btn btn-sm" onclick="quickActionNewProject()" title="Create a new project">+ New Project</button>
-    <button class="btn btn-sm" onclick="quickActionExportAll()" title="Export all project data">⬇ Export All</button>
-    <button class="btn btn-sm" onclick="quickActionMigrateFiles()" title="Migrate large files to IndexedDB">🗄 Migrate Files</button>
-    <button class="btn btn-sm" onclick="quickActionViewRecent()" title="View recently edited projects">🕐 Recent</button>
-  </div>
-  
-  <div class="stats-row">
-    <div class="stat-card total-card" onclick="dashboardStatusFilter=null;renderDashboard()" style="cursor:pointer"><div class="label">Total Projects</div><div class="value" id="stat-total">0</div></div>
-    <div class="stat-card" onclick="setDashboardFilter('pre')"><div class="label">Pre-Production</div><div class="value" id="stat-pre">0</div><div class="sub" style="color:#7dd0f5">●</div></div>
-    <div class="stat-card" onclick="setDashboardFilter('prod')"><div class="label">In Production</div><div class="value" id="stat-prod">0</div><div class="sub" style="color:var(--accent)">●</div></div>
-    <div class="stat-card" onclick="setDashboardFilter('post')"><div class="label">Post-Production</div><div class="value" id="stat-post">0</div><div class="sub" style="color:#e08095">●</div></div>
-    <div class="stat-card" onclick="setDashboardFilter('done')"><div class="label">Complete</div><div class="value" id="stat-done">0</div><div class="sub" style="color:var(--green)">●</div></div>
-    <div class="stat-card" onclick="setDashboardFilter('released')"><div class="label">Released</div><div class="value" id="stat-released">0</div><div class="sub" style="color:#b88af0">●</div></div>
-  </div>
-  <div class="projects-grid" id="projects-grid">
-    <div class="new-project-card" onclick="openNewProjectModal()">
-      <div class="plus">＋</div>
-      <span>New Project</span>
+  <div class="dash-greeting-row">
+    <div>
+      <div class="dash-greeting" id="dash-greeting">Good evening.</div>
+      <div class="dash-sub" id="dash-sub"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="dash-resume-btn" onclick="quickActionNewProject()">+ New Project</button>
+      <button class="dash-resume-btn" onclick="quickActionContinue()">▶ Resume last project</button>
     </div>
   </div>
+
+  <div class="dash-pipeline" id="dash-pipeline"></div>
+
+  <div id="dash-sections"></div>
 </div>
