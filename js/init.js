@@ -872,12 +872,6 @@ async function _startApp() {
     
     await loadStore();
 
-    // Inject sample project if none exist
-    console.log('[BF] Checking for sample project injection...');
-    if (typeof injectSampleProject === 'function') {
-      injectSampleProject();
-    }
-
     // Ensure sidebar projects are rendered after store is loaded
     // This is called both here and inside injectSampleProject for redundancy
     if (typeof renderSidebarProjects === 'function') {

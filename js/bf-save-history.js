@@ -20,6 +20,7 @@ const BF_AUTOSAVE_INTERVAL = 5 * 60 * 1000; // 5 minutes
 let   _bfAutoSaveEnabled   = true;
 let   _bfAutoSaveTimer     = null;
 let   _bfSaveBlocked       = false; // set true during history load to prevent overwrite
+let   _bfStoreLoaded     = false; // set true after store successfully loads
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CORE SAVE / LOAD
@@ -27,10 +28,10 @@ let   _bfSaveBlocked       = false; // set true during history load to prevent o
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function saveStore(opts = {}) {
-  // Block saves during history restore to prevent overwriting loaded state
-  if (_bfSaveBlocked) return;
+  // Block saves during history restore or before store loads to prevent overwriting empty
+  if (_bfSaveBlocked || !_bfStoreLoaded) return;
 
-  const { silent = false, historyType = null, historyLabel = '' } = opts;
+  const { silent = false, historyType = null, historyLabel = '', slot = null } = opts;
 
   // Visual feedback
   if (!silent && window.SaveFeedback) SaveFeedback.showSaving();
@@ -67,7 +68,7 @@ async function saveStore(opts = {}) {
   // 3. If this is a history save, write a row to save_history
   if (historyType && _sbUser) {
     try {
-      await _bfWriteHistory(historyType, historyLabel);
+      await _bfWriteHistory(historyType, historyLabel, slot);
     } catch(e) {
       console.warn('[saveStore] History write failed:', e);
     }
@@ -81,11 +82,14 @@ async function saveStore(opts = {}) {
 }
 
 async function loadStore() {
-  // If logged in, Supabase is the source of truth — show a loading state and wait for it.
-  // We do NOT race against a timer and fall back to stale data.
-  if (typeof sbPullStore === 'function' && _sbUser) {
+  // Always try cloud first if sbPullStore is available.
+  // Don't gate on _sbUser here — sbPullStore() handles auth internally
+  // and returns null if not logged in. Gating here caused a race where
+  // _sbUser wasn't set yet when loadStore ran, causing silent fallthrough
+  // to empty IDB and wiping Supabase with the sample project.
 
-    // Show a subtle loading overlay so the user knows something is happening
+  if (typeof sbPullStore === 'function') {
+
     _bfShowStartupLoader();
 
     let cloudData = null;
@@ -98,7 +102,6 @@ async function loadStore() {
         _bfUpdateStartupLoader(`Connecting to cloud${attempts > 1 ? ` (attempt ${attempts})` : ''}…`);
         cloudData = await Promise.race([
           sbPullStore(),
-          // 15 second timeout per attempt — generous but bounded
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
         ]);
       } catch(e) {
@@ -127,14 +130,17 @@ async function loadStore() {
       } catch(e) {}
 
       Object.assign(store, cloudData);
+      _bfStoreLoaded = true;
       (store.files || []).forEach(f => { if (!f.data && blobMap[f.id]) f.data = blobMap[f.id]; });
       _bfApplyStoreMigrations();
+      console.log('[loadStore] Cloud data applied, projects:', store.projects?.length);
       return;
     }
 
-    // Supabase failed after all attempts — tell the user clearly
-    // rather than silently showing wrong data
-    if (attempts >= MAX_ATTEMPTS) {
+    // sbPullStore returned null — either not logged in, or network failure
+    // If we got null AND we know there's no user, that's expected — skip to IDB
+    // If we got null AND there should be a user, that's a network failure
+    if (attempts >= MAX_ATTEMPTS && typeof _sbUser !== 'undefined' && _sbUser) {
       const retry = await new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.id = '_bf-offline-overlay';
@@ -153,11 +159,8 @@ async function loadStore() {
         document.body.appendChild(overlay);
       });
 
-      if (retry) {
-        // Recurse — try the whole thing again
-        return loadStore();
-      }
-      // User chose offline — fall through to IDB below
+      if (retry) return loadStore();
+      // User chose offline — fall through to IDB
     }
   }
 
@@ -172,9 +175,10 @@ async function loadStore() {
     });
     if (idbData) {
       Object.assign(store, idbData);
+      _bfStoreLoaded = true;
       _bfApplyStoreMigrations();
+      console.log('[loadStore] IDB fallback applied, projects:', store.projects?.length);
       showToast('Loaded from local cache — changes will sync when you reconnect', 'info');
-      // Push when connection recovers
       window.addEventListener('online', () => {
         if (typeof sbPushStore === 'function') sbPushStore();
       }, { once: true });
@@ -194,7 +198,9 @@ async function loadStore() {
       store.folders     = JSON.parse(localStorage.getItem('bf_folders_backup')   || '[]');
       store.teamMembers = JSON.parse(localStorage.getItem('bf_team_backup')      || '[]');
       store.currentProjectId = localStorage.getItem('bf_currentProjectId_backup') || null;
+      _bfStoreLoaded = true;
       _bfApplyStoreMigrations();
+      console.log('[loadStore] localStorage fallback applied, projects:', store.projects?.length);
       showToast('Loaded from emergency backup — please reconnect to sync', 'info');
     }
   } catch(e) {
@@ -278,22 +284,20 @@ function _bfApplyStoreMigrations() {
 // ── Autosave ──────────────────────────────────────────────────────────────────
 
 function initAutoSave() {
-  // Load user preference
   _bfAutoSaveEnabled = localStorage.getItem('bf_autosave_enabled') !== 'false';
 
   _bfAutoSaveTimer = setInterval(async () => {
-    if (!_bfAutoSaveEnabled || _bfSaveBlocked) return;
+    if (!_bfAutoSaveEnabled || _bfSaveBlocked || !_bfStoreLoaded) return;
     await saveStore({ silent: true, historyType: 'auto', historyLabel: 'Autosave' });
     console.log('[autosave] saved');
   }, BF_AUTOSAVE_INTERVAL);
 
-  // Save on tab hide / close — but NOT during a history load
-  window.addEventListener('beforeunload', () => {
-    if (!_bfSaveBlocked) saveStore({ silent: true });
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !_bfSaveBlocked) saveStore({ silent: true });
-  });
+   // Only save on unload/hide if the store actually loaded successfully
+   // Without this guard, hard-refreshing before the store loads writes
+   // an empty store to Supabase and wipes all projects.
+   document.addEventListener('visibilitychange', () => {
+     if (document.hidden && !_bfSaveBlocked && _bfStoreLoaded) saveStore({ silent: true });
+   });
 }
 
 function setBfAutoSave(enabled) {
@@ -312,7 +316,7 @@ async function _bfGetToken() {
   return _cachedToken;
 }
 
-async function _bfWriteHistory(type, label) {
+async function _bfWriteHistory(type, label, slot) {
   if (!_sb || !_sbUser) return;
   const token = await _bfGetToken();
   if (!token) return;
@@ -322,15 +326,17 @@ async function _bfWriteHistory(type, label) {
     files: (store.files || []).map(({ data: _d, ...f }) => f),
   };
 
-  // For auto saves: delete existing auto rows first (keep only latest)
-  // For manual saves: keep up to BF_MAX_MANUAL_SAVES, delete oldest if over limit
   if (type === 'auto') {
     await fetch(
       `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.auto`,
       { method: 'DELETE', headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
+  } else if (slot) {
+    await fetch(
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.manual&slot=eq.${slot}`,
+      { method: 'DELETE', headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+    );
   } else {
-    // Count existing manual saves
     const countRes = await fetch(
       `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.manual&select=id,saved_at&order=saved_at.asc`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
@@ -338,7 +344,6 @@ async function _bfWriteHistory(type, label) {
     if (countRes.ok) {
       const rows = await countRes.json();
       if (rows.length >= BF_MAX_MANUAL_SAVES) {
-        // Delete oldest to make room
         const oldest = rows[0].id;
         await fetch(
           `${_SB_URL}/rest/v1/save_history?id=eq.${oldest}`,
@@ -348,7 +353,6 @@ async function _bfWriteHistory(type, label) {
     }
   }
 
-  // Write new row
   await fetch(`${_SB_URL}/rest/v1/save_history`, {
     method: 'POST',
     headers: {
@@ -361,6 +365,7 @@ async function _bfWriteHistory(type, label) {
       user_id:       _sbUser.id,
       type,
       label:         label || null,
+      slot:          slot || null,
       data:          stripped,
       project_count: (store.projects || []).length,
     }),
@@ -375,7 +380,7 @@ async function _bfFetchHistory() {
   if (!token) return [];
   try {
     const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&select=id,type,label,project_count,saved_at&order=saved_at.desc`,
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&select=id,type,label,slot,project_count,saved_at&order=saved_at.desc`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
     if (!res.ok) return [];
@@ -476,47 +481,115 @@ async function bfLoadFromHistory(id, label) {
   }
 }
 
-// ── Manual save ───────────────────────────────────────────────────────────────
+// ── Manual save slots ─────────────────────────────────────────────────────────
+
+const BF_SAVE_SLOTS = 3;
 
 async function bfManualSave() {
-  const label = await _bfPromptLabel();
-  if (label === null) return; // cancelled
-  showToast('Saving…', 'info');
-  await saveStore({ historyType: 'manual', historyLabel: label || 'Manual save' });
-  showToast('Saved ✓', 'success');
-  renderSaveHistoryUI();
+  const rows = await _bfFetchHistory();
+  const manualRows = rows.filter(r => r.type === 'manual');
+  const slots = [];
+  for (let i = 1; i <= BF_SAVE_SLOTS; i++) {
+    const slotData = manualRows.find(r => r.slot === i);
+    slots.push(slotData || null);
+  }
+
+  document.getElementById('_bf-save-slots-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = '_bf-save-slots-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 20px 18px;width:360px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Save to slot</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Choose a slot to save your current project state</div>
+      <div id="_bf-slots-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        ${slots.map((slot, idx) => {
+          const i = idx + 1;
+          if (!slot) {
+            return `
+              <div class="_bf-slot-row" onclick="bfSaveToSlot(${i}, null)" 
+                style="padding:14px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:all .15s">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="font-size:11px;font-weight:700;font-family:var(--font-mono);width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--border);border-radius:6px;color:var(--text2)">${i}</div>
+                  <div>
+                    <div style="font-size:13px;color:var(--text3)">Empty slot</div>
+                  </div>
+                </div>
+              </div>`;
+          }
+          const date = new Date(slot.saved_at);
+          const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          const label = slot.label || 'Manual save';
+          return `
+            <div class="_bf-slot-row" onclick="bfSaveToSlot(${i}, '${_bfEscAttr(slot.label || '')}')" 
+              style="padding:14px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:all .15s">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="font-size:11px;font-weight:700;font-family:var(--font-mono);width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--accent);border-radius:6px;color:var(--surface)">${i}</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:500;color:var(--text)">${_bfEsc(label)}</div>
+                  <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${dateStr} at ${timeStr}</div>
+                </div>
+                <div style="font-size:10px;color:var(--accent);opacity:0.7">Overwrite</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-sm" onclick="document.getElementById('_bf-save-slots-overlay').remove()">Cancel</button>
+      </div>
+    </div>
+    <style>
+      ._bf-slot-row:hover { border-color:var(--accent) !important; background:var(--surface) !important; }
+    </style>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-function _bfPromptLabel() {
+async function bfSaveToSlot(slotNum, existingLabel) {
+  document.getElementById('_bf-save-slots-overlay')?.remove();
+  
+  let label = null;
+  if (!existingLabel) {
+    label = await _bfPromptSlotLabel();
+    if (label === null) return;
+  }
+
+  showToast('Saving…', 'info');
+  await saveStore({ historyType: 'manual', historyLabel: label, slot: slotNum });
+  showToast(`Saved to Slot ${slotNum} ✓`, 'success');
+}
+
+function _bfPromptSlotLabel() {
   return new Promise(resolve => {
-    document.getElementById('_bf-label-overlay')?.remove();
+    document.getElementById('_bf-slot-label-overlay')?.remove();
     const overlay = document.createElement('div');
-    overlay.id = '_bf-label-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center';
+    overlay.id = '_bf-slot-label-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10001;display:flex;align-items:center;justify-content:center';
     overlay.innerHTML = `
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 20px 18px;width:340px">
-        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Save a snapshot</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Name this save</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Give it a name so you can find it later (optional)</div>
-        <input id="_bf-label-input" class="form-input" placeholder="e.g. Before reshoot day…" style="width:100%;margin-bottom:16px" maxlength="60">
+        <input id="_bf-slot-label-input" class="form-input" placeholder="e.g. Before reshoot day…" style="width:100%;margin-bottom:16px" maxlength="60">
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn btn-sm" onclick="document.getElementById('_bf-label-overlay').remove();window._bfLabelResolve(null)">Cancel</button>
-          <button class="btn btn-sm btn-primary" onclick="window._bfLabelResolve(document.getElementById('_bf-label-input').value.trim())">Save</button>
+          <button class="btn btn-sm" onclick="document.getElementById('_bf-slot-label-overlay').remove();window._bfSlotLabelResolve(null)">Cancel</button>
+          <button class="btn btn-sm btn-primary" onclick="window._bfSlotLabelResolve(document.getElementById('_bf-slot-label-input').value.trim())">Save</button>
         </div>
       </div>`;
-    window._bfLabelResolve = val => {
+    window._bfSlotLabelResolve = val => {
       overlay.remove();
-      delete window._bfLabelResolve;
+      delete window._bfSlotLabelResolve;
       resolve(val === null ? null : val);
     };
     document.body.appendChild(overlay);
-    overlay.addEventListener('click', e => { if (e.target === overlay) window._bfLabelResolve(null); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) window._bfSlotLabelResolve(null); });
     setTimeout(() => {
-      const inp = document.getElementById('_bf-label-input');
+      const inp = document.getElementById('_bf-slot-label-input');
       if (inp) {
         inp.focus();
         inp.addEventListener('keydown', e => {
-          if (e.key === 'Enter') window._bfLabelResolve(inp.value.trim());
-          if (e.key === 'Escape') window._bfLabelResolve(null);
+          if (e.key === 'Enter') window._bfSlotLabelResolve(inp.value.trim());
+          if (e.key === 'Escape') window._bfSlotLabelResolve(null);
         });
       }
     }, 40);
@@ -694,6 +767,7 @@ window.loadStore          = loadStore;
 window.initAutoSave       = initAutoSave;
 window.renderSaveHistoryUI = renderSaveHistoryUI;
 window.bfManualSave       = bfManualSave;
+window.bfSaveToSlot      = bfSaveToSlot;
 window.bfLoadFromHistory  = bfLoadFromHistory;
 window.bfDeleteSave       = bfDeleteSave;
 window.setBfAutoSave      = setBfAutoSave;
@@ -707,6 +781,7 @@ create table save_history (
   user_id uuid references auth.users(id) on delete cascade,
   type text not null check (type in ('auto', 'manual')),
   label text,
+  slot integer,
   data jsonb,
   project_count integer,
   saved_at timestamptz default now()
