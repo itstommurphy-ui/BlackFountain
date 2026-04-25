@@ -228,8 +228,11 @@ function showView(name) {
     console.log('[ViewRestore] Saved global view:', name);
   } catch (e) {}
 
-  // Clean up canvas mode if leaving moodboards
+  // Clean up moodboard state if leaving moodboards view
   if (name !== 'moodboards') {
+    if (typeof _currentMoodboardId !== 'undefined') {
+      _currentMoodboardId = null;
+    }
     document.getElementById('content')?.classList.remove('mb-content-canvas');
     document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
   }
@@ -314,6 +317,9 @@ function showProjectView(id) {
 
   // Clean up moodboard canvas/fullscreen mode if leaving it
   document.getElementById('content')?.classList.remove('mb-content-canvas');
+  if (typeof _currentMoodboardId !== 'undefined') {
+    _currentMoodboardId = null;
+  }
   document.getElementById('view-moodboards')?.classList.remove('mb-canvas-mode');
   document.body.classList.remove('mb-fullscreen');
 
