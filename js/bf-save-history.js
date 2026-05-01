@@ -7,12 +7,53 @@
 //   2. Save to Supabase when data changes (debounced 2s).
 //   3. Never save on unload, never save before load completes.
 //   4. IDB is gone. localStorage is gone. One source of truth.
-//   5. Manual snapshots via save_history table — user-triggered only.
+//   5. One rolling snapshot in save_history — overwritten on every save.
 // ══════════════════════════════════════════════════════════════════════════════
 
 let _bfStoreLoaded  = false;  // true only after Supabase data successfully applied
 let _bfSaveBlocked  = false;  // true during history restore
 let _bfSaveTimer    = null;   // debounce handle
+
+// ── SAVE FEEDBACK ─────────────────────────────────────────────────────────────
+
+window.SaveFeedback = (() => {
+  let _hideTimer = null;
+
+  function _el() { return document.getElementById('topbar-save-status'); }
+
+  function _show(text, color) {
+    const el = _el();
+    if (!el) return;
+    if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
+    el.textContent = text;
+    el.style.color = color || 'var(--text3)';
+    el.style.opacity = '1';
+  }
+
+  function _fadeOut(delay = 2000) {
+    _hideTimer = setTimeout(() => {
+      const el = _el();
+      if (el) el.style.opacity = '0';
+      _hideTimer = null;
+    }, delay);
+  }
+
+  function showSaving() {
+    _show('Saving…', 'var(--text3)');
+  }
+
+  function showSaved() {
+    _show('Saved ✓', 'var(--accent)');
+    _fadeOut(2000);
+  }
+
+  function showError() {
+    _show('Save failed', 'var(--red, #e05252)');
+    _fadeOut(4000);
+  }
+
+  return { showSaving, showSaved, showError };
+})();
 
 // ── SAVE ──────────────────────────────────────────────────────────────────────
 
@@ -25,13 +66,16 @@ async function saveStore(opts = {}) {
   console.log('[saveStore] Called from:', new Error().stack.split('\n').slice(2,6).join('\n'));
 
   const { silent = false } = opts;
-  if (!silent && window.SaveFeedback) SaveFeedback.showSaving();
+  if (!silent) SaveFeedback.showSaving();
 
-  try { await sbPushStore(); } catch(e) {
+  try {
+    await sbPushStore();
+    if (!silent) SaveFeedback.showSaved();
+  } catch(e) {
     console.warn('[saveStore] Push failed:', e);
+    if (!silent) SaveFeedback.showError();
   }
 
-  if (!silent && window.SaveFeedback) SaveFeedback.showSaved();
   if (typeof EventBus !== 'undefined') {
     EventBus.emit(EventBus.Events.DATA_SAVED, { timestamp: Date.now() });
   }
@@ -101,15 +145,74 @@ async function loadStore() {
   showToast('Working offline — changes will not be saved', 'warning');
 }
 
-// ── AUTOSAVE (interval-based, replaces initAutoSave) ─────────────────────────
+// ── AUTOSAVE (interval-based) ─────────────────────────────────────────────────
 
 function initAutoSave() {
-  // Save every 3 minutes — simple, no beforeunload, no visibilitychange
-  setInterval(() => {
+  // Save every 3 minutes — overwrites rolling snapshot each time
+  setInterval(async () => {
     if (!_bfStoreLoaded || _bfSaveBlocked) return;
-    saveStore({ silent: true });
-    console.log('[autosave] saved');
+    await saveStore({ silent: true });
+    await _bfWriteRollingSnapshot();
+    renderSaveHistoryUI();
+    console.log('[autosave] saved + snapshot updated');
   }, 3 * 60 * 1000);
+}
+
+// ── QUICK SAVE (topbar button) ────────────────────────────────────────────────
+// Pushes to Supabase + overwrites the single rolling snapshot. No prompt.
+
+async function bfQuickSave() {
+  if (!_bfStoreLoaded || _bfSaveBlocked) return;
+  await saveStore({ silent: false });
+  await _bfWriteRollingSnapshot();
+  renderSaveHistoryUI();
+}
+
+window.bfQuickSave = bfQuickSave;
+
+// ── ROLLING SNAPSHOT ──────────────────────────────────────────────────────────
+// One row in save_history per user, type='auto'. Deleted and recreated on each write.
+
+async function _bfWriteRollingSnapshot() {
+  if (!_sb || !_sbUser) return;
+  if ((store.projects || []).length === 0) return;
+
+  const token = await _bfGetToken();
+  if (!token) return;
+
+  const stripped = { ...store, files: (store.files||[]).map(({data:_d,...f})=>f) };
+  const label = 'Rolling save — ' + new Date().toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  try {
+    // Delete any existing rolling snapshot for this user
+    await fetch(`${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.auto`, {
+      method: 'DELETE',
+      headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` }
+    });
+
+    // Write new one
+    await fetch(`${_SB_URL}/rest/v1/save_history`, {
+      method: 'POST',
+      headers: {
+        'apikey': _SB_KEY, 'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: _sbUser.id,
+        type: 'auto',
+        label,
+        data: stripped,
+        project_count: (store.projects||[]).length
+      })
+    });
+
+    console.log('[rollingSnapshot] Written:', label);
+  } catch(e) {
+    console.warn('[rollingSnapshot] Failed:', e.message);
+  }
 }
 
 // ── STARTUP LOADER ────────────────────────────────────────────────────────────
@@ -181,8 +284,7 @@ function _bfApplyStoreMigrations() {
   }
 }
 
-// ── MANUAL SAVE HISTORY ───────────────────────────────────────────────────────
-// User-triggered snapshots only. No autosave to history.
+// ── TOKEN HELPER ──────────────────────────────────────────────────────────────
 
 async function _bfGetToken() {
   if (_cachedToken) return _cachedToken;
@@ -191,87 +293,7 @@ async function _bfGetToken() {
   return _cachedToken;
 }
 
-async function bfManualSave() {
-  const label = await _bfPromptLabel();
-  if (label === null) return;
-  showToast('Saving…', 'info');
-
-  const token = await _bfGetToken();
-  if (!token || !_sbUser) { showToast('Not signed in', 'error'); return; }
-
-  const stripped = { ...store, files: (store.files||[]).map(({data:_d,...f})=>f) };
-
-  // Keep max 5 manual saves — delete oldest if over limit
-  const existing = await _bfFetchHistory();
-  if (existing.length >= 5) {
-    const oldest = existing[existing.length - 1];
-    await fetch(`${_SB_URL}/rest/v1/save_history?id=eq.${oldest.id}&user_id=eq.${_sbUser.id}`, {
-      method: 'DELETE',
-      headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` }
-    });
-  }
-
-  await fetch(`${_SB_URL}/rest/v1/save_history`, {
-    method: 'POST',
-    headers: {
-      'apikey': _SB_KEY, 'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json', 'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify({
-      user_id: _sbUser.id, type: 'manual', label: label || 'Manual save',
-      data: stripped, project_count: (store.projects||[]).length
-    })
-  });
-
-  showToast('Saved ✓', 'success');
-  renderSaveHistoryUI();
-}
-
-function _bfPromptLabel() {
-  return new Promise(resolve => {
-    document.getElementById('_bf-label-overlay')?.remove();
-    const overlay = document.createElement('div');
-    overlay.id = '_bf-label-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML = `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 20px 18px;width:340px">
-        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Save a snapshot</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Give it a name so you can find it later (optional)</div>
-        <input id="_bf-label-input" class="form-input" placeholder="e.g. Before reshoot day…" style="width:100%;margin-bottom:16px" maxlength="60">
-        <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn btn-sm" onclick="document.getElementById('_bf-label-overlay').remove();window._bfLabelResolve(null)">Cancel</button>
-          <button class="btn btn-sm btn-primary" onclick="window._bfLabelResolve(document.getElementById('_bf-label-input').value.trim())">Save</button>
-        </div>
-      </div>`;
-    window._bfLabelResolve = val => { overlay.remove(); delete window._bfLabelResolve; resolve(val === null ? null : val); };
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', e => { if (e.target === overlay) window._bfLabelResolve(null); });
-    setTimeout(() => {
-      const inp = document.getElementById('_bf-label-input');
-      if (inp) {
-        inp.focus();
-        inp.addEventListener('keydown', e => {
-          if (e.key === 'Enter') window._bfLabelResolve(inp.value.trim());
-          if (e.key === 'Escape') window._bfLabelResolve(null);
-        });
-      }
-    }, 40);
-  });
-}
-
-async function _bfFetchHistory() {
-  if (!_sb || !_sbUser) return [];
-  const token = await _bfGetToken();
-  if (!token) return [];
-  try {
-    const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&select=id,type,label,project_count,saved_at&order=saved_at.desc`,
-      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
-    );
-    if (!res.ok) return [];
-    return await res.json();
-  } catch(e) { return []; }
-}
+// ── RESTORE FROM SNAPSHOT ─────────────────────────────────────────────────────
 
 async function _bfFetchHistoryRow(id) {
   if (!_sb || !_sbUser) return null;
@@ -334,26 +356,6 @@ async function bfLoadFromHistory(id, label) {
   }
 }
 
-async function bfDeleteSave(id) {
-  const rows = await _bfFetchHistory();
-  const row = rows.find(r => r.id === id);
-  if (!row) return;
-  const confirmed = await new Promise(resolve => {
-    showConfirmDialog(
-      `Delete this save?\n\nThis cannot be undone.`,
-      'Delete', () => resolve(true), { danger: true, onCancel: () => resolve(false) }
-    );
-  });
-  if (!confirmed) return;
-  const token = await _bfGetToken();
-  await fetch(`${_SB_URL}/rest/v1/save_history?id=eq.${id}&user_id=eq.${_sbUser.id}`, {
-    method: 'DELETE',
-    headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` }
-  });
-  showToast('Deleted', 'success');
-  renderSaveHistoryUI();
-}
-
 // ── LOADING OVERLAY ───────────────────────────────────────────────────────────
 
 function _bfShowLoadingOverlay() {
@@ -389,52 +391,52 @@ function _bfHideLoadingOverlay() {
 }
 
 // ── SAVE HISTORY UI ───────────────────────────────────────────────────────────
+// Shows the single rolling snapshot with a Restore button.
 
 async function renderSaveHistoryUI() {
   const el = document.getElementById('bf-save-history-ui');
   if (!el) return;
 
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">Save History</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">Up to 5 manual saves</div>
-      </div>
-      <button class="btn btn-sm btn-primary" onclick="bfManualSave()">💾 Save now</button>
-    </div>
-    <div id="_bf-history-list" style="font-size:12px;color:var(--text3);padding:8px 0">Loading…</div>`;
+  el.innerHTML = `<div id="_bf-history-list" style="font-size:12px;color:var(--text3)">Loading…</div>`;
 
-  const rows = await _bfFetchHistory();
-  const listEl = document.getElementById('_bf-history-list');
-  if (!listEl) return;
-
-  if (!rows.length) {
-    listEl.innerHTML = `<div style="color:var(--text3);font-style:italic">No saves yet — click "Save now" to create one.</div>`;
+  const token = await _bfGetToken();
+  if (!token || !_sbUser) {
+    document.getElementById('_bf-history-list').textContent = 'Not signed in.';
     return;
   }
 
-  listEl.innerHTML = rows.map(row => {
-    const date = new Date(row.saved_at);
-    const dateStr = date.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-    const timeStr = date.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-    const label = row.label || 'Manual save';
-    const loadLabel = `${label} — ${dateStr} ${timeStr}`;
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-bottom:6px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_bfEsc(label)}</div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:1px">${dateStr} at ${timeStr} · ${row.project_count ?? '?'} project${row.project_count !== 1 ? 's' : ''}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-sm" onclick="bfLoadFromHistory('${row.id}','${_bfEscAttr(loadLabel)}')" style="font-size:11px">⏏ Restore</button>
-          <button class="btn btn-sm" style="background:var(--red);color:white;font-size:11px;padding:6px 10px" onclick="bfDeleteSave('${row.id}')">🗑 Delete</button>
-        </div>
-      </div>`;
-  }).join('');
-}
+  let row = null;
+  try {
+    const res = await fetch(
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.auto&select=id,label,project_count,saved_at&limit=1`,
+      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const rows = res.ok ? await res.json() : [];
+    row = rows?.[0] ?? null;
+  } catch(e) { /* leave row null */ }
 
-function _bfEsc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function _bfEscAttr(s) { return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  const listEl = document.getElementById('_bf-history-list');
+  if (!listEl) return;
+
+  if (!row) {
+    listEl.innerHTML = `<div style="color:var(--text3);font-style:italic;font-size:12px">No autosave yet — one will be created on next save.</div>`;
+    return;
+  }
+
+  const date = new Date(row.saved_at);
+  const dateStr = date.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  const timeStr = date.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  const restoreLabel = `${dateStr} at ${timeStr}`;
+
+  listEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;color:var(--text)">Last autosave</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">${dateStr} at ${timeStr} · ${row.project_count ?? '?'} project${row.project_count !== 1 ? 's' : ''}</div>
+      </div>
+      <button class="btn btn-sm" onclick="bfLoadFromHistory('${row.id}','${restoreLabel}')" style="font-size:11px;flex-shrink:0">⏏ Restore</button>
+    </div>`;
+}
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
 
@@ -442,9 +444,9 @@ window.saveStore           = saveStore;
 window.loadStore           = loadStore;
 window.initAutoSave        = initAutoSave;
 window.renderSaveHistoryUI = renderSaveHistoryUI;
-window.bfManualSave        = bfManualSave;
 window.bfLoadFromHistory   = bfLoadFromHistory;
-window.bfDeleteSave        = bfDeleteSave;
-// Stubs for anything that still references old API
+// Legacy stubs — keep so nothing referencing old API breaks silently
+window.bfManualSave        = bfQuickSave;   // rewired, not removed
 window.setBfAutoSave       = () => {};
 window.bfSaveToSlot        = () => {};
+window.bfDeleteSave        = () => {};

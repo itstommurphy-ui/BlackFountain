@@ -385,7 +385,25 @@ body.project-mode .project-switcher { display: flex; }
 #topbar-save-status {
   font-size: 10px; font-family: var(--font-mono); font-weight: 600;
   color: var(--text3); white-space: nowrap;
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: 0; transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+#topbar-save-btn {
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  background: none; border: 1px solid var(--border2);
+  color: var(--text3); border-radius: 5px;
+  padding: 4px 10px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+#topbar-save-btn:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(230,188,60,0.07);
+}
+#topbar-save-btn:active {
+  background: rgba(230,188,60,0.14);
 }
 
 #global-search {
@@ -674,7 +692,25 @@ body.project-mode .project-switcher { display: flex; }
 #topbar-save-status {
   font-size: 10px; font-family: var(--font-mono); font-weight: 600;
   color: var(--text3); white-space: nowrap;
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: 0; transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+#topbar-save-btn {
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  background: none; border: 1px solid var(--border2);
+  color: var(--text3); border-radius: 5px;
+  padding: 4px 10px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+#topbar-save-btn:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(230,188,60,0.07);
+}
+#topbar-save-btn:active {
+  background: rgba(230,188,60,0.14);
 }
 
 #global-search {
@@ -1564,7 +1600,36 @@ body:not(.project-mode) #app-footer { display: flex; }
   text-overflow: ellipsis;
 }
 
+.rp-contact-delete {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text3);
+  font-size: 14px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: 4px;
+  transition: all 0.1s;
+}
+
+.rp-contact-item:hover .rp-contact-delete {
+  display: flex;
+}
+
+.rp-contact-delete:hover {
+  background: rgba(196, 68, 68, 0.15) !important;
+  border-color: rgba(196, 68, 68, 0.25) !important;
+  color: var(--red) !important;
+}
+
 .rp-contacts-group-label {
+
   font-size: 9px;
   color: var(--text3);
   text-transform: uppercase;
@@ -1785,6 +1850,7 @@ body:not(.project-mode) #app-footer { display: flex; }
   border-bottom: 1px solid var(--border2);
   flex-shrink: 0;
   overflow-x: auto;
+  background: var(--surface2);
 }
 
 .rp-sp-page-dot {
@@ -1799,8 +1865,14 @@ body:not(.project-mode) #app-footer { display: flex; }
 .rp-sp-page-dot.active { background: var(--accent); }
 .rp-sp-page-dot:hover  { background: var(--text3); }
 
+/* Scroll container — dark panel background shows around the page */
 .rp-sp-scroll {
-  padding: 0;
+  padding: 16px 12px;
+  background: #1a1a22;
+}
+
+[data-theme="light"] .rp-sp-scroll {
+  background: #d4d0c8;
 }
 
 .rp-sp-book {
@@ -1809,61 +1881,133 @@ body:not(.project-mode) #app-footer { display: flex; }
   gap: 0;
 }
 
+/* The page itself — looks like a physical notepad page */
 .rp-sp-page {
   position: relative;
   width: 100%;
   flex-shrink: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border2);
+
+  /* Slightly warm off-white paper — distinct from the dark panel */
+  background: #f7f3e8;
+  color: #1a1810;
+
+  /* Paper edge shadow — gives it physical depth */
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.35),
+    0 4px 12px rgba(0,0,0,0.25),
+    inset 0 0 0 1px rgba(0,0,0,0.06);
+
+  border-radius: 1px;
+
+  /* Binding holes strip at top */
+  border-top: 28px solid #e8a020;
 }
 
-/* Lined paper effect */
+[data-theme="light"] .rp-sp-page {
+  background: #faf7ee;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.18),
+    0 4px 12px rgba(0,0,0,0.12),
+    inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+/* Binding holes punched into the orange strip */
 .rp-sp-page::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    transparent,
-    transparent 27px,
-    var(--border2) 27px,
-    var(--border2) 28px
+  top: -19px;
+  left: 0;
+  right: 0;
+  height: 0;
+  /* Three holes via repeating gradient */
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(50% - 16px),
+    rgba(0,0,0,0) calc(50% - 16px),
+    rgba(0,0,0,0) calc(50% + 16px),
+    transparent calc(50% + 16px),
+    transparent 100%
   );
-  background-position: 0 32px;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
-/* Left margin line */
+/* Binding holes — left, centre, right */
 .rp-sp-page::after {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 28px;
-  width: 1px;
-  background: rgba(230,188,60,0.15);
+  top: -22px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background:
+    radial-gradient(circle at 20% 50%, #1a1a22 7px, transparent 7px),
+    radial-gradient(circle at 50% 50%, #1a1a22 7px, transparent 7px),
+    radial-gradient(circle at 80% 50%, #1a1a22 7px, transparent 7px);
   pointer-events: none;
-  z-index: 0;
+  z-index: 3;
 }
 
+[data-theme="light"] .rp-sp-page::after {
+  background:
+    radial-gradient(circle at 20% 50%, #a0906a 7px, transparent 7px),
+    radial-gradient(circle at 50% 50%, #a0906a 7px, transparent 7px),
+    radial-gradient(circle at 80% 50%, #a0906a 7px, transparent 7px);
+}
+
+/* Textarea — sits on top of the lined background */
 .rp-sp-textarea {
   position: relative;
   z-index: 1;
   width: 100%;
-  min-height: 400px;
+  min-height: 420px;
   background: transparent;
   border: none;
   outline: none;
   resize: none;
-  color: var(--text);
-  font-family: 'Caveat', 'Segoe Script', 'Comic Sans MS', cursive;
-  font-size: 15px;
-  line-height: 28px;
-  padding: 32px 12px 12px 36px;
-  box-sizing: border-box;
-}
-.rp-sp-textarea::placeholder { color: var(--text3); opacity: 0.4; }
+  color: #1a1810;
 
+  /* Handwriting-feel font */
+  font-family: 'Shadows Into Light', 'Caveat', cursive;
+  font-size: 19px;
+
+  /* Line height matches the ruled lines exactly */
+  line-height: 32px;
+
+  /* Top padding pushes first line onto first rule */
+  /* Left padding: margin line width (32px) + gutter (8px) */
+  padding: 8px 14px 16px 42px;
+  box-sizing: border-box;
+
+  /* Ruled lines behind the text */
+  background-image:
+    /* Left margin red line */
+    linear-gradient(
+      90deg,
+      transparent 32px,
+      rgba(220, 80, 80, 0.35) 32px,
+      rgba(220, 80, 80, 0.35) 33px,
+      transparent 33px
+    ),
+    /* Horizontal rules */
+    repeating-linear-gradient(
+      transparent,
+      transparent 31px,
+      rgba(100, 130, 200, 0.25) 31px,
+      rgba(100, 130, 200, 0.25) 32px
+    );
+  background-position: 0 0, 0 8px;
+
+  caret-color: #c84040;
+}
+
+.rp-sp-textarea::placeholder {
+  color: rgba(100, 90, 70, 0.35);
+  font-style: italic;
+}
+
+/* Canvas for draw mode */
 .rp-sp-canvas {
   position: absolute;
   top: 0;
@@ -1875,19 +2019,19 @@ body:not(.project-mode) #app-footer { display: flex; }
   touch-action: none;
 }
 
-/* Draw mode: show canvas, hide textarea pointer events */
 .rp-sp-page.draw-mode .rp-sp-textarea { pointer-events: none; }
 .rp-sp-page.draw-mode .rp-sp-canvas   { pointer-events: all; }
 .rp-sp-page:not(.draw-mode) .rp-sp-canvas { pointer-events: none; }
 
+/* Mode buttons — match the orange strip */
 .rp-mode-btn {
   background: none;
-  border: 1px solid var(--border2);
-  color: var(--text3);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
   border-radius: 4px;
-  width: 22px;
-  height: 22px;
-  font-size: 11px;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1896,8 +2040,8 @@ body:not(.project-mode) #app-footer { display: flex; }
   font-family: var(--font-mono);
   font-weight: 700;
 }
-.rp-mode-btn:hover  { border-color: var(--accent); color: var(--accent); }
-.rp-mode-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.rp-mode-btn:hover  { border-color: rgba(255,255,255,0.5); color: white; }
+.rp-mode-btn.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: white; }
 
 /* ── OLD qt-drawer — hide it (replaced by right-panel) ── */
 #qt-drawer { display: none !important; }
