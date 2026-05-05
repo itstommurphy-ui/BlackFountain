@@ -134,63 +134,23 @@ window.loadTheme = function () {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Wait for loadStore to complete — it's async so we poll briefly
-  let attempts = 0;
-  const poll = setInterval(() => {
-    attempts++;
-    if (store.preferences !== undefined || attempts > 20) {
-      clearInterval(poll);
-      Prefs.applyAll();
-      if (typeof updateThemeButtons === 'function') updateThemeButtons();
-      if (typeof updateFontSizeButtons === 'function') updateFontSizeButtons();
-      _injectDefaultCurrencyUI();
-    }
-  }, 200);
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      if (typeof store !== 'undefined' && (store.preferences !== undefined || attempts > 20)) {
+        clearInterval(poll);
+        Prefs.applyAll();
+        if (typeof updateThemeButtons === 'function') updateThemeButtons();
+        if (typeof updateFontSizeButtons === 'function') updateFontSizeButtons();
+        _injectDefaultCurrencyUI();
+      }
+    }, 200);
 });
 
 // ── Inject default currency selector into Settings ─────────────
 
 function _injectDefaultCurrencyUI() {
-  // Don't double-inject
-  if (document.getElementById('_pref-currency-row')) return;
-
-  // Find the theme/appearance settings card as an anchor
-  const themeBtn = document.getElementById('theme-dark-btn');
-  if (!themeBtn) return;
-
-  const settingsCard = themeBtn.closest('.settings-card, .card, section, div[class*="card"], div[class*="section"]');
-  if (!settingsCard) return;
-
-  const currentCurrency = Prefs.get('defaultCurrency');
-
-  const CURRENCIES = [
-    { symbol: '£',   label: '£  GBP — British Pound' },
-    { symbol: '$',   label: '$  USD — US Dollar' },
-    { symbol: '€',   label: '€  EUR — Euro' },
-    { symbol: 'CA$', label: 'CA$ — Canadian Dollar' },
-    { symbol: 'AU$', label: 'AU$ — Australian Dollar' },
-    { symbol: '¥',   label: '¥  JPY — Japanese Yen' },
-    { symbol: '₹',   label: '₹  INR — Indian Rupee' },
-  ];
-
-  const row = document.createElement('div');
-  row.id = '_pref-currency-row';
-  row.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1px solid var(--border2)';
-  row.innerHTML = `
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Default Budget Currency</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
-      Applied to new projects. Existing per-project settings are not overridden.
-    </div>
-    <select id="_pref-currency-select"
-      class="form-select"
-      style="max-width:260px;font-size:12px"
-      onchange="setDefaultCurrency(this.value)">
-      ${CURRENCIES.map(c => `
-        <option value="${c.symbol}" ${c.symbol === currentCurrency ? 'selected' : ''}>
-          ${c.label}
-        </option>`).join('')}
-    </select>`;
-
-  settingsCard.appendChild(row);
+  return; // now handled in settings.html
 }
 
 // ── Expose globally ────────────────────────────────────────────

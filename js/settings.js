@@ -235,44 +235,136 @@ function openClearDataModal() {
 }
 
 function confirmClearAllData() {
-  const confirmText = 'DELETE ALL DATA';
-  const userInput = document.getElementById('clear-data-confirm').value;
-  
-  if (userInput !== confirmText) {
-    showToast('Confirmation did not match - data NOT deleted', 'error');
-    return;
+   const confirmText = 'DELETE ALL DATA';
+   const userInput = document.getElementById('clear-data-confirm').value;
+   
+   if (userInput !== confirmText) {
+     showToast('Confirmation did not match - data NOT deleted', 'error');
+     return;
+   }
+   
+   closeModal('modal-clear-data');
+   
+   // Clear all Black Fountain related keys
+   const keysToRemove = [];
+   for (let i = 0; i < localStorage.length; i++) {
+     const key = localStorage.key(i);
+     if (key && (key.includes('blackfountain') || key.includes('filmforge'))) {
+       keysToRemove.push(key);
+     }
+   }
+    keysToRemove.forEach(k => {
+      localStorage.removeItem(k);
+      console.log('Removed:', k);
+    });
+
+    // Also clear session storage
+   sessionStorage.clear();
+
+   // Also try unregistering service worker for fresh start
+   if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+     navigator.serviceWorker.getRegistrations().then(regs => {
+       regs.forEach(reg => reg.unregister());
+     });
+   }
+
+   // Reset store in memory and go to dashboard
+   Object.keys(store).forEach(k => delete store[k]);
+   Object.assign(store, { projects: [], teamMembers: [], currentProjectId: null, files: [], contacts: [], locations: [], contactColumns: [], contactCustomData: {}, contactHiddenCols: [], locationHiddenCols: [], locationColumns: [], locationCustomData: {}, moodboards: [] });
+   showView('dashboard');
+   showToast('All data has been deleted.', 'success');
+ }
+
+// Settings preferences functions (moved from settings.html)
+
+function _bfShowCustomCompany(show) {
+  const row = document.getElementById('pref-company-custom-row');
+  if (row) row.style.display = show ? '' : 'none';
+}
+
+function bfSavePref(key, value) {
+  if (!store.preferences) store.preferences = {};
+  store.preferences[key] = value;
+  if (typeof debouncedSaveStore === 'function') debouncedSaveStore();
+}
+
+async function bfSaveManualSnapshot() {
+  if (!_bfStoreLoaded || _bfSaveBlocked) return;
+  const btn = document.querySelector('[onclick="bfSaveManualSnapshot()"]');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    await _bfWriteSnapshot('manual');
+    showToast('Manual save updated', 'success');
+    renderSaveHistoryUI();
+  } catch(e) {
+    showToast('Save failed', 'error');
+  } finally {
+    if (btn) { btn.textContent = 'Save now'; btn.disabled = false; }
   }
-  
-  closeModal('modal-clear-data');
-  
-  // Clear all Black Fountain related keys
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && (key.includes('blackfountain') || key.includes('filmforge'))) {
-      keysToRemove.push(key);
+}
+
+async function _bfRestoreFromType(type) {
+  const label = type === 'auto' ? 'last autosave' : 'last manual save';
+  const token = await _bfGetToken();
+  if (!token || !_sbUser) { showToast('Not signed in', 'error'); return; }
+  try {
+    const res = await fetch(
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.${type}&select=id,label,saved_at&limit=1`,
+      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const rows = res.ok ? await res.json() : [];
+    if (!rows?.[0]) { showToast('No snapshot found', 'error'); return; }
+    bfLoadFromHistory(rows[0].id, label);
+  } catch(e) {
+    showToast('Could not fetch snapshot', 'error');
+  }
+}
+
+// Initialize settings view when shown
+function initSettingsView() {
+  renderSettings();
+
+  // Account email
+  const emailEl = document.getElementById('settings-account-email');
+  if (emailEl && typeof _sbUser !== 'undefined' && _sbUser?.email) {
+    emailEl.textContent = _sbUser.email;
+  }
+
+  // Load preferences into controls
+  const prefs = store?.preferences || {};
+
+  const company = prefs.defaultCompany || '';
+  const companyEl = document.getElementById('pref-company');
+  const builtIn = ['', 'Grim Tidings Picture Company', 'Oddly Optimistic Pictures'];
+  if (companyEl) {
+    if (builtIn.includes(company)) {
+      companyEl.value = company;
+    } else {
+      companyEl.value = 'custom';
+      _bfShowCustomCompany(true);
+      const customEl = document.getElementById('pref-company-custom');
+      if (customEl) customEl.value = company;
     }
   }
-   keysToRemove.forEach(k => {
-     localStorage.removeItem(k);
-     console.log('Removed:', k);
-   });
 
-   // Also clear session storage
-  sessionStorage.clear();
+  const currencyEl = document.getElementById('pref-currency');
+  if (currencyEl) currencyEl.value = prefs.defaultCurrency || 'GBP';
 
-  // Also try unregistering service worker for fresh start
-  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(reg => reg.unregister());
+  const calltimeEl = document.getElementById('pref-calltime');
+  if (calltimeEl) calltimeEl.value = prefs.defaultCallTime || '07:00';
+
+  const directorEl = document.getElementById('pref-director');
+  if (directorEl) directorEl.value = prefs.defaultDirector || '';
+
+  // Attach change listener to company dropdown if not already attached
+  if (companyEl && !companyEl._listenerAttached) {
+    companyEl.addEventListener('change', function() {
+      const isCustom = this.value === 'custom';
+      _bfShowCustomCompany(isCustom);
+      if (!isCustom) bfSavePref('defaultCompany', this.value);
     });
+    companyEl._listenerAttached = true;
   }
-
-  // Reset store in memory and go to dashboard
-  Object.keys(store).forEach(k => delete store[k]);
-  Object.assign(store, { projects: [], teamMembers: [], currentProjectId: null, files: [], contacts: [], locations: [], contactColumns: [], contactCustomData: {}, contactHiddenCols: [], locationHiddenCols: [], locationColumns: [], locationCustomData: {}, moodboards: [] });
-  showView('dashboard');
-  showToast('All data has been deleted.', 'success');
 }
 
 function renderFiles() {

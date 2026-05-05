@@ -2,119 +2,216 @@
 <div class="view" id="view-settings">
   <div class="page-header">
     <h2>SETTINGS</h2>
-    <p>System configuration and data backup</p>
+    <p>Preferences, defaults, and data management</p>
   </div>
-  <div id="bf-save-history-ui"></div>
-  <div style="max-width:800px">
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">Appearance</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Choose your preferred color theme and font size.</p>
-      <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Theme</p>
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <button class="btn" id="theme-dark-btn" onclick="setTheme('dark')" style="flex:1;padding:12px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:18px;margin-bottom:4px;display:block">🌙</span>
-          <span style="font-size:12px">Dark</span>
-        </button>
-        <button class="btn" id="theme-light-btn" onclick="setTheme('light')" style="flex:1;padding:12px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:18px;margin-bottom:4px;display:block">☀️</span>
-          <span style="font-size:12px">Light</span>
-        </button>
-      </div>
-      <p style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Font Size</p>
-      <div style="display:flex;gap:12px">
-        <button class="btn" id="font-classic-btn" onclick="setFontSize('classic')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:11px">Classic</span>
-        </button>
-        <button class="btn" id="font-bigger-btn" onclick="setFontSize('bigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:13px">Bigger</span>
-        </button>
-        <button class="btn" id="font-evenbigger-btn" onclick="setFontSize('evenbigger')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:15px">Even Bigger</span>
-        </button>
-        <button class="btn" id="font-huge-btn" onclick="setFontSize('huge')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:17px">Huge</span>
-        </button>
-        <button class="btn" id="font-double-btn" onclick="setFontSize('double')" style="flex:1;padding:10px 16px;border:2px solid var(--border);background:var(--surface2)">
-          <span style="font-size:19px">2× <span style="font-size:10px;opacity:0.6">WCAG</span></span>
-        </button>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">Data Management</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Backup and restore your project database. Export creates a JSON file you can use to restore data later.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="exportStore()">
-          <span class="icon">📥</span> Export Data
-        </button>
-        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
-        <label for="import-file-input" class="btn" style="cursor:pointer">
-          <span class="icon">📤</span> Import Data
-        </label>
-        <button class="btn" style="background:#ff9500;border:none;color:#000" onclick="exportStore();showToast('Use the downloaded file to restore if needed','info',8000)">
-          <span class="icon">💾</span> Download Backup
-        </button>
-      </div>
-    </div>
-    <!-- CONTACT LINKING CARD -->
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-top:0">Contact Management</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Manage contacts and link personnel to contacts for centralized phone/email data.</p>
-      <div id="contact-stats" style="display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap">
-        <div style="text-align:center">
-          <div id="total-contacts" style="font-size:24px;font-weight:700;color:var(--accent)">0</div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Total Contacts</div>
+
+  <div class="settings-layout">
+
+    <!-- ── ACCOUNT ─────────────────────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-label">Account</div>
+      <div class="settings-card">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Signed in as</div>
+            <div class="settings-row-desc" id="settings-account-email">—</div>
+          </div>
+          <button class="btn btn-sm" onclick="sbSignOut()">Sign out</button>
         </div>
-        <div style="text-align:center">
-          <div id="linked-rows" style="font-size:24px;font-weight:700;color:var(--success)">0</div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Linked Rows</div>
+
+      </div>
+    </div>
+
+    <!-- ── APPEARANCE ──────────────────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-label">Appearance</div>
+      <div class="settings-card">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Theme</div>
+            <div class="settings-row-desc">Choose between dark and light mode</div>
+          </div>
+          <div class="settings-btn-group">
+            <button class="btn btn-sm settings-theme-btn" id="theme-dark-btn" onclick="setTheme('dark')">🌙 Dark</button>
+            <button class="btn btn-sm settings-theme-btn" id="theme-light-btn" onclick="setTheme('light')">☀️ Light</button>
+          </div>
         </div>
-        <div style="text-align:center">
-          <div id="unlinked-rows" style="font-size:24px;font-weight:700;color:var(--warning)">0</div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase">Unlinked</div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Font size</div>
+            <div class="settings-row-desc">Adjust the interface text size</div>
+          </div>
+          <div class="settings-btn-group">
+            <button class="btn btn-sm settings-font-btn" id="font-classic-btn"     onclick="setFontSize('classic')"     style="font-size:11px">A</button>
+            <button class="btn btn-sm settings-font-btn" id="font-bigger-btn"      onclick="setFontSize('bigger')"      style="font-size:13px">A</button>
+            <button class="btn btn-sm settings-font-btn" id="font-evenbigger-btn"  onclick="setFontSize('evenbigger')"  style="font-size:15px">A</button>
+            <button class="btn btn-sm settings-font-btn" id="font-huge-btn"        onclick="setFontSize('huge')"        style="font-size:17px">A</button>
+            <button class="btn btn-sm settings-font-btn" id="font-double-btn"      onclick="setFontSize('double')"      style="font-size:19px">A</button>
+          </div>
         </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" onclick="openContactsView()">
-          <span class="icon">👥</span> View Contacts
-        </button>
-        <button class="btn btn-primary" onclick="runContactMigration(true)">
-          <span class="icon">🔗</span> Link All Personnel
-        </button>
-        <button class="btn" style="background:#ff9500;border:none;color:#000" onclick="runContactMigration(true)">
-          <span class="icon">➕</span> Create Missing Contacts
-        </button>
-      </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:12px">
-        <strong>How it works:</strong> Cast, crew, and extras rows can be linked to contacts. Linked rows display the contact's phone and email. Changes to a contact are automatically synced to all linked rows.
-      </p>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0">Storage Info</h3>
-      <p style="color:var(--text2)">Data is stored in your browser's localStorage under the key <code>blackfountain_v1</code></p>
-      <div id="storage-stats" style="font-family:monospace;font-size:13px;color:var(--text3)"></div>
-    </div>
-    <!-- SAMPLE PROJECT CARD -->
-    <div class="card" style="margin-top:20px">
-      <h3 style="margin-top:0">Sample Project</h3>
-      <p style="color:var(--text2);margin-bottom:16px">
-        Black Fountain includes a sample project ("The Cake Man") to help you explore the app. 
-        You can load it or reset it to its original state at any time.
-      </p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" style="background:#6366f1;border:none;color:white" onclick="injectSampleProject(true)">
-          <span class="icon">📂</span> Load Sample Project
-        </button>
-        <button class="btn" onclick="resetSampleProject()">
-          <span class="icon">🔄</span> Reset
-        </button>
+
       </div>
     </div>
-    <div class="card" style="border:2px solid #ff4444;margin-top:20px">
-      <h3 style="margin-top:0;color:#ff4444">Danger Zone</h3>
-      <p style="color:var(--text2);margin-bottom:16px">Permanently delete all data from this browser. This action cannot be undone.</p>
-      <button class="btn" style="background:#ff4444;color:white;border:none" onclick="openClearDataModal()">
-        <span class="icon">🗑️</span> Clear All Data
-      </button>
+
+    <!-- ── DEFAULTS ────────────────────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-label">Defaults</div>
+      <div class="settings-card">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Production company</div>
+            <div class="settings-row-desc">Auto-filled when creating a new project</div>
+          </div>
+          <select class="form-select settings-select" id="pref-company" onchange="bfSavePref('defaultCompany', this.value)">
+            <option value="">— none —</option>
+            <option value="Grim Tidings Picture Company">Grim Tidings Picture Company</option>
+            <option value="Oddly Optimistic Pictures">Oddly Optimistic Pictures</option>
+            <option value="custom">Other…</option>
+          </select>
+        </div>
+        <div class="settings-row" id="pref-company-custom-row" style="display:none">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Custom company name</div>
+          </div>
+          <input class="form-input settings-input" id="pref-company-custom"
+            placeholder="Enter company name"
+            onchange="bfSavePref('defaultCompanyCustom', this.value)">
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Currency</div>
+            <div class="settings-row-desc">Used across budgets and cost fields</div>
+          </div>
+          <select class="form-select settings-select" id="pref-currency" onchange="bfSavePref('defaultCurrency', this.value)">
+            <option value="GBP">£ GBP</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+            <option value="CAD">$ CAD</option>
+            <option value="AUD">$ AUD</option>
+          </select>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Default call time</div>
+            <div class="settings-row-desc">Starting crew call time on new callsheets</div>
+          </div>
+          <input class="form-input settings-input settings-input-time" type="time" id="pref-calltime"
+            value="07:00"
+            onchange="bfSavePref('defaultCallTime', this.value)">
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Director name</div>
+            <div class="settings-row-desc">Auto-filled on callsheets and documents</div>
+          </div>
+          <input class="form-input settings-input" id="pref-director"
+            placeholder="e.g. Tom Murphy"
+            onchange="bfSavePref('defaultDirector', this.value)">
+        </div>
+
+      </div>
     </div>
-  </div>
-</div>
+
+    <!-- ── DATA & BACKUP ───────────────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-label">Data &amp; Backup</div>
+      <div class="settings-card">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Last autosave</div>
+            <div class="settings-row-desc" id="settings-autosave-ts">—</div>
+          </div>
+          <button class="btn btn-sm" id="settings-autosave-restore" onclick="_bfRestoreFromType('auto')" disabled>Restore</button>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Last manual save</div>
+            <div class="settings-row-desc" id="settings-manual-ts">—</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-sm" id="settings-manual-restore" onclick="_bfRestoreFromType('manual')" disabled>Restore</button>
+            <button class="btn btn-sm" onclick="bfSaveManualSnapshot()" style="border-color:var(--accent);color:var(--accent)">Save now</button>
+          </div>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Export data</div>
+            <div class="settings-row-desc">Download a full JSON backup of all projects</div>
+          </div>
+          <button class="btn btn-sm" onclick="exportStore()">Export</button>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Import data</div>
+            <div class="settings-row-desc">Restore from a previously exported JSON file</div>
+          </div>
+          <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importStore(this)">
+          <label for="import-file-input" class="btn btn-sm" style="cursor:pointer">Import</label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SAMPLE PROJECT ──────────────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-label">Sample Project</div>
+      <div class="settings-card">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">The Cake Man</div>
+            <div class="settings-row-desc">Load or reset the built-in demo project to explore the app</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-sm" onclick="injectSampleProject(true)">Load</button>
+            <button class="btn btn-sm" onclick="resetSampleProject()">Reset</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── DANGER ZONE ─────────────────────────────────────────────────── -->
+    <div class="settings-section settings-section-danger">
+      <div class="settings-section-label" style="color:var(--red,#e05252)">Danger zone</div>
+      <div class="settings-card settings-card-danger">
+
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-title">Clear all data</div>
+            <div class="settings-row-desc">Permanently delete all projects and data. This cannot be undone.</div>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="openClearDataModal()">Clear all data</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.settings-layout -->
+</div><!-- /#view-settings -->
+
