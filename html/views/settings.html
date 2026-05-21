@@ -65,29 +65,6 @@
 
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-title">Production company</div>
-            <div class="settings-row-desc">Auto-filled when creating a new project</div>
-          </div>
-          <select class="form-select settings-select" id="pref-company" onchange="bfSavePref('defaultCompany', this.value)">
-            <option value="">— none —</option>
-            <option value="Grim Tidings Picture Company">Grim Tidings Picture Company</option>
-            <option value="Oddly Optimistic Pictures">Oddly Optimistic Pictures</option>
-            <option value="custom">Other…</option>
-          </select>
-        </div>
-        <div class="settings-row" id="pref-company-custom-row" style="display:none">
-          <div class="settings-row-info">
-            <div class="settings-row-title">Custom company name</div>
-          </div>
-          <input class="form-input settings-input" id="pref-company-custom"
-            placeholder="Enter company name"
-            onchange="bfSavePref('defaultCompanyCustom', this.value)">
-        </div>
-
-        <div class="settings-divider"></div>
-
-        <div class="settings-row">
-          <div class="settings-row-info">
             <div class="settings-row-title">Currency</div>
             <div class="settings-row-desc">Used across budgets and cost fields</div>
           </div>
@@ -101,28 +78,6 @@
         </div>
 
         <div class="settings-divider"></div>
-
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-title">Default call time</div>
-            <div class="settings-row-desc">Starting crew call time on new callsheets</div>
-          </div>
-          <input class="form-input settings-input settings-input-time" type="time" id="pref-calltime"
-            value="07:00"
-            onchange="bfSavePref('defaultCallTime', this.value)">
-        </div>
-
-        <div class="settings-divider"></div>
-
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-title">Director name</div>
-            <div class="settings-row-desc">Auto-filled on callsheets and documents</div>
-          </div>
-          <input class="form-input settings-input" id="pref-director"
-            placeholder="e.g. Tom Murphy"
-            onchange="bfSavePref('defaultDirector', this.value)">
-        </div>
 
       </div>
     </div>
@@ -177,25 +132,6 @@
       </div>
     </div>
 
-    <!-- ── SAMPLE PROJECT ──────────────────────────────────────────────── -->
-    <div class="settings-section">
-      <div class="settings-section-label">Sample Project</div>
-      <div class="settings-card">
-
-        <div class="settings-row">
-          <div class="settings-row-info">
-            <div class="settings-row-title">The Cake Man</div>
-            <div class="settings-row-desc">Load or reset the built-in demo project to explore the app</div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="btn btn-sm" onclick="injectSampleProject(true)">Load</button>
-            <button class="btn btn-sm" onclick="resetSampleProject()">Reset</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
     <!-- ── DANGER ZONE ─────────────────────────────────────────────────── -->
     <div class="settings-section settings-section-danger">
       <div class="settings-section-label" style="color:var(--red,#e05252)">Danger zone</div>
@@ -214,4 +150,3 @@
 
   </div><!-- /.settings-layout -->
 </div><!-- /#view-settings -->
-

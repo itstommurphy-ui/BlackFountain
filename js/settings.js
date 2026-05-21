@@ -277,11 +277,6 @@ function confirmClearAllData() {
 
 // Settings preferences functions (moved from settings.html)
 
-function _bfShowCustomCompany(show) {
-  const row = document.getElementById('pref-company-custom-row');
-  if (row) row.style.display = show ? '' : 'none';
-}
-
 function bfSavePref(key, value) {
   if (!store.preferences) store.preferences = {};
   store.preferences[key] = value;
@@ -324,47 +319,26 @@ async function _bfRestoreFromType(type) {
 function initSettingsView() {
   renderSettings();
 
-  // Account email
+  // Account email — try to show it. If _sbUser isn't populated yet (e.g. sbInit async
+  // getSession hasn't finished when Settings first opens), do a one-shot getSession here
+  // so the user sees their email instead of a dash.
   const emailEl = document.getElementById('settings-account-email');
-  if (emailEl && typeof _sbUser !== 'undefined' && _sbUser?.email) {
-    emailEl.textContent = _sbUser.email;
+  if (emailEl) {
+    const showEmail = (u) => { emailEl.textContent = u?.email || '—'; };
+    if (_sbUser?.email) {
+      showEmail(_sbUser);
+    } else if (typeof _sb !== 'undefined' && _sb) {
+      _sb.auth.getSession().then(({ data }) => showEmail(data?.session?.user)).catch(() => showEmail(null));
+    } else {
+      showEmail(null);
+    }
   }
 
   // Load preferences into controls
   const prefs = store?.preferences || {};
 
-  const company = prefs.defaultCompany || '';
-  const companyEl = document.getElementById('pref-company');
-  const builtIn = ['', 'Grim Tidings Picture Company', 'Oddly Optimistic Pictures'];
-  if (companyEl) {
-    if (builtIn.includes(company)) {
-      companyEl.value = company;
-    } else {
-      companyEl.value = 'custom';
-      _bfShowCustomCompany(true);
-      const customEl = document.getElementById('pref-company-custom');
-      if (customEl) customEl.value = company;
-    }
-  }
-
-  const currencyEl = document.getElementById('pref-currency');
-  if (currencyEl) currencyEl.value = prefs.defaultCurrency || 'GBP';
-
-  const calltimeEl = document.getElementById('pref-calltime');
-  if (calltimeEl) calltimeEl.value = prefs.defaultCallTime || '07:00';
-
-  const directorEl = document.getElementById('pref-director');
-  if (directorEl) directorEl.value = prefs.defaultDirector || '';
-
-  // Attach change listener to company dropdown if not already attached
-  if (companyEl && !companyEl._listenerAttached) {
-    companyEl.addEventListener('change', function() {
-      const isCustom = this.value === 'custom';
-      _bfShowCustomCompany(isCustom);
-      if (!isCustom) bfSavePref('defaultCompany', this.value);
-    });
-    companyEl._listenerAttached = true;
-  }
+  const currencyEl = document.getElementById("pref-currency");
+  if (currencyEl) currencyEl.value = prefs.defaultCurrency || "GBP";
 }
 
 function renderFiles() {

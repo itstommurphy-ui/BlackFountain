@@ -122,6 +122,7 @@ function createFolder(name, parentId = null, projectId = null) {
   };
   if (!store.folders) store.folders = [];
   store.folders.push(folder);
+  markDirty();
   saveStore();
   return folder;
 }
@@ -137,6 +138,7 @@ function deleteFolder(folderId) {
   });
   // Remove the folder
   store.folders = store.folders.filter(f => f.id !== folderId);
+  markDirty();
   saveStore();
 }
 
@@ -144,6 +146,7 @@ function renameFolder(folderId, newName) {
   const folder = getFolderById(folderId);
   if (folder) {
     folder.name = newName;
+    markDirty();
     saveStore();
   }
 }
@@ -152,6 +155,7 @@ function moveFileToFolder(fileId, folderId) {
   const file = store.files.find(f => f.id === fileId);
   if (file) {
     file.folderId = folderId;
+    markDirty();
     saveStore();
   }
 }
@@ -190,6 +194,7 @@ function moveFolderToProject(folderId, projectId) {
       }
     });
     
+    markDirty();
     saveStore();
   }
 }
@@ -207,6 +212,7 @@ function moveFolderToParent(folderId, parentFolderId) {
       }
     }
     folder.parentId = parentFolderId;
+    markDirty();
     saveStore();
   }
 }
@@ -227,6 +233,7 @@ function debouncedSave() {
     clearTimeout(_debouncedSaveTimer);
   }
   _debouncedSaveTimer = setTimeout(() => {
+    markDirty();
     saveStore();
     _debouncedSaveTimer = null;
   }, _DEBOUNCE_DELAY);
@@ -248,6 +255,7 @@ function cancelDebouncedSave() {
  */
 function immediateSave() {
   cancelDebouncedSave();
+  markDirty();
   saveStore();
 }
 
@@ -277,6 +285,7 @@ function batchChange(description, changeFn) {
   if (!_batchMode) {
     // Not in batch mode, execute immediately
     changeFn();
+    markDirty();
     saveStore();
     return;
   }
@@ -312,6 +321,7 @@ function flushBatch() {
   });
   
   // Save once
+  markDirty();
   saveStore();
   
   // Clear batch state

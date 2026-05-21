@@ -12,7 +12,8 @@
 
 let _bfStoreLoaded  = false;  // true only after Supabase data successfully applied
 let _bfSaveBlocked  = false;  // true during history restore
-let _bfSaveTimer    = null;   // debounce handle
+let _bfSaveTimer    = null;
+let _bfSaveDirty    = false;  // true when store has uncommitted changes — prevents idle saves
 
 // ── SAVE FEEDBACK ─────────────────────────────────────────────────────────────
 
@@ -59,6 +60,8 @@ window.SaveFeedback = (() => {
 
 async function saveStore(opts = {}) {
   if (_bfSaveBlocked || !_bfStoreLoaded) return;
+  if (!_bfSaveDirty) return;            // nothing changed — skip Supabase roundtrip
+  _bfSaveDirty = false;                 // consume the flag
   if ((store.projects || []).length === 0) {
     console.warn('[saveStore] Blocked — store has 0 projects');
     return;
@@ -83,9 +86,18 @@ async function saveStore(opts = {}) {
 
 // Debounced save — use this for rapid changes (typing etc)
 function debouncedSaveStore() {
+  markDirty();
   if (_bfSaveTimer) clearTimeout(_bfSaveTimer);
   _bfSaveTimer = setTimeout(() => saveStore({ silent: true }), 2000);
 }
+
+// ── DIRTY TRACKING ──────────────────────────────────────────────────────────
+// Only save to Supabase when something actually changed. Prevents
+// the 3-min interval from overwriting good data with blank data, and
+// chops down 10-20k daily idle requests → 0.
+
+function markDirty()   { _bfSaveDirty = true; }
+function clearDirty()  { _bfSaveDirty = false; }
 
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 
@@ -148,9 +160,11 @@ async function loadStore() {
 // ── AUTOSAVE (interval-based) ─────────────────────────────────────────────────
 
 function initAutoSave() {
-  // Save every 3 minutes — overwrites rolling snapshot each time
+  // Save every 3 minutes — only when uncommitted changes exist.
+  // This prevents the idle-save storm that wiped the rolling snapshot
+  // and drove 10-20k daily Supabase requests.
   setInterval(async () => {
-    if (!_bfStoreLoaded || _bfSaveBlocked) return;
+    if (!_bfStoreLoaded || _bfSaveBlocked || !_bfSaveDirty) return;
     await saveStore({ silent: true });
     await _bfWriteRollingSnapshot();
     renderSaveHistoryUI();
@@ -163,6 +177,7 @@ function initAutoSave() {
 
 async function bfQuickSave() {
   if (!_bfStoreLoaded || _bfSaveBlocked) return;
+  markDirty();
   await saveStore({ silent: false });
   await _bfWriteRollingSnapshot();
   renderSaveHistoryUI();
@@ -445,6 +460,8 @@ window.loadStore           = loadStore;
 window.initAutoSave        = initAutoSave;
 window.renderSaveHistoryUI = renderSaveHistoryUI;
 window.bfLoadFromHistory   = bfLoadFromHistory;
+window.markDirty           = markDirty;
+window.clearDirty          = clearDirty;
 // Legacy stubs — keep so nothing referencing old API breaks silently
 window.bfManualSave        = bfQuickSave;   // rewired, not removed
 window.setBfAutoSave       = () => {};
