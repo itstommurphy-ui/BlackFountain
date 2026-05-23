@@ -113,7 +113,10 @@ async function sbInit(onReady) {
 }
 
 function _updateAuthIndicator() {
+  window._sb     = _sb;
+  window._sbUser = _sbUser;
   const el = document.getElementById('sb-auth-indicator');
+
   if (!el) return;
   if (_sbUser) {
     el.innerHTML = `<span style="cursor:default" title="Signed in">${_sbUser.email}</span>`;

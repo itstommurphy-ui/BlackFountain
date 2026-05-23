@@ -288,7 +288,7 @@ async function bfSaveManualSnapshot() {
   const btn = document.querySelector('[onclick="bfSaveManualSnapshot()"]');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
   try {
-    await _bfWriteSnapshot('manual');
+    await _bfWriteRollingSnapshot();
     showToast('Manual save updated', 'success');
     renderSaveHistoryUI();
   } catch(e) {
