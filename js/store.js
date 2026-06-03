@@ -729,6 +729,6 @@ window.addStoreItem = addStoreItem;
 window.updateStoreItem = updateStoreItem;
 window.removeStoreItem = removeStoreItem;
 window.subscribeToData = subscribeToData;
-window.SaveFeedback = SaveFeedback;
+window.SaveFeedback = window.SaveFeedback || SaveFeedback;
 
 // ══════════════════════════════════════════

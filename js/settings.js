@@ -288,7 +288,7 @@ async function bfSaveManualSnapshot() {
   const btn = document.querySelector('[onclick="bfSaveManualSnapshot()"]');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
   try {
-    await _bfWriteRollingSnapshot();
+    await _bfWriteSnapshot('manual');
     showToast('Manual save updated', 'success');
     renderSaveHistoryUI();
   } catch(e) {
@@ -301,10 +301,10 @@ async function bfSaveManualSnapshot() {
 async function _bfRestoreFromType(type) {
   const label = type === 'auto' ? 'last autosave' : 'last manual save';
   const token = await _bfGetToken();
-  if (!token || !_sbUser) { showToast('Not signed in', 'error'); return; }
+  if (!token || !window._sbUser) { showToast('Not signed in', 'error'); return; }
   try {
     const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.${type}&select=id,label,saved_at&limit=1`,
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.${type}&select=id,label,saved_at&limit=1`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const rows = res.ok ? await res.json() : [];
@@ -325,10 +325,10 @@ function initSettingsView() {
   const emailEl = document.getElementById('settings-account-email');
   if (emailEl) {
     const showEmail = (u) => { emailEl.textContent = u?.email || '—'; };
-    if (_sbUser?.email) {
-      showEmail(_sbUser);
-    } else if (typeof _sb !== 'undefined' && _sb) {
-      _sb.auth.getSession().then(({ data }) => showEmail(data?.session?.user)).catch(() => showEmail(null));
+    if (window._sbUser?.email) {
+      showEmail(window._sbUser);
+    } else if (window._sb) {
+      window._sb.auth.getSession().then(({ data }) => showEmail(data?.session?.user)).catch(() => showEmail(null));
     } else {
       showEmail(null);
     }
@@ -2981,4 +2981,3 @@ function ovFilesDelete(id) {
     showToast('File deleted', 'success');
   });
 }
-

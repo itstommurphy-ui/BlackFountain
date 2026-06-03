@@ -31,6 +31,7 @@ async function sbInit(onReady) {
          storageKey: 'bf-supabase-auth',
          autoRefreshToken: true,
          detectSessionInUrl: true,
+         lock: false
        }
      });
     console.log('[sbInit] Supabase client created successfully');
@@ -204,28 +205,26 @@ function _sbKeepAlive() {
   }, 4 * 60 * 1000); // every 4 minutes
 }
 
-// Pull store from Supabase.
-// Returns:
-//   { ok: true,  data: <store object> }  — row found
-//   { ok: true,  data: null }            — reached server, user has no row yet (new user)
-//   { ok: false }                        — could NOT reach/read the server (error or timeout)
+// Pull store from Supabase (returns null if not logged in or empty)
 async function sbPullStore() {
   console.log('[sbPullStore] Starting pull for user:', _sbUser?.email);
-  if (!_sb || !_sbUser) return { ok: false };
-
+  if (!_sb || !_sbUser) return null;
+  
   try {
+    // Get user's session token for authorization
     if (!_cachedToken) {
       const { data: { session } } = await _sb.auth.getSession();
       _cachedToken = session?.access_token || null;
     }
     const token = _cachedToken;
-    if (!token) { console.warn('[sbPullStore] No access token'); return { ok: false }; }
+    if (!token) { console.warn('[sbPullStore] No access token'); return null; }
 
+    console.log('[sbPullStore] Using REST API for user_id:', _sbUser.id);
     const url = `${_SB_URL}/rest/v1/stores?user_id=eq.${_sbUser.id}&select=data`;
-
+    
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     const response = await fetch(url, {
       headers: {
         'apikey': _SB_KEY,
@@ -235,26 +234,27 @@ async function sbPullStore() {
       },
       signal: controller.signal
     });
-
+    
     clearTimeout(timeoutId);
-
+    
     if (!response.ok) {
       const errText = await response.text();
       console.warn('[sbPullStore] REST API error:', response.status, errText);
-      return { ok: false };           // server errored — failure, do NOT arm saving
+      return null;
     }
-
+    
     const data = await response.json();
-    console.log('[sbPullStore] REST API result:', data?.length > 0 ? 'found' : 'empty (no row)');
-
-    if (data && data.length > 0) return { ok: true, data: data[0].data };
-    return { ok: true, data: null };  // reached server, genuinely no data yet
+    console.log('[sbPullStore] REST API result:', data?.length > 0 ? 'found' : 'null');
+    
+    if (data && data.length > 0) {
+      return data[0].data;
+    }
+    return null;
   } catch(e) {
     console.warn('[sbPullStore] Exception:', e.name === 'AbortError' ? 'Timeout' : e.message);
-    return { ok: false };             // timeout / network error — failure
+    return null;
   }
 }
-
 
 // Push store to Supabase (strips file blobs to stay under size limits)
 async function sbPushStore() {

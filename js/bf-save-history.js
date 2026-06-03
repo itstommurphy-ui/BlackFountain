@@ -104,34 +104,40 @@ function clearDirty()  { _bfSaveDirty = false; }
 async function loadStore() {
   _bfShowStartupLoader();
 
-  let cloudData = null;
-  let attempts  = 0;
+  let result   = null;
+  let attempts = 0;
 
-  while (attempts < 3 && !cloudData) {
+  // Retry ONLY on hard failures (couldn't reach the server).
+  // A successful-but-empty response is NOT a failure — stop immediately.
+  while (attempts < 3) {
     attempts++;
     _bfUpdateStartupLoader(attempts > 1 ? `Retrying… (${attempts}/3)` : 'Connecting…');
     try {
-      cloudData = await Promise.race([
+      result = await Promise.race([
         sbPullStore(),
         new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 12000))
       ]);
     } catch(e) {
       console.warn(`[loadStore] Attempt ${attempts} failed:`, e.message);
-      if (attempts < 3) await new Promise(r => setTimeout(r, 1500));
+      result = { ok: false };
     }
+    if (result && result.ok) break;          // reached the server — done, even if empty
+    if (attempts < 3) await new Promise(r => setTimeout(r, 1500));
   }
 
   _bfHideStartupLoader();
 
-  if (cloudData) {
-    Object.assign(store, cloudData);
-    _bfStoreLoaded = true;
+  // CASE 1 — reached the server and we KNOW the true cloud state.
+  if (result && result.ok) {
+    if (result.data) Object.assign(store, result.data);   // existing user — apply data
+    // result.data === null → genuinely new/empty user; store stays at defaults
+    _bfStoreLoaded = true;                                 // safe: confirmed read
     _bfApplyStoreMigrations();
     console.log('[loadStore] Loaded from Supabase, projects:', store.projects?.length);
     return;
   }
 
-  // All attempts failed — show retry dialog
+  // CASE 2 — could not reach the server after retries. Offer retry / offline.
   const retry = await new Promise(resolve => {
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
@@ -151,11 +157,15 @@ async function loadStore() {
 
   if (retry) return loadStore();
 
-  // Offline — start with empty store, nothing will be saved until reconnect
-  _bfStoreLoaded = false;
+  // CASE 3 — "Work offline" after a FAILED load.
+  // We do NOT know the true cloud state, so saving MUST stay blocked —
+  // one new edit could otherwise overwrite real cloud data we never read.
+  _bfStoreLoaded = false;     // ← the fix: never arm saving on an unconfirmed read
+  _bfSaveBlocked = true;
   _bfApplyStoreMigrations();
-  showToast('Working offline — changes will not be saved', 'warning');
+  showToast('Working offline — changes cannot be saved until you reconnect and reload', 'warning');
 }
+
 
 // ── AUTOSAVE (interval-based) ─────────────────────────────────────────────────
 
@@ -189,7 +199,7 @@ window.bfQuickSave = bfQuickSave;
 // One row in save_history per user, type='auto'. Deleted and recreated on each write.
 
 async function _bfWriteRollingSnapshot() {
-  if (!_sb || !_sbUser) return;
+  if (!window._sb || !window._sbUser) return;
   if ((store.projects || []).length === 0) return;
 
   const token = await _bfGetToken();
@@ -203,7 +213,7 @@ async function _bfWriteRollingSnapshot() {
 
   try {
     // Delete any existing rolling snapshot for this user
-    await fetch(`${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.auto`, {
+    await fetch(`${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.auto`, {
       method: 'DELETE',
       headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` }
     });
@@ -216,7 +226,7 @@ async function _bfWriteRollingSnapshot() {
         'Content-Type': 'application/json', 'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
-        user_id: _sbUser.id,
+        user_id: window._sbUser.id,
         type: 'auto',
         label,
         data: stripped,
@@ -302,21 +312,20 @@ function _bfApplyStoreMigrations() {
 // ── TOKEN HELPER ──────────────────────────────────────────────────────────────
 
 async function _bfGetToken() {
-  if (_cachedToken) return _cachedToken;
-  const { data: { session } } = await _sb.auth.getSession();
-  _cachedToken = session?.access_token || null;
-  return _cachedToken;
+  if (!window._sb) return null;
+  const { data: { session } } = await window._sb.auth.getSession();
+  return session?.access_token || null;
 }
 
 // ── RESTORE FROM SNAPSHOT ─────────────────────────────────────────────────────
 
 async function _bfFetchHistoryRow(id) {
-  if (!_sb || !_sbUser) return null;
+  if (!window._sb || !window._sbUser) return null;
   const token = await _bfGetToken();
   if (!token) return null;
   try {
     const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?id=eq.${id}&user_id=eq.${_sbUser.id}&select=data`,
+      `${_SB_URL}/rest/v1/save_history?id=eq.${id}&user_id=eq.${window._sbUser.id}&select=data`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
     if (!res.ok) return null;
@@ -354,7 +363,7 @@ async function bfLoadFromHistory(id, label) {
           'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify({
-          user_id: _sbUser.id,
+          user_id: window._sbUser.id,
           data: { ...data, _lastSave: Date.now() },
           updated_at: new Date().toISOString()
         })
@@ -415,7 +424,7 @@ async function renderSaveHistoryUI() {
   el.innerHTML = `<div id="_bf-history-list" style="font-size:12px;color:var(--text3)">Loading…</div>`;
 
   const token = await _bfGetToken();
-  if (!token || !_sbUser) {
+  if (!token || !window._sbUser) {
     document.getElementById('_bf-history-list').textContent = 'Not signed in.';
     return;
   }
@@ -423,7 +432,7 @@ async function renderSaveHistoryUI() {
   let row = null;
   try {
     const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?user_id=eq.${_sbUser.id}&type=eq.auto&select=id,label,project_count,saved_at&limit=1`,
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.auto&select=id,label,project_count,saved_at&limit=1`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const rows = res.ok ? await res.json() : [];
