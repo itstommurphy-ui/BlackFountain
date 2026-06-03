@@ -189,7 +189,7 @@ async function bfQuickSave() {
   if (!_bfStoreLoaded || _bfSaveBlocked) return;
   markDirty();
   await saveStore({ silent: false });
-  await _bfWriteRollingSnapshot();
+  await _bfWriteRollingSnapshot('manual');
   renderSaveHistoryUI();
 }
 
@@ -198,7 +198,7 @@ window.bfQuickSave = bfQuickSave;
 // ── ROLLING SNAPSHOT ──────────────────────────────────────────────────────────
 // One row in save_history per user, type='auto'. Deleted and recreated on each write.
 
-async function _bfWriteRollingSnapshot() {
+async function _bfWriteRollingSnapshot(type = 'auto') {
   if (!window._sb || !window._sbUser) return;
   if ((store.projects || []).length === 0) return;
 
@@ -206,19 +206,16 @@ async function _bfWriteRollingSnapshot() {
   if (!token) return;
 
   const stripped = { ...store, files: (store.files||[]).map(({data:_d,...f})=>f) };
-  const label = 'Rolling save — ' + new Date().toLocaleString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+  const label = (type === 'manual' ? 'Manual save — ' : 'Auto save — ') + new Date().toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
   try {
-    // Delete any existing rolling snapshot for this user
-    await fetch(`${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.auto`, {
+    // Replace the single rolling snapshot of THIS type
+    await fetch(`${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.${type}`, {
       method: 'DELETE',
       headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` }
     });
-
-    // Write new one
     await fetch(`${_SB_URL}/rest/v1/save_history`, {
       method: 'POST',
       headers: {
@@ -226,14 +223,10 @@ async function _bfWriteRollingSnapshot() {
         'Content-Type': 'application/json', 'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
-        user_id: window._sbUser.id,
-        type: 'auto',
-        label,
-        data: stripped,
-        project_count: (store.projects||[]).length
+        user_id: window._sbUser.id, type, label,
+        data: stripped, project_count: (store.projects||[]).length
       })
     });
-
     console.log('[rollingSnapshot] Written:', label);
   } catch(e) {
     console.warn('[rollingSnapshot] Failed:', e.message);

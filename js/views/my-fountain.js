@@ -418,7 +418,7 @@ function _mfGoals(mf) {
 // ── ACCOUNT ──────────────────────────────────────────────────
 
 function _mfAccount() {
-  const user=window._supabaseUser||null;
+  const user=window._sbUser||null;
   return `
   <div class="mf-body-section">
     <div class="mf-body-heading"><div class="mf-body-title">Account</div><div class="mf-body-sub">Sign-in, sync and data management</div></div>

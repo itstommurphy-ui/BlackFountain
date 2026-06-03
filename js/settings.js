@@ -2,40 +2,53 @@
 // SETTINGS - EXPORT/IMPORT
 // ══════════════════════════════════════════
 
-function renderSettings() {
-  const statsEl = document.getElementById('storage-stats');
-  if (statsEl) {
-    const dataStr = JSON.stringify(store);
-    const bytes = new Blob([dataStr]).size;
-    const kb = (bytes / 1024).toFixed(2);
-    const mb = (bytes / (1024 * 1024)).toFixed(2);
-    
-    // Count all contacts (global + per-project)
-    const globalContacts = store.contacts?.length || 0;
-    const projectContacts = (store.projects || []).reduce((sum, p) => sum + (p.contacts?.length || 0), 0);
-    const totalContacts = globalContacts + projectContacts;
-    
-    // Count all locations (global + per-project)
-    const globalLocations = store.locations?.length || 0;
-    const projectLocations = (store.projects || []).reduce((sum, p) => sum + (p.locations?.length || 0), 0);
-    const totalLocations = globalLocations + projectLocations;
-    
-    statsEl.innerHTML = `
-      Projects: ${store.projects?.length || 0}<br>
-      Files: ${store.files?.length || 0}<br>
-      Contacts: ${totalContacts} (${globalContacts} global + ${projectContacts} in projects)<br>
-      Locations: ${totalLocations} (${globalLocations} global + ${projectLocations} in projects)<br>
-      Team Members: ${store.teamMembers?.length || 0}<br>
-      Approximate size: ${kb} KB (${mb} MB)
-    `;
-  }
-  
-  // Update theme button styles
-  updateThemeButtons();
-  updateFontSizeButtons();
-  renderContactLinkStats();
-  if (typeof renderSaveHistoryUI === 'function') renderSaveHistoryUI();
+async function renderSettings() {
+  // Account
+  const emailEl = document.getElementById('settings-account-email');
+  if (emailEl) emailEl.textContent = window._sbUser?.email || 'Not signed in';
+
+  // Appearance button states
+  if (typeof updateThemeButtons === 'function') updateThemeButtons();
+  if (typeof updateFontSizeButtons === 'function') updateFontSizeButtons();
+  if (typeof renderContactLinkStats === 'function') renderContactLinkStats();
+
+  // Data & Backup — last save timestamps
+  _bfRenderSettingsSaveRow('auto',   'settings-autosave-ts', 'settings-autosave-restore');
+  _bfRenderSettingsSaveRow('manual', 'settings-manual-ts',   'settings-manual-restore');
 }
+
+async function _bfRenderSettingsSaveRow(type, tsId, btnId) {
+  const tsEl = document.getElementById(tsId);
+  const btn  = document.getElementById(btnId);
+  if (!tsEl) return;
+  if (!window._sb || !window._sbUser) { tsEl.textContent = '—'; if (btn) btn.disabled = true; return; }
+
+  const token = await _bfGetToken();
+  if (!token) { tsEl.textContent = '—'; if (btn) btn.disabled = true; return; }
+
+  try {
+    const res = await fetch(
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.${type}&select=saved_at,project_count&order=saved_at.desc&limit=1`,
+      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const rows = res.ok ? await res.json() : [];
+    const row = rows?.[0];
+    if (!row) { tsEl.textContent = 'No save yet'; if (btn) btn.disabled = true; return; }
+
+    const d = new Date(row.saved_at);
+    const dateStr = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const timeStr = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const pc = row.project_count != null ? ` · ${row.project_count} project${row.project_count !== 1 ? 's' : ''}` : '';
+    tsEl.textContent = `${dateStr} at ${timeStr}${pc}`;
+    if (btn) btn.disabled = false;
+  } catch(e) {
+    tsEl.textContent = '—'; if (btn) btn.disabled = true;
+  }
+}
+
+// _bfRestoreFromType is now provided near renderSettings() (for settings last-save + restore UI)
+
+
 
 function updateThemeButtons() {
   const currentTheme = localStorage.getItem('blackfountain_theme') || 'dark';
@@ -287,33 +300,88 @@ async function bfSaveManualSnapshot() {
   if (!_bfStoreLoaded || _bfSaveBlocked) return;
   const btn = document.querySelector('[onclick="bfSaveManualSnapshot()"]');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
   try {
-    await _bfWriteSnapshot('manual');
+    // 1) Write manual snapshot
+    await _bfWriteRollingSnapshot('manual');
+
+    // 2) Update the UI immediately by forcing a refetch of the settings rows.
+    // renderSettings() calls _bfRenderSettingsSaveRow(), which hits Supabase.
+    await renderSettings();
+
+    // 3) Also update the rolling autosave card
+    if (typeof renderSaveHistoryUI === 'function') {
+      await renderSaveHistoryUI();
+    }
+
     showToast('Manual save updated', 'success');
-    renderSaveHistoryUI();
   } catch(e) {
+    console.error('[bfSaveManualSnapshot] failed:', e);
     showToast('Save failed', 'error');
   } finally {
     if (btn) { btn.textContent = 'Save now'; btn.disabled = false; }
   }
 }
 
+// (dedup) _bfRestoreFromType is defined near renderSettings(); keep only one implementation
+
+// Restore settings snapshot from save_history row
 async function _bfRestoreFromType(type) {
-  const label = type === 'auto' ? 'last autosave' : 'last manual save';
-  const token = await _bfGetToken();
-  if (!token || !window._sbUser) { showToast('Not signed in', 'error'); return; }
   try {
+    if (!window._sb || !window._sbUser) return;
+    const token = await _bfGetToken();
+    if (!token) { showToast?.('Auth not ready', 'error'); return; }
+
     const res = await fetch(
-      `${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.${type}&select=id,label,saved_at&limit=1`,
-      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+      `${_SB_URL}/rest/v1/save_history?user_id=eq.${window._sbUser.id}&type=eq.${type}&select=saved_at&order=saved_at.desc&limit=1`,
+      { headers: { apikey: _SB_KEY, Authorization: `Bearer ${token}` } }
     );
     const rows = res.ok ? await res.json() : [];
-    if (!rows?.[0]) { showToast('No snapshot found', 'error'); return; }
-    bfLoadFromHistory(rows[0].id, label);
-  } catch(e) {
-    showToast('Could not fetch snapshot', 'error');
+    const row = rows?.[0];
+    if (!row?.saved_at) { showToast?.('No save found to restore', 'info'); return; }
+
+    // Load the saved snapshot (prefer dedicated endpoint, fallback to generic)
+    // Assumes your save_history row stores a json payload or a reference key.
+    const savedAt = row.saved_at;
+
+    // settings_snapshots table may not exist in this deployment.
+    // Prefer your existing restore mechanism if present.
+    if (typeof window._bfRestoreSaveHistoryAt === 'function') {
+      await window._bfRestoreSaveHistoryAt(type, row.saved_at);
+      showToast?.('Settings restored', 'success');
+      location.reload();
+      return;
+    }
+
+    // Fallback: best-effort try to restore a 'data' column from save_history (if your
+    // save_history stores the snapshot JSON in a column named `data`).
+    // NOTE: if your schema differs, this will simply fail and we show a toast.
+    const snapRes = await fetch(
+      `${_SB_URL}/rest/v1/save_history?id=eq.${row.id}&user_id=eq.${window._sbUser.id}&select=data&limit=1`,
+      { headers: { apikey: _SB_KEY, Authorization: `Bearer ${token}` } }
+    );
+
+    if (snapRes.ok) {
+      const snaps = await snapRes.json();
+      const snap = snaps?.[0];
+      const payload = snap?.data;
+      if (payload) {
+        Object.keys(store).forEach(k => delete store[k]);
+        Object.assign(store, payload);
+        await saveStore();
+        showToast?.('Settings restored', 'success');
+        location.reload();
+        return;
+      }
+    }
+
+    showToast?.('Restore failed: snapshot payload not found', 'error');
+  } catch (e) {
+    console.error('[settings] restore failed:', e);
+    showToast?.('Restore failed: ' + (e?.message || e), 'error');
   }
 }
+
 
 // Initialize settings view when shown
 function initSettingsView() {
