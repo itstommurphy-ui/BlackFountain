@@ -263,17 +263,16 @@ function _bfUpdateStartupLoader(text) {
 
 function _bfHideStartupLoader() {
   const el = document.getElementById('_bf-startup-loader');
-  if (el) {
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
-    el.style.zIndex = '-1';
-    el.remove();
-  }
-  // Safari belt-and-braces: catch anything that survived
+  if (!el) return;
+  el.style.transition = 'opacity 0.2s ease';
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'none';
   setTimeout(() => {
+    el.remove();
+    // Safari belt-and-braces
     const stale = document.getElementById('_bf-startup-loader');
     if (stale) stale.remove();
-  }, 500);
+  }, 250);
 }
 
 // ── MIGRATIONS ────────────────────────────────────────────────────────────────
