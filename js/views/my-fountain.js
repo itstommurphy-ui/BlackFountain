@@ -98,7 +98,7 @@ function mfPhotoUpload(input) {
   reader.onload = e => {
     if (!store.myFountain) store.myFountain = {};
     store.myFountain.photo = e.target.result;
-    saveStore(); _mfRenderPhoto();
+    markDirty(); saveStore(); _mfRenderPhoto();
   };
   reader.readAsDataURL(file);
 }
@@ -112,8 +112,16 @@ function mfSaveAll(keys) {
     if (!el) return;
     store.myFountain[key] = el.tagName === 'TEXTAREA' ? el.value : el.value;
   });
-  saveStore(); _mfUpdateHero();
+  markDirty(); saveStore(); _mfUpdateHero();
   showToast('Saved', 'success');
+}
+
+function _mfFieldChange(key, value) {
+  if (!store.myFountain) store.myFountain = {};
+  store.myFountain[key] = value;
+  _mfUpdateHeroOnInput(key);
+  markDirty();
+  debouncedSaveStore();
 }
 
 // ── Field helpers ────────────────────────────────────────────
@@ -121,7 +129,7 @@ function mfSaveAll(keys) {
 function _f(label, key, value, type, placeholder) {
   return `<div>
     <div class="mf-field-label">${label}</div>
-    <input class="mf-input" id="mf-field-${key}" type="${type||'text'}" value="${(value||'').replace(/"/g,'&quot;')}" placeholder="${placeholder||''}" oninput="_mfUpdateHeroOnInput('${key}')">
+    <input class="mf-input" id="mf-field-${key}" type="${type||'text'}" value="${(value||'').replace(/"/g,'&quot;')}" placeholder="${placeholder||''}" oninput="_mfFieldChange('${key}',this.value)">
   </div>`;
 }
 
@@ -140,7 +148,7 @@ function _mfFilmmaker(mf) {
 
     <div class="mf-role-label" style="margin-top:20px">Creative voice</div>
     ${_f('Style / genre statement','style',mf.style||'','text','e.g. Dystopian Realism — ordinary people in slightly-off worlds')}
-    <div style="margin-top:14px"><div class="mf-field-label">Bio</div><textarea id="mf-field-bio" class="mf-textarea" rows="4" placeholder="A few sentences about your work and approach…" oninput="_mfUpdateHeroOnInput('bio')">${mf.bio||''}</textarea></div>
+    <div style="margin-top:14px"><div class="mf-field-label">Bio</div><textarea id="mf-field-bio" class="mf-textarea" rows="4" placeholder="A few sentences about your work and approach…" oninput="_mfFieldChange('bio',this.value)">${mf.bio||''}</textarea></div>
 
     <div class="mf-role-label" style="margin-top:20px">Online</div>
     <div class="mf-field-row">
@@ -473,7 +481,7 @@ function mfSaveFilmExtra(projectId) {
     distribution:g(`mffe-distribution-${projectId}`),press:g(`mffe-press-${projectId}`),awards:g(`mffe-awards-${projectId}`)};
   if(idx>=0)store.myFountain.filmographyExtra[idx]=data;
   else store.myFountain.filmographyExtra.push(data);
-  saveStore();
+  markDirty(); saveStore();
 }
 
 function mfAddExtraFilm() {
@@ -483,14 +491,14 @@ function mfAddExtraFilm() {
   if(!store.myFountain.filmographyExtra)store.myFountain.filmographyExtra=[];
   store.myFountain.filmographyExtra.push({title,year:document.getElementById('mf-extra-year')?.value||'',
     format:document.getElementById('mf-extra-format')?.value||'',role:document.getElementById('mf-extra-role')?.value||''});
-  saveStore();mfShowSection('filmography');
+  markDirty(); saveStore();mfShowSection('filmography');
 }
 
 function mfDeleteExtraFilm(i) {
   const extras=(store.myFountain?.filmographyExtra||[]).filter(f=>!f.projectId);
   extras.splice(i,1);
   store.myFountain.filmographyExtra=[(store.myFountain.filmographyExtra||[]).filter(f=>f.projectId),...extras].flat();
-  saveStore();mfShowSection('filmography');
+  markDirty(); saveStore();mfShowSection('filmography');
 }
 
 function mfAddSlateItem() {
@@ -500,11 +508,11 @@ function mfAddSlateItem() {
   if(!store.myFountain.slate)store.myFountain.slate=[];
   store.myFountain.slate.push({title,status:document.getElementById('mf-slate-status')?.value||'Idea',
     format:document.getElementById('mf-slate-format')?.value||'',logline:document.getElementById('mf-slate-logline')?.value||''});
-  saveStore();mfShowSection('slate');
+  markDirty(); saveStore();mfShowSection('slate');
 }
 
 function mfDeleteSlateItem(i) {
-  store.myFountain.slate.splice(i,1);saveStore();mfShowSection('slate');
+  store.myFountain.slate.splice(i,1);markDirty(); saveStore();mfShowSection('slate');
 }
 
 function mfAddGoal() {
@@ -512,10 +520,10 @@ function mfAddGoal() {
   if(!store.myFountain)store.myFountain={};
   if(!store.myFountain.goals)store.myFountain.goals=[];
   store.myFountain.goals.push({text,status:'Not started'});
-  saveStore();mfShowSection('goals');
+  markDirty(); saveStore();mfShowSection('goals');
 }
 
-function mfDeleteGoal(i) { store.myFountain.goals.splice(i,1);saveStore();mfShowSection('goals'); }
+function mfDeleteGoal(i) { store.myFountain.goals.splice(i,1);markDirty(); saveStore();mfShowSection('goals'); }
 function mfUpdateGoalStatus(i,status) { store.myFountain.goals[i].status=status;saveStore();mfShowSection('goals'); }
 
 function mfExportCV() {
