@@ -135,6 +135,7 @@ async function loadStore() {
     }
     // result.data === null → genuinely new/empty user; store stays at defaults
     _bfStoreLoaded = true;                                 // safe: confirmed read
+    window._bfStore = store;
     _bfApplyStoreMigrations();
     console.log('[loadStore] Loaded from Supabase, projects:', store.projects?.length);
     return;
