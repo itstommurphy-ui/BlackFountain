@@ -2278,5 +2278,20 @@ if ('serviceWorker' in navigator) {
 
     </div>
   </div>
+<div id="mobile-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1a1a26;border-top:1px solid #3a3a52;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:'DM Sans',sans-serif;">
+  <div style="font-size:13px;color:#c8c8d8;line-height:1.5;">
+    <span style="color:#e6bc3c;font-weight:600;">Black Fountain</span> isn't optimised for mobile yet — for the best experience, open it on a desktop or laptop.
+  </div>
+  <button onclick="this.parentElement.style.display='none';localStorage.setItem('bf-mobile-banner-dismissed','1');" style="flex-shrink:0;background:none;border:1px solid #3a3a52;border-radius:5px;color:#9090a8;font-size:12px;padding:6px 12px;cursor:pointer;white-space:nowrap;">Got it</button>
+</div>
+<script>
+(function() {
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod|Tablet/i.test(navigator.userAgent) || window.innerWidth < 768;
+  var dismissed = localStorage.getItem('bf-mobile-banner-dismissed');
+  if (isMobile && !dismissed) {
+    document.getElementById('mobile-banner').style.display = 'flex';
+  }
+})();
+</script>
 </body>
 </html>
