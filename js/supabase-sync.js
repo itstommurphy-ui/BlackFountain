@@ -49,7 +49,8 @@ async function sbInit(onReady) {
       _sbKeepAlive();
       if (!_sbAppStarted) {
         _sbAppStarted = true;
-        document.getElementById('modal-login').style.display = 'none';
+        const _loginModal = document.getElementById('modal-login');
+        if (_loginModal) _loginModal.style.display = 'none';
         await _sbAppReadyCallback();
       }
       // Do NOT reload on re-auth — the sbPushStore empty guard and
