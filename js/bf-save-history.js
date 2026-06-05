@@ -129,7 +129,10 @@ async function loadStore() {
 
   // CASE 1 — reached the server and we KNOW the true cloud state.
   if (result && result.ok) {
-    if (result.data) Object.assign(store, result.data);   // existing user — apply data
+    if (result.data) {
+      Object.assign(store, result.data);   // existing user — apply data
+      window._bfStore = store;
+    }
     // result.data === null → genuinely new/empty user; store stays at defaults
     _bfStoreLoaded = true;                                 // safe: confirmed read
     _bfApplyStoreMigrations();
