@@ -16,7 +16,7 @@ async function _sbCheckBetaAccess(email) {
     const token = session?.access_token;
     if (!token) return false;
     const res = await fetch(
-      `${_SB_URL}/rest/v1/beta_allowlist?email=eq.${encodeURIComponent(email)}&select=email&limit=1`,
+      `${_SB_URL}/rest/v1/beta_allowlist?email=ilike.${encodeURIComponent(email)}&select=email&limit=1`,
       { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const data = await res.json();
