@@ -284,6 +284,9 @@ function _mbGoBack() {
   const id = _currentMoodboardId;
   _currentMoodboardId = null;
   _mbBgReposition = false;
+  // Reset all hide flags and clear body classes when leaving canvas
+  _mbHide = { captions: false, frames: false, navbar: false, header: false };
+  document.body.classList.remove('mb-hide-captions','mb-hide-frames','mb-hide-navbar','mb-hide-header');
   showView('moodboards');
   if (id) _mbCaptureThumbnail(id); // async, updates card after render
 }
