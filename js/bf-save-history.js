@@ -258,9 +258,18 @@ function _bfUpdateStartupLoader(text) {
 }
 
 function _bfHideStartupLoader() {
-  document.getElementById('_bf-startup-loader')?.remove();
-  // Belt and braces: catch any stale loader that survived a timing race
-  setTimeout(() => document.getElementById('_bf-startup-loader')?.remove(), 1500);
+  const el = document.getElementById('_bf-startup-loader');
+  if (el) {
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '-1';
+    el.remove();
+  }
+  // Safari belt-and-braces: catch anything that survived
+  setTimeout(() => {
+    const stale = document.getElementById('_bf-startup-loader');
+    if (stale) stale.remove();
+  }, 500);
 }
 
 // ── MIGRATIONS ────────────────────────────────────────────────────────────────
