@@ -74,8 +74,8 @@ async function sbInit(onReady) {
        // Clear localStorage backups
       Object.keys(localStorage).filter(k => k.startsWith('bf_')).forEach(k => localStorage.removeItem(k));
 
-      // Show login modal and block the app
-      _showLoginModal();
+      // No session — redirect to landing
+      window.location.href = '/landing.html';
     }
   });
 
@@ -105,8 +105,8 @@ async function sbInit(onReady) {
       await _sbAppReadyCallback();
     } else {
       // No session, block app and show login
-      console.log('[sbInit] No user — showing login');
-      _showLoginModal();
+      console.log('[sbInit] No user — redirecting to landing');
+      window.location.href = '/landing.html';
     }
   }
 }
@@ -123,7 +123,7 @@ function _updateAuthIndicator() {
     el.title = 'Signed in';
     el.style.cursor = 'pointer';
   } else {
-    el.innerHTML = `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="_showLoginModal()">Sign in</button>`;
+    el.innerHTML = `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="window.location.href='/landing.html'">Sign in</button>`;
     el.onclick = null;
     el.title = '';
     el.style.cursor = '';
