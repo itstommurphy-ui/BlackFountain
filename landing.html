@@ -510,6 +510,16 @@
 </div>
 
 <script>
+// Show message if redirected back after failed beta check
+if (new URLSearchParams(window.location.search).get('notallowed') === '1') {
+  document.addEventListener('DOMContentLoaded', function() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1a1a26;border:1px solid #3a3a52;border-radius:8px;padding:16px 24px;font-family:DM Sans,sans-serif;font-size:13px;color:#c8c8d8;text-align:center;z-index:9999;max-width:380px;';
+    el.innerHTML = '<span style="color:#e6bc3c;font-weight:600;">Black Fountain</span> is currently invite-only.<br><span style="color:#9090a8;font-size:12px;">Contact Tom to request access.</span>';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 8000);
+  });
+}
 const _LAND_SB_URL = 'https://zeojevfruuqjhwycnnan.supabase.co';
 const _LAND_SB_KEY = 'sb_publishable__Q-8dJNUZ_As-krVwGop0w_yZDBNEYO';
 const _landSb = supabase.createClient(_LAND_SB_URL, _LAND_SB_KEY, {

@@ -10,6 +10,23 @@ let _cachedToken = null;
 let _sbAppReadyCallback = null;
 let _sbAppStarted = false;
 
+async function _sbCheckBetaAccess(email) {
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return false;
+    const res = await fetch(
+      `${_SB_URL}/rest/v1/beta_allowlist?email=eq.${encodeURIComponent(email)}&select=email&limit=1`,
+      { headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0;
+  } catch(e) {
+    console.warn('[betaCheck] failed:', e.message);
+    return false;
+  }
+}
+
 async function sbInit(onReady) {
   _sbAppReadyCallback = onReady;
   if (typeof supabase === 'undefined') {
@@ -51,6 +68,16 @@ async function sbInit(onReady) {
         _sbAppStarted = true;
         const _loginModal = document.getElementById('modal-login');
         if (_loginModal) _loginModal.style.display = 'none';
+        console.log('[sbInit] Checking beta access for:', _sbUser.email);
+        const allowed = await _sbCheckBetaAccess(_sbUser.email);
+        if (!allowed) {
+          console.log('[sbInit] Not on beta list — blocking');
+          await _sb.auth.signOut({ scope: 'local' });
+          localStorage.removeItem('bf-supabase-auth');
+          window.location.href = '/landing.html?notallowed=1';
+          return;
+        }
+        console.log('[sbInit] Beta access confirmed, starting app');
         await _sbAppReadyCallback();
       }
       // Do NOT reload on re-auth — the sbPushStore empty guard and
@@ -101,8 +128,16 @@ async function sbInit(onReady) {
   if (!_sbAppStarted) {
     _sbAppStarted = true;
     if (_sbUser) {
-      // User is already logged in, start app and it will pull from cloud
-      console.log('[sbInit] Starting app with user, will pull from cloud');
+      console.log('[sbInit] Checking beta access for:', _sbUser.email);
+      const allowed = await _sbCheckBetaAccess(_sbUser.email);
+      if (!allowed) {
+        console.log('[sbInit] Not on beta list — blocking');
+        await _sb.auth.signOut({ scope: 'local' });
+        localStorage.removeItem('bf-supabase-auth');
+        window.location.href = '/landing.html?notallowed=1';
+        return;
+      }
+      console.log('[sbInit] Beta access confirmed, starting app');
       await _sbAppReadyCallback();
     } else {
       // No session, block app and show login

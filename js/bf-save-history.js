@@ -259,6 +259,8 @@ function _bfUpdateStartupLoader(text) {
 
 function _bfHideStartupLoader() {
   document.getElementById('_bf-startup-loader')?.remove();
+  // Belt and braces: catch any stale loader that survived a timing race
+  setTimeout(() => document.getElementById('_bf-startup-loader')?.remove(), 1500);
 }
 
 // ── MIGRATIONS ────────────────────────────────────────────────────────────────
