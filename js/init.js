@@ -908,49 +908,11 @@ async function _startApp() {
       await window.viewLoader.preloadAllViews();
     }
 
-    // Try to restore the previously active view from localStorage
-    let restoredView = null;
-    try {
-      const savedView = localStorage.getItem('bf_currentView');
-      console.log('[ViewRestore] Checking for saved view, found:', savedView);
-      if (savedView) {
-        restoredView = JSON.parse(savedView);
-        console.log('[ViewRestore] Parsed view:', restoredView);
-      }
-    } catch (e) {
-      console.warn('Could not restore view:', e);
-    }
-
-    if (restoredView) {
-      if (restoredView.type === 'global') {
-        // Restore global view (dashboard, contacts, etc.)
-        showView(restoredView.name);
-        // Also trigger render for the restored view
-        if (restoredView.name === 'dashboard') {
-          renderDashboard();
-        }
-      } else if (restoredView.type === 'project') {
-        // Restore project view
-        const projectExists = store.projects?.some(p => p.id === restoredView.projectId);
-        if (projectExists) {
-          showProjectView(restoredView.projectId);
-          // Restore the specific section if available
-          if (restoredView.section) {
-            showSection(restoredView.section);
-          } else {
-            showSection('overview');
-          }
-        } else {
-          // Project no longer exists, fall back to dashboard
-          showView('dashboard');
-          renderDashboard();
-        }
-      }
-    } else {
-      // No saved view, show dashboard as default
-      showView('dashboard');
-      renderDashboard();
-    }
+    // Every fresh load/sign-in lands on Dashboard. bf_currentView is no longer
+    // read on startup — showView()/showSection() still write it on navigation
+    // (kept for any other use), but it's never used to restore on boot.
+    showView('dashboard');
+    renderDashboard();
   } catch(e) {
     console.error('[_startApp] init failed:', e);
   } finally {
